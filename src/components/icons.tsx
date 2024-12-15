@@ -5,5 +5,4 @@ export const Icons = {
   // Add more icons as needed:
   // calendar: Calendar,
   // user: User,
-  // etc...
 };
