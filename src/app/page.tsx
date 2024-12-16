@@ -4,11 +4,18 @@ import { LoginPage } from "~/app/Login";
 
 export default async function HomePage() {
   const session = await auth();
-  console.log(session);
 
   if (!session) {
-    return <LoginPage />;
+    return (
+      <main>
+        <LoginPage />
+      </main>
+    );
   }
 
-  return <Dashboard />;
+  return (
+    <main>
+      <Dashboard />
+    </main>
+  );
 }
