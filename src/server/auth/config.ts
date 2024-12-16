@@ -49,6 +49,7 @@ export const authConfig = {
     EmailProvider({
       server: env.AUTH_EMAIL_SERVER,
       from: env.AUTH_EMAIL_FROM,
+      name: "Email",
     }),
     /**
      * ...add more providers here.

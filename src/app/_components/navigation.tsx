@@ -5,7 +5,7 @@ import Link from "next/link";
 
 import { cn } from "~/lib/utils";
 import { Icons } from "~/components/icons";
-import { AvatarIcon } from "~/app/components/avatar";
+import { AvatarIcon } from "~/app/_components/avatar";
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -56,7 +56,7 @@ const components: { title: string; href: string; description: string }[] = [
 
 export function NavBar() {
   return (
-    <div className="fixed left-0 right-0 top-0 z-50 flex items-center justify-between bg-white p-4 shadow-md">
+    <div className="flex items-center justify-between p-4">
       <NavigationMenu>
         <NavigationMenuList>
           <NavigationMenuItem>
@@ -66,14 +66,14 @@ export function NavBar() {
                 <li className="row-span-3">
                   <NavigationMenuLink asChild>
                     <Link
-                      className="from-muted/50 to-muted flex h-full w-full select-none flex-col justify-end rounded-md bg-gradient-to-b p-6 no-underline outline-none focus:shadow-md"
+                      className="flex h-full w-full select-none flex-col justify-end rounded-md bg-gradient-to-b from-muted/50 to-muted p-6 no-underline outline-none focus:shadow-md"
                       href="/"
                     >
                       <Icons.logo className="h-6 w-6" />
                       <div className="mb-2 mt-4 text-lg font-medium">
                         shadcn/ui
                       </div>
-                      <p className="text-muted-foreground text-sm leading-tight">
+                      <p className="text-sm leading-tight text-muted-foreground">
                         Beautifully designed components built with Radix UI and
                         Tailwind CSS.
                       </p>
@@ -133,13 +133,13 @@ const ListItem = React.forwardRef<
         <Link
           ref={ref}
           className={cn(
-            "hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors",
+            "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
             className,
           )}
           {...props}
         >
           <div className="text-sm font-medium leading-none">{title}</div>
-          <p className="text-muted-foreground line-clamp-2 text-sm leading-snug">
+          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
             {children}
           </p>
         </Link>
