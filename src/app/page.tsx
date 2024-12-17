@@ -1,6 +1,6 @@
-import { Dashboard } from "~/app/Dashboard";
+import { Dashboard } from "~/app/components/Dashboard";
 import { auth, signIn } from "~/server/auth";
-import { LoginPage } from "~/app/Login";
+import { LoginPage } from "~/app/components/Login";
 
 export default async function HomePage() {
   const session = await auth();
