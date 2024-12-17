@@ -62,6 +62,10 @@ export const authConfig = {
      * @see https://next-auth.js.org/providers/github
      */
   ],
+  session: {
+    maxAge: 2 * 60 * 60, // 2 hours
+    updateAge: 30 * 60, // 30 minutes
+  },
   adapter: DrizzleAdapter(db, {
     usersTable: users,
     accountsTable: accounts,
