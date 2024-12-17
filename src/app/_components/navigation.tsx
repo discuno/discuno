@@ -56,7 +56,7 @@ const components: { title: string; href: string; description: string }[] = [
 
 export function NavBar() {
   return (
-    <div className="flex items-center justify-between p-4">
+    <div className="flex items-center justify-between bg-white p-4 text-black">
       <NavigationMenu>
         <NavigationMenuList>
           <NavigationMenuItem>

@@ -6,14 +6,12 @@ export const Dashboard = async () => {
   const posts = await getPosts();
   try {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[#2e026d] to-[#15162c] text-white">
-        <div className="container mx-auto p-4">
-          <h1 className="mb-8 text-3xl font-bold">Dashboard</h1>
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {posts.map((card, index) => (
-              <PostCard key={card.id} card={card} index={index} />
-            ))}
-          </div>
+      <div className="p- container mx-auto">
+        <h1 className="mb-8 pt-2 text-3xl font-bold text-white">Dashboard</h1>
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          {posts.map((card, index) => (
+            <PostCard key={card.id} card={card} index={index} />
+          ))}
         </div>
       </div>
     );
