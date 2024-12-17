@@ -7,8 +7,10 @@ import {
   text,
   timestamp,
   varchar,
+  check,
 } from "drizzle-orm/pg-core";
 import { type AdapterAccount } from "next-auth/adapters";
+import { timestamps } from "~/server/db/columns.helpers";
 
 /**
  * This is an example of how to use the multi-project schema feature of Drizzle ORM. Use the same
@@ -28,12 +30,7 @@ export const posts = createTable(
     createdById: varchar("created_by", { length: 255 })
       .notNull()
       .references(() => users.id),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .default(sql`CURRENT_TIMESTAMP`)
-      .notNull(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).$onUpdate(
-      () => new Date(),
-    ),
+    ...timestamps,
   },
   (example) => ({
     createdByIdIdx: index("created_by_idx").on(example.createdById),
@@ -127,5 +124,72 @@ export const verificationTokens = createTable(
   },
   (vt) => ({
     compoundKey: primaryKey({ columns: [vt.identifier, vt.token] }),
+  }),
+);
+
+export const userProfiles = createTable("user_profile", {
+  id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+  userId: varchar("user_id", { length: 255 })
+    .notNull()
+    .references(() => users.id),
+  bio: varchar("bio", { length: 1000 }),
+  ...timestamps,
+});
+
+export const userMajors = createTable("user_major", {
+  id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+  userId: varchar("user_id", { length: 255 })
+    .notNull()
+    .references(() => users.id),
+  skillId: integer("major_id")
+    .notNull()
+    .references(() => majors.id),
+  ...timestamps,
+});
+
+export const userSchools = createTable("user_school", {
+  id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+  userId: varchar("user_id", { length: 255 })
+    .notNull()
+    .references(() => users.id),
+  schoolId: integer("school_id")
+    .notNull()
+    .references(() => schools.id),
+  ...timestamps,
+});
+
+export const majors = createTable("major", {
+  id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+  name: varchar("name", { length: 255 }).unique(),
+  ...timestamps,
+});
+
+export const schools = createTable("school", {
+  id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+  name: varchar("name", { length: 255 }).unique(),
+  location: varchar("location", { length: 255 }),
+  image: varchar("image", { length: 255 }),
+  ...timestamps,
+});
+
+export const mentorReviews = createTable(
+  "mentor_review",
+  {
+    id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+    mentorId: varchar("mentor_id", { length: 255 })
+      .notNull()
+      .references(() => users.id),
+    userId: varchar("user_id", { length: 255 })
+      .notNull()
+      .references(() => users.id),
+    rating: integer("rating").notNull(),
+    review: varchar("review", { length: 1000 }),
+    ...timestamps,
+  },
+  (table) => ({
+    checkConstraint: check(
+      "rating_check",
+      sql`${table.rating} >= 1 AND ${table.rating} <= 5`,
+    ),
   }),
 );
