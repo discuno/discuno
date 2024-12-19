@@ -1,5 +1,6 @@
+/* eslint-disable react/react-in-jsx-scope */
 import { Dashboard } from "~/app/components/Dashboard";
-import { auth, signIn } from "~/server/auth";
+import { auth } from "~/server/auth";
 import { LoginPage } from "~/app/components/Login";
 
 export default async function HomePage() {
@@ -15,7 +16,7 @@ export default async function HomePage() {
 
   return (
     <main>
-      <Dashboard />
+      <Dashboard schoolId={-1} />
     </main>
   );
 }

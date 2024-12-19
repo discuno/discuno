@@ -1,8 +1,9 @@
+/* eslint-disable react/react-in-jsx-scope */
 import "~/styles/globals.css";
 
 import { GeistSans } from "geist/font/sans";
 import { type Metadata } from "next";
-import { NavBar } from "./_components/navigation";
+import { NavBar } from "~/app/_components/navigation";
 
 export const metadata: Metadata = {
   title: "MyApp - Your Guide to College Success",

@@ -1,4 +1,4 @@
-import { getPostById } from "~/server/queries";
+import { getPostById, getSchoolForUser } from "~/server/queries";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 

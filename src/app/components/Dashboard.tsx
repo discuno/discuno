@@ -1,9 +1,11 @@
-import { db } from "~/server/db";
-import { getPosts } from "~/server/queries";
+/* eslint-disable react/react-in-jsx-scope */
+// import { getPosts } from "~/server/queries";
 import { PostCard } from "~/app/_components/post-card";
+import { getPostsBySchool } from "~/server/queries";
 
-export const Dashboard = async () => {
-  const posts = await getPosts();
+export const Dashboard = async ({ schoolId }: { schoolId: number }) => {
+  // const posts = await getPosts();
+  const posts = await getPostsBySchool(schoolId);
   try {
     return (
       <div className="p- container mx-auto">
