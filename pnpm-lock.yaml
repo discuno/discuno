@@ -154,7 +154,7 @@ importers:
         specifier: ^3.4.3
         version: 3.4.16
       typescript:
-        specifier: ^5.5.3
+        specifier: ^5.7.2
         version: 5.7.2
       typescript-eslint:
         specifier: ^8.18.1
