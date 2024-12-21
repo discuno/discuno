@@ -21,26 +21,27 @@ import {
 } from "~/components/ui/popover";
 import { useRouter } from "next/navigation";
 
-interface School {
+interface FilterValue {
   value: string;
   label: string;
   id: number;
 }
 
-interface SchoolFilterProps {
-  schools: School[];
+interface FilterProps {
+  filterItems: FilterValue[];
+  queryName: string;
 }
 
-export function SchoolFilterButton({ schools }: SchoolFilterProps) {
+export function FilterButton({ filterItems, queryName }: FilterProps) {
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState("");
   const router = useRouter();
 
-  const handleFilterChange = (schoolId: number) => {
-    setValue(schools.find((school) => school.id === schoolId)?.value || "");
+  const handleFilterChange = (itemId: number) => {
+    setValue(filterItems.find((item) => item.id === itemId)?.value || "");
     setOpen(false);
     const url = new URL(window.location.href);
-    url.searchParams.set("school", schoolId.toString());
+    url.searchParams.set(`${queryName}`, itemId.toString());
 
     router.push(url.toString());
   };
@@ -55,7 +56,7 @@ export function SchoolFilterButton({ schools }: SchoolFilterProps) {
           className="w-[200px] justify-between"
         >
           {value
-            ? schools.find((school) => school.value === value)?.label
+            ? filterItems.find((item) => item.value === value)?.label
             : "Select framework..."}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
@@ -66,21 +67,21 @@ export function SchoolFilterButton({ schools }: SchoolFilterProps) {
           <CommandList>
             <CommandEmpty>No framework found.</CommandEmpty>
             <CommandGroup>
-              {schools.map((school) => (
+              {filterItems.map((item) => (
                 <CommandItem
-                  key={school.value}
-                  value={school.value}
+                  key={item.value}
+                  value={item.value}
                   onSelect={() => {
-                    handleFilterChange(school.id);
+                    handleFilterChange(item.id);
                   }}
                 >
                   <Check
                     className={cn(
                       "mr-2 h-4 w-4",
-                      value === school.value ? "opacity-100" : "opacity-0",
+                      value === item.value ? "opacity-100" : "opacity-0",
                     )}
                   />
-                  {school.label}
+                  {item.label}
                 </CommandItem>
               ))}
             </CommandGroup>

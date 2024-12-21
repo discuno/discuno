@@ -141,7 +141,7 @@ export const userMajors = createTable("user_major", {
   userId: varchar("user_id", { length: 255 })
     .notNull()
     .references(() => users.id),
-  skillId: integer("major_id")
+  majorId: integer("major_id")
     .notNull()
     .references(() => majors.id),
   ...timestamps,

@@ -92,3 +92,98 @@ export const getSchools = async () => {
 
   return res;
 };
+
+export const getMajors = async () => {
+  const majors = await db.query.majors.findMany();
+  const res: { value: string; label: string; id: number }[] = majors.map(
+    (major) => ({
+      label: major.name ?? "Unknown",
+      value: major.name?.toLowerCase() ?? "unknown",
+      id: major.id,
+    }),
+  );
+
+  return res;
+};
+
+export const getPostsByMajor = async (majorId: number) => {
+  const user = await auth();
+
+  if (!user || !user.userId) {
+    throw new Error("Unauthorized");
+  }
+
+  // return all posts if posts with school id is -1
+  if (majorId === -1) {
+    const allPosts = await getPosts();
+    return allPosts;
+  }
+
+  const userMajor = await db.query.userMajors.findMany({
+    where: (model, { eq }) => eq(model.majorId, majorId),
+  });
+
+  if (userMajor.length === 0) {
+    return [];
+  }
+
+  const userIds = userMajor.map((student) => student.userId);
+
+  const posts = await db.query.posts.findMany({
+    where: (model, { inArray }) => inArray(model.createdById, userIds),
+  });
+
+  return posts;
+};
+
+export const getPostsBySchoolAndMajor = async (
+  schoolId: number | null,
+  majorId: number | null,
+) => {
+  const user = await auth();
+
+  if (!user || !user.userId) {
+    throw new Error("Unauthorized");
+  }
+
+  if (schoolId === -1 && majorId === -1) {
+    const allPosts = await getPosts();
+    return allPosts;
+  }
+
+  const userSchools = await db.query.userSchools.findMany({
+    where: (model, { eq }) =>
+      schoolId === null ? undefined : eq(model.schoolId, schoolId),
+  });
+
+  if (schoolId !== null && userSchools.length === 0) {
+    return [];
+  }
+
+  const userIdsBySchool = userSchools.map((userSchool) => userSchool.userId);
+
+  const userMajors = await db.query.userMajors.findMany({
+    where: (model, { eq }) =>
+      majorId === null ? undefined : eq(model.majorId, majorId),
+  });
+
+  if ((majorId !== null && userMajors.length) === 0) {
+    return [];
+  }
+
+  const userIdsByMajor = userMajors.map((userMajor) => userMajor.userId);
+
+  const filteredUserIds = userIdsBySchool.filter((userId) => {
+    return userIdsByMajor.includes(userId);
+  });
+
+  if (filteredUserIds.length === 0) {
+    return [];
+  }
+
+  const posts = await db.query.posts.findMany({
+    where: (model, { inArray }) => inArray(model.createdById, filteredUserIds),
+  });
+
+  return posts;
+};
