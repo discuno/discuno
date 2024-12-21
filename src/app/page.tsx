@@ -1,10 +1,14 @@
 /* eslint-disable react/react-in-jsx-scope */
-import { Dashboard } from "~/app/components/Dashboard";
 import { auth } from "~/server/auth";
 import { LoginPage } from "~/app/components/Login";
+import { getPosts, getSchools } from "~/server/queries";
+import { SchoolFilterButton } from "./_components/school-filter-button";
+import { PostGrid } from "./components/post-grid";
 
 export default async function HomePage() {
   const session = await auth();
+  const schools = await getSchools();
+  const posts = await getPosts();
 
   if (!session) {
     return (
@@ -16,7 +20,8 @@ export default async function HomePage() {
 
   return (
     <main>
-      <Dashboard schoolId={-1} />
+      <SchoolFilterButton schools={schools} />
+      <PostGrid posts={posts} />
     </main>
   );
 }

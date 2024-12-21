@@ -19,6 +19,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "~/components/ui/popover";
+import { useRouter } from "next/navigation";
 
 interface School {
   value: string;
@@ -26,9 +27,20 @@ interface School {
   id: number;
 }
 
-export function SchoolFilterButton({ schools }: { schools: School[] }) {
+interface SchoolFilterProps {
+  schools: School[];
+}
+
+export function SchoolFilterButton({ schools }: SchoolFilterProps) {
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState("");
+  const router = useRouter();
+
+  const handleFilterChange = (schoolId: number) => {
+    setValue(schools.find((school) => school.id === schoolId)?.value || "");
+    setOpen(false);
+    router.push(`/dashboard/${schoolId}`);
+  };
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -55,9 +67,8 @@ export function SchoolFilterButton({ schools }: { schools: School[] }) {
                 <CommandItem
                   key={school.value}
                   value={school.value}
-                  onSelect={(currentValue) => {
-                    setValue(currentValue === value ? "" : currentValue);
-                    setOpen(false);
+                  onSelect={() => {
+                    handleFilterChange(school.id);
                   }}
                 >
                   <Check

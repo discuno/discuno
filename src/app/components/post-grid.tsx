@@ -1,11 +1,18 @@
 /* eslint-disable react/react-in-jsx-scope */
-// import { getPosts } from "~/server/queries";
+"use client";
 import { PostCard } from "~/app/_components/post-card";
-import { getPostsBySchool } from "~/server/queries";
 
-export const Dashboard = async ({ schoolId }: { schoolId: number }) => {
-  // const posts = await getPosts();
-  const posts = await getPostsBySchool(schoolId);
+interface Card {
+  id: number;
+  image?: string | null;
+  name?: string | null;
+  description?: string | null;
+  createdById: string;
+  createdAt: Date;
+  updatedAt?: Date | null;
+}
+
+export const PostGrid = ({ posts }: { posts: Card[] }) => {
   try {
     return (
       <div className="p- container mx-auto">

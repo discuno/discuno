@@ -15,7 +15,6 @@ import {
   NavigationMenuTrigger,
   navigationMenuTriggerStyle,
 } from "~/components/ui/navigation-menu";
-import { SchoolFilterButton } from "~/app/_components/school-filter-button";
 
 interface ListItemProps extends React.ComponentPropsWithoutRef<typeof Link> {
   className?: string;
@@ -61,13 +60,7 @@ const components: { title: string; href: string; description: string }[] = [
   },
 ];
 
-interface School {
-  value: string;
-  label: string;
-  id: number;
-}
-
-export function NavBarBase({ schools }: { schools: School[] }) {
+export function NavBarBase() {
   return (
     <div className="flex items-center justify-between bg-white p-4 text-black">
       <NavigationMenu>
@@ -130,7 +123,6 @@ export function NavBarBase({ schools }: { schools: School[] }) {
           </NavigationMenuItem>
         </NavigationMenuList>
       </NavigationMenu>
-      <SchoolFilterButton schools={schools} />
       <AvatarIcon />
     </div>
   );
