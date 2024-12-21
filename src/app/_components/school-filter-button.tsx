@@ -39,7 +39,10 @@ export function SchoolFilterButton({ schools }: SchoolFilterProps) {
   const handleFilterChange = (schoolId: number) => {
     setValue(schools.find((school) => school.id === schoolId)?.value || "");
     setOpen(false);
-    router.push(`/dashboard/${schoolId}`);
+    const url = new URL(window.location.href);
+    url.searchParams.set("school", schoolId.toString());
+
+    router.push(url.toString());
   };
 
   return (

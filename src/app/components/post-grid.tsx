@@ -1,5 +1,4 @@
 /* eslint-disable react/react-in-jsx-scope */
-"use client";
 import { PostCard } from "~/app/_components/post-card";
 
 interface Card {
