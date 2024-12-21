@@ -1,3 +1,5 @@
+/* eslint-disable react/react-in-jsx-scope */
+
 "use client";
 
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
@@ -87,7 +89,11 @@ export function AvatarIcon() {
         <DropdownMenuItem>Support</DropdownMenuItem>
         <DropdownMenuItem disabled>API</DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => signOut()}>
+        <DropdownMenuItem
+          onClick={() => {
+            signOut({ callbackUrl: "/" });
+          }}
+        >
           Log out
           <DropdownMenuShortcut>⇧⌘Q</DropdownMenuShortcut>
         </DropdownMenuItem>
