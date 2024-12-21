@@ -39,11 +39,20 @@ export function FilterButton({ filterItems, queryName }: FilterProps) {
 
   const handleFilterChange = (itemId: number) => {
     setValue(filterItems.find((item) => item.id === itemId)?.value || "");
-    setOpen(false);
     const url = new URL(window.location.href);
-    url.searchParams.set(`${queryName}`, itemId.toString());
+    const selectedValue =
+      filterItems.find((item) => item.id === itemId)?.value || "";
+
+    if (selectedValue === value) {
+      url.searchParams.delete(queryName);
+      setValue("");
+    } else {
+      setValue(selectedValue);
+      url.searchParams.set(`${queryName}`, itemId.toString());
+    }
 
     router.push(url.toString());
+    setOpen(false);
   };
 
   return (
