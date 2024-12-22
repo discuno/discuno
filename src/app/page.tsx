@@ -39,8 +39,10 @@ export default async function HomePage({
 
   return (
     <main>
-      <FilterButton filterItems={schools} queryName="school" />
-      <FilterButton filterItems={majors} queryName="major" />
+      <div className="flex items-center justify-center pt-2">
+        <FilterButton filterItems={schools} queryName="school" />
+        <FilterButton filterItems={majors} queryName="major" />
+      </div>
       <PostGrid posts={posts} />
     </main>
   );
