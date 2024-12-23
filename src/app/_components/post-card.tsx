@@ -1,5 +1,7 @@
-import Image from "next/image";
+/* eslint-disable react/react-in-jsx-scope */
 import Link from "next/link";
+import { getMajorForUser, getSchoolForUser } from "~/server/queries";
+import Image from "next/image";
 
 interface Card {
   id: number;
@@ -11,27 +13,43 @@ interface Card {
   updatedAt?: Date | null;
 }
 
-export const PostCard = ({ card, index }: { card: Card; index: number }) => {
+export const PostCard = async ({
+  card,
+  index,
+}: {
+  card: Card;
+  index: number;
+}) => {
+  const user = card.createdById;
+  const school = await getSchoolForUser(user);
+  const major = await getMajorForUser(user);
+
   return (
-    <div
-      key={index}
-      className="cursor-pointer rounded-lg bg-white p-6 text-black shadow-md"
-    >
-      <div className="overflow-hidded relative aspect-[3/2] w-full rounded-md">
-        <Link href={`/img/${card.id}`}>
-          <img
+    <Link href={`/img/${card.id}`}>
+      <div
+        key={index}
+        className="cursor-pointer rounded-lg bg-white p-6 text-black shadow-md"
+      >
+        <div className="relative mb-4 aspect-[3/2] w-full overflow-hidden rounded-md">
+          <Image
             src={card.image || "/images/placeholder.jpg"}
             alt={card.name || "default image"}
-            width={200}
-            height={200}
-            className="mb-4 rounded-md"
+            layout="fill"
+            objectFit="cover"
+            className="rounded-md"
           />
+        </div>
+        <div className="flex flex-col items-start">
           <h2 className="mb-2 text-xl font-semibold">
-            {card.name || "card name"}
+            {card.name || "Card Name"}
           </h2>
-          <p className="text-sm">{card.description || "default description"}</p>
-        </Link>
+          <p className="mb-2 text-sm">
+            {card.description || "Default description"}
+          </p>
+          <p className="mb-1 text-sm text-gray-600">School: {school?.name}</p>
+          <p className="text-sm text-gray-600">Major: {major?.name}</p>
+        </div>
       </div>
-    </div>
+    </Link>
   );
 };

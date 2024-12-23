@@ -1,4 +1,5 @@
-import { getPostById, getSchoolForUser } from "~/server/queries";
+/* eslint-disable react/react-in-jsx-scope */
+import { getPostById } from "~/server/queries";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 

@@ -39,13 +39,17 @@ export const getSchoolForUser = async (userId: string) => {
     throw new Error("Unauthorized");
   }
 
-  const school = await db.query.userSchools.findFirst({
+  const schoolPair = await db.query.userSchools.findFirst({
     where: (model, { eq }) => eq(model.userId, userId),
   });
 
-  if (!school) {
+  if (!schoolPair) {
     return null;
   }
+
+  const school = await db.query.schools.findFirst({
+    where: (model, { eq }) => eq(model.id, schoolPair?.schoolId),
+  });
 
   return school;
 };
@@ -186,4 +190,25 @@ export const getPostsBySchoolAndMajor = async (
   });
 
   return posts;
+};
+
+export const getMajorForUser = async (userId: string) => {
+  const user = await auth();
+
+  if (!user || !user.userId) {
+    throw new Error("Unauthorized");
+  }
+
+  const majorPair = await db.query.userMajors.findFirst({
+    where: (model, { eq }) => eq(model.userId, userId),
+  });
+
+  const major = await db.query.majors.findFirst({
+    where: (model, { eq }) =>
+      majorPair?.majorId !== undefined
+        ? eq(model.id, majorPair.majorId)
+        : undefined,
+  });
+
+  return major;
 };

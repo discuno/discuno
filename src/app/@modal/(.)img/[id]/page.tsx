@@ -1,3 +1,4 @@
+/* eslint-disable react/react-in-jsx-scope */
 import { getPostById } from "~/server/queries";
 import Image from "next/image";
 import { Modal } from "~/app/@modal/(.)img/[id]/modal";
@@ -15,9 +16,18 @@ export default async function PostModal({
   }
 
   const post = await getPostById(idAsNumber);
+
   return (
     <Modal>
-      <img src={post.image ?? ""} className="w-96" />
+      <div className="flex justify-center">
+        <Image
+          src={post.image ?? "/images/placeholder.jpg"}
+          alt={`Post ${postId}`}
+          width={600}
+          height={400}
+          className="rounded-md object-cover"
+        />
+      </div>
     </Modal>
   );
 }
