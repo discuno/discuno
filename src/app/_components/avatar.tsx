@@ -22,7 +22,6 @@ import {
 } from "~/components/ui/dropdown-menu";
 
 const AvatarPic = ({ profilePic }: { profilePic: string }) => {
-  console.log(profilePic);
   return (
     <div className="h-10 w-10">
       <Avatar>

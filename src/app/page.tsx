@@ -37,8 +37,6 @@ export default async function HomePage({
       ? await getPostsBySchoolAndMajor(schoolId, majorId)
       : await getPosts();
 
-  console.log(posts);
-
   return (
     <main>
       <div className="flex items-center justify-center pt-2">
