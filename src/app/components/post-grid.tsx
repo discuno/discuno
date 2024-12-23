@@ -3,12 +3,13 @@ import { PostCard } from "~/app/_components/post-card";
 
 interface Card {
   id: number;
-  image?: string | null;
+  userImage?: string | null;
   name?: string | null;
   description?: string | null;
   createdById: string;
   createdAt: Date;
   updatedAt?: Date | null;
+  deletedAt?: Date | null;
 }
 
 export const PostGrid = ({ posts }: { posts: Card[] }) => {

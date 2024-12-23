@@ -9,9 +9,22 @@ export async function getPosts() {
     throw new Error("Unauthorized");
   }
 
-  const posts = await db.query.posts.findMany();
+  const posts = await db.query.posts.findMany({
+    with: {
+      creator: true,
+    },
+  });
 
-  return posts;
+  const postsMapped = posts.map((post) => ({
+    id: post.id,
+    name: post.name,
+    description: post.description,
+    createdById: post.createdById,
+    createdAt: post.createdAt,
+    userImage: post.creator?.image, // Add the image field
+  }));
+
+  return postsMapped;
 }
 
 export async function getPostById(id: number) {
@@ -29,7 +42,18 @@ export async function getPostById(id: number) {
     throw new Error("Post not found");
   }
 
-  return post;
+  const creator = await db.query.users.findFirst({
+    where: (model, { eq }) => eq(model.id, post.createdById),
+  });
+
+  if (!creator) {
+    throw new Error("Creator not found");
+  }
+
+  return {
+    ...post,
+    userImage: creator.image,
+  };
 }
 
 export const getSchoolForUser = async (userId: string) => {
@@ -187,9 +211,21 @@ export const getPostsBySchoolAndMajor = async (
 
   const posts = await db.query.posts.findMany({
     where: (model, { inArray }) => inArray(model.createdById, filteredUserIds),
+    with: {
+      creator: true,
+    },
   });
 
-  return posts;
+  const postsMapped = posts.map((post) => ({
+    id: post.id,
+    name: post.name,
+    description: post.description,
+    createdById: post.createdById,
+    createdAt: post.createdAt,
+    userImage: post.creator?.image, // Add the image field
+  }));
+
+  return postsMapped;
 };
 
 export const getMajorForUser = async (userId: string) => {
@@ -211,4 +247,18 @@ export const getMajorForUser = async (userId: string) => {
   });
 
   return major;
+};
+
+export const getProfilePic = async () => {
+  const user = await auth();
+
+  if (!user || !user.userId) {
+    throw new Error("Unauthorized");
+  }
+
+  const userImage = await db.query.users.findFirst({
+    where: (model, { eq }) => eq(model.id, user.userId),
+  });
+
+  return userImage?.image;
 };

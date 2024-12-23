@@ -20,7 +20,7 @@ export default async function PostPage({ id }: { id: string }) {
             {/* Image Section */}
             <div className="relative h-[400px] w-full">
               <Image
-                src={post.image ?? "/images/placeholder.jpg"}
+                src={post.userImage ?? "/images/placeholder.jpg"}
                 alt={post.name ?? "Post image"}
                 fill
                 className="object-cover"

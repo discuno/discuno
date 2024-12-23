@@ -25,7 +25,6 @@ export const posts = createTable(
   {
     id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
     name: varchar("name", { length: 256 }),
-    image: varchar("image", { length: 256 }),
     description: text("description"),
     createdById: varchar("created_by", { length: 255 })
       .notNull()
@@ -37,6 +36,10 @@ export const posts = createTable(
     nameIndex: index("name_idx").on(example.name),
   }),
 );
+
+export const postsRelations = relations(posts, ({ one }) => ({
+  creator: one(users, { fields: [posts.createdById], references: [users.id] }), // Link 'createdById' with 'users.id'
+}));
 
 export const users = createTable("user", {
   id: varchar("id", { length: 255 })

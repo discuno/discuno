@@ -60,7 +60,10 @@ const components: { title: string; href: string; description: string }[] = [
   },
 ];
 
-export function NavBarBase() {
+export function NavBarBase({ profilePic }: { profilePic: string }) {
+  if (profilePic.length === 0) {
+    profilePic = "";
+  }
   return (
     <div className="flex items-center justify-between bg-white p-4 text-black">
       <NavigationMenu>
@@ -123,7 +126,7 @@ export function NavBarBase() {
           </NavigationMenuItem>
         </NavigationMenuList>
       </NavigationMenu>
-      <AvatarIcon />
+      <AvatarIcon profilePic={profilePic} />
     </div>
   );
 }

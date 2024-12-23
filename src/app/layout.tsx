@@ -3,7 +3,8 @@ import "~/styles/globals.css";
 
 import { GeistSans } from "geist/font/sans";
 import { type Metadata } from "next";
-import { NavBar } from "~/app/_components/navigation";
+import { NavBarBase } from "~/app/_components/navigation-client";
+import { getProfilePic } from "~/server/queries";
 
 export const metadata: Metadata = {
   title: "MyApp - Your Guide to College Success",
@@ -12,14 +13,21 @@ export const metadata: Metadata = {
   icons: [{ rel: "icon", url: "/favicon.ico" }],
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
   modal,
 }: Readonly<{ children: React.ReactNode; modal: React.ReactNode }>) {
+  let profilePic = "";
+  try {
+    profilePic = (await getProfilePic()) ?? "";
+  } catch (error) {
+    console.error("Error fetching profile pic:", error);
+  }
+
   return (
     <html lang="en" className={`${GeistSans.variable}`}>
       <body className="min-h-screen bg-black">
-        <NavBar />
+        <NavBarBase profilePic={profilePic} />
         {children}
         {modal}
         <div id="modal-root" />

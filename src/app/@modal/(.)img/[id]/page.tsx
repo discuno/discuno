@@ -21,7 +21,7 @@ export default async function PostModal({
     <Modal>
       <div className="flex justify-center">
         <Image
-          src={post.image ?? "/images/placeholder.jpg"}
+          src={post.userImage ?? "/images/placeholder.jpg"}
           alt={`Post ${postId}`}
           width={600}
           height={400}

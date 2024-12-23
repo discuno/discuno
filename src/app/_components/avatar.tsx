@@ -21,18 +21,19 @@ import {
   DropdownMenuPortal,
 } from "~/components/ui/dropdown-menu";
 
-const AvatarPic = () => {
+const AvatarPic = ({ profilePic }: { profilePic: string }) => {
+  console.log(profilePic);
   return (
     <div className="h-10 w-10">
       <Avatar>
-        <AvatarImage src="https://github.com/shadcn.png" alt="@shadcn" />
+        <AvatarImage src={profilePic} alt="@shadcn" />
         <AvatarFallback>CN</AvatarFallback>
       </Avatar>
     </div>
   );
 };
 
-export function AvatarIcon() {
+export function AvatarIcon({ profilePic }: { profilePic: string }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -41,7 +42,7 @@ export function AvatarIcon() {
           size="icon"
           className="h-10 w-10 rounded-full"
         >
-          <AvatarPic />
+          <AvatarPic profilePic={profilePic} />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56">
@@ -99,18 +100,5 @@ export function AvatarIcon() {
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
-
-    // <TooltipProvider>
-    //   <Tooltip>
-    //     <TooltipTrigger asChild>
-    //       <Button variant="outline">
-    //         <AvatarPic />
-    //       </Button>
-    //     </TooltipTrigger>
-    //     <TooltipContent>
-    //       <p>Add to library</p>
-    //     </TooltipContent>
-    //   </Tooltip>
-    // </TooltipProvider>
   );
 }

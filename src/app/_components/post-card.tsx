@@ -5,12 +5,13 @@ import Image from "next/image";
 
 interface Card {
   id: number;
-  image?: string | null;
+  userImage?: string | null;
   name?: string | null;
   description?: string | null;
   createdById: string;
   createdAt: Date;
   updatedAt?: Date | null;
+  deletedAt?: Date | null;
 }
 
 export const PostCard = async ({
@@ -32,11 +33,11 @@ export const PostCard = async ({
       >
         <div className="relative mb-4 aspect-[3/2] w-full overflow-hidden rounded-md">
           <Image
-            src={card.image || "/images/placeholder.jpg"}
+            src={card.userImage || "/images/placeholder.jpg"}
             alt={card.name || "default image"}
-            layout="fill"
-            objectFit="cover"
-            className="rounded-md"
+            width={600}
+            height={400}
+            className="rounded-md object-cover"
           />
         </div>
         <div className="flex flex-col items-start">
