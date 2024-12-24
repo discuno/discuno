@@ -33,25 +33,33 @@ interface FilterProps {
 }
 
 export function FilterButton({ filterItems, queryName }: FilterProps) {
+  // State to manage the open/close state of the popover
   const [open, setOpen] = useState(false);
+  // State to manage the selected filter value
   const [value, setValue] = useState("");
   const router = useRouter();
 
+  // Function to handle filter change
   const handleFilterChange = (itemId: number) => {
-    setValue(filterItems.find((item) => item.id === itemId)?.value || "");
-    const url = new URL(window.location.href);
+    // Find the selected value based on itemId
     const selectedValue =
       filterItems.find((item) => item.id === itemId)?.value || "";
+    // Create a new URL object based on the current window location
+    const url = new URL(window.location.href);
 
+    // If the selected value is already the current value, remove the query parameter
     if (selectedValue === value) {
       url.searchParams.delete(queryName);
       setValue("");
     } else {
+      // Otherwise, set the new value and update the query parameter
       setValue(selectedValue);
-      url.searchParams.set(`${queryName}`, itemId.toString());
+      url.searchParams.set(queryName, itemId.toString());
     }
 
+    // Push the updated URL to the router
     router.push(url.toString());
+    // Close the popover
     setOpen(false);
   };
 

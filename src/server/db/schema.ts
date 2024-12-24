@@ -130,14 +130,29 @@ export const verificationTokens = createTable(
   }),
 );
 
-export const userProfiles = createTable("user_profile", {
-  id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
-  userId: varchar("user_id", { length: 255 })
-    .notNull()
-    .references(() => users.id),
-  bio: varchar("bio", { length: 1000 }),
-  ...timestamps,
-});
+export const userProfiles = createTable(
+  "user_profile",
+  {
+    id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+    userId: varchar("user_id", { length: 255 })
+      .notNull()
+      .references(() => users.id),
+    bio: varchar("bio", { length: 1000 }),
+    schoolYear: varchar("school_year", { length: 255 })
+      .notNull()
+      .$type<"Freshman" | "Sophomore" | "Junior" | "Senior" | "Graduate">()
+      .notNull(),
+    graduationYear: integer("graduation_year") // E.g., 2027
+      .notNull(),
+    ...timestamps,
+  },
+  (table) => ({
+    checkConstraint: check(
+      "grad_year_check",
+      sql`${table.graduationYear} >= ${new Date().getFullYear()}`,
+    ),
+  }),
+);
 
 export const userMajors = createTable("user_major", {
   id: integer("id").primaryKey().generatedByDefaultAsIdentity(),

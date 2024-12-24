@@ -15,14 +15,24 @@ export async function getPosts() {
     },
   });
 
-  const postsMapped = posts.map((post) => ({
-    id: post.id,
-    name: post.name,
-    description: post.description,
-    createdById: post.createdById,
-    createdAt: post.createdAt,
-    userImage: post.creator?.image, // Add the image field
-  }));
+  const postsMapped = await Promise.all(
+    posts.map(async (post) => {
+      const userProfile = await db.query.userProfiles.findFirst({
+        where: (model, { eq }) => eq(model.userId, post.createdById),
+      });
+
+      return {
+        id: post.id,
+        name: post.name,
+        description: post.description,
+        createdById: post.createdById,
+        createdAt: post.createdAt,
+        userImage: post.creator?.image, // Add the image field
+        graduationYear: userProfile?.graduationYear,
+        schoolYear: userProfile?.schoolYear,
+      };
+    }),
+  );
 
   return postsMapped;
 }
@@ -164,66 +174,109 @@ export const getPostsByMajor = async (majorId: number) => {
   return posts;
 };
 
-export const getPostsBySchoolAndMajor = async (
+export const getPostsByFilters = async (
   schoolId: number | null,
   majorId: number | null,
+  graduationYear: number | null,
 ) => {
+  // Authenticate the user
   const user = await auth();
 
   if (!user || !user.userId) {
     throw new Error("Unauthorized");
   }
 
+  // Return all posts if both schoolId and majorId are -1
   if (schoolId === -1 && majorId === -1) {
     const allPosts = await getPosts();
     return allPosts;
   }
 
+  // Get all users with the specified school ID
   const userSchools = await db.query.userSchools.findMany({
     where: (model, { eq }) =>
       schoolId === null ? undefined : eq(model.schoolId, schoolId),
   });
 
+  // Return an empty array if no users with the specified school exist
   if (schoolId !== null && userSchools.length === 0) {
     return [];
   }
 
+  // Get all user IDs with the specified school ID
   const userIdsBySchool = userSchools.map((userSchool) => userSchool.userId);
 
+  // Get all users with the specified major ID
   const userMajors = await db.query.userMajors.findMany({
     where: (model, { eq }) =>
       majorId === null ? undefined : eq(model.majorId, majorId),
   });
 
-  if ((majorId !== null && userMajors.length) === 0) {
+  // Return an empty array if no users with the specified major exist
+  if (majorId !== null && userMajors.length === 0) {
     return [];
   }
 
+  // Get all user IDs with the specified major
   const userIdsByMajor = userMajors.map((userMajor) => userMajor.userId);
 
-  const filteredUserIds = userIdsBySchool.filter((userId) => {
-    return userIdsByMajor.includes(userId);
-  });
+  // Get all users with the specified graduation year
+  const usersByGraduationYear = graduationYear
+    ? await db.query.userProfiles.findMany({
+        where: (model, { eq }) => eq(model.graduationYear, graduationYear),
+      })
+    : [];
 
-  if (filteredUserIds.length === 0) {
+  // Map graduation year user IDs
+  const userIdsByGraduationYear = graduationYear
+    ? usersByGraduationYear.map((user) => user.userId)
+    : null;
+
+  // Get the intersection of user IDs by school and major
+  const filteredUserIds = userIdsBySchool.filter((userId) =>
+    userIdsByMajor.includes(userId),
+  );
+
+  // Further filter by graduation year if it exists
+  const finalFilteredUserIds = userIdsByGraduationYear
+    ? filteredUserIds.filter((userId) =>
+        userIdsByGraduationYear.includes(userId),
+      )
+    : filteredUserIds;
+
+  // Return an empty array if no users match the filters
+  if (finalFilteredUserIds.length === 0) {
     return [];
   }
 
+  // Get all posts with the filtered user IDs
   const posts = await db.query.posts.findMany({
-    where: (model, { inArray }) => inArray(model.createdById, filteredUserIds),
+    where: (model, { inArray }) =>
+      inArray(model.createdById, finalFilteredUserIds),
     with: {
       creator: true,
     },
   });
 
-  const postsMapped = posts.map((post) => ({
-    id: post.id,
-    name: post.name,
-    description: post.description,
-    createdById: post.createdById,
-    createdAt: post.createdAt,
-    userImage: post.creator?.image, // Add the image field
-  }));
+  // Map the posts to include the user profile details
+  const postsMapped = await Promise.all(
+    posts.map(async (post) => {
+      const userProfile = await db.query.userProfiles.findFirst({
+        where: (model, { eq }) => eq(model.userId, post.createdById),
+      });
+
+      return {
+        id: post.id,
+        name: post.name,
+        description: post.description,
+        createdById: post.createdById,
+        createdAt: post.createdAt,
+        userImage: post.creator?.image, // Add the image field
+        graduationYear: userProfile?.graduationYear,
+        schoolYear: userProfile?.schoolYear,
+      };
+    }),
+  );
 
   return postsMapped;
 };
