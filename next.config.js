@@ -17,7 +17,9 @@ const coreConfig = {
       {
         protocol: "https",
         hostname: "lh3.googleusercontent.com",
-        pathname: "/**", // You can adjust the pathname if needed
+        port: "",
+        pathname: "/**",
+        search: "",
       },
     ],
   },

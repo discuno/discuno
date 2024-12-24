@@ -20,6 +20,7 @@ interface ListItemProps extends React.ComponentPropsWithoutRef<typeof Link> {
   className?: string;
   title: string;
   children: React.ReactNode;
+  href: string;
 }
 
 const components: { title: string; href: string; description: string }[] = [

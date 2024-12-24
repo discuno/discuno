@@ -21,7 +21,7 @@ export default [
     },
     rules: {
       "react/jsx-uses-react": "off",
-      "react/react-in-jsx-scope": "off",
+      "react/react-in-jsx-scope": 0,
       "@typescript-eslint/array-type": "off",
       "@typescript-eslint/consistent-type-definitions": "off",
       "@typescript-eslint/consistent-type-imports": [

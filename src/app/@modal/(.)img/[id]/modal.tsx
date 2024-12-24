@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from "~/components/ui/dialog";
 import { DialogDescription } from "@radix-ui/react-dialog";
+import Link from "next/link";
 
 export function Modal({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -27,7 +28,9 @@ export function Modal({ children }: { children: React.ReactNode }) {
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onDismiss()}>
       <DialogContent>
         <DialogTitle>More Info</DialogTitle>
-        <DialogDescription></DialogDescription>
+        <DialogDescription>
+          <Link href="/docs/primitives/alert-dialog">Dashboard</Link>
+        </DialogDescription>
         {children}
         <DialogClose asChild>
           <button
