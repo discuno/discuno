@@ -2,7 +2,7 @@ import "server-only";
 import { db } from "~/server/db";
 import { auth } from "~/server/auth";
 
-export async function getPosts() {
+export async function getPosts(limit = 20, offset = 0) {
   const user = await auth();
 
   if (!user || !user.userId) {
@@ -13,26 +13,38 @@ export async function getPosts() {
     with: {
       creator: true,
     },
+    limit,
+    offset,
   });
 
-  const postsMapped = await Promise.all(
-    posts.map(async (post) => {
-      const userProfile = await db.query.userProfiles.findFirst({
-        where: (model, { eq }) => eq(model.userId, post.createdById),
-      });
+  const userIds = posts.map((post) => post.createdById);
+  const userProfiles = await db.query.userProfiles.findMany({
+    where: (model, { inArray }) => inArray(model.userId, userIds),
+  });
 
-      return {
-        id: post.id,
-        name: post.name,
-        description: post.description,
-        createdById: post.createdById,
-        createdAt: post.createdAt,
-        userImage: post.creator?.image, // Add the image field
-        graduationYear: userProfile?.graduationYear,
-        schoolYear: userProfile?.schoolYear,
-      };
-    }),
+  // Map user profile for quick lookup
+  const userProfilesMap = userProfiles.reduce(
+    (acc, profile) => {
+      acc[profile.userId] = profile;
+      return acc;
+    },
+    {} as Record<string, (typeof userProfiles)[number]>,
   );
+
+  const postsMapped = posts.map((post) => {
+    const userProfile = userProfilesMap[post.createdById];
+
+    return {
+      id: post.id,
+      name: post.name,
+      description: post.description,
+      createdById: post.createdById,
+      createdAt: post.createdAt,
+      userImage: post.creator?.image || null,
+      graduationYear: userProfile?.graduationYear || null,
+      schoolYear: userProfile?.schoolYear || null,
+    };
+  });
 
   return postsMapped;
 }
