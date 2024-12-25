@@ -54,7 +54,7 @@ export default async function HomePage({
 
   return (
     <main>
-      <div className="flex items-center justify-center pt-2">
+      <div className="flex items-center justify-center space-x-4 pt-2">
         <FilterButton filterItems={schools} queryName="school" />
         <FilterButton filterItems={majors} queryName="major" />
         <FilterButton filterItems={gradYears} queryName="gradYear" />

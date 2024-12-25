@@ -70,7 +70,7 @@ export function FilterButton({ filterItems, queryName }: FilterProps) {
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-[200px] justify-between"
+          className="w-[225px] justify-between"
         >
           {value
             ? filterItems.find((item) => item.value === value)?.label
@@ -78,11 +78,11 @@ export function FilterButton({ filterItems, queryName }: FilterProps) {
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[200px] p-0">
+      <PopoverContent className="w-[225px] p-0">
         <Command>
           <CommandInput placeholder={`Search ${queryName}...`} />
           <CommandList>
-            <CommandEmpty>No framework found.</CommandEmpty>
+            <CommandEmpty>No {queryName} found.</CommandEmpty>
             <CommandGroup>
               {filterItems.map((item) => (
                 <CommandItem
