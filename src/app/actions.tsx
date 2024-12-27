@@ -12,7 +12,6 @@ import {
  */
 export const fetchPostsAction = async (limit = 20, offset = 0) => {
   const posts = await getPosts(limit, offset);
-  console.log("posts from filter action", posts);
   return posts;
 };
 
@@ -30,7 +29,6 @@ export const fetchPostsByFilterAction = async (
     limit,
     offset,
   );
-  console.log("posts from filter action", posts);
   return posts;
 };
 

@@ -53,7 +53,12 @@ export default async function HomePage({
         <FilterButton filterItems={majors} queryName="major" />
         <FilterButton filterItems={gradYears} queryName="gradYear" />
       </div>
-      <PostGrid posts={initialPosts} />
+      <PostGrid
+        posts={initialPosts}
+        schoolId={schoolId}
+        majorId={majorId}
+        graduationYear={graduationYear}
+      />
     </main>
   );
 }

@@ -1,29 +1,9 @@
 /* eslint-disable react/react-in-jsx-scope */
 import Link from "next/link";
 import Image from "next/image";
+import type { Card } from "~/app/types";
 
-interface Card {
-  id: number;
-  userImage?: string | null;
-  name?: string | null;
-  description?: string | null;
-  createdById: string;
-  graduationYear?: number | null;
-  schoolYear?: string | null;
-  school?: string | null;
-  major?: string | null;
-  createdAt: Date;
-  updatedAt?: Date | null;
-  deletedAt?: Date | null;
-}
-
-export const PostCard = async ({
-  card,
-  index,
-}: {
-  card: Card;
-  index: number;
-}) => {
+export const PostCard = ({ card, index }: { card: Card; index: number }) => {
   return (
     <Link href={`/img/${card.id}`}>
       <div
