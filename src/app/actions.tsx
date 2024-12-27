@@ -1,11 +1,6 @@
 "use server";
 
-import {
-  getMajorForUser,
-  getPosts,
-  getPostsByFilters,
-  getSchoolForUser,
-} from "~/server/queries";
+import { getPosts, getPostsByFilters } from "~/server/queries";
 
 /*
  * Infinite scroll server actions
@@ -30,15 +25,4 @@ export const fetchPostsByFilterAction = async (
     offset,
   );
   return posts;
-};
-
-// post card actions
-export const fetchSchoolForUser = async (user: string) => {
-  const school = await getSchoolForUser(user);
-  return school;
-};
-
-export const fetchMajorForUser = async (user: string) => {
-  const major = await getMajorForUser(user);
-  return major;
 };

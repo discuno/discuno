@@ -135,58 +135,6 @@ export async function getPostById(id: number) {
   };
 }
 
-export const getSchoolForUser = async (userId: string) => {
-  const user = await auth();
-
-  if (!user || !user.userId) {
-    throw new Error("Unauthorized");
-  }
-
-  const schoolPair = await db.query.userSchools.findFirst({
-    where: (model, { eq }) => eq(model.userId, userId),
-  });
-
-  if (!schoolPair) {
-    return null;
-  }
-
-  const school = await db.query.schools.findFirst({
-    where: (model, { eq }) => eq(model.id, schoolPair?.schoolId),
-  });
-
-  return school;
-};
-
-export const getPostsBySchool = async (schoolId: number) => {
-  const user = await auth();
-
-  if (!user || !user.userId) {
-    throw new Error("Unauthorized");
-  }
-
-  // return all posts if posts with school id is -1
-  if (schoolId === -1) {
-    const allPosts = await getPosts();
-    return allPosts;
-  }
-
-  const userSchool = await db.query.userSchools.findMany({
-    where: (model, { eq }) => eq(model.schoolId, schoolId),
-  });
-
-  if (userSchool.length === 0) {
-    return [];
-  }
-
-  const userIds = userSchool.map((student) => student.userId);
-
-  const posts = await db.query.posts.findMany({
-    where: (model, { inArray }) => inArray(model.createdById, userIds),
-  });
-
-  return posts;
-};
-
 export const getSchools = async () => {
   const schools = await db.query.schools.findMany();
   const res: { value: string; label: string; id: number }[] = schools.map(
@@ -211,36 +159,6 @@ export const getMajors = async () => {
   );
 
   return res;
-};
-
-export const getPostsByMajor = async (majorId: number) => {
-  const user = await auth();
-
-  if (!user || !user.userId) {
-    throw new Error("Unauthorized");
-  }
-
-  // return all posts if posts with school id is -1
-  if (majorId === -1) {
-    const allPosts = await getPosts();
-    return allPosts;
-  }
-
-  const userMajor = await db.query.userMajors.findMany({
-    where: (model, { eq }) => eq(model.majorId, majorId),
-  });
-
-  if (userMajor.length === 0) {
-    return [];
-  }
-
-  const userIds = userMajor.map((student) => student.userId);
-
-  const posts = await db.query.posts.findMany({
-    where: (model, { inArray }) => inArray(model.createdById, userIds),
-  });
-
-  return posts;
 };
 
 export const getPostsByFilters = async (
@@ -406,27 +324,6 @@ export const getPostsByFilters = async (
   });
 
   return postsMapped;
-};
-
-export const getMajorForUser = async (userId: string) => {
-  const user = await auth();
-
-  if (!user || !user.userId) {
-    throw new Error("Unauthorized");
-  }
-
-  const majorPair = await db.query.userMajors.findFirst({
-    where: (model, { eq }) => eq(model.userId, userId),
-  });
-
-  const major = await db.query.majors.findFirst({
-    where: (model, { eq }) =>
-      majorPair?.majorId !== undefined
-        ? eq(model.id, majorPair.majorId)
-        : undefined,
-  });
-
-  return major;
 };
 
 export const getProfilePic = async () => {
