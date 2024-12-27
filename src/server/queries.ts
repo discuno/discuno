@@ -9,7 +9,7 @@ export async function getPosts(limit = 20, offset = 0) {
     throw new Error("Unauthorized");
   }
 
-  //  Retrieve posts with their creators and related profiles in batched way
+  // Retrieve posts with their creators and related profiles in batched way
   const posts = await db.query.posts.findMany({
     with: {
       creator: true,
@@ -22,13 +22,25 @@ export async function getPosts(limit = 20, offset = 0) {
     return [];
   }
 
-  // collect usre IDs from posts to fetch user profiles in single query
+  // Collect user IDs from posts to fetch user profiles in single query
   const userIds = posts.map((post) => post.createdById);
   const userProfiles = await db.query.userProfiles.findMany({
     where: (model, { inArray }) => inArray(model.userId, userIds),
   });
 
-  // Map user profile for quick lookup
+  // Fetch school and major details for the users
+  const userSchools = await db.query.userSchools.findMany({
+    where: (model, { inArray }) => inArray(model.userId, userIds),
+  });
+
+  const userMajors = await db.query.userMajors.findMany({
+    where: (model, { inArray }) => inArray(model.userId, userIds),
+  });
+
+  const schools = await db.query.schools.findMany();
+  const majors = await db.query.majors.findMany();
+
+  // Map user profiles, schools, and majors for quick lookup
   const userProfilesMap = userProfiles.reduce(
     (acc, profile) => {
       acc[profile.userId] = profile;
@@ -36,9 +48,46 @@ export async function getPosts(limit = 20, offset = 0) {
     },
     {} as Record<string, (typeof userProfiles)[number]>,
   );
-  // Map posts with user profile details
+
+  const userSchoolsMap = userSchools.reduce(
+    (acc, userSchool) => {
+      acc[userSchool.userId] = schools.find(
+        (school) => school.id === userSchool.schoolId,
+      ) || {
+        id: 0,
+        name: null,
+        image: null,
+        updatedAt: null,
+        createdAt: new Date(),
+        deletedAt: null,
+        location: null,
+      };
+      return acc;
+    },
+    {} as Record<string, (typeof schools)[number]>,
+  );
+
+  const userMajorsMap = userMajors.reduce(
+    (acc, userMajor) => {
+      acc[userMajor.userId] = majors.find(
+        (major) => major.id === userMajor.majorId,
+      ) || {
+        id: 0,
+        name: null,
+        updatedAt: null,
+        createdAt: new Date(),
+        deletedAt: null,
+      };
+      return acc;
+    },
+    {} as Record<string, (typeof majors)[number]>,
+  );
+
+  // Map posts with user profile, school, and major details
   const postsMapped = posts.map((post) => {
     const userProfile = userProfilesMap[post.createdById];
+    const userSchool = userSchoolsMap[post.createdById];
+    const userMajor = userMajorsMap[post.createdById];
 
     return {
       id: post.id,
@@ -49,6 +98,8 @@ export async function getPosts(limit = 20, offset = 0) {
       userImage: post.creator?.image || null,
       graduationYear: userProfile?.graduationYear || null,
       schoolYear: userProfile?.schoolYear || null,
+      school: userSchool?.name || null,
+      major: userMajor?.name || null,
     };
   });
 
@@ -287,6 +338,21 @@ export const getPostsByFilters = async (
       ),
   });
 
+  // Fetch school and major details for the users
+  const userSchools = await db.query.userSchools.findMany({
+    where: (model, { inArray }) =>
+      inArray(model.userId, Array.from(filteredUserIds)),
+  });
+
+  const userMajors = await db.query.userMajors.findMany({
+    where: (model, { inArray }) =>
+      inArray(model.userId, Array.from(filteredUserIds)),
+  });
+
+  const schools = await db.query.schools.findMany();
+  const majors = await db.query.majors.findMany();
+
+  // Map user profiles, schools, and majors for quick lookup
   const userProfilesMap = userProfiles.reduce(
     (acc, profile) => {
       acc[profile.userId] = profile;
@@ -295,9 +361,35 @@ export const getPostsByFilters = async (
     {} as Record<string, (typeof userProfiles)[number]>,
   );
 
-  // Map posts with user profile details
+  const userSchoolsMap = userSchools.reduce(
+    (acc, userSchool) => {
+      const school = schools.find(
+        (school) => school.id === userSchool.schoolId,
+      );
+      if (school) {
+        acc[userSchool.userId] = school;
+      }
+      return acc;
+    },
+    {} as Record<string, (typeof schools)[number] | undefined>,
+  );
+
+  const userMajorsMap = userMajors.reduce(
+    (acc, userMajor) => {
+      const major = majors.find((major) => major.id === userMajor.majorId);
+      if (major) {
+        acc[userMajor.userId] = major;
+      }
+      return acc;
+    },
+    {} as Record<string, (typeof majors)[number] | undefined>,
+  );
+
+  // Map posts with user profile, school, and major details
   const postsMapped = posts.map((post) => {
     const userProfile = userProfilesMap[post.createdById];
+    const userSchool = userSchoolsMap[post.createdById];
+    const userMajor = userMajorsMap[post.createdById];
 
     return {
       id: post.id,
@@ -308,6 +400,8 @@ export const getPostsByFilters = async (
       userImage: post.creator?.image || null,
       graduationYear: userProfile?.graduationYear || null,
       schoolYear: userProfile?.schoolYear || null,
+      school: userSchool?.name || null,
+      major: userMajor?.name || null,
     };
   });
 

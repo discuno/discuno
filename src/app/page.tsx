@@ -1,14 +1,10 @@
 /* eslint-disable react/react-in-jsx-scope */
 import { auth } from "~/server/auth";
 import { LoginPage } from "~/app/components/Login";
-import {
-  getMajors,
-  getPosts,
-  getPostsByFilters,
-  getSchools,
-} from "~/server/queries";
+import { getMajors, getSchools } from "~/server/queries";
 import { FilterButton } from "./_components/filter-button";
 import { PostGrid } from "./components/post-grid";
+import { fetchPostsAction, fetchPostsByFilterAction } from "./actions";
 
 export default async function HomePage({
   searchParams,
@@ -45,12 +41,10 @@ export default async function HomePage({
     };
   });
 
-  const posts =
+  const initialPosts =
     schoolId || majorId || graduationYear
-      ? await getPostsByFilters(schoolId, majorId, graduationYear)
-      : await getPosts();
-
-  console.log("Filtered posts:", posts);
+      ? await fetchPostsByFilterAction(schoolId, majorId, graduationYear)
+      : await fetchPostsAction();
 
   return (
     <main>
@@ -59,7 +53,7 @@ export default async function HomePage({
         <FilterButton filterItems={majors} queryName="major" />
         <FilterButton filterItems={gradYears} queryName="gradYear" />
       </div>
-      <PostGrid posts={posts} />
+      <PostGrid posts={initialPosts} />
     </main>
   );
 }

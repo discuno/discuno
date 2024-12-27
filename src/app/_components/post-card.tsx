@@ -1,6 +1,5 @@
 /* eslint-disable react/react-in-jsx-scope */
 import Link from "next/link";
-import { getMajorForUser, getSchoolForUser } from "~/server/queries";
 import Image from "next/image";
 
 interface Card {
@@ -11,6 +10,8 @@ interface Card {
   createdById: string;
   graduationYear?: number | null;
   schoolYear?: string | null;
+  school?: string | null;
+  major?: string | null;
   createdAt: Date;
   updatedAt?: Date | null;
   deletedAt?: Date | null;
@@ -23,10 +24,6 @@ export const PostCard = async ({
   card: Card;
   index: number;
 }) => {
-  const user = card.createdById;
-  const school = await getSchoolForUser(user);
-  const major = await getMajorForUser(user);
-
   return (
     <Link href={`/img/${card.id}`}>
       <div
@@ -51,11 +48,11 @@ export const PostCard = async ({
           </p>
           <div className="mb-2 text-sm">
             <span className="font-semibold text-gray-900">School:</span>{" "}
-            {school?.name}
+            {card.school}
           </div>
           <div className="mb-2 text-sm">
             <span className="font-semibold text-gray-900">Major:</span>{" "}
-            {major?.name}
+            {card.major}
           </div>
           <div className="mb-2 text-sm">
             <span className="font-semibold text-gray-900">School Year:</span>{" "}

@@ -9,6 +9,8 @@ interface Card {
   createdById: string;
   graduationYear?: number | null;
   schoolYear?: string | null;
+  school?: string | null;
+  major?: string | null;
   createdAt: Date;
   updatedAt?: Date | null;
   deletedAt?: Date | null;
