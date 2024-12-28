@@ -34,6 +34,13 @@ export const posts = createTable(
   (example) => ({
     createdByIdIdx: index("created_by_idx").on(example.createdById),
     nameIndex: index("name_idx").on(example.name),
+    createdAtCreatedByIdx: index("created_at_created_by_idx").on(
+      example.createdAt,
+      example.createdById,
+    ),
+    partialCreatedAtIdx: index("posts_created_at_partial_idx")
+      .on(example.createdAt)
+      .where(sql`deleted_at IS NULL`),
   }),
 );
 
@@ -147,34 +154,65 @@ export const userProfiles = createTable(
     ...timestamps,
   },
   (table) => ({
+    graduationYearSchoolYearIdx: index("graduation_school_year_idx").on(
+      table.graduationYear,
+      table.schoolYear,
+    ),
     checkConstraint: check(
       "grad_year_check",
       sql`${table.graduationYear} >= ${new Date().getFullYear()}`,
     ),
+    userProfilesCompoundIdx: index("user_profiles_compound_idx").on(
+      table.userId,
+      table.graduationYear,
+      table.schoolYear,
+    ),
+    partialGradYearIdx: index("user_profiles_grad_year_partial_idx")
+      .on(table.graduationYear)
+      .where(sql`deleted_at IS NULL`),
   }),
 );
 
-export const userMajors = createTable("user_major", {
-  id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
-  userId: varchar("user_id", { length: 255 })
-    .notNull()
-    .references(() => users.id),
-  majorId: integer("major_id")
-    .notNull()
-    .references(() => majors.id),
-  ...timestamps,
-});
+export const userMajors = createTable(
+  "user_major",
+  {
+    id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+    userId: varchar("user_id", { length: 255 })
+      .notNull()
+      .references(() => users.id),
+    majorId: integer("major_id")
+      .notNull()
+      .references(() => majors.id),
+    ...timestamps,
+  },
+  (table) => ({
+    majorUserCompoundIdx: index("major_user_compound_idx").on(
+      table.majorId,
+      table.userId,
+    ),
+  }),
+);
 
-export const userSchools = createTable("user_school", {
-  id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
-  userId: varchar("user_id", { length: 255 })
-    .notNull()
-    .references(() => users.id),
-  schoolId: integer("school_id")
-    .notNull()
-    .references(() => schools.id),
-  ...timestamps,
-});
+export const userSchools = createTable(
+  "user_school",
+  {
+    id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+    userId: varchar("user_id", { length: 255 })
+      .notNull()
+      .references(() => users.id),
+    schoolId: integer("school_id")
+      .notNull()
+      .references(() => schools.id),
+    ...timestamps,
+  },
+  (table) => ({
+    userSchoolIdx: index("user_school_idx").on(table.userId, table.schoolId),
+    schoolUserCompoundIdx: index("school_user_compound_idx").on(
+      table.schoolId,
+      table.userId,
+    ),
+  }),
+);
 
 export const majors = createTable("major", {
   id: integer("id").primaryKey().generatedByDefaultAsIdentity(),

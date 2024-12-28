@@ -1,109 +1,68 @@
 import "server-only";
 import { db } from "~/server/db";
 import { auth } from "~/server/auth";
+import {
+  posts,
+  users,
+  userProfiles,
+  userSchools,
+  schools,
+  userMajors,
+  majors,
+} from "~/server/db/schema"; // Adjust this import path to where your schema is defined
+import { eq, and, desc } from "drizzle-orm";
 
 export async function getPosts(limit = 20, offset = 0) {
   const user = await auth();
+  if (!user?.userId) throw new Error("Unauthorized");
 
-  if (!user || !user.userId) {
-    throw new Error("Unauthorized");
-  }
+  // Optimize select fields to only get what's needed
+  const result = await db
+    .select({
+      post: {
+        id: posts.id,
+        name: posts.name,
+        description: posts.description,
+        createdById: posts.createdById,
+        createdAt: posts.createdAt,
+      },
+      creator: {
+        image: users.image,
+      },
+      profile: {
+        graduationYear: userProfiles.graduationYear,
+        schoolYear: userProfiles.schoolYear,
+      },
+      school: {
+        name: schools.name,
+      },
+      major: {
+        name: majors.name,
+      },
+    })
+    .from(posts)
+    .leftJoin(users, eq(posts.createdById, users.id))
+    .leftJoin(userProfiles, eq(users.id, userProfiles.userId))
+    .leftJoin(userSchools, eq(users.id, userSchools.userId))
+    .leftJoin(schools, eq(userSchools.schoolId, schools.id))
+    .leftJoin(userMajors, eq(users.id, userMajors.userId))
+    .leftJoin(majors, eq(userMajors.majorId, majors.id))
+    .orderBy(desc(posts.createdAt)) // Add explicit ordering
+    .limit(limit)
+    .offset(offset);
 
-  // Retrieve posts with their creators and related profiles in batched way
-  const posts = await db.query.posts.findMany({
-    with: {
-      creator: true,
-    },
-    limit,
-    offset,
-  });
-
-  if (posts.length === 0) {
-    return [];
-  }
-
-  // Collect user IDs from posts to fetch user profiles in single query
-  const userIds = posts.map((post) => post.createdById);
-  const userProfiles = await db.query.userProfiles.findMany({
-    where: (model, { inArray }) => inArray(model.userId, userIds),
-  });
-
-  // Fetch school and major details for the users
-  const userSchools = await db.query.userSchools.findMany({
-    where: (model, { inArray }) => inArray(model.userId, userIds),
-  });
-
-  const userMajors = await db.query.userMajors.findMany({
-    where: (model, { inArray }) => inArray(model.userId, userIds),
-  });
-
-  const schools = await db.query.schools.findMany();
-  const majors = await db.query.majors.findMany();
-
-  // Map user profiles, schools, and majors for quick lookup
-  const userProfilesMap = userProfiles.reduce(
-    (acc, profile) => {
-      acc[profile.userId] = profile;
-      return acc;
-    },
-    {} as Record<string, (typeof userProfiles)[number]>,
-  );
-
-  const userSchoolsMap = userSchools.reduce(
-    (acc, userSchool) => {
-      acc[userSchool.userId] = schools.find(
-        (school) => school.id === userSchool.schoolId,
-      ) || {
-        id: 0,
-        name: null,
-        image: null,
-        updatedAt: null,
-        createdAt: new Date(),
-        deletedAt: null,
-        location: null,
-      };
-      return acc;
-    },
-    {} as Record<string, (typeof schools)[number]>,
-  );
-
-  const userMajorsMap = userMajors.reduce(
-    (acc, userMajor) => {
-      acc[userMajor.userId] = majors.find(
-        (major) => major.id === userMajor.majorId,
-      ) || {
-        id: 0,
-        name: null,
-        updatedAt: null,
-        createdAt: new Date(),
-        deletedAt: null,
-      };
-      return acc;
-    },
-    {} as Record<string, (typeof majors)[number]>,
-  );
-
-  // Map posts with user profile, school, and major details
-  const postsMapped = posts.map((post) => {
-    const userProfile = userProfilesMap[post.createdById];
-    const userSchool = userSchoolsMap[post.createdById];
-    const userMajor = userMajorsMap[post.createdById];
-
-    return {
-      id: post.id,
-      name: post.name,
-      description: post.description,
-      createdById: post.createdById,
-      createdAt: post.createdAt,
-      userImage: post.creator?.image || null,
-      graduationYear: userProfile?.graduationYear || null,
-      schoolYear: userProfile?.schoolYear || null,
-      school: userSchool?.name || null,
-      major: userMajor?.name || null,
-    };
-  });
-
-  return postsMapped;
+  return result.map(({ post, creator, profile, school, major }) => ({
+    id: post.id,
+    name: post.name,
+    description: post.description,
+    createdById: post.createdById,
+    createdAt: post.createdAt,
+    userImage: creator?.image || null,
+    graduationYear: profile?.graduationYear || null,
+    schoolYear: profile?.schoolYear || null,
+    school: school?.name || null,
+    major: major?.name || null,
+  }));
 }
 
 export async function getPostById(id: number) {
@@ -113,26 +72,63 @@ export async function getPostById(id: number) {
     throw new Error("Unauthorized");
   }
 
-  const post = await db.query.posts.findFirst({
-    where: (model, { eq }) => eq(model.id, id),
-  });
+  try {
+    const post = await db
+      .select({
+        post: {
+          id: posts.id,
+          name: posts.name,
+          description: posts.description,
+          createdById: posts.createdById,
+          createdAt: posts.createdAt,
+        },
+        creator: {
+          image: users.image,
+        },
+        profile: {
+          graduationYear: userProfiles.graduationYear,
+          schoolYear: userProfiles.schoolYear,
+        },
+        school: {
+          name: schools.name,
+        },
+        major: {
+          name: majors.name,
+        },
+      })
+      .from(posts)
+      .leftJoin(users, eq(posts.createdById, users.id))
+      .leftJoin(userProfiles, eq(users.id, userProfiles.userId))
+      .leftJoin(userSchools, eq(users.id, userSchools.userId))
+      .leftJoin(schools, eq(userSchools.schoolId, schools.id))
+      .leftJoin(userMajors, eq(users.id, userMajors.userId))
+      .leftJoin(majors, eq(userMajors.majorId, majors.id))
+      .where(eq(posts.id, id))
+      .limit(1)
+      .execute();
 
-  if (!post) {
-    throw new Error("Post not found");
+    if (post.length === 0) {
+      throw new Error("Post not found");
+    }
+
+    const postData = post[0];
+
+    return {
+      id: postData?.post.id,
+      name: postData?.post.name,
+      description: postData?.post.description,
+      createdById: postData?.post.createdById,
+      createdAt: postData?.post.createdAt,
+      userImage: postData?.creator?.image || null,
+      graduationYear: postData?.profile?.graduationYear || null,
+      schoolYear: postData?.profile?.schoolYear || null,
+      school: postData?.school?.name || null,
+      major: postData?.major?.name || null,
+    };
+  } catch (error) {
+    console.error("Error fetching post by ID:", error);
+    throw new Error("Failed to fetch post");
   }
-
-  const creator = await db.query.users.findFirst({
-    where: (model, { eq }) => eq(model.id, post.createdById),
-  });
-
-  if (!creator) {
-    throw new Error("Creator not found");
-  }
-
-  return {
-    ...post,
-    userImage: creator.image,
-  };
 }
 
 export const getSchools = async () => {
@@ -161,170 +157,82 @@ export const getMajors = async () => {
   return res;
 };
 
-export const getPostsByFilters = async (
+export async function getPostsByFilters(
   schoolId: number | null,
   majorId: number | null,
   graduationYear: number | null,
   limit = 20,
   offset = 0,
-) => {
-  // Authenticate the user
+) {
   const user = await auth();
+  if (!user?.userId) throw new Error("Unauthorized");
 
-  if (!user || !user.userId) {
-    throw new Error("Unauthorized");
-  }
-
-  // Return all posts if all filters are unset
-  if (schoolId === -1 && majorId === -1 && graduationYear === -1) {
+  // Return all posts if no filters
+  if ([schoolId, majorId, graduationYear].every((f) => f === -1)) {
     return getPosts(limit, offset);
   }
 
-  const filters: {
-    schoolIds?: Set<string>;
-    majorIds?: Set<string>;
-    graduationYearIds?: Set<string>;
-  } = {};
+  const conditions = [];
 
-  // Fetch user IDs by school
-  if (schoolId !== null) {
-    const userSchools = await db.query.userSchools.findMany({
-      where: (model, { eq }) => eq(model.schoolId, schoolId),
-    });
-
-    if (userSchools.length === 0) return [];
-
-    filters.schoolIds = new Set(
-      userSchools.map((userSchool) => userSchool.userId),
-    );
+  if (schoolId !== null && schoolId !== -1) {
+    conditions.push(eq(schools.id, schoolId));
+  }
+  if (majorId !== null && majorId !== -1) {
+    conditions.push(eq(majors.id, majorId));
+  }
+  if (graduationYear !== null && graduationYear !== -1) {
+    conditions.push(eq(userProfiles.graduationYear, graduationYear));
   }
 
-  // Fetch user IDs by major
-  if (majorId !== null) {
-    const userMajors = await db.query.userMajors.findMany({
-      where: (model, { eq }) => eq(model.majorId, majorId),
-    });
+  const query = db
+    .select({
+      post: {
+        id: posts.id,
+        name: posts.name,
+        description: posts.description,
+        createdById: posts.createdById,
+        createdAt: posts.createdAt,
+      },
+      creator: {
+        image: users.image,
+      },
+      profile: {
+        graduationYear: userProfiles.graduationYear,
+        schoolYear: userProfiles.schoolYear,
+      },
+      school: {
+        name: schools.name,
+      },
+      major: {
+        name: majors.name,
+      },
+    })
+    .from(posts)
+    .leftJoin(users, eq(posts.createdById, users.id))
+    .leftJoin(userProfiles, eq(users.id, userProfiles.userId))
+    .leftJoin(userSchools, eq(users.id, userSchools.userId))
+    .leftJoin(schools, eq(userSchools.schoolId, schools.id))
+    .leftJoin(userMajors, eq(users.id, userMajors.userId))
+    .leftJoin(majors, eq(userMajors.majorId, majors.id))
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .limit(limit)
+    .offset(offset);
 
-    if (userMajors.length === 0) return [];
+  const result = await query;
 
-    filters.majorIds = new Set(userMajors.map((userMajor) => userMajor.userId));
-  }
-
-  // Fetch user IDs by graduation year
-  if (graduationYear !== null) {
-    const usersByGraduationYear = await db.query.userProfiles.findMany({
-      where: (model, { eq }) => eq(model.graduationYear, graduationYear),
-    });
-
-    if (usersByGraduationYear.length === 0) return [];
-
-    filters.graduationYearIds = new Set(
-      usersByGraduationYear.map((user) => user.userId),
-    );
-  }
-
-  // Compute the intersection of all filter sets
-  let filteredUserIds: Set<string> = new Set(Object.values(filters)[0] || []);
-
-  Object.values(filters).forEach((filterSet) => {
-    filteredUserIds = new Set(
-      [...filteredUserIds].filter((userId) => filterSet.has(userId)),
-    );
-  });
-
-  if (filteredUserIds.size === 0) return [];
-
-  // Fetch posts for filtered user IDs
-  const posts = await db.query.posts.findMany({
-    where: (model, { inArray }) =>
-      inArray(model.createdById, filteredUserIds ? [...filteredUserIds] : []),
-    with: {
-      creator: true,
-    },
-    limit,
-    offset,
-  });
-
-  if (posts.length === 0) return [];
-
-  // Fetch all user profiles for post creators in a single query
-  const userProfiles = await db.query.userProfiles.findMany({
-    where: (model, { inArray }) =>
-      inArray(
-        model.userId,
-        posts.map((post) => post.createdById),
-      ),
-  });
-
-  // Fetch school and major details for the users
-  const userSchools = await db.query.userSchools.findMany({
-    where: (model, { inArray }) =>
-      inArray(model.userId, Array.from(filteredUserIds)),
-  });
-
-  const userMajors = await db.query.userMajors.findMany({
-    where: (model, { inArray }) =>
-      inArray(model.userId, Array.from(filteredUserIds)),
-  });
-
-  const schools = await db.query.schools.findMany();
-  const majors = await db.query.majors.findMany();
-
-  // Map user profiles, schools, and majors for quick lookup
-  const userProfilesMap = userProfiles.reduce(
-    (acc, profile) => {
-      acc[profile.userId] = profile;
-      return acc;
-    },
-    {} as Record<string, (typeof userProfiles)[number]>,
-  );
-
-  const userSchoolsMap = userSchools.reduce(
-    (acc, userSchool) => {
-      const school = schools.find(
-        (school) => school.id === userSchool.schoolId,
-      );
-      if (school) {
-        acc[userSchool.userId] = school;
-      }
-      return acc;
-    },
-    {} as Record<string, (typeof schools)[number] | undefined>,
-  );
-
-  const userMajorsMap = userMajors.reduce(
-    (acc, userMajor) => {
-      const major = majors.find((major) => major.id === userMajor.majorId);
-      if (major) {
-        acc[userMajor.userId] = major;
-      }
-      return acc;
-    },
-    {} as Record<string, (typeof majors)[number] | undefined>,
-  );
-
-  // Map posts with user profile, school, and major details
-  const postsMapped = posts.map((post) => {
-    const userProfile = userProfilesMap[post.createdById];
-    const userSchool = userSchoolsMap[post.createdById];
-    const userMajor = userMajorsMap[post.createdById];
-
-    return {
-      id: post.id,
-      name: post.name,
-      description: post.description,
-      createdById: post.createdById,
-      createdAt: post.createdAt,
-      userImage: post.creator?.image || null,
-      graduationYear: userProfile?.graduationYear || null,
-      schoolYear: userProfile?.schoolYear || null,
-      school: userSchool?.name || null,
-      major: userMajor?.name || null,
-    };
-  });
-
-  return postsMapped;
-};
+  return result.map(({ post, creator, profile, school, major }) => ({
+    id: post.id,
+    name: post.name,
+    description: post.description,
+    createdById: post.createdById,
+    createdAt: post.createdAt,
+    userImage: creator?.image || null,
+    graduationYear: profile?.graduationYear || null,
+    schoolYear: profile?.schoolYear || null,
+    school: school?.name || null,
+    major: major?.name || null,
+  }));
+}
 
 export const getProfilePic = async () => {
   const user = await auth();
