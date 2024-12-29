@@ -1,14 +1,22 @@
-import { notFound } from "next/navigation";
-import SentEmailVerification from "~/app/email-verification/sent";
+import { redirect } from "next/navigation";
+import SentEmailVerification from "~/app/email-verification/Sent";
+import EmailInputForm from "~/app/email-verification/EmailInputForm";
+import { auth } from "~/server/auth";
 
 interface EmailVerificationPageProps {
   searchParams: { sent?: string };
 }
 
-export default function EmailVerificationPage({
+export default async function EmailVerificationPage({
   searchParams,
 }: EmailVerificationPageProps) {
-  const sent = searchParams.sent === "true"; // Check if the query param 'sent' is 'true'
+  const session = await auth();
 
-  return sent ? <SentEmailVerification /> : null;
+  if (!session) {
+    redirect("/");
+  }
+
+  const sent = searchParams.sent === "true";
+
+  return sent ? <SentEmailVerification /> : <EmailInputForm />;
 }
