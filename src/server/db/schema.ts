@@ -8,6 +8,7 @@ import {
   timestamp,
   varchar,
   check,
+  boolean,
 } from "drizzle-orm/pg-core";
 import { type AdapterAccount } from "next-auth/adapters";
 import { timestamps } from "~/server/db/columns.helpers";
@@ -151,6 +152,9 @@ export const userProfiles = createTable(
       .notNull(),
     graduationYear: integer("graduation_year") // E.g., 2027
       .notNull(),
+    isVerifiedCollegeStudent: boolean("is_verified_college_student")
+      .notNull()
+      .default(false),
     ...timestamps,
   },
   (table) => ({
