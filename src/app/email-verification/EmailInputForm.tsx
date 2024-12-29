@@ -10,7 +10,15 @@ import nodemailer from "nodemailer";
 import { userProfiles } from "~/server/db/schema";
 import { eq } from "drizzle-orm";
 
-export default async function EmailInputForm() {
+interface EmailInputFormProps {
+  message?: string;
+  isSuccess?: boolean;
+}
+
+export default async function EmailInputForm({
+  message,
+  isSuccess,
+}: EmailInputFormProps) {
   const handleSubmit = async (formData: FormData) => {
     "use server";
     const { email: eduEmail } = Object.fromEntries(formData.entries());
@@ -18,7 +26,7 @@ export default async function EmailInputForm() {
     // Validate the email format
     if (typeof eduEmail !== "string" || !eduEmail.endsWith(".edu")) {
       console.log("Invalid email");
-      redirect("/email-verification?error=invalid-email");
+      redirect("/email-verification?status=invalid-email");
     }
 
     try {
@@ -35,7 +43,7 @@ export default async function EmailInputForm() {
 
       if (existingUser) {
         console.log("Email in use");
-        redirect("/email-verification?error=email-in-use");
+        redirect("/email-verification?status=email-in-use");
       }
 
       // Generate a verification token
@@ -88,7 +96,7 @@ export default async function EmailInputForm() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-r from-blue-50 via-blue-100 to-white px-4">
-      <div className="mx-auto max-w-md space-y-6 px-4 py-12 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-md space-y-6 rounded-lg bg-white p-8 shadow-md sm:p-12">
         <div className="space-y-2 text-center">
           <h1 className="text-3xl font-bold text-blue-700">
             Enter Your College Email
@@ -97,6 +105,20 @@ export default async function EmailInputForm() {
             We need to verify your email to ensure you are a student.
           </p>
         </div>
+
+        {/* Display Message if Exists */}
+        {message && (
+          <div
+            className={`rounded-md p-3 text-sm ${
+              isSuccess
+                ? "bg-green-100 text-green-700"
+                : "bg-red-100 text-red-700"
+            }`}
+          >
+            {message}
+          </div>
+        )}
+
         <form action={handleSubmit} className="space-y-4">
           <div>
             <Label htmlFor="email">College Email</Label>
