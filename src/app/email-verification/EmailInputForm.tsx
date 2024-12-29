@@ -46,7 +46,7 @@ export default async function EmailInputForm() {
       );
 
       // Construct the verification URL
-      const verifyUrl = `${env.NEXT_PUBLIC_BASE_URL}/mentor-verification/verify?token=${token}`;
+      const verifyUrl = `${env.NEXT_PUBLIC_BASE_URL}/email-verification/verify?token=${token}`;
 
       // Configure the email transporter
       const transporter = nodemailer.createTransport(env.AUTH_EMAIL_SERVER);
