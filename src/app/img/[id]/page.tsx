@@ -1,6 +1,6 @@
 import PostPage from "~/app/components/full-post-page";
 
-export default async function PostModal({
+export default async function FullPostPage({
   params,
 }: {
   params: Promise<{ id: string }>;
