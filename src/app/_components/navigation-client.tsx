@@ -2,9 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-
 import { cn } from "~/lib/utils";
-import { Icons } from "~/components/icons";
 import { AvatarIcon } from "~/app/_components/avatar";
 import {
   NavigationMenu,
@@ -16,112 +14,87 @@ import {
   navigationMenuTriggerStyle,
 } from "~/components/ui/navigation-menu";
 
-interface ListItemProps extends React.ComponentPropsWithoutRef<typeof Link> {
-  className?: string;
-  title: string;
-  children: React.ReactNode;
-  href: string;
-}
-
-const components: { title: string; href: string; description: string }[] = [
-  {
-    title: "Alert Dialog",
-    href: "/docs/primitives/alert-dialog",
-    description:
-      "A modal dialog that interrupts the user with important content and expects a response.",
-  },
-  {
-    title: "Hover Card",
-    href: "/docs/primitives/hover-card",
-    description:
-      "For sighted users to preview content available behind a link.",
-  },
-  {
-    title: "Progress",
-    href: "/docs/primitives/progress",
-    description:
-      "Displays an indicator showing the completion progress of a task, typically displayed as a progress bar.",
-  },
-  {
-    title: "Scroll-area",
-    href: "/docs/primitives/scroll-area",
-    description: "Visually or semantically separates content.",
-  },
-  {
-    title: "Tabs",
-    href: "/docs/primitives/tabs",
-    description:
-      "A set of layered sections of content—known as tab panels—that are displayed one at a time.",
-  },
-  {
-    title: "Tooltip",
-    href: "/docs/primitives/tooltip",
-    description:
-      "A popup that displays information related to an element when the element receives keyboard focus or the mouse hovers over it.",
-  },
-];
-
 export function NavBarBase({ profilePic }: { profilePic: string }) {
-  if (profilePic.length === 0) {
-    profilePic = "";
-  }
   return (
-    <div className="flex items-center justify-between bg-white p-4 text-black">
+    <div className="flex items-center justify-between bg-white p-4 text-black shadow-sm">
       <NavigationMenu>
         <NavigationMenuList>
           <NavigationMenuItem>
-            <NavigationMenuTrigger>Getting started</NavigationMenuTrigger>
+            <NavigationMenuTrigger>Find Mentors</NavigationMenuTrigger>
             <NavigationMenuContent>
-              <ul className="grid gap-3 p-4 md:w-[400px] lg:w-[500px] lg:grid-cols-[.75fr_1fr]">
+              <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2">
                 <li className="row-span-3">
                   <NavigationMenuLink asChild>
                     <Link
-                      className="flex h-full w-full select-none flex-col justify-end rounded-md bg-gradient-to-b from-muted/50 to-muted p-6 no-underline outline-none focus:shadow-md"
-                      href="/"
+                      className="flex h-full w-full select-none flex-col justify-end rounded-md bg-gradient-to-b from-blue-50 to-blue-100 p-6 no-underline outline-none focus:shadow-md"
+                      href="/browse"
                     >
-                      <Icons.logo className="h-6 w-6" />
                       <div className="mb-2 mt-4 text-lg font-medium">
-                        shadcn/ui
+                        Browse Mentors
                       </div>
                       <p className="text-sm leading-tight text-muted-foreground">
-                        Beautifully designed components built with Radix UI and
-                        Tailwind CSS.
+                        Find college students who match your interests and goals
                       </p>
                     </Link>
                   </NavigationMenuLink>
                 </li>
-                <ListItem href="/docs" title="Introduction">
-                  Re-usable components built using Radix UI and Tailwind CSS.
+                <ListItem href="/search/schools" title="Search by School">
+                  Find mentors from specific colleges and universities
                 </ListItem>
-                <ListItem href="/docs/installation" title="Installation">
-                  How to install dependencies and structure your app.
+                <ListItem href="/search/majors" title="Search by Major">
+                  Connect with students in your intended field of study
                 </ListItem>
-                <ListItem href="/docs/primitives/typography" title="Typography">
-                  Styles for headings, paragraphs, lists...etc
+                <ListItem href="/search/interests" title="Search by Interests">
+                  Discover mentors who share your passions
                 </ListItem>
               </ul>
             </NavigationMenuContent>
           </NavigationMenuItem>
+
           <NavigationMenuItem>
-            <NavigationMenuTrigger>Components</NavigationMenuTrigger>
+            <NavigationMenuTrigger>Resources</NavigationMenuTrigger>
             <NavigationMenuContent>
-              <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
-                {components.map((component) => (
-                  <ListItem
-                    key={component.title}
-                    title={component.title}
-                    href={component.href}
-                  >
-                    {component.description}
-                  </ListItem>
-                ))}
+              <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2">
+                <ListItem href="/guides/application" title="Application Guide">
+                  Step-by-step guide to college applications
+                </ListItem>
+                <ListItem href="/guides/essays" title="Essay Writing">
+                  Tips for writing compelling college essays
+                </ListItem>
+                <ListItem href="/guides/interviews" title="Interview Prep">
+                  Prepare for college interviews
+                </ListItem>
+                <ListItem href="/guides/financial-aid" title="Financial Aid">
+                  Understanding scholarships and aid options
+                </ListItem>
               </ul>
             </NavigationMenuContent>
           </NavigationMenuItem>
+
           <NavigationMenuItem>
-            <Link href="/docs" legacyBehavior passHref>
+            <NavigationMenuTrigger>My Account</NavigationMenuTrigger>
+            <NavigationMenuContent>
+              <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2">
+                <ListItem href="/dashboard" title="Dashboard">
+                  View your mentorship connections and messages
+                </ListItem>
+                <ListItem href="/meetings" title="My Meetings">
+                  Manage your scheduled video meetings
+                </ListItem>
+                <ListItem href="/profile/edit" title="Edit Profile">
+                  Update your profile information
+                </ListItem>
+                <ListItem href="/settings" title="Settings">
+                  Adjust your account preferences
+                </ListItem>
+              </ul>
+            </NavigationMenuContent>
+          </NavigationMenuItem>
+
+          <NavigationMenuItem>
+            <Link href="/contact" legacyBehavior passHref>
               <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                Documentation
+                Contact Support
               </NavigationMenuLink>
             </Link>
           </NavigationMenuItem>
@@ -132,12 +105,17 @@ export function NavBarBase({ profilePic }: { profilePic: string }) {
   );
 }
 
-const ListItem = React.forwardRef<React.ElementRef<typeof Link>, ListItemProps>(
+interface ListItemProps extends React.ComponentPropsWithoutRef<"a"> {
+  title: string;
+  className?: string;
+}
+
+const ListItem = React.forwardRef<React.ElementRef<"a">, ListItemProps>(
   ({ className, title, children, ...props }, ref) => {
     return (
       <li>
         <NavigationMenuLink asChild>
-          <Link
+          <a
             ref={ref}
             className={cn(
               "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
@@ -149,7 +127,7 @@ const ListItem = React.forwardRef<React.ElementRef<typeof Link>, ListItemProps>(
             <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
               {children}
             </p>
-          </Link>
+          </a>
         </NavigationMenuLink>
       </li>
     );

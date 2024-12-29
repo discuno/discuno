@@ -1,5 +1,4 @@
 "use client";
-/* eslint-disable react/react-in-jsx-scope */
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {

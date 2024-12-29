@@ -1,4 +1,3 @@
-/* eslint-disable react/react-in-jsx-scope */
 import { auth } from "~/server/auth";
 import { LoginPage } from "~/app/components/Login";
 import { getMajors, getSchools } from "~/server/queries";

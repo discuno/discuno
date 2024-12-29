@@ -1,4 +1,3 @@
-/* eslint-disable react/react-in-jsx-scope */
 import { getPostById } from "~/server/queries";
 import Image from "next/image";
 import { Modal } from "~/app/@modal/(.)img/[id]/modal";

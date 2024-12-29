@@ -1,5 +1,3 @@
-/* eslint-disable react/react-in-jsx-scope */
-
 import PostPage from "~/app/components/full-post-page";
 
 export default async function PostModal({

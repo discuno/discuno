@@ -1,4 +1,3 @@
-/* eslint-disable react/react-in-jsx-scope */
 import Link from "next/link";
 import Image from "next/image";
 import type { Card } from "~/app/types";

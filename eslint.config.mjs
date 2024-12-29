@@ -12,16 +12,17 @@ export default [
     files: ["**/*.{js,mjs,cjs,ts,jsx,tsx}"],
     plugins: {
       drizzle,
-      pluginReact,
+      react: pluginReact,
     },
     settings: {
       react: {
         version: "detect", // Automatically detect the React version
+        jsxRuntime: "automatic", // Enable automatic JSX runtime
       },
     },
     rules: {
       "react/jsx-uses-react": "off",
-      "react/react-in-jsx-scope": 0,
+      "react/react-in-jsx-scope": "off",
       "@typescript-eslint/array-type": "off",
       "@typescript-eslint/consistent-type-definitions": "off",
       "@typescript-eslint/consistent-type-imports": [
@@ -59,6 +60,9 @@ export default [
         },
       ],
     },
+  },
+  {
+    extends: ["plugin:react/jsx-runtime"],
   },
   {
     languageOptions: {

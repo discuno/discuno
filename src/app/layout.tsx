@@ -1,4 +1,3 @@
-/* eslint-disable react/react-in-jsx-scope */
 import "~/styles/globals.css";
 
 import { GeistSans } from "geist/font/sans";
