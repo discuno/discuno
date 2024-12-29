@@ -16,7 +16,7 @@ import {
 
 export function NavBarBase({ profilePic }: { profilePic: string }) {
   return (
-    <div className="flex items-center justify-between bg-white p-4 text-black shadow-sm">
+    <div className="fixed left-0 right-0 top-0 z-20 flex items-center justify-between bg-white p-4 text-black shadow-sm">
       <NavigationMenu>
         <NavigationMenuList>
           <NavigationMenuItem>

@@ -4,6 +4,7 @@ import { getMajors, getSchools } from "~/server/queries";
 import { FilterButton } from "./_components/filter-button";
 import { PostGrid } from "./components/post-grid";
 import { fetchPostsAction, fetchPostsByFilterAction } from "./actions";
+import type { Card } from "~/app/types";
 
 export default async function HomePage({
   searchParams,
@@ -19,6 +20,7 @@ export default async function HomePage({
       </main>
     );
   }
+
   const params = await searchParams;
 
   const schoolId = params.school ? parseInt(params.school) : null;
@@ -46,12 +48,17 @@ export default async function HomePage({
       : await fetchPostsAction();
 
   return (
-    <main>
-      <div className="flex items-center justify-center space-x-4 pt-2">
-        <FilterButton filterItems={schools} queryName="school" />
-        <FilterButton filterItems={majors} queryName="major" />
-        <FilterButton filterItems={gradYears} queryName="gradYear" />
+    <main className="pt-20">
+      {/* Sticky Filter Bar */}
+      <div className="sticky top-16 z-10 bg-opacity-50 bg-gradient-to-r from-blue-50 via-blue-100 to-white p-4 shadow-md">
+        <div className="flex flex-wrap justify-center gap-4">
+          <FilterButton filterItems={schools} queryName="school" />
+          <FilterButton filterItems={majors} queryName="major" />
+          <FilterButton filterItems={gradYears} queryName="gradYear" />
+        </div>
       </div>
+
+      {/* Post Grid */}
       <PostGrid
         posts={initialPosts}
         schoolId={schoolId}
