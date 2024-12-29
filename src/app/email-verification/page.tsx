@@ -16,7 +16,7 @@ export default async function EmailVerificationPage({
     redirect("/");
   }
 
-  const sent = searchParams.sent === "true";
+  const sent = (await searchParams).sent === "true";
 
   return sent ? <SentEmailVerification /> : <EmailInputForm />;
 }
