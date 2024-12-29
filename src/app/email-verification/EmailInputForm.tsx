@@ -2,36 +2,87 @@ import { Label } from "~/components/ui/label";
 import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
 import { redirect } from "next/navigation";
+import { auth } from "~/server/auth";
+import { db } from "~/server/db";
+import jwt from "jsonwebtoken";
+import { env } from "~/env";
+import nodemailer from "nodemailer";
+import { userProfiles } from "~/server/db/schema";
+import { eq } from "drizzle-orm";
 
 export default async function EmailInputForm() {
   const handleSubmit = async (formData: FormData) => {
     "use server";
-    const email = formData.get("email") as string;
+    const { email: eduEmail } = Object.fromEntries(formData.entries());
+
+    // Validate the email format
+    if (typeof eduEmail !== "string" || !eduEmail.endsWith(".edu")) {
+      console.log("Invalid email");
+      redirect("/email-verification?error=invalid-email");
+    }
 
     try {
-      // TODO: Replace with your API endpoint to send verification email
-      const response = await fetch(
-        "https://your-api-endpoint.com/send-verification-email",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ email }),
-        },
+      const session = await auth();
+
+      if (!session) {
+        redirect("/");
+      }
+
+      // Check if the .edu email is already in use
+      const existingUser = await db.query.userProfiles.findFirst({
+        where: (model, { eq }) => eq(model.eduEmail, eduEmail),
+      });
+
+      if (existingUser) {
+        console.log("Email in use");
+        redirect("/email-verification?error=email-in-use");
+      }
+
+      // Generate a verification token
+      const token = jwt.sign(
+        { userId: session.user.id, eduEmail },
+        env.JWT_SECRET,
+        { expiresIn: "10m" },
       );
 
-      if (response.ok) {
-        // Redirect to the same page with sent=true
-        redirect("/email-verification?sent=true");
-      } else {
-        const data = await response.json();
-        throw new Error(data.message || "Failed to send verification email.");
+      // Construct the verification URL
+      const verifyUrl = `${env.NEXT_PUBLIC_BASE_URL}/mentor-verification/verify?token=${token}`;
+
+      // Configure the email transporter
+      const transporter = nodemailer.createTransport(env.AUTH_EMAIL_SERVER);
+
+      // Send the verification email
+      await transporter.sendMail({
+        to: eduEmail,
+        from: env.AUTH_EMAIL_FROM,
+        subject: "Verify Your College Email to Become a Mentor",
+        html: `
+          <p>Hi ${session.user.name || "there"},</p>
+          <p>Thank you for your interest in becoming a mentor at College Advice.</p>
+          <p>Please verify your college email by clicking the link below:</p>
+          <a href="${verifyUrl}">Verify Email</a>
+          <p>This link will expire in 10 minutes.</p>
+          <p>If you did not request this, please ignore this email.</p>
+        `,
+      });
+
+      // Update the user's profile in the database
+      await db
+        .update(userProfiles)
+        .set({ eduEmail: eduEmail, isEduVerified: false, isMentor: false })
+        .where(eq(userProfiles.userId, session.user.id));
+
+      // Redirect to the success page
+      redirect("/email-verification?status=sent");
+    } catch (error: any) {
+      // If the error is a NEXT_REDIRECT, rethrow it to allow Next.js to handle the redirect
+      if (error.digest && error.digest.startsWith("NEXT_REDIRECT")) {
+        throw error;
       }
-    } catch (error) {
-      console.error("Error sending verification email:", error);
-      // You can handle error state here or redirect to an error page
-      redirect("/email-verification?sent=false");
+
+      // Handle other unexpected errors
+      console.error("Error sending mentor verification email", error);
+      redirect("/email-verification?status=error");
     }
   };
 

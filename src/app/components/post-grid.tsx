@@ -1,7 +1,10 @@
 "use client";
 import { useState, useEffect } from "react";
 import { PostCard } from "~/app/_components/post-card";
-import { fetchPostsAction, fetchPostsByFilterAction } from "../actions";
+import {
+  fetchPostsAction,
+  fetchPostsByFilterAction,
+} from "../actions/post-actions";
 import type { Card } from "~/app/types";
 
 // Define the PostGridProps interface

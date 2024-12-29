@@ -3,7 +3,10 @@ import { LoginPage } from "~/app/components/Login";
 import { getMajors, getSchools } from "~/server/queries";
 import { FilterButton } from "./_components/filter-button";
 import { PostGrid } from "./components/post-grid";
-import { fetchPostsAction, fetchPostsByFilterAction } from "./actions";
+import {
+  fetchPostsAction,
+  fetchPostsByFilterAction,
+} from "./actions/post-actions";
 import type { Card } from "~/app/types";
 
 export default async function HomePage({

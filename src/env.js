@@ -21,6 +21,7 @@ export const env = createEnv({
     NODE_ENV: z
       .enum(["development", "test", "production"])
       .default("development"),
+    JWT_SECRET: z.string(),
   },
 
   /**
@@ -29,7 +30,7 @@ export const env = createEnv({
    * `NEXT_PUBLIC_`.
    */
   client: {
-    // NEXT_PUBLIC_CLIENTVAR: z.string(),
+    NEXT_PUBLIC_BASE_URL: z.string(),
   },
 
   /**
@@ -46,6 +47,8 @@ export const env = createEnv({
     NODE_ENV: process.env.NODE_ENV,
     AUTH_EMAIL_SERVER: process.env.AUTH_EMAIL_SERVER,
     AUTH_EMAIL_FROM: process.env.AUTH_EMAIL_FROM,
+    JWT_SECRET: process.env.JWT_SECRET,
+    NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

@@ -152,9 +152,9 @@ export const userProfiles = createTable(
       .notNull(),
     graduationYear: integer("graduation_year") // E.g., 2027
       .notNull(),
-    isVerifiedCollegeStudent: boolean("is_verified_college_student")
-      .notNull()
-      .default(false),
+    eduEmail: varchar("edu_email", { length: 255 }).unique(),
+    isEduVerified: boolean("is_edu_verified").notNull().default(false),
+    isMentor: boolean("is_mentor").notNull().default(false),
     ...timestamps,
   },
   (table) => ({
