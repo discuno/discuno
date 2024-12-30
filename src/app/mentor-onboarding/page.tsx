@@ -39,7 +39,7 @@ export default async function MentorOnboardingPage({
 
   // If the user is not a mentor or their .edu email is not verified, redirect them
   if (!userProfile?.isMentor || !userProfile.isEduVerified) {
-    redirect("/");
+    redirect("/email-verification");
   }
 
   /**
@@ -78,7 +78,7 @@ export default async function MentorOnboardingPage({
 
       // Redirect to the dashboard or a confirmation page upon successful onboarding
       redirect("/dashboard?status=onboarded");
-    } catch (error) {
+    } catch (error: any) {
       // If the error is a NEXT_REDIRECT, rethrow it to allow Next.js to handle the redirect
       if (error.digest && error.digest.startsWith("NEXT_REDIRECT")) {
         throw error;

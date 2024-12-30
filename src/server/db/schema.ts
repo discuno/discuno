@@ -174,6 +174,10 @@ export const userProfiles = createTable(
     partialGradYearIdx: index("user_profiles_grad_year_partial_idx")
       .on(table.graduationYear)
       .where(sql`deleted_at IS NULL`),
+    eduEmailUserIdIdx: index("edu_email_user_id_idx").on(
+      table.eduEmail,
+      table.userId,
+    ),
   }),
 );
 

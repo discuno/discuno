@@ -39,6 +39,9 @@ export default async function EmailVerificationPage({
     case "invalid-email":
       message = "Please enter a valid .edu email address.";
       break;
+    case "already-verified":
+      message = "This email is already verified.";
+      break;
     case "error":
       message = "An unexpected error occurred. Please try again later.";
       break;

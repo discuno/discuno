@@ -50,7 +50,7 @@ export function AvatarIcon({ profilePic }: { profilePic: string }) {
           <DropdownMenuItem>Messages</DropdownMenuItem>
         </Link>
         <DropdownMenuSeparator />
-        <Link href="/become-mentor">
+        <Link href="/email-verification">
           <DropdownMenuItem>Become a Mentor</DropdownMenuItem>
         </Link>
         <Link href="/help">

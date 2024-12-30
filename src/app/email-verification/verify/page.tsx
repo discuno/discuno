@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import jwt from "jsonwebtoken";
 import { db } from "~/server/db";
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { env } from "~/env";
 import { userProfiles } from "~/server/db/schema";
 
@@ -12,7 +12,7 @@ interface VerificationPageProps {
 export default async function VerificationPage({
   searchParams,
 }: VerificationPageProps) {
-  const { token } = await searchParams;
+  const { token } = searchParams;
 
   if (!token) {
     redirect("/email-verification?status=invalid-token");
@@ -27,23 +27,10 @@ export default async function VerificationPage({
 
     const { userId, eduEmail } = decoded;
 
-    const existingProfile = await db.query.userProfiles.findFirst({
-      where: (model, { eq }) => eq(model.userId, userId),
-    });
-
-    if (existingProfile) {
-      // Update the existing profile if it exists
-      await db
-        .update(userProfiles)
-        .set({
-          eduEmail: eduEmail,
-          isEduVerified: true,
-          isMentor: true,
-        })
-        .where(eq(userProfiles.userId, userId));
-    } else {
-      // Create a new profile if it doesn't exist
-      await db.insert(userProfiles).values({
+    // Use a single upsert operation instead of separate query and update/insert
+    await db
+      .insert(userProfiles)
+      .values({
         userId,
         eduEmail,
         isEduVerified: true,
@@ -51,8 +38,15 @@ export default async function VerificationPage({
         bio: "",
         schoolYear: "Freshman",
         graduationYear: new Date().getFullYear() + 4,
+      })
+      .onConflictDoUpdate({
+        target: userProfiles.userId,
+        set: {
+          eduEmail,
+          isEduVerified: true,
+          isMentor: true,
+        },
       });
-    }
 
     // Redirect mentors to the onboarding page after successful verification
     redirect("/mentor-onboarding");

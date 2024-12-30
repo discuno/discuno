@@ -6,6 +6,7 @@ import { auth } from "~/server/auth";
 import jwt from "jsonwebtoken";
 import { env } from "~/env";
 import nodemailer from "nodemailer";
+import { db } from "~/server/db";
 
 interface EmailInputFormProps {
   message?: string;
@@ -18,10 +19,16 @@ export default async function EmailInputForm({
 }: EmailInputFormProps) {
   const handleSubmit = async (formData: FormData) => {
     "use server";
-    const { email: eduEmail } = Object.fromEntries(formData.entries());
+    const eduEmailRaw = formData.get("email");
+
+    if (typeof eduEmailRaw !== "string") {
+      redirect("/email-verification?status=invalid-email");
+    }
+
+    const lowerCaseEduEmail = eduEmailRaw.toLowerCase();
 
     // Validate the email format
-    if (typeof eduEmail !== "string" || !eduEmail.endsWith(".edu")) {
+    if (!lowerCaseEduEmail.endsWith(".edu")) {
       redirect("/email-verification?status=invalid-email");
     }
 
@@ -32,9 +39,33 @@ export default async function EmailInputForm({
         redirect("/");
       }
 
+      const existingProfiles = await db.query.userProfiles.findMany({
+        where: (model, { or, eq }) =>
+          or(
+            eq(model.userId, session.user.id),
+            eq(model.eduEmail, lowerCaseEduEmail),
+          ),
+      });
+
+      // Check if the user already has this email
+      const userProfile = existingProfiles.find(
+        (profile) => profile.userId === session.user.id,
+      );
+      if (userProfile?.eduEmail === lowerCaseEduEmail) {
+        redirect("/email-verification?status=already-verified");
+      }
+
+      // Check if email is already in use by another user
+      const emailInUse = existingProfiles.find(
+        (profile) => profile.eduEmail === lowerCaseEduEmail,
+      );
+      if (emailInUse) {
+        redirect("/email-verification?status=email-in-use");
+      }
+
       // Generate a verification token
       const token = jwt.sign(
-        { userId: session.user.id, eduEmail },
+        { userId: session.user.id, lowerCaseEduEmail },
         env.JWT_SECRET,
         { expiresIn: "10m" },
       );
@@ -47,7 +78,7 @@ export default async function EmailInputForm({
 
       // Send the verification email
       await transporter.sendMail({
-        to: eduEmail,
+        to: lowerCaseEduEmail,
         from: env.AUTH_EMAIL_FROM,
         subject: "Verify Your College Email to Become a Mentor",
         html: `
