@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import SentEmailVerification from "~/app/email-verification/Sent";
 import EmailInputForm from "~/app/email-verification/EmailInputForm";
 import { auth } from "~/server/auth";
-
+import { db } from "~/server/db";
 interface EmailVerificationPageProps {
   searchParams: { status?: string };
 }
