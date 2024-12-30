@@ -33,7 +33,7 @@ export default async function VerificationPage({
 
     if (existingProfile) {
       // Update the existing profile if it exists
-      const updatedUser = await db
+      await db
         .update(userProfiles)
         .set({
           eduEmail: eduEmail,
@@ -48,14 +48,14 @@ export default async function VerificationPage({
         eduEmail,
         isEduVerified: true,
         isMentor: true,
-        bio: null,
+        bio: "",
         schoolYear: "Freshman",
         graduationYear: new Date().getFullYear() + 4,
       });
     }
 
-    // Redirect to success page
-    redirect("/email-verification?status=success");
+    // Redirect mentors to the onboarding page after successful verification
+    redirect("/mentor-onboarding");
   } catch (error: any) {
     // If the error is a NEXT_REDIRECT, rethrow it to allow Next.js to handle the redirect
     if (error.digest && error.digest.startsWith("NEXT_REDIRECT")) {
