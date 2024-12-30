@@ -40,7 +40,7 @@ export function AvatarIcon({ profilePic }: { profilePic: string }) {
       <DropdownMenuContent className="w-56">
         <DropdownMenuLabel>Quick Actions</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <Link href="/profile">
+        <Link href="/view-profile">
           <DropdownMenuItem>View Profile</DropdownMenuItem>
         </Link>
         <Link href="/notifications">

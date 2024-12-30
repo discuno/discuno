@@ -1,18 +1,10 @@
 import { redirect } from "next/navigation";
 import { auth } from "~/server/auth";
 import { db } from "~/server/db";
-import { userProfiles } from "~/server/db/schema";
-import { eq } from "drizzle-orm";
 import Link from "next/link";
 import { Button } from "~/components/ui/button";
 
-interface ViewProfileProps {
-  searchParams?: { status?: string };
-}
-
-export default async function ViewProfilePage({
-  searchParams,
-}: ViewProfileProps) {
+export default async function ViewProfilePage() {
   const session = await auth();
 
   // Redirect unauthenticated users to the homepage
