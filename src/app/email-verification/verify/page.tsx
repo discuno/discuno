@@ -27,25 +27,41 @@ export default async function VerificationPage({
 
     const { userId, eduEmail } = decoded;
 
-    // Update the user's verification status
-    const updatedUser = await db
-      .update(userProfiles)
-      .set({ isEduVerified: true, isMentor: true })
-      .where(
-        and(
-          eq(userProfiles.userId, userId),
-          eq(userProfiles.eduEmail, eduEmail),
-        ),
-      )
-      .returning();
+    const existingProfile = await db.query.userProfiles.findFirst({
+      where: (model, { eq }) => eq(model.userId, userId),
+    });
 
-    if (updatedUser.length === 0) {
-      throw new Error("User not found or email mismatch.");
+    if (existingProfile) {
+      // Update the existing profile if it exists
+      const updatedUser = await db
+        .update(userProfiles)
+        .set({
+          eduEmail: eduEmail,
+          isEduVerified: true,
+          isMentor: true,
+        })
+        .where(eq(userProfiles.userId, userId));
+    } else {
+      // Create a new profile if it doesn't exist
+      await db.insert(userProfiles).values({
+        userId,
+        eduEmail,
+        isEduVerified: true,
+        isMentor: true,
+        bio: null,
+        schoolYear: "Freshman",
+        graduationYear: new Date().getFullYear() + 4,
+      });
     }
 
     // Redirect to success page
     redirect("/email-verification?status=success");
-  } catch (error) {
+  } catch (error: any) {
+    // If the error is a NEXT_REDIRECT, rethrow it to allow Next.js to handle the redirect
+    if (error.digest && error.digest.startsWith("NEXT_REDIRECT")) {
+      throw error;
+    }
+
     console.error("Error verifying mentor email:", error);
     // Redirect to failure page
     redirect("/email-verification?status=failed");

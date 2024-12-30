@@ -3,12 +3,9 @@ import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
 import { redirect } from "next/navigation";
 import { auth } from "~/server/auth";
-import { db } from "~/server/db";
 import jwt from "jsonwebtoken";
 import { env } from "~/env";
 import nodemailer from "nodemailer";
-import { userProfiles } from "~/server/db/schema";
-import { eq } from "drizzle-orm";
 
 interface EmailInputFormProps {
   message?: string;
@@ -25,7 +22,6 @@ export default async function EmailInputForm({
 
     // Validate the email format
     if (typeof eduEmail !== "string" || !eduEmail.endsWith(".edu")) {
-      console.log("Invalid email");
       redirect("/email-verification?status=invalid-email");
     }
 
@@ -34,16 +30,6 @@ export default async function EmailInputForm({
 
       if (!session) {
         redirect("/");
-      }
-
-      // Check if the .edu email is already in use
-      const existingUser = await db.query.userProfiles.findFirst({
-        where: (model, { eq }) => eq(model.eduEmail, eduEmail),
-      });
-
-      if (existingUser) {
-        console.log("Email in use");
-        redirect("/email-verification?status=email-in-use");
       }
 
       // Generate a verification token
@@ -73,12 +59,6 @@ export default async function EmailInputForm({
           <p>If you did not request this, please ignore this email.</p>
         `,
       });
-
-      // Update the user's profile in the database
-      await db
-        .update(userProfiles)
-        .set({ eduEmail: eduEmail, isEduVerified: false, isMentor: false })
-        .where(eq(userProfiles.userId, session.user.id));
 
       // Redirect to the success page
       redirect("/email-verification?status=sent");

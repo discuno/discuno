@@ -42,11 +42,7 @@ export default async function EmailVerificationPage({
     case "error":
       message = "An unexpected error occurred. Please try again later.";
       break;
-    default:
-      message = "Verifying your email...";
   }
-
-  console.log("Current status message:", message);
 
   // Render the SentEmailVerification component if the status is 'sent'
   if (status === "sent") {
