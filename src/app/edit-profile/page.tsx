@@ -14,17 +14,13 @@ import {
 } from "~/components/ui/select";
 import { Button } from "~/components/ui/button";
 
-interface MentorOnboardingProps {
-  message?: string;
-  isSuccess?: boolean;
-  searchParams?: { status: string };
+interface EditProfileProps {
+  searchParams?: { status?: string };
 }
 
-export default async function MentorOnboardingPage({
-  message,
-  isSuccess,
+export default async function EditProfilePage({
   searchParams,
-}: MentorOnboardingProps) {
+}: EditProfileProps) {
   const session = await auth();
 
   // Redirect unauthenticated users to the homepage
@@ -43,10 +39,10 @@ export default async function MentorOnboardingPage({
   }
 
   /**
-   * Server Action to handle form submission.
+   * Server Action to handle profile update.
    * It updates the userProfiles table with the provided bio, school_year, and graduation_year.
    */
-  const handleOnboard = async (formData: FormData) => {
+  const handleUpdateProfile = async (formData: FormData) => {
     "use server";
     const bio = formData.get("bio") as string;
     const schoolYear = formData.get("school_year") as string;
@@ -57,7 +53,15 @@ export default async function MentorOnboardingPage({
 
     // Basic validation
     if (!bio || !schoolYear || isNaN(graduationYear)) {
-      redirect("/mentor-onboarding?status=invalid-input");
+      redirect("/edit-profile?status=invalid-input");
+    }
+
+    if (
+      bio === userProfile.bio &&
+      schoolYear === userProfile.schoolYear &&
+      graduationYear === userProfile.graduationYear
+    ) {
+      redirect("/edit-profile?status=profile-updated");
     }
 
     try {
@@ -76,21 +80,21 @@ export default async function MentorOnboardingPage({
         })
         .where(eq(userProfiles.userId, session.user.id));
 
-      // Redirect to the dashboard or a confirmation page upon successful onboarding
-      redirect("/dashboard?status=onboarded");
+      // Redirect to the dashboard or a confirmation page upon successful update
+      redirect("/edit-profile?status=profile-updated");
     } catch (error: any) {
       // If the error is a NEXT_REDIRECT, rethrow it to allow Next.js to handle the redirect
       if (error.digest && error.digest.startsWith("NEXT_REDIRECT")) {
         throw error;
       }
-      console.error("Error during mentor onboarding:", error);
-      // Redirect to the onboarding page with an error status
-      redirect("/mentor-onboarding?status=error");
+      console.error("Error during profile update:", error);
+      // Redirect to the edit profile page with an error status
+      redirect("/edit-profile?status=error");
     }
   };
 
   // Extract the status from the query parameters for displaying messages
-  const status = searchParams?.status;
+  const status = (await searchParams)?.status || "";
   let displayMessage = "";
   let isDisplaySuccess = false;
 
@@ -101,7 +105,7 @@ export default async function MentorOnboardingPage({
     case "error":
       displayMessage = "An unexpected error occurred. Please try again later.";
       break;
-    case "onboarded":
+    case "profile-updated":
       displayMessage = "Your profile has been successfully updated!";
       isDisplaySuccess = true;
       break;
@@ -114,11 +118,10 @@ export default async function MentorOnboardingPage({
       <div className="mx-auto max-w-md space-y-6 rounded-lg bg-white p-8 shadow-md sm:p-12">
         <div className="space-y-2 text-center">
           <h1 className="text-3xl font-bold text-green-700">
-            Mentor Onboarding
+            Edit Your Mentor Profile
           </h1>
           <p className="text-gray-500 dark:text-gray-400">
-            Please provide the following information to complete your mentor
-            profile.
+            Update your profile information below.
           </p>
         </div>
 
@@ -135,7 +138,7 @@ export default async function MentorOnboardingPage({
           </div>
         )}
 
-        <form action={handleOnboard} className="space-y-4">
+        <form action={handleUpdateProfile} className="space-y-4">
           <div>
             <Label htmlFor="bio">Bio</Label>
             <Input
@@ -144,13 +147,18 @@ export default async function MentorOnboardingPage({
               type="text"
               placeholder="Tell us about yourself..."
               required
+              defaultValue={userProfile.bio || ""}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
             />
           </div>
 
           <div>
             <Label htmlFor="school_year">School Year</Label>
-            <Select name="school_year" required>
+            <Select
+              name="school_year"
+              required
+              defaultValue={userProfile.schoolYear}
+            >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select your current school year" />
               </SelectTrigger>
@@ -172,12 +180,13 @@ export default async function MentorOnboardingPage({
               type="number"
               placeholder="e.g., 2027"
               required
+              defaultValue={userProfile.graduationYear || ""}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
             />
           </div>
 
           <Button type="submit" className="w-full">
-            Complete Onboarding
+            Update Profile
           </Button>
         </form>
       </div>
