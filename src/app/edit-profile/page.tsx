@@ -21,7 +21,7 @@ interface EditProfileProps {
 
 // UserProfile Interface
 interface UserProfile {
-  userId: string; // Adjust if userId is a string
+  userId: string;
   bio: string;
   schoolYear: "Freshman" | "Sophomore" | "Junior" | "Senior" | "Graduate";
   graduationYear: number;
@@ -60,10 +60,7 @@ export default async function EditProfilePage({
     redirect("/email-verification");
   }
 
-  /**
-   * Server Action to handle profile update.
-   * It updates the userProfiles table with the provided bio, school_year, graduation_year, and profile image.
-   */
+  // Function to handle profile updates
   const handleUpdateProfile = async (formData: FormData) => {
     "use server";
     const bio = formData.get("bio") as string;
@@ -79,6 +76,36 @@ export default async function EditProfilePage({
       redirect("/edit-profile?status=invalid-input");
     }
 
+    // Validate schoolYear
+    const validSchoolYears = [
+      "Freshman",
+      "Sophomore",
+      "Junior",
+      "Senior",
+      "Graduate",
+    ];
+    if (!validSchoolYears.includes(schoolYear)) {
+      redirect("/edit-profile?status=invalid-school-year");
+    }
+
+    // Validate graduationYear (e.g., should be current year or future)
+    const currentYear = new Date().getFullYear();
+    if (graduationYear < currentYear || graduationYear > currentYear + 10) {
+      redirect("/edit-profile?status=invalid-graduation-year");
+    }
+
+    // Validate profile image if uploaded
+    if (profileImageFile) {
+      const allowedTypes = ["image/jpeg", "image/png", "image/gif"];
+      if (!allowedTypes.includes(profileImageFile.type)) {
+        redirect("/edit-profile?status=invalid-image-type");
+      }
+      const maxSizeInBytes = 5 * 1024 * 1024; // 5MB
+      if (profileImageFile.size > maxSizeInBytes) {
+        redirect("/edit-profile?status=image-too-large");
+      }
+    }
+
     // Check if any change has been made
     const isProfileUnchanged =
       bio === userProfile.bio &&
@@ -91,11 +118,12 @@ export default async function EditProfilePage({
     }
 
     try {
-      let imageUrl = userProfile?.user?.image || "";
+      let imageUrl = userProfile.user?.image || "";
 
       // Handle profile image upload if a new image is provided
       if (profileImageFile && profileImageFile.size > 0) {
-        imageUrl = await uploadImage(profileImageFile);
+        // Replace this with your actual image upload logic
+        imageUrl = URL.createObjectURL(profileImageFile);
         // Update the user's image in the 'users' table
         await db
           .update(users)
@@ -133,17 +161,6 @@ export default async function EditProfilePage({
     }
   };
 
-  // Placeholder for image upload function
-  // Replace this with your actual image upload implementation (e.g., upload to S3, Cloudinary)
-  async function uploadImage(file: File): Promise<string> {
-    // Example: Return a dummy URL after "uploading"
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        resolve(URL.createObjectURL(file));
-      }, 1000);
-    });
-  }
-
   // Extract the status from the query parameters for displaying messages
   const status = searchParams?.status || "";
   let displayMessage = "";
@@ -160,47 +177,43 @@ export default async function EditProfilePage({
       displayMessage = "Your profile has been successfully updated!";
       isDisplaySuccess = true;
       break;
+    case "not-found":
+      displayMessage = "User profile not found.";
+      break;
+    case "invalid-image-type":
+      displayMessage = "Invalid image type. Please upload a JPEG, PNG, or GIF.";
+      break;
+    case "image-too-large":
+      displayMessage = "Image is too large. Maximum size is 5MB.";
+      break;
+    case "invalid-school-year":
+      displayMessage = "Selected school year is invalid.";
+      break;
+    case "invalid-graduation-year":
+      displayMessage =
+        "Graduation year must be the current year or a future year.";
+      break;
     default:
       displayMessage = "";
   }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-r from-green-50 via-green-100 to-white px-4">
-      <div className="mx-auto max-w-md space-y-6 rounded-lg bg-white p-8 shadow-md sm:p-12">
+      <div className="mx-auto max-w-md space-y-6 rounded-lg bg-white p-8 shadow-md dark:bg-gray-800 sm:p-12">
         <div className="space-y-2 text-center">
-          <h1 className="text-3xl font-bold text-green-700">
-            Edit Your Mentor Profile
-          </h1>
-          <p className="text-gray-500 dark:text-gray-400">
-            Update your profile information below.
-          </p>
-        </div>
-
-        {/* Display Message if Exists */}
-        {displayMessage && (
-          <div
-            className={`rounded-md p-3 text-sm ${
-              isDisplaySuccess
-                ? "bg-green-100 text-green-700"
-                : "bg-red-100 text-red-700"
-            }`}
-          >
-            {displayMessage}
-          </div>
-        )}
-
-        {/* Current Profile Image */}
-        <div className="flex justify-center">
-          {userProfile?.user?.image ? (
-            <img
-              src={userProfile?.user?.image}
-              alt="Profile Image"
-              className="h-24 w-24 rounded-full object-cover"
-            />
-          ) : (
-            <div className="flex h-24 w-24 items-center justify-center rounded-full bg-gray-200 text-gray-500">
-              No Image
-            </div>
+          <h2 className="text-3xl font-bold text-green-700 dark:text-green-300">
+            Edit Your Profile
+          </h2>
+          {displayMessage && (
+            <p
+              className={`text-sm ${
+                isDisplaySuccess
+                  ? "text-green-600 dark:text-green-400"
+                  : "text-red-600 dark:text-red-400"
+              }`}
+            >
+              {displayMessage}
+            </p>
           )}
         </div>
 
@@ -210,14 +223,25 @@ export default async function EditProfilePage({
           className="space-y-4"
           encType="multipart/form-data"
         >
-          <div>
+          <div className="flex flex-col items-center">
+            {userProfile.user?.image ? (
+              <img
+                src={userProfile.user.image}
+                alt="Profile Image"
+                className="mb-4 h-24 w-24 rounded-full object-cover"
+              />
+            ) : (
+              <div className="mb-4 flex h-24 w-24 items-center justify-center rounded-full bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-300">
+                No Image
+              </div>
+            )}
             <Label htmlFor="profile_image">Update Profile Image</Label>
             <Input
               id="profile_image"
               name="profile_image"
               type="file"
               accept="image/*"
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 dark:border-gray-600"
             />
           </div>
 
@@ -230,7 +254,7 @@ export default async function EditProfilePage({
               placeholder="Tell us about yourself..."
               required
               defaultValue={userProfile.bio || ""}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 dark:border-gray-600"
             />
           </div>
 
@@ -241,10 +265,10 @@ export default async function EditProfilePage({
               required
               defaultValue={userProfile.schoolYear}
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full dark:bg-gray-700">
                 <SelectValue placeholder="Select your current school year" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white dark:bg-gray-700">
                 <SelectItem value="Freshman">Freshman</SelectItem>
                 <SelectItem value="Sophomore">Sophomore</SelectItem>
                 <SelectItem value="Junior">Junior</SelectItem>
@@ -263,7 +287,7 @@ export default async function EditProfilePage({
               placeholder="e.g., 2027"
               required
               defaultValue={userProfile.graduationYear || ""}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 dark:border-gray-600"
             />
           </div>
 

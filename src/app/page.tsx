@@ -18,7 +18,7 @@ export default async function HomePage({
 
   if (!session) {
     return (
-      <main>
+      <main className="min-h-screen bg-background">
         <LoginPage />
       </main>
     );
@@ -51,13 +51,25 @@ export default async function HomePage({
       : await fetchPostsAction();
 
   return (
-    <main className="pt-20">
+    <main className="min-h-screen bg-background pt-20 text-foreground">
       {/* Sticky Filter Bar */}
-      <div className="sticky top-16 z-10 bg-opacity-50 bg-gradient-to-r from-blue-50 via-blue-100 to-white p-4 shadow-md">
+      <div className="sticky top-16 z-10 border-b border-border/40 bg-background/80 p-4 shadow-md backdrop-blur-sm transition-colors duration-300">
         <div className="flex flex-wrap justify-center gap-4">
-          <FilterButton filterItems={schools} queryName="school" />
-          <FilterButton filterItems={majors} queryName="major" />
-          <FilterButton filterItems={gradYears} queryName="gradYear" />
+          <FilterButton
+            filterItems={schools}
+            queryName="school"
+            aria-label="Filter by school"
+          />
+          <FilterButton
+            filterItems={majors}
+            queryName="major"
+            aria-label="Filter by major"
+          />
+          <FilterButton
+            filterItems={gradYears}
+            queryName="gradYear"
+            aria-label="Filter by graduation year"
+          />
         </div>
       </div>
 

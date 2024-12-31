@@ -16,7 +16,7 @@ import {
 
 export function NavBarBase({ profilePic }: { profilePic: string }) {
   return (
-    <div className="fixed left-0 right-0 top-0 z-20 flex items-center justify-between bg-white p-4 text-black shadow-sm">
+    <div className="fixed left-0 right-0 top-0 z-20 flex items-center justify-between border-b border-border/40 bg-background/80 p-4 text-foreground backdrop-blur-sm transition-colors duration-300">
       <NavigationMenu>
         <NavigationMenuList>
           <NavigationMenuItem>
@@ -26,10 +26,10 @@ export function NavBarBase({ profilePic }: { profilePic: string }) {
                 <li className="row-span-3">
                   <NavigationMenuLink asChild>
                     <Link
-                      className="flex h-full w-full select-none flex-col justify-end rounded-md bg-gradient-to-b from-blue-50 to-blue-100 p-6 no-underline outline-none focus:shadow-md"
+                      className="flex h-full w-full select-none flex-col justify-end rounded-md bg-gradient-to-b from-primary/10 to-primary/5 p-6 no-underline outline-none transition-colors hover:bg-primary/10 focus:shadow-md dark:from-primary/20 dark:to-primary/10 dark:hover:bg-primary/20"
                       href="/browse"
                     >
-                      <div className="mb-2 mt-4 text-lg font-medium">
+                      <div className="mb-2 mt-4 text-lg font-medium text-foreground">
                         Browse Mentors
                       </div>
                       <p className="text-sm leading-tight text-muted-foreground">
@@ -118,12 +118,16 @@ const ListItem = React.forwardRef<React.ElementRef<"a">, ListItemProps>(
           <a
             ref={ref}
             className={cn(
-              "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
+              "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors",
+              "hover:bg-accent hover:text-accent-foreground",
+              "focus:bg-accent focus:text-accent-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-gray-900",
               className,
             )}
             {...props}
           >
-            <div className="text-sm font-medium leading-none">{title}</div>
+            <div className="text-sm font-medium leading-none text-foreground">
+              {title}
+            </div>
             <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
               {children}
             </p>

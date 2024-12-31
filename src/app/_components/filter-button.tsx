@@ -32,33 +32,24 @@ interface FilterProps {
 }
 
 export function FilterButton({ filterItems, queryName }: FilterProps) {
-  // State to manage the open/close state of the popover
   const [open, setOpen] = useState(false);
-  // State to manage the selected filter value
   const [value, setValue] = useState("");
   const router = useRouter();
 
-  // Function to handle filter change
   const handleFilterChange = (itemId: number) => {
-    // Find the selected value based on itemId
     const selectedValue =
       filterItems.find((item) => item.id === itemId)?.value || "";
-    // Create a new URL object based on the current window location
     const url = new URL(window.location.href);
 
-    // If the selected value is already the current value, remove the query parameter
     if (selectedValue === value) {
       url.searchParams.delete(queryName);
       setValue("");
     } else {
-      // Otherwise, set the new value and update the query parameter
       setValue(selectedValue);
       url.searchParams.set(queryName, itemId.toString());
     }
 
-    // Push the updated URL to the router
     router.push(url.toString());
-    // Close the popover
     setOpen(false);
   };
 
@@ -69,7 +60,7 @@ export function FilterButton({ filterItems, queryName }: FilterProps) {
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-[225px] justify-between"
+          className="w-[225px] justify-between focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-gray-200"
         >
           {value
             ? filterItems.find((item) => item.value === value)?.label
@@ -77,9 +68,12 @@ export function FilterButton({ filterItems, queryName }: FilterProps) {
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[225px] p-0">
+      <PopoverContent className="w-[225px] bg-white p-0 dark:bg-gray-800">
         <Command>
-          <CommandInput placeholder={`Search ${queryName}...`} />
+          <CommandInput
+            placeholder={`Search ${queryName}...`}
+            className="bg-white text-gray-900 dark:bg-gray-800 dark:text-gray-100"
+          />
           <CommandList>
             <CommandEmpty>No {queryName} found.</CommandEmpty>
             <CommandGroup>
@@ -90,6 +84,7 @@ export function FilterButton({ filterItems, queryName }: FilterProps) {
                   onSelect={() => {
                     handleFilterChange(item.id);
                   }}
+                  className="text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
                 >
                   <Check
                     className={cn(

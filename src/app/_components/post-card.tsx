@@ -5,7 +5,7 @@ import type { Card } from "~/app/types";
 export const PostCard = ({ card }: { card: Card; index: number }) => {
   return (
     <Link href={`/img/${card.id}`}>
-      <div className="group relative overflow-hidden rounded-xl bg-white p-4 shadow-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-xl">
+      <div className="group relative overflow-hidden rounded-xl border border-border/50 bg-card/90 p-4 text-card-foreground shadow-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-xl dark:bg-card/90 dark:shadow-lg dark:shadow-primary/5 dark:backdrop-blur-sm dark:hover:bg-card/95 dark:hover:shadow-primary/10">
         {/* Profile Image Section */}
         <div className="relative mb-4 h-48 w-full overflow-hidden rounded-lg">
           <Image
@@ -15,7 +15,7 @@ export const PostCard = ({ card }: { card: Card; index: number }) => {
             className="object-cover transition-transform duration-300 group-hover:scale-105"
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4">
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent p-4">
             <h2 className="text-xl font-bold text-white">
               {card.name || "Student Name"}
             </h2>
@@ -27,23 +27,23 @@ export const PostCard = ({ card }: { card: Card; index: number }) => {
           {/* School & Major */}
           <div className="flex items-center justify-between">
             <div className="flex-1">
-              <p className="text-lg font-semibold text-blue-600">
+              <p className="text-lg font-semibold text-primary">
                 {card.school}
               </p>
-              <p className="text-sm text-gray-600">{card.major}</p>
+              <p className="text-sm text-muted-foreground">{card.major}</p>
             </div>
-            <div className="rounded-full bg-blue-50 px-3 py-1 text-sm font-medium text-blue-600">
+            <div className="rounded-full bg-secondary px-3 py-1 text-sm font-medium text-secondary-foreground">
               {card.schoolYear}
             </div>
           </div>
 
           {/* Description */}
-          <p className="line-clamp-2 text-sm text-gray-600">
+          <p className="line-clamp-2 text-sm text-muted-foreground">
             {card.description || "No description provided"}
           </p>
 
           {/* Footer Info */}
-          <div className="flex items-center justify-between border-t pt-3 text-sm text-gray-500">
+          <div className="flex items-center justify-between border-t border-border pt-3 text-sm text-muted-foreground">
             <span>Class of {card.graduationYear}</span>
             <span className="flex items-center">
               <svg
@@ -51,6 +51,7 @@ export const PostCard = ({ card }: { card: Card; index: number }) => {
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
+                aria-hidden="true"
               >
                 <path
                   strokeLinecap="round"

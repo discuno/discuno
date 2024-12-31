@@ -80,7 +80,7 @@ export const PostGrid = ({
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-blue mb-8 text-center text-3xl font-bold">
+      <h1 className="mb-8 text-center text-3xl font-bold text-foreground">
         Find Your College Mentor
       </h1>
       <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -91,13 +91,20 @@ export const PostGrid = ({
       {allPosts.length > 0 && (
         <div className="mt-12 flex justify-center">
           <button
-            className="rounded-full bg-blue-600 px-8 py-3 text-white transition-all duration-300 hover:bg-blue-700 disabled:opacity-50"
+            className="rounded-full bg-primary px-8 py-3 text-primary-foreground transition-all duration-300 hover:bg-primary/90 focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 dark:focus:ring-offset-gray-900"
             onClick={loadMorePosts}
             disabled={loading}
+            aria-label={
+              loading ? "Loading more mentors..." : "Load more mentors"
+            }
           >
             {loading ? (
               <span className="flex items-center">
-                <svg className="mr-2 h-4 w-4 animate-spin" viewBox="0 0 24 24">
+                <svg
+                  className="mr-2 h-4 w-4 animate-spin"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
                   <circle
                     className="opacity-25"
                     cx="12"
