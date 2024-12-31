@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import jwt from "jsonwebtoken";
 import { db } from "~/server/db";
-import { eq } from "drizzle-orm";
 import { env } from "~/env";
 import { userProfiles } from "~/server/db/schema";
 
@@ -12,7 +11,7 @@ interface VerificationPageProps {
 export default async function VerificationPage({
   searchParams,
 }: VerificationPageProps) {
-  const { token } = searchParams;
+  const { token } = await searchParams;
 
   if (!token) {
     redirect("/email-verification?status=invalid-token");
