@@ -34,19 +34,19 @@ export default async function RootLayout({
 
   return (
     <html lang="en" className={`${GeistSans.variable}`}>
-      <body className="min-h-screen bg-white text-gray-900 transition-colors duration-300 dark:bg-gray-900 dark:text-gray-100">
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="system"
+        enableSystem
+        disableTransitionOnChange
+      >
+        <body className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-100 to-white dark:from-blue-950 dark:via-blue-900 dark:to-blue-800">
           {isAuthenticated && <NavBarBase profilePic={profilePic} />}
           {children}
           {modal}
           <div id="modal-root" />
-        </ThemeProvider>
-      </body>
+        </body>
+      </ThemeProvider>
     </html>
   );
 }

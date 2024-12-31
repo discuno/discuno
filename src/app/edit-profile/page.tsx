@@ -198,8 +198,8 @@ export default async function EditProfilePage({
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-r from-green-50 via-green-100 to-white px-4">
-      <div className="mx-auto max-w-md space-y-6 rounded-lg bg-white p-8 shadow-md dark:bg-gray-800 sm:p-12">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <div className="relative mx-auto max-w-md space-y-6 rounded-lg bg-card p-8 text-card-foreground shadow-lg transition-all duration-300 dark:shadow-primary/5 sm:p-12">
         <div className="space-y-2 text-center">
           <h2 className="text-3xl font-bold text-green-700 dark:text-green-300">
             Edit Your Profile
@@ -207,9 +207,7 @@ export default async function EditProfilePage({
           {displayMessage && (
             <p
               className={`text-sm ${
-                isDisplaySuccess
-                  ? "text-green-600 dark:text-green-400"
-                  : "text-red-600 dark:text-red-400"
+                isDisplaySuccess ? "text-green-500" : "text-destructive"
               }`}
             >
               {displayMessage}
@@ -217,7 +215,6 @@ export default async function EditProfilePage({
           )}
         </div>
 
-        {/* Profile Image Upload */}
         <form
           action={handleUpdateProfile}
           className="space-y-4"
@@ -228,10 +225,10 @@ export default async function EditProfilePage({
               <img
                 src={userProfile.user.image}
                 alt="Profile Image"
-                className="mb-4 h-24 w-24 rounded-full object-cover"
+                className="mb-4 h-24 w-24 rounded-full object-cover ring-2 ring-primary/20"
               />
             ) : (
-              <div className="mb-4 flex h-24 w-24 items-center justify-center rounded-full bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-300">
+              <div className="mb-4 flex h-24 w-24 items-center justify-center rounded-full bg-muted text-muted-foreground ring-2 ring-primary/20">
                 No Image
               </div>
             )}

@@ -51,25 +51,27 @@ export default async function HomePage({
       : await fetchPostsAction();
 
   return (
-    <main className="min-h-screen bg-background pt-20 text-foreground">
-      {/* Sticky Filter Bar */}
-      <div className="sticky top-16 z-10 border-b border-border/40 bg-background/80 p-4 shadow-md backdrop-blur-sm transition-colors duration-300">
-        <div className="flex flex-wrap justify-center gap-4">
-          <FilterButton
-            filterItems={schools}
-            queryName="school"
-            aria-label="Filter by school"
-          />
-          <FilterButton
-            filterItems={majors}
-            queryName="major"
-            aria-label="Filter by major"
-          />
-          <FilterButton
-            filterItems={gradYears}
-            queryName="gradYear"
-            aria-label="Filter by graduation year"
-          />
+    <main className="min-h-screen bg-background pt-16 text-foreground">
+      {/* Sticky Filter Bar - now connected to navbar */}
+      <div className="sticky top-[60px] z-10 border-b border-border/40 bg-background/80 shadow-sm backdrop-blur-sm transition-colors duration-300">
+        <div className="border-t border-border/40">
+          <div className="flex flex-wrap justify-center gap-4 p-4">
+            <FilterButton
+              filterItems={schools}
+              queryName="school"
+              aria-label="Filter by school"
+            />
+            <FilterButton
+              filterItems={majors}
+              queryName="major"
+              aria-label="Filter by major"
+            />
+            <FilterButton
+              filterItems={gradYears}
+              queryName="gradYear"
+              aria-label="Filter by graduation year"
+            />
+          </div>
         </div>
       </div>
 
