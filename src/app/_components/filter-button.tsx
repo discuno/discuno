@@ -29,16 +29,23 @@ interface FilterValue {
 interface FilterProps {
   filterItems: FilterValue[];
   queryName: string;
+  startValue: string;
 }
 
-export function FilterButton({ filterItems, queryName }: FilterProps) {
+export function FilterButton({
+  filterItems,
+  queryName,
+  startValue,
+}: FilterProps) {
   const [open, setOpen] = useState(false);
-  const [value, setValue] = useState("");
+  const [value, setValue] = useState(
+    filterItems.find((item) => item.label === startValue)?.value ?? "",
+  );
   const router = useRouter();
 
   const handleFilterChange = (itemId: number) => {
-    const selectedValue =
-      filterItems.find((item) => item.id === itemId)?.value || "";
+    const selectedItem = filterItems.find((item) => item.id === itemId);
+    const selectedValue = selectedItem?.value || "";
     const url = new URL(window.location.href);
 
     if (selectedValue === value) {
@@ -46,7 +53,7 @@ export function FilterButton({ filterItems, queryName }: FilterProps) {
       setValue("");
     } else {
       setValue(selectedValue);
-      url.searchParams.set(queryName, itemId.toString());
+      url.searchParams.set(queryName, selectedItem?.label || "");
     }
 
     router.push(url.toString());
@@ -68,11 +75,11 @@ export function FilterButton({ filterItems, queryName }: FilterProps) {
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[225px] bg-white p-0 dark:bg-gray-800">
+      <PopoverContent className="w-[225px] border-border/40 bg-background/60 p-0 backdrop-blur-md">
         <Command>
           <CommandInput
             placeholder={`Search ${queryName}...`}
-            className="bg-white text-gray-900 dark:bg-gray-800 dark:text-gray-100"
+            className="bg-transparent"
           />
           <CommandList>
             <CommandEmpty>No {queryName} found.</CommandEmpty>
@@ -84,7 +91,7 @@ export function FilterButton({ filterItems, queryName }: FilterProps) {
                   onSelect={() => {
                     handleFilterChange(item.id);
                   }}
-                  className="text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
+                  className="text-foreground hover:bg-muted"
                 >
                   <Check
                     className={cn(

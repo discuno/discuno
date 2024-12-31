@@ -24,7 +24,7 @@ export default async function HomePage({
 
   if (!session) {
     return (
-      <main className="min-h-screen bg-background">
+      <main className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-gray-100 via-sky-100 to-gray-100 dark:from-gray-950 dark:via-slate-900 dark:to-gray-950">
         <LoginPage />
       </main>
     );
@@ -79,17 +79,20 @@ export default async function HomePage({
               <div className="flex flex-col gap-3">
                 <FilterButton
                   filterItems={schools}
+                  startValue={searchParams.school ?? ""}
                   queryName="school"
                   aria-label="Filter by school"
                 />
                 <FilterButton
                   filterItems={majors}
+                  startValue={searchParams.major ?? ""}
                   queryName="major"
                   aria-label="Filter by major"
                 />
                 <FilterButton
                   filterItems={gradYears}
-                  queryName="gradYear"
+                  startValue={searchParams.gradYear ?? ""}
+                  queryName="class"
                   aria-label="Filter by graduation year"
                 />
               </div>
