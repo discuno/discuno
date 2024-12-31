@@ -85,19 +85,19 @@ export default async function HomePage({
               <div className="flex flex-col gap-3">
                 <FilterButton
                   filterItems={schools}
-                  startValue={searchParams.school ?? ""}
+                  startValue={(await searchParams).school ?? ""}
                   queryName="school"
                   aria-label="Filter by school"
                 />
                 <FilterButton
                   filterItems={majors}
-                  startValue={searchParams.major ?? ""}
+                  startValue={(await searchParams).major ?? ""}
                   queryName="major"
                   aria-label="Filter by major"
                 />
                 <FilterButton
                   filterItems={gradYears}
-                  startValue={searchParams.gradYear ?? ""}
+                  startValue={(await searchParams).gradYear ?? ""}
                   queryName="gradYear"
                   aria-label="Filter by graduation year"
                 />

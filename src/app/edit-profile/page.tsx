@@ -162,7 +162,7 @@ export default async function EditProfilePage({
   };
 
   // Extract the status from the query parameters for displaying messages
-  const status = searchParams?.status || "";
+  const status = (await searchParams)?.status || "";
   let displayMessage = "";
   let isDisplaySuccess = false;
 
