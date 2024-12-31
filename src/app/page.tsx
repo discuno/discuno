@@ -32,10 +32,6 @@ export default async function HomePage({
 
   const params = await searchParams;
 
-  const schoolId = params.school ? parseInt(params.school) : null;
-  const majorId = params.major ? parseInt(params.major) : null;
-  const graduationYear = params.gradYear ? parseInt(params.gradYear) : null;
-
   const schools = await getSchools();
   const majors = await getMajors();
   const gradYears: {
@@ -50,6 +46,16 @@ export default async function HomePage({
       label: year.toString(),
     };
   });
+
+  const schoolId = params.school
+    ? (schools.find((s) => s.label === params.school)?.id ?? null)
+    : null;
+  const majorId = params.major
+    ? (majors.find((m) => m.label === params.major)?.id ?? null)
+    : null;
+  const graduationYear = params.gradYear
+    ? (gradYears.find((g) => g.label === params.gradYear)?.id ?? null)
+    : null;
 
   const initialPosts =
     schoolId || majorId || graduationYear
@@ -92,7 +98,7 @@ export default async function HomePage({
                 <FilterButton
                   filterItems={gradYears}
                   startValue={searchParams.gradYear ?? ""}
-                  queryName="class"
+                  queryName="gradYear"
                   aria-label="Filter by graduation year"
                 />
               </div>
