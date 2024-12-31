@@ -51,8 +51,8 @@ export default async function ViewProfilePage() {
     }
 
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background px-4 transition-colors duration-300">
-        <div className="mx-auto max-w-md space-y-6 rounded-lg bg-card p-8 text-card-foreground shadow-lg transition-all duration-300 dark:shadow-primary/5 sm:p-12">
+      <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-sky-200 via-indigo-200 to-emerald-200 px-4 transition-colors duration-300 dark:from-gray-950 dark:via-slate-900 dark:to-blue-950">
+        <div className="mx-auto max-w-md space-y-5 rounded-lg bg-card p-8 text-card-foreground shadow-lg transition-all duration-300 dark:shadow-primary/5 sm:p-12">
           <div className="space-y-2 text-center">
             <h1 className="text-3xl font-bold text-primary">
               Your Mentor Profile

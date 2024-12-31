@@ -3,11 +3,17 @@ import { LoginPage } from "~/app/components/Login";
 import { getMajors, getSchools } from "~/server/queries";
 import { FilterButton } from "./_components/filter-button";
 import { PostGrid } from "./components/post-grid";
+import { Filter } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "~/components/ui/popover";
+import { Button } from "~/components/ui/button";
 import {
   fetchPostsAction,
   fetchPostsByFilterAction,
 } from "./actions/post-actions";
-import type { Card } from "~/app/types";
 
 export default async function HomePage({
   searchParams,
@@ -51,28 +57,45 @@ export default async function HomePage({
       : await fetchPostsAction();
 
   return (
-    <main className="min-h-screen bg-background pt-16 text-foreground">
-      {/* Sticky Filter Bar - now connected to navbar */}
-      <div className="sticky top-[60px] z-10 border-b border-border/40 bg-background/80 shadow-sm backdrop-blur-sm transition-colors duration-300">
-        <div className="border-t border-border/40">
-          <div className="flex flex-wrap justify-center gap-4 p-4">
-            <FilterButton
-              filterItems={schools}
-              queryName="school"
-              aria-label="Filter by school"
-            />
-            <FilterButton
-              filterItems={majors}
-              queryName="major"
-              aria-label="Filter by major"
-            />
-            <FilterButton
-              filterItems={gradYears}
-              queryName="gradYear"
-              aria-label="Filter by graduation year"
-            />
-          </div>
-        </div>
+    <main className="min-h-screen pt-16 text-foreground">
+      {/* Filter Popover */}
+      <div className="sticky top-[80px] z-10 flex justify-start px-4">
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className="border-border/70 bg-background/60 shadow-lg backdrop-blur-md transition-colors duration-300"
+            >
+              <Filter className="ml-2 h-4 w-4" />
+              Filters
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent
+            className="ml-2 w-80 border-border/40 bg-background/60 p-4 shadow-lg backdrop-blur-md"
+            align="end"
+          >
+            <div className="space-y-4">
+              <h2 className="font-semibold text-foreground">Filter Mentors</h2>
+              <div className="flex flex-col gap-3">
+                <FilterButton
+                  filterItems={schools}
+                  queryName="school"
+                  aria-label="Filter by school"
+                />
+                <FilterButton
+                  filterItems={majors}
+                  queryName="major"
+                  aria-label="Filter by major"
+                />
+                <FilterButton
+                  filterItems={gradYears}
+                  queryName="gradYear"
+                  aria-label="Filter by graduation year"
+                />
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
       </div>
 
       {/* Post Grid */}

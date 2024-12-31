@@ -90,14 +90,6 @@ export function NavBarBase({ profilePic }: { profilePic: string }) {
               </ul>
             </NavigationMenuContent>
           </NavigationMenuItem>
-
-          <NavigationMenuItem>
-            <Link href="/contact" legacyBehavior passHref>
-              <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                Contact Support
-              </NavigationMenuLink>
-            </Link>
-          </NavigationMenuItem>
         </NavigationMenuList>
       </NavigationMenu>
       <AvatarIcon profilePic={profilePic} />

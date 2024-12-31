@@ -33,20 +33,24 @@ export default async function RootLayout({
   }
 
   return (
-    <html lang="en" className={`${GeistSans.variable}`}>
-      <ThemeProvider
-        attribute="class"
-        defaultTheme="system"
-        enableSystem
-        disableTransitionOnChange
-      >
-        <body className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-100 to-white dark:from-blue-950 dark:via-blue-900 dark:to-blue-800">
+    <html
+      lang="en"
+      className={`${GeistSans.variable}`}
+      suppressHydrationWarning
+    >
+      <body className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-gray-100 via-sky-100 to-gray-100 dark:from-gray-950 dark:via-slate-900 dark:to-gray-950">
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
           {isAuthenticated && <NavBarBase profilePic={profilePic} />}
           {children}
           {modal}
           <div id="modal-root" />
-        </body>
-      </ThemeProvider>
+        </ThemeProvider>
+      </body>
     </html>
   );
 }
