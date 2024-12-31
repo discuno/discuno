@@ -42,14 +42,14 @@ export default async function EmailInputForm({
       const existingProfiles = await db.query.userProfiles.findMany({
         where: (model, { or, eq }) =>
           or(
-            eq(model.userId, session.user.id),
+            eq(model.userId, session.userId),
             eq(model.eduEmail, lowerCaseEduEmail),
           ),
       });
 
       // Check if the user already has this email
       const userProfile = existingProfiles.find(
-        (profile) => profile.userId === session.user.id,
+        (profile) => profile.userId === session.userId,
       );
       if (userProfile?.eduEmail === lowerCaseEduEmail) {
         redirect("/email-verification?status=already-verified");
@@ -65,7 +65,7 @@ export default async function EmailInputForm({
 
       // Generate a verification token
       const token = jwt.sign(
-        { userId: session.user.id, lowerCaseEduEmail },
+        { userId: session.userId, lowerCaseEduEmail },
         env.JWT_SECRET,
         { expiresIn: "10m" },
       );

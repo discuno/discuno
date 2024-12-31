@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "~/server/auth";
 import { db } from "~/server/db";
-import { userProfiles } from "~/server/db/schema";
+import { userProfiles, users } from "~/server/db/schema";
 import { eq } from "drizzle-orm";
 import { Label } from "~/components/ui/label";
 import { Input } from "~/components/ui/input";
@@ -14,8 +14,23 @@ import {
 } from "~/components/ui/select";
 import { Button } from "~/components/ui/button";
 
+// EditProfileProps Interface
 interface EditProfileProps {
   searchParams?: { status?: string };
+}
+
+// UserProfile Interface
+interface UserProfile {
+  userId: string; // Adjust if userId is a string
+  bio: string;
+  schoolYear: "Freshman" | "Sophomore" | "Junior" | "Senior" | "Graduate";
+  graduationYear: number;
+  eduEmail: string;
+  isEduVerified: boolean;
+  isMentor: boolean;
+  user?: {
+    image: string | null;
+  };
 }
 
 export default async function EditProfilePage({
@@ -29,9 +44,16 @@ export default async function EditProfilePage({
   }
 
   // Fetch the user's profile from the database
-  const userProfile = await db.query.userProfiles.findFirst({
-    where: (table, { eq }) => eq(table.userId, session.user.id),
-  });
+  const userProfile = (await db.query.userProfiles.findFirst({
+    where: (table, { eq }) => eq(table.userId, session.userId),
+    with: {
+      user: {
+        columns: {
+          image: true,
+        },
+      },
+    },
+  })) as UserProfile | null;
 
   // If the user is not a mentor or their .edu email is not verified, redirect them
   if (!userProfile?.isMentor || !userProfile.isEduVerified) {
@@ -40,7 +62,7 @@ export default async function EditProfilePage({
 
   /**
    * Server Action to handle profile update.
-   * It updates the userProfiles table with the provided bio, school_year, and graduation_year.
+   * It updates the userProfiles table with the provided bio, school_year, graduation_year, and profile image.
    */
   const handleUpdateProfile = async (formData: FormData) => {
     "use server";
@@ -50,21 +72,39 @@ export default async function EditProfilePage({
       formData.get("graduation_year") as string,
       10,
     );
+    const profileImageFile = formData.get("profile_image") as File | null;
 
     // Basic validation
     if (!bio || !schoolYear || isNaN(graduationYear)) {
       redirect("/edit-profile?status=invalid-input");
     }
 
-    if (
+    // Check if any change has been made
+    const isProfileUnchanged =
       bio === userProfile.bio &&
       schoolYear === userProfile.schoolYear &&
-      graduationYear === userProfile.graduationYear
-    ) {
+      graduationYear === userProfile.graduationYear &&
+      !profileImageFile;
+
+    if (isProfileUnchanged) {
       redirect("/edit-profile?status=profile-updated");
     }
 
     try {
+      let imageUrl = userProfile?.user?.image || "";
+
+      // Handle profile image upload if a new image is provided
+      if (profileImageFile && profileImageFile.size > 0) {
+        imageUrl = await uploadImage(profileImageFile);
+        // Update the user's image in the 'users' table
+        await db
+          .update(users)
+          .set({
+            image: imageUrl,
+          })
+          .where(eq(users.id, session.userId)); // Ensure 'id' matches your primary key
+      }
+
       // Update the userProfiles table with the additional information
       await db
         .update(userProfiles)
@@ -78,9 +118,9 @@ export default async function EditProfilePage({
             | "Graduate",
           graduationYear,
         })
-        .where(eq(userProfiles.userId, session.user.id));
+        .where(eq(userProfiles.userId, session.userId));
 
-      // Redirect to the dashboard or a confirmation page upon successful update
+      // Redirect to the edit profile page upon successful update
       redirect("/edit-profile?status=profile-updated");
     } catch (error: any) {
       // If the error is a NEXT_REDIRECT, rethrow it to allow Next.js to handle the redirect
@@ -93,8 +133,19 @@ export default async function EditProfilePage({
     }
   };
 
+  // Placeholder for image upload function
+  // Replace this with your actual image upload implementation (e.g., upload to S3, Cloudinary)
+  async function uploadImage(file: File): Promise<string> {
+    // Example: Return a dummy URL after "uploading"
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        resolve(URL.createObjectURL(file));
+      }, 1000);
+    });
+  }
+
   // Extract the status from the query parameters for displaying messages
-  const status = (await searchParams)?.status || "";
+  const status = searchParams?.status || "";
   let displayMessage = "";
   let isDisplaySuccess = false;
 
@@ -138,7 +189,38 @@ export default async function EditProfilePage({
           </div>
         )}
 
-        <form action={handleUpdateProfile} className="space-y-4">
+        {/* Current Profile Image */}
+        <div className="flex justify-center">
+          {userProfile?.user?.image ? (
+            <img
+              src={userProfile?.user?.image}
+              alt="Profile Image"
+              className="h-24 w-24 rounded-full object-cover"
+            />
+          ) : (
+            <div className="flex h-24 w-24 items-center justify-center rounded-full bg-gray-200 text-gray-500">
+              No Image
+            </div>
+          )}
+        </div>
+
+        {/* Profile Image Upload */}
+        <form
+          action={handleUpdateProfile}
+          className="space-y-4"
+          encType="multipart/form-data"
+        >
+          <div>
+            <Label htmlFor="profile_image">Update Profile Image</Label>
+            <Input
+              id="profile_image"
+              name="profile_image"
+              type="file"
+              accept="image/*"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
+            />
+          </div>
+
           <div>
             <Label htmlFor="bio">Bio</Label>
             <Input

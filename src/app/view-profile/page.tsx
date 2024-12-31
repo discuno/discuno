@@ -4,6 +4,19 @@ import { db } from "~/server/db";
 import Link from "next/link";
 import { Button } from "~/components/ui/button";
 
+interface UserProfile {
+  userId: string;
+  bio: string;
+  schoolYear: "Freshman" | "Sophomore" | "Junior" | "Senior" | "Graduate";
+  graduationYear: number;
+  eduEmail: string;
+  isMentor: boolean;
+  isEduVerified: boolean;
+  user: {
+    image: string | null;
+  };
+}
+
 export default async function ViewProfilePage() {
   const session = await auth();
 
@@ -14,9 +27,25 @@ export default async function ViewProfilePage() {
 
   try {
     // Fetch the user's profile from the database
-    const userProfile = await db.query.userProfiles.findFirst({
-      where: (table, { eq }) => eq(table.userId, session.user.id),
-    });
+    const userProfile = (await db.query.userProfiles.findFirst({
+      where: (table, { eq }) => eq(table.userId, session.userId),
+      columns: {
+        userId: true,
+        bio: true,
+        schoolYear: true,
+        graduationYear: true,
+        eduEmail: true,
+        isMentor: true,
+        isEduVerified: true,
+      },
+      with: {
+        user: {
+          columns: {
+            image: true,
+          },
+        },
+      },
+    })) as (UserProfile & { user: { image: string | null } }) | null;
 
     // If the user is not a mentor or their .edu email is not verified, redirect them
     if (!userProfile?.isMentor || !userProfile.isEduVerified) {
@@ -33,6 +62,21 @@ export default async function ViewProfilePage() {
             <p className="text-gray-500 dark:text-gray-400">
               View and manage your profile information.
             </p>
+          </div>
+
+          {/* Profile Image */}
+          <div className="flex justify-center">
+            {userProfile.user.image ? (
+              <img
+                src={userProfile.user.image}
+                alt="Profile Image"
+                className="h-24 w-24 rounded-full object-cover"
+              />
+            ) : (
+              <div className="flex h-24 w-24 items-center justify-center rounded-full bg-gray-200 text-gray-500">
+                No Image
+              </div>
+            )}
           </div>
 
           {/* Profile Information */}
@@ -75,6 +119,6 @@ export default async function ViewProfilePage() {
     );
   } catch (error: any) {
     console.error("Error fetching user profile:", error);
-    redirect("/profile?status=error");
+    redirect("/view-profile?status=error");
   }
 }

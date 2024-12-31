@@ -181,6 +181,10 @@ export const userProfiles = createTable(
   }),
 );
 
+export const userProfilesRelations = relations(userProfiles, ({ one }) => ({
+  user: one(users, { fields: [userProfiles.userId], references: [users.id] }),
+}));
+
 export const userMajors = createTable(
   "user_major",
   {
