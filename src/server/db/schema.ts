@@ -53,7 +53,8 @@ export const users = createTable("user", {
   id: varchar("id", { length: 255 })
     .notNull()
     .primaryKey()
-    .$defaultFn(() => crypto.randomUUID()),
+    .$defaultFn(() => crypto.randomUUID())
+    .unique(),
   name: varchar("name", { length: 255 }),
   email: varchar("email", { length: 255 }).unique(),
   emailVerified: timestamp("email_verified", {
@@ -144,6 +145,7 @@ export const userProfiles = createTable(
     id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
     userId: varchar("user_id", { length: 255 })
       .notNull()
+      .unique()
       .references(() => users.id),
     bio: varchar("bio", { length: 1000 }),
     schoolYear: varchar("school_year", { length: 255 })

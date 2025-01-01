@@ -7,15 +7,18 @@ import jwt from "jsonwebtoken";
 import { env } from "~/env";
 import nodemailer from "nodemailer";
 import { db } from "~/server/db";
+import { userProfiles } from "~/server/db/schema";
 
 interface EmailInputFormProps {
   message?: string;
   isSuccess?: boolean;
+  hasExistingEmail?: boolean;
 }
 
 export default async function EmailInputForm({
   message,
   isSuccess,
+  hasExistingEmail = false,
 }: EmailInputFormProps) {
   const handleSubmit = async (formData: FormData) => {
     "use server";
@@ -39,33 +42,9 @@ export default async function EmailInputForm({
         redirect("/");
       }
 
-      const existingProfiles = await db.query.userProfiles.findMany({
-        where: (model, { or, eq }) =>
-          or(
-            eq(model.userId, session.userId),
-            eq(model.eduEmail, lowerCaseEduEmail),
-          ),
-      });
-
-      // Check if the user already has this email
-      const userProfile = existingProfiles.find(
-        (profile) => profile.userId === session.userId,
-      );
-      if (userProfile?.eduEmail === lowerCaseEduEmail) {
-        redirect("/email-verification?status=already-verified");
-      }
-
-      // Check if email is already in use by another user
-      const emailInUse = existingProfiles.find(
-        (profile) => profile.eduEmail === lowerCaseEduEmail,
-      );
-      if (emailInUse) {
-        redirect("/email-verification?status=email-in-use");
-      }
-
       // Generate a verification token
       const token = jwt.sign(
-        { userId: session.userId, lowerCaseEduEmail },
+        { userId: session.userId, eduEmail: lowerCaseEduEmail },
         env.JWT_SECRET,
         { expiresIn: "10m" },
       );
@@ -91,9 +70,37 @@ export default async function EmailInputForm({
         `,
       });
 
+      // Perform an upsert operation
+      await db
+        .insert(userProfiles)
+        .values({
+          userId: session.userId,
+          eduEmail: lowerCaseEduEmail,
+          isEduVerified: false, // Initially false until verification
+          isMentor: false, // Adjust based on your logic
+          bio: "",
+          schoolYear: "Freshman",
+          graduationYear: new Date().getFullYear() + 4,
+        })
+        .onConflictDoUpdate({
+          target: userProfiles.userId,
+          set: {
+            eduEmail: lowerCaseEduEmail,
+            isEduVerified: false,
+          },
+        });
+
       // Redirect to the success page
       redirect("/email-verification?status=sent");
     } catch (error: any) {
+      // Handle unique constraint violation
+      if (
+        error.code === "23505" && // PostgreSQL unique violation error code
+        error.constraint === "unique_eduEmail"
+      ) {
+        redirect("/email-verification?status=email-in-use");
+      }
+
       // If the error is a NEXT_REDIRECT, rethrow it to allow Next.js to handle the redirect
       if (error.digest && error.digest.startsWith("NEXT_REDIRECT")) {
         throw error;
@@ -110,7 +117,9 @@ export default async function EmailInputForm({
       <div className="mx-auto max-w-md space-y-6 rounded-lg border border-border/40 bg-card p-8 text-card-foreground shadow-lg backdrop-blur-md transition-all duration-300 dark:shadow-primary/5 sm:p-12">
         <div className="space-y-2 text-center">
           <h1 className="text-3xl font-bold text-primary">
-            Enter Your College Email
+            {hasExistingEmail
+              ? "Edit Your College Email"
+              : "Enter Your College Email"}
           </h1>
           <p className="text-muted-foreground">
             We need to verify your email to ensure you are a student.

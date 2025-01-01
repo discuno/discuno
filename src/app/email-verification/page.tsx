@@ -3,6 +3,7 @@ import SentEmailVerification from "~/app/email-verification/Sent";
 import EmailInputForm from "~/app/email-verification/EmailInputForm";
 import { auth } from "~/server/auth";
 import { db } from "~/server/db";
+
 interface EmailVerificationPageProps {
   searchParams: { status?: string };
 }
@@ -16,7 +17,7 @@ export default async function EmailVerificationPage({
     redirect("/");
   }
 
-  const { status } = await searchParams;
+  const { status } = searchParams;
   let message = "";
   let isSuccess = false;
 
@@ -45,7 +46,19 @@ export default async function EmailVerificationPage({
     case "error":
       message = "An unexpected error occurred. Please try again later.";
       break;
+    default:
+      message = "";
   }
+
+  // Fetch the user's profile to determine if they have an existing eduEmail
+  const userProfile = await db.query.userProfiles.findFirst({
+    where: (table, { eq }) => eq(table.userId, session.userId),
+    columns: {
+      eduEmail: true,
+    },
+  });
+
+  const hasExistingEmail = !!userProfile?.eduEmail;
 
   // Render the SentEmailVerification component if the status is 'sent'
   if (status === "sent") {
@@ -53,5 +66,11 @@ export default async function EmailVerificationPage({
   }
 
   // Render the EmailInputForm with the appropriate message and success flag
-  return <EmailInputForm message={message} isSuccess={isSuccess} />;
+  return (
+    <EmailInputForm
+      message={message}
+      isSuccess={isSuccess}
+      hasExistingEmail={hasExistingEmail}
+    />
+  );
 }
