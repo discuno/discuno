@@ -17,7 +17,7 @@ export default async function EmailVerificationPage({
     redirect("/");
   }
 
-  const { status } = searchParams;
+  const { status } = await searchParams;
   let message = "";
   let isSuccess = false;
 
