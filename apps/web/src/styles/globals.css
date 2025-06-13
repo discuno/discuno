@@ -1,0 +1,349 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --font-sans:
+    var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+    "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
+    "Segoe UI Symbol", "Noto Color Emoji";
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  --color-chart-1: hsl(var(--chart-1));
+  --color-chart-2: hsl(var(--chart-2));
+  --color-chart-3: hsl(var(--chart-3));
+  --color-chart-4: hsl(var(--chart-4));
+  --color-chart-5: hsl(var(--chart-5));
+}
+
+/*
+  The default border color has changed to `currentColor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentColor);
+  }
+}
+
+@layer base {
+  :root {
+    /* Default theme */
+    --background: 210 50% 98%;
+    --foreground: 220 30% 15%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 30% 15%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 30% 15%;
+    --primary: 215 90% 45%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 215 90% 45%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 220 15% 45%;
+    --accent: 215 90% 45%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 220 15% 90%;
+    --input: 220 15% 90%;
+    --ring: 215 90% 45%;
+    --radius: 0.75rem;
+    --chart-1: 215 90% 45%;
+    --chart-2: 220 15% 45%;
+    --chart-3: 210 40% 45%;
+    --chart-4: 200 65% 45%;
+    --chart-5: 190 90% 45%;
+  }
+
+  .dark {
+    --background: 220 30% 10%;
+    --foreground: 210 40% 98%;
+    --card: 220 25% 15%;
+    --card-foreground: 210 40% 98%;
+    --popover: 220 25% 15%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 215 90% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 25% 20%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 220 25% 20%;
+    --muted-foreground: 210 30% 80%;
+    --accent: 215 90% 50%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 220 25% 20%;
+    --input: 220 25% 20%;
+    --ring: 215 90% 50%;
+  }
+
+  /**
+   * Test themes
+   */
+
+  /* Prestigious Ivy League Theme */
+  .theme-ivy-league {
+    --background: 210 40% 98%; /* slate-50 */
+    --foreground: 222 47% 18%; /* slate-800 */
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 18%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 18%;
+    --primary: 222 47% 11%; /* slate-900 */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 18%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 222 47% 18%;
+    --accent: 84 82% 55%; /* lime-400 */
+    --accent-foreground: 222 47% 11%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 210 40% 96%;
+    --input: 210 40% 96%;
+    --ring: 199 89% 48%; /* sky-500 */
+  }
+
+  .theme-ivy-league.dark {
+    --background: 222 47% 11%; /* slate-900 */
+    --foreground: 210 40% 98%; /* slate-50 */
+    --card: 222 47% 11%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 40% 98%; /* slate-50 */
+    --primary-foreground: 222 47% 11%;
+    --secondary: 222 47% 18%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 222 47% 18%;
+    --muted-foreground: 210 40% 98%;
+    --accent: 84 82% 55%; /* lime-400 */
+    --accent-foreground: 222 47% 11%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 222 47% 18%;
+    --input: 222 47% 18%;
+    --ring: 199 89% 48%; /* sky-500 */
+  }
+
+  /* Modern STEM Theme */
+  .theme-stem {
+    --background: 210 40% 96%; /* slate-100 */
+    --foreground: 222 47% 11%; /* slate-900 */
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 187 100% 42%; /* cyan-500 */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 222 47% 11%;
+    --accent: 292 84% 61%; /* fuchsia-500 */
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 210 40% 96%;
+    --input: 210 40% 96%;
+    --ring: 160 84% 39%; /* emerald-500 */
+  }
+
+  .theme-stem.dark {
+    --background: 222 47% 11%; /* slate-900 */
+    --foreground: 210 40% 98%; /* slate-100 */
+    --card: 222 47% 11%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 187 100% 42%; /* cyan-500 */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 222 47% 18%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 222 47% 18%;
+    --muted-foreground: 210 40% 98%;
+    --accent: 292 84% 61%; /* fuchsia-500 */
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 222 47% 18%;
+    --input: 222 47% 18%;
+    --ring: 160 84% 39%; /* emerald-500 */
+  }
+
+  /* Liberal Arts Classic Theme */
+  .theme-liberal-arts {
+    --background: 48 100% 97%; /* amber-50 */
+    --foreground: 240 5% 26%; /* zinc-800 */
+    --card: 0 0% 100%;
+    --card-foreground: 240 5% 26%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 5% 26%;
+    --primary: 30 78% 28%; /* amber-900 */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 48 100% 97%;
+    --secondary-foreground: 240 5% 26%;
+    --muted: 48 100% 97%;
+    --muted-foreground: 240 5% 26%;
+    --accent: 35 92% 50%; /* amber-500 */
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 48 100% 97%;
+    --input: 48 100% 97%;
+    --ring: 142 71% 45%; /* green-500 */
+  }
+
+  .theme-liberal-arts.dark {
+    --background: 240 5% 26%; /* zinc-800 */
+    --foreground: 48 100% 97%; /* amber-50 */
+    --card: 240 5% 26%;
+    --card-foreground: 48 100% 97%;
+    --popover: 240 5% 26%;
+    --popover-foreground: 48 100% 97%;
+    --primary: 35 92% 50%; /* amber-500 */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 5% 26%;
+    --secondary-foreground: 48 100% 97%;
+    --muted: 240 5% 26%;
+    --muted-foreground: 48 100% 97%;
+    --accent: 35 92% 50%; /* amber-500 */
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 48 100% 97%;
+    --border: 240 5% 26%;
+    --input: 240 5% 26%;
+    --ring: 142 71% 45%; /* green-500 */
+  }
+
+  /* Minimalist Academia Theme */
+  .theme-minimalist {
+    --background: 0 0% 100%; /* white */
+    --foreground: 222 47% 11%; /* gray-900 */
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 221 83% 32%; /* blue-900 */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 100%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 0 0% 100%;
+    --muted-foreground: 222 47% 11%;
+    --accent: 215 16% 47%; /* slate-500 */
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 100%;
+    --input: 0 0% 100%;
+    --ring: 217 91% 60%; /* blue-500 */
+  }
+
+  .theme-minimalist.dark {
+    --background: 222 47% 11%; /* gray-900 */
+    --foreground: 0 0% 100%; /* white */
+    --card: 222 47% 11%;
+    --card-foreground: 0 0% 100%;
+    --popover: 222 47% 11%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 217 91% 60%; /* blue-500 */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 222 47% 11%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 222 47% 11%;
+    --muted-foreground: 0 0% 100%;
+    --accent: 215 16% 47%; /* slate-500 */
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 222 47% 11%;
+    --input: 222 47% 11%;
+    --ring: 217 91% 60%; /* blue-500 */
+  }
+
+  /* Next-Gen Research Lab Theme */
+  .theme-research {
+    --background: 222 47% 11%; /* slate-900 */
+    --foreground: 210 40% 98%; /* slate-50 */
+    --card: 222 47% 11%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 243 75% 59%; /* indigo-600 */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 222 47% 11%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 222 47% 11%;
+    --muted-foreground: 210 40% 98%;
+    --accent: 187 100% 42%; /* cyan-400 */
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 222 47% 11%;
+    --input: 222 47% 11%;
+    --ring: 346 89% 60%; /* rose-500 */
+  }
+
+  .theme-research.dark {
+    --background: 222 47% 11%; /* slate-900 */
+    --foreground: 210 40% 98%; /* slate-50 */
+    --card: 222 47% 11%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 243 75% 59%; /* indigo-600 */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 222 47% 11%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 222 47% 11%;
+    --muted-foreground: 210 40% 98%;
+    --accent: 187 100% 42%; /* cyan-400 */
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 222 47% 11%;
+    --input: 222 47% 11%;
+    --ring: 346 89% 60%; /* rose-500 */
+  }
+}

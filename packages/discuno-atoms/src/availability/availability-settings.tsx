@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useCalContext } from '../provider/cal-provider'
-import type { Schedule, Availability } from '../types'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useEffect, useState } from 'react'
 import { Button } from '../components/ui/button'
+import { useCalContext } from '../provider/cal-provider'
+import type { Availability, Schedule } from '../types'
 
 interface AvailabilitySettingsProps {
   scheduleId?: number
@@ -34,13 +34,7 @@ const DAYS_OF_WEEK = [
   { key: 'saturday', label: 'Saturday', value: 6 },
 ]
 
-export function AvailabilitySettings({
-  scheduleId,
-  userId,
-  onSave,
-  onError,
-  className,
-}: AvailabilitySettingsProps) {
+export function AvailabilitySettings({ scheduleId, userId, onSave, onError, className }: AvailabilitySettingsProps) {
   const { apiClient } = useCalContext()
   const queryClient = useQueryClient()
 
@@ -75,7 +69,7 @@ export function AvailabilitySettings({
   })
 
   // Fetch user's schedules if no specific schedule ID
-  const { data: schedules, isLoading: isLoadingSchedules } = useQuery({
+  const { isLoading: isLoadingSchedules } = useQuery({
     queryKey: ['schedules', userId],
     queryFn: async () => {
       if (!apiClient) return []
@@ -103,16 +97,16 @@ export function AvailabilitySettings({
         avail.days.forEach(dayNumber => {
           const day = DAYS_OF_WEEK.find(d => d.value === dayNumber)
           if (day) {
-            const startTime = typeof avail.startTime === 'string'
-              ? avail.startTime
-              : new Date(avail.startTime).toTimeString().slice(0, 5)
-            const endTime = typeof avail.endTime === 'string'
-              ? avail.endTime
-              : new Date(avail.endTime).toTimeString().slice(0, 5)
+            const startTime =
+              typeof avail.startTime === 'string'
+                ? avail.startTime
+                : new Date(avail.startTime).toTimeString().slice(0, 5)
+            const endTime =
+              typeof avail.endTime === 'string' ? avail.endTime : new Date(avail.endTime).toTimeString().slice(0, 5)
 
             newWeeklyAvailability[day.key] = {
               enabled: true,
-              slots: [{ start: startTime, end: endTime }]
+              slots: [{ start: startTime, end: endTime }],
             }
           }
         })
@@ -120,7 +114,7 @@ export function AvailabilitySettings({
 
       setWeeklyAvailability(newWeeklyAvailability)
     }
-  }, [schedule])
+  }, [schedule, weeklyAvailability])
 
   // Save schedule mutation
   const saveScheduleMutation = useMutation({
@@ -132,12 +126,12 @@ export function AvailabilitySettings({
         return await apiClient.createSchedule(scheduleData)
       }
     },
-    onSuccess: (savedSchedule) => {
+    onSuccess: savedSchedule => {
       onSave?.(savedSchedule)
-      queryClient.invalidateQueries({ queryKey: ['schedules'] })
-      queryClient.invalidateQueries({ queryKey: ['schedule', scheduleId] })
+      void queryClient.invalidateQueries({ queryKey: ['schedules'] })
+      void queryClient.invalidateQueries({ queryKey: ['schedule', scheduleId] })
     },
-    onError: (error) => {
+    onError: error => {
       onError?.(error instanceof Error ? error : new Error('Failed to save schedule'))
     },
   })
@@ -148,7 +142,7 @@ export function AvailabilitySettings({
 
     DAYS_OF_WEEK.forEach(day => {
       const dayAvail = weeklyAvailability[day.key]
-      if (dayAvail.enabled && dayAvail.slots.length > 0) {
+      if (dayAvail && dayAvail.enabled && dayAvail.slots.length > 0) {
         dayAvail.slots.forEach(slot => {
           availability.push({
             days: [day.value],
@@ -173,83 +167,94 @@ export function AvailabilitySettings({
   }
 
   const toggleDay = (dayKey: string) => {
-    setWeeklyAvailability(prev => ({
-      ...prev,
-      [dayKey]: {
-        ...prev[dayKey],
-        enabled: !prev[dayKey].enabled,
-        slots: !prev[dayKey].enabled && prev[dayKey].slots.length === 0
-          ? [{ start: '09:00', end: '17:00' }]
-          : prev[dayKey].slots
+    setWeeklyAvailability(prev => {
+      const currentDay = prev[dayKey]
+      if (!currentDay) return prev
+
+      return {
+        ...prev,
+        [dayKey]: {
+          ...currentDay,
+          enabled: !currentDay.enabled,
+          slots:
+            !currentDay.enabled && currentDay.slots.length === 0
+              ? [{ start: '09:00', end: '17:00' }]
+              : currentDay.slots,
+        },
       }
-    }))
+    })
   }
 
   const updateTimeSlot = (dayKey: string, slotIndex: number, field: 'start' | 'end', value: string) => {
-    setWeeklyAvailability(prev => ({
-      ...prev,
-      [dayKey]: {
-        ...prev[dayKey],
-        slots: prev[dayKey].slots.map((slot, index) =>
-          index === slotIndex ? { ...slot, [field]: value } : slot
-        )
+    setWeeklyAvailability(prev => {
+      const currentDay = prev[dayKey]
+      if (!currentDay) return prev
+
+      return {
+        ...prev,
+        [dayKey]: {
+          ...currentDay,
+          slots: currentDay.slots.map((slot, index) => (index === slotIndex ? { ...slot, [field]: value } : slot)),
+        },
       }
-    }))
+    })
   }
 
   const addTimeSlot = (dayKey: string) => {
-    setWeeklyAvailability(prev => ({
-      ...prev,
-      [dayKey]: {
-        ...prev[dayKey],
-        slots: [...prev[dayKey].slots, { start: '09:00', end: '17:00' }]
+    setWeeklyAvailability(prev => {
+      const currentDay = prev[dayKey]
+      if (!currentDay) return prev
+
+      return {
+        ...prev,
+        [dayKey]: {
+          ...currentDay,
+          slots: [...currentDay.slots, { start: '09:00', end: '17:00' }],
+        },
       }
-    }))
+    })
   }
 
   const removeTimeSlot = (dayKey: string, slotIndex: number) => {
-    setWeeklyAvailability(prev => ({
-      ...prev,
-      [dayKey]: {
-        ...prev[dayKey],
-        slots: prev[dayKey].slots.filter((_, index) => index !== slotIndex)
+    setWeeklyAvailability(prev => {
+      const currentDay = prev[dayKey]
+      if (!currentDay) return prev
+
+      return {
+        ...prev,
+        [dayKey]: {
+          ...currentDay,
+          slots: currentDay.slots.filter((_, index) => index !== slotIndex),
+        },
       }
-    }))
+    })
   }
 
   const isLoading = isLoadingSchedule || isLoadingSchedules || saveScheduleMutation.isPending
 
   // Only show loading state if we truly don't have an API client after hydration
   // or if we're actively loading data
-  if (!isHydrated || (!apiClient && isHydrated) || (apiClient && isLoading && (scheduleId || userId))) {
+  if (!isHydrated || apiClient || isLoading) {
     return (
-      <div className={`availability-settings ${className || ''}`}>
+      <div className={`availability-settings ${className ?? ''}`}>
         <div className="loading-state p-6 text-center">
-          <div className="animate-spin inline-block w-6 h-6 border-2 border-gray-300 border-t-blue-600 rounded-full mb-4"></div>
+          <div className="mb-4 inline-block h-6 w-6 animate-spin rounded-full border-2 border-gray-300 border-t-blue-600"></div>
           <p className="text-gray-600">
-            {!isHydrated ? 'Loading...' :
-             !apiClient ? 'Initializing Cal.com connection...' :
-             isLoading ? 'Loading availability data...' :
-             'Loading...'}
+            {!isHydrated
+              ? 'Loading...'
+              : !apiClient
+                ? 'Initializing Cal.com connection...'
+                : isLoading
+                  ? 'Loading availability data...'
+                  : 'Loading...'}
           </p>
         </div>
       </div>
     )
   }
 
-  // If we still don't have an API client after hydration, show an error state
-  if (!apiClient) {
-    return (
-      <div className={`availability-settings ${className || ''}`}>
-        <div className="error-state p-6 text-center">
-          <p className="text-red-600">Cal.com API client is not available. Please check your configuration.</p>
-        </div>
-      </div>
-    )
-  }
-
   return (
-    <div className={`availability-settings ${className || ''}`}>
+    <div className={`availability-settings ${className ?? ''}`}>
       <div className="settings-header">
         <h2>{scheduleId ? 'Edit Schedule' : 'Create Schedule'}</h2>
       </div>
@@ -261,7 +266,9 @@ export function AvailabilitySettings({
             id="scheduleName"
             type="text"
             value={scheduleName}
-            onChange={(e) => setScheduleName(e.target.value)}
+            onChange={e => {
+              setScheduleName(e.target.value)
+            }}
             placeholder="Working Hours"
           />
         </div>
@@ -271,7 +278,9 @@ export function AvailabilitySettings({
           <select
             id="timeZone"
             value={timeZone}
-            onChange={(e) => setTimeZone(e.target.value)}
+            onChange={e => {
+              setTimeZone(e.target.value)
+            }}
           >
             <option value="America/New_York">Eastern Time</option>
             <option value="America/Chicago">Central Time</option>
@@ -292,33 +301,41 @@ export function AvailabilitySettings({
                   <label className="day-toggle">
                     <input
                       type="checkbox"
-                      checked={dayAvail.enabled}
-                      onChange={() => toggleDay(day.key)}
+                      checked={dayAvail?.enabled}
+                      onChange={() => {
+                        toggleDay(day.key)
+                      }}
                     />
                     <span className="day-label">{day.label}</span>
                   </label>
                 </div>
 
-                {dayAvail.enabled && (
+                {dayAvail?.enabled && (
                   <div className="time-slots">
                     {dayAvail.slots.map((slot, slotIndex) => (
                       <div key={slotIndex} className="time-slot">
                         <input
                           type="time"
                           value={slot.start}
-                          onChange={(e) => updateTimeSlot(day.key, slotIndex, 'start', e.target.value)}
+                          onChange={e => {
+                            updateTimeSlot(day.key, slotIndex, 'start', e.target.value)
+                          }}
                         />
                         <span>to</span>
                         <input
                           type="time"
                           value={slot.end}
-                          onChange={(e) => updateTimeSlot(day.key, slotIndex, 'end', e.target.value)}
+                          onChange={e => {
+                            updateTimeSlot(day.key, slotIndex, 'end', e.target.value)
+                          }}
                         />
                         {dayAvail.slots.length > 1 && (
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => removeTimeSlot(day.key, slotIndex)}
+                            onClick={() => {
+                              removeTimeSlot(day.key, slotIndex)
+                            }}
                           >
                             Remove
                           </Button>
@@ -328,7 +345,9 @@ export function AvailabilitySettings({
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => addTimeSlot(day.key)}
+                      onClick={() => {
+                        addTimeSlot(day.key)
+                      }}
                     >
                       Add Time
                     </Button>
@@ -341,7 +360,7 @@ export function AvailabilitySettings({
 
         <div className="form-actions">
           <Button onClick={handleSave} disabled={isLoading}>
-            {isLoading ? 'Saving...' : 'Save Schedule'}
+            Save Schedule
           </Button>
         </div>
       </div>

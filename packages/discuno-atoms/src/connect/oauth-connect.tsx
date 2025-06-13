@@ -1,10 +1,10 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useCalApi } from '../provider/cal-provider'
-import type { Credential, App } from '../types'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import React, { useEffect, useState } from 'react'
 import { Button } from '../components/ui/button'
+import { useCalApi } from '../provider/cal-provider'
+import type { Credential } from '../types'
 
 interface OAuthConnectProps {
   appSlug: string
@@ -15,14 +15,7 @@ interface OAuthConnectProps {
   children?: React.ReactNode
 }
 
-export function OAuthConnect({
-  appSlug,
-  redirectUri,
-  onSuccess,
-  onError,
-  className,
-  children,
-}: OAuthConnectProps) {
+export function OAuthConnect({ appSlug, redirectUri, onSuccess, onError, className, children }: OAuthConnectProps) {
   const { apiClient } = useCalApi()
   const queryClient = useQueryClient()
   const [isConnecting, setIsConnecting] = useState(false)
@@ -44,16 +37,16 @@ export function OAuthConnect({
     mutationFn: async () => {
       if (!apiClient) throw new Error('API client not available')
       const currentUrl = new URL(window.location.href)
-      const redirect = redirectUri || `${currentUrl.protocol}//${currentUrl.host}${currentUrl.pathname}`
+      const redirect = redirectUri ?? `${currentUrl.protocol}//${currentUrl.host}${currentUrl.pathname}`
 
       const { url } = await apiClient.getOAuthUrl(appSlug, redirect)
       return url
     },
-    onSuccess: (authUrl) => {
+    onSuccess: authUrl => {
       // Redirect to OAuth provider
       window.location.href = authUrl
     },
-    onError: (error) => {
+    onError: error => {
       setIsConnecting(false)
       onError?.(error instanceof Error ? error : new Error('Failed to initiate OAuth flow'))
     },
@@ -74,8 +67,8 @@ export function OAuthConnect({
 
       if (code && apiClient) {
         try {
-          const credential = await apiClient.handleOAuthCallback(appSlug, code, state || undefined)
-          queryClient.invalidateQueries({ queryKey: ['credentials'] })
+          const credential = await apiClient.handleOAuthCallback(appSlug, code, state ?? undefined)
+          void queryClient.invalidateQueries({ queryKey: ['credentials'] })
           onSuccess?.(credential)
 
           // Clean up URL
@@ -87,7 +80,7 @@ export function OAuthConnect({
       }
     }
 
-    handleOAuthCallback()
+    void handleOAuthCallback()
   }, [apiClient, appSlug, onSuccess, onError, queryClient])
 
   const handleConnect = () => {
@@ -113,20 +106,14 @@ export function OAuthConnect({
   }
 
   return (
-    <Button
-      onClick={handleConnect}
-      disabled={isConnecting || connectMutation.isPending}
-      className={className}
-    >
+    <Button onClick={handleConnect} disabled={isConnecting || connectMutation.isPending} className={className}>
       {isConnecting || connectMutation.isPending ? (
         <>
-          <span className="animate-spin mr-2">⟳</span>
+          <span className="mr-2 animate-spin">⟳</span>
           Connecting...
         </>
       ) : (
-        <>
-          Connect {app?.name || appSlug}
-        </>
+        <>Connect {app?.name ?? appSlug}</>
       )}
     </Button>
   )

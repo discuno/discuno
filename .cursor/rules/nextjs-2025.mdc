@@ -1,0 +1,79 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+Large-Scale Next.js App Router Best Practices (2025 Edition)
+===========================================================
+
+🗂️ Project Structure
+--------------------
+1. Use /app/ directory (App Router) instead of /pages/.
+2. Modularize by feature, not by file type.
+   Example:
+     /app
+       /dashboard
+         page.tsx
+         layout.tsx
+         loading.tsx
+         DashboardClient.tsx
+         DashboardServer.ts
+3. Use `lib/` and `services/` folders:
+   - lib/: Utility and pure functions.
+   - services/: Business logic, API calls, DB access.
+
+🧠 Component Patterns
+---------------------
+4. Use `use client` sparingly.
+   - Only use for interactivity (forms, modals, dropdowns).
+5. Co-locate CSS Modules or use Tailwind CSS.
+   - Use typography plugin for content-heavy pages.
+5.5. Use arrow function syntax
+   - With named exports when possible
+
+⚙️ Server-Side Practices
+-------------------------
+6. Prefer server actions over API routes.
+   Example:
+     'use server'
+
+     export async function createBooking(data) {
+       const validated = schema.parse(data)
+       await db.booking.create({ data: validated })
+     }
+
+7. Use streaming and suspense with loading.tsx where possible.
+
+🧱 State Management
+-------------------
+8. Prefer local state + server actions.
+9. For global state, use:
+   - Zustand or Jotai.
+   - Context only for static or rarely changing state.
+
+🧪 Testing & Type Safety
+-------------------------
+10. Use Zod or Valibot for runtime validation.
+11. Type everything end-to-end.
+12. Use Vitest/Jest for unit tests, Playwright for E2E.
+
+🌐 Networking & Caching
+------------------------
+13. Use fetch in Server Components with cache control.
+    Example:
+      fetch('/api/data', { next: { revalidate: 60 } })
+14. Avoid client-side fetching unless necessary.
+
+🔒 Security & Auth
+-------------------
+15. Use NextAuth, Clerk, or Auth.js with Server Components.
+16. Use HttpOnly cookies for JWTs or sessions.
+17. Protect routes with middleware or layout-level auth checks.
+
+🔧 Middleware
+--------------
+18. Use `middleware.ts` for:
+    - Route protection
+    - A/B testing
+    - Logging
+    - Geo-redirects

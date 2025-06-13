@@ -1,15 +1,15 @@
 'use client'
 
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import type { CalApiConfig, AtomsGlobalConfig } from '../types'
-import { CalApiClient, createApiClient } from '../lib/api-client'
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { type CalApiClient, createApiClient } from '../lib/api-client'
+import type { AtomsGlobalConfig, CalApiConfig, User } from '../types'
 
 interface CalContextValue {
   apiClient: CalApiClient | null
   config: AtomsGlobalConfig
   isAuthenticated: boolean
-  user: any | null
+  user: User | null
   error: string | null
   refreshAuth: () => Promise<void>
 }
@@ -23,29 +23,32 @@ interface CalProviderProps {
 }
 
 export function CalProvider({ children, config, onError }: CalProviderProps) {
-  const [queryClient] = useState(() => new QueryClient({
-    defaultOptions: {
-      queries: {
-        staleTime: 0, // Prevent hydration issues
-        gcTime: 10 * 60 * 1000, // 10 minutes
-        retry: (failureCount, error) => {
-          // Don't retry on 401/403 errors
-          if (error instanceof Error && error.message.includes('401') || error.message.includes('403')) {
-            return false
-          }
-          return failureCount < 3
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            staleTime: 0, // Prevent hydration issues
+            gcTime: 10 * 60 * 1000, // 10 minutes
+            retry: (failureCount, error) => {
+              // Don't retry on 401/403 errors
+              if (error instanceof Error && (error.message.includes('401') || error.message.includes('403'))) {
+                return false
+              }
+              return failureCount < 3
+            },
+            refetchOnMount: false, // Prevent automatic refetching on mount
+            refetchOnWindowFocus: false, // Prevent refetching on window focus
+          },
         },
-        refetchOnMount: false, // Prevent automatic refetching on mount
-        refetchOnWindowFocus: false, // Prevent refetching on window focus
-      },
-    },
-  }))
+      })
+  )
 
   // In test environment, assume we're hydrated immediately
   const [isHydrated, setIsHydrated] = useState(typeof window !== 'undefined' && process.env.NODE_ENV === 'test')
   const [apiClient, setApiClient] = useState<CalApiClient | null>(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState<User | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   // Track hydration status
@@ -78,7 +81,16 @@ export function CalProvider({ children, config, onError }: CalProviderProps) {
       }
     }
     return null
-  }, [isHydrated, config.apiUrl, config.accessToken, config.refreshToken, config.refreshUrl, config.clientId, config.clientSecret, onError])
+  }, [
+    isHydrated,
+    config.apiUrl,
+    config.accessToken,
+    config.refreshToken,
+    config.refreshUrl,
+    config.clientId,
+    config.clientSecret,
+    onError,
+  ])
 
   // Update state when memo changes
   useEffect(() => {
@@ -106,11 +118,12 @@ export function CalProvider({ children, config, onError }: CalProviderProps) {
         setError(null)
       } catch (err) {
         // Handle token expiration
-        if (err instanceof Error && (
-          err.message.includes('TokenExpiredException') ||
-          err.message.includes('ACCESS_TOKEN_IS_EXPIRED') ||
-          err.message.includes('401')
-        )) {
+        if (
+          err instanceof Error &&
+          (err.message.includes('TokenExpiredException') ||
+            err.message.includes('ACCESS_TOKEN_IS_EXPIRED') ||
+            err.message.includes('401'))
+        ) {
           console.warn('Access token expired, attempting refresh...')
 
           // Try to refresh token if refresh URL is available
@@ -119,13 +132,13 @@ export function CalProvider({ children, config, onError }: CalProviderProps) {
               const refreshResponse = await fetch(config.refreshUrl, {
                 method: 'GET',
                 headers: {
-                  'Authorization': `Bearer ${config.accessToken}`,
+                  Authorization: `Bearer ${config.accessToken}`,
                   'Content-Type': 'application/json',
                 },
               })
 
               if (refreshResponse.ok) {
-                const refreshData = await refreshResponse.json()
+                const refreshData = (await refreshResponse.json()) as { accessToken?: string }
                 if (refreshData.accessToken) {
                   console.log('Token refreshed successfully')
                   // Note: In a real implementation, you'd update the token in your auth state
@@ -152,16 +165,16 @@ export function CalProvider({ children, config, onError }: CalProviderProps) {
       }
     }
 
-    checkAuth()
+    void checkAuth()
   }, [apiClient, config.accessToken, config.refreshUrl, isHydrated])
 
-  const refreshAuth = async () => {
+  const refreshAuth = useCallback(async () => {
     if (!apiClient || !config.refreshToken) {
       throw new Error('Cannot refresh authentication: missing API client or refresh token')
     }
 
     try {
-      const tokens = await apiClient.refreshToken(config.refreshToken)
+      await apiClient.refreshToken(config.refreshToken)
       // Note: In a real app, you'd want to update the tokens in your auth state/storage
       setError(null)
     } catch (err) {
@@ -169,25 +182,26 @@ export function CalProvider({ children, config, onError }: CalProviderProps) {
       setError(errorMessage)
       throw new Error(errorMessage)
     }
-  }
+  }, [apiClient, config.refreshToken])
 
-  const contextValue = useMemo<CalContextValue>(() => ({
-    apiClient,
-    config: {
-      webAppUrl: config.webAppUrl || 'https://cal.com',
-      apiUrl: config.apiUrl || 'https://api.cal.com/v2',
-    },
-    isAuthenticated,
-    user,
-    error,
-    refreshAuth,
-  }), [apiClient, config.webAppUrl, config.apiUrl, isAuthenticated, user, error])
+  const contextValue = useMemo<CalContextValue>(
+    () => ({
+      apiClient,
+      config: {
+        webAppUrl: config.webAppUrl,
+        apiUrl: config.apiUrl,
+      },
+      isAuthenticated,
+      user,
+      error,
+      refreshAuth,
+    }),
+    [apiClient, config.webAppUrl, config.apiUrl, isAuthenticated, user, error, refreshAuth]
+  )
 
   return (
     <QueryClientProvider client={queryClient}>
-      <CalContext.Provider value={contextValue}>
-        {children}
-      </CalContext.Provider>
+      <CalContext.Provider value={contextValue}>{children}</CalContext.Provider>
     </QueryClientProvider>
   )
 }
@@ -206,7 +220,7 @@ export function useCal() {
 
 // Export individual hooks for specific needs
 export function useCalApi() {
-  const { apiClient, isAuthenticated, error } = useCalContext()
+  const { apiClient, isAuthenticated } = useCalContext()
   return { apiClient, isAuthenticated }
 }
 

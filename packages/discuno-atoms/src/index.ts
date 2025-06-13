@@ -8,7 +8,13 @@ export { CalApiClient, createApiClient, getApiClient, isApiClientInitialized } f
 export { Booker } from './booker/booker'
 export { AvailabilitySettings } from './availability/availability-settings'
 export { EventTypeSettings } from './event-types/event-type-settings'
-export { OAuthConnect, GoogleCalendarConnect, OutlookCalendarConnect, ZoomConnect, SlackConnect } from './connect/oauth-connect'
+export {
+  OAuthConnect,
+  GoogleCalendarConnect,
+  OutlookCalendarConnect,
+  ZoomConnect,
+  SlackConnect,
+} from './connect/oauth-connect'
 export { Button } from './components/ui/button'
 
 // Utilities

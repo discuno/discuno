@@ -49,30 +49,27 @@ describe('CalApiClient', () => {
   })
 
   describe('HTTP Request Methods', () => {
-      it('should make GET requests correctly', async () => {
-    const mockResponse = {
-      status: 'success',
-      data: { id: 1, title: 'Test Event' },
-    }
+    it('should make GET requests correctly', async () => {
+      const mockResponse = {
+        status: 'success',
+        data: { id: 1, title: 'Test Event' },
+      }
 
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      json: () => Promise.resolve(mockResponse),
-    })
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve(mockResponse),
+      })
 
-    const result = await client.getEventTypes()
+      const result = await client.getEventTypes()
 
-    expect(mockFetch).toHaveBeenCalledWith(
-      'https://api.cal.com/v2/event-types',
-      {
+      expect(mockFetch).toHaveBeenCalledWith('https://api.cal.com/v2/event-types', {
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': 'Bearer test-access-token',
+          Accept: 'application/json',
+          Authorization: 'Bearer test-access-token',
         },
-      }
-    )
+      })
 
       expect(result).toEqual(mockResponse.data)
     })
@@ -103,41 +100,38 @@ describe('CalApiClient', () => {
 
       const result = await client.createBooking(mockBookingData as BookingRequest)
 
-      expect(mockFetch).toHaveBeenCalledWith(
-        'https://api.cal.com/v2/bookings',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'Authorization': 'Bearer test-access-token',
-          },
-          body: JSON.stringify(mockBookingData),
-        }
-      )
+      expect(mockFetch).toHaveBeenCalledWith('https://api.cal.com/v2/bookings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          Authorization: 'Bearer test-access-token',
+        },
+        body: JSON.stringify(mockBookingData),
+      })
 
       expect(result).toEqual(mockResponse.data)
     })
 
-      it('should handle HTTP errors correctly', async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: false,
-      status: 401,
-      statusText: 'Unauthorized',
-      json: () => Promise.resolve({ message: 'Unauthorized access' }),
+    it('should handle HTTP errors correctly', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        statusText: 'Unauthorized',
+        json: () => Promise.resolve({ message: 'Unauthorized access' }),
+      })
+
+      await expect(client.getEventTypes()).rejects.toThrow('API Error 401: Unauthorized access')
     })
 
-    await expect(client.getEventTypes()).rejects.toThrow('API Error 401: Unauthorized access')
-    })
+    it('should handle JSON parsing errors', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: () => Promise.reject(new Error('Invalid JSON')),
+      })
 
-      it('should handle JSON parsing errors', async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      json: () => Promise.reject(new Error('Invalid JSON')),
-    })
-
-    await expect(client.getEventTypes()).rejects.toThrow('Invalid JSON')
+      await expect(client.getEventTypes()).rejects.toThrow('Invalid JSON')
     })
 
     it('should handle network errors', async () => {
@@ -163,10 +157,7 @@ describe('CalApiClient', () => {
       const result = await client.getEventTypes()
 
       expect(result).toEqual(mockEventTypes)
-      expect(mockFetch).toHaveBeenCalledWith(
-        'https://api.cal.com/v2/event-types',
-        expect.any(Object)
-      )
+      expect(mockFetch).toHaveBeenCalledWith('https://api.cal.com/v2/event-types', expect.any(Object))
     })
 
     it('should get single event type', async () => {
@@ -181,10 +172,7 @@ describe('CalApiClient', () => {
       const result = await client.getEventType(1)
 
       expect(result).toEqual(mockEventType)
-      expect(mockFetch).toHaveBeenCalledWith(
-        'https://api.cal.com/v2/event-types/1',
-        expect.any(Object)
-      )
+      expect(mockFetch).toHaveBeenCalledWith('https://api.cal.com/v2/event-types/1', expect.any(Object))
     })
 
     it('should create event type', async () => {
@@ -205,14 +193,11 @@ describe('CalApiClient', () => {
       const result = await client.createEventType(newEventType as Partial<EventType>)
 
       expect(result).toEqual(mockResponse)
-      expect(mockFetch).toHaveBeenCalledWith(
-        'https://api.cal.com/v2/event-types',
-        {
-          method: 'POST',
-          headers: expect.any(Object),
-          body: JSON.stringify(newEventType),
-        }
-      )
+      expect(mockFetch).toHaveBeenCalledWith('https://api.cal.com/v2/event-types', {
+        method: 'POST',
+        headers: expect.any(Object),
+        body: JSON.stringify(newEventType),
+      })
     })
 
     it('should update event type', async () => {
@@ -228,14 +213,11 @@ describe('CalApiClient', () => {
       const result = await client.updateEventType(1, updateData)
 
       expect(result).toEqual(mockResponse)
-      expect(mockFetch).toHaveBeenCalledWith(
-        'https://api.cal.com/v2/event-types/1',
-        {
-          method: 'PATCH',
-          headers: expect.any(Object),
-          body: JSON.stringify(updateData),
-        }
-      )
+      expect(mockFetch).toHaveBeenCalledWith('https://api.cal.com/v2/event-types/1', {
+        method: 'PATCH',
+        headers: expect.any(Object),
+        body: JSON.stringify(updateData),
+      })
     })
 
     it('should delete event type', async () => {
@@ -247,13 +229,10 @@ describe('CalApiClient', () => {
 
       await client.deleteEventType(1)
 
-      expect(mockFetch).toHaveBeenCalledWith(
-        'https://api.cal.com/v2/event-types/1',
-        {
-          method: 'DELETE',
-          headers: expect.any(Object),
-        }
-      )
+      expect(mockFetch).toHaveBeenCalledWith('https://api.cal.com/v2/event-types/1', {
+        method: 'DELETE',
+        headers: expect.any(Object),
+      })
     })
   })
 
@@ -271,13 +250,7 @@ describe('CalApiClient', () => {
         json: () => Promise.resolve({ status: 'success', data: mockAvailability }),
       })
 
-      const result = await client.getAvailability(
-        123,
-        'john-doe',
-        '2024-01-15',
-        '2024-01-15',
-        'UTC'
-      )
+      const result = await client.getAvailability(123, 'john-doe', '2024-01-15', '2024-01-15', 'UTC')
 
       expect(result).toEqual(mockAvailability)
       expect(mockFetch).toHaveBeenCalledWith(
@@ -302,10 +275,7 @@ describe('CalApiClient', () => {
       const result = await client.getAvailability()
 
       expect(result).toEqual(mockAvailability)
-      expect(mockFetch).toHaveBeenCalledWith(
-        'https://api.cal.com/v2/availability?',
-        expect.any(Object)
-      )
+      expect(mockFetch).toHaveBeenCalledWith('https://api.cal.com/v2/availability?', expect.any(Object))
     })
 
     it('should get available slots', async () => {
@@ -320,12 +290,7 @@ describe('CalApiClient', () => {
         json: () => Promise.resolve({ status: 'success', data: mockSlots }),
       })
 
-      const result = await client.getAvailableSlots(
-        123,
-        '2024-01-15T00:00:00.000Z',
-        '2024-01-15T23:59:59.999Z',
-        'UTC'
-      )
+      const result = await client.getAvailableSlots(123, '2024-01-15T00:00:00.000Z', '2024-01-15T23:59:59.999Z', 'UTC')
 
       expect(result).toEqual(mockSlots)
       expect(mockFetch).toHaveBeenCalledWith(
@@ -365,14 +330,11 @@ describe('CalApiClient', () => {
       const result = await client.createBooking(bookingData)
 
       expect(result).toEqual(mockBooking)
-      expect(mockFetch).toHaveBeenCalledWith(
-        'https://api.cal.com/v2/bookings',
-        {
-          method: 'POST',
-          headers: expect.any(Object),
-          body: JSON.stringify(bookingData),
-        }
-      )
+      expect(mockFetch).toHaveBeenCalledWith('https://api.cal.com/v2/bookings', {
+        method: 'POST',
+        headers: expect.any(Object),
+        body: JSON.stringify(bookingData),
+      })
     })
 
     it('should get bookings with filters', async () => {
@@ -390,15 +352,15 @@ describe('CalApiClient', () => {
         json: () => Promise.resolve({ status: 'success', data: mockBookingsResponse }),
       })
 
-          const result = await client.getBookings('confirmed', 10, 0)
+      const result = await client.getBookings('confirmed', 10, 0)
 
-    expect(result).toEqual(mockBookingsResponse)
-    expect(mockFetch).toHaveBeenCalledWith(
-      'https://api.cal.com/v2/bookings?status=confirmed&take=10&skip=0',
-      expect.objectContaining({
-        headers: expect.any(Object)
-      })
-    )
+      expect(result).toEqual(mockBookingsResponse)
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://api.cal.com/v2/bookings?status=confirmed&take=10&skip=0',
+        expect.objectContaining({
+          headers: expect.any(Object),
+        })
+      )
     })
 
     it('should get single booking', async () => {
@@ -417,10 +379,7 @@ describe('CalApiClient', () => {
       const result = await client.getBooking('booking-uid-123')
 
       expect(result).toEqual(mockBooking)
-      expect(mockFetch).toHaveBeenCalledWith(
-        'https://api.cal.com/v2/bookings/booking-uid-123',
-        expect.any(Object)
-      )
+      expect(mockFetch).toHaveBeenCalledWith('https://api.cal.com/v2/bookings/booking-uid-123', expect.any(Object))
     })
 
     it('should cancel booking', async () => {
@@ -439,14 +398,11 @@ describe('CalApiClient', () => {
       const result = await client.cancelBooking('booking-uid-123', 'No longer needed')
 
       expect(result).toEqual(mockBooking)
-      expect(mockFetch).toHaveBeenCalledWith(
-        'https://api.cal.com/v2/bookings/booking-uid-123/cancel',
-        {
-          method: 'POST',
-          headers: expect.any(Object),
-          body: JSON.stringify({ reason: 'No longer needed' }),
-        }
-      )
+      expect(mockFetch).toHaveBeenCalledWith('https://api.cal.com/v2/bookings/booking-uid-123/cancel', {
+        method: 'POST',
+        headers: expect.any(Object),
+        body: JSON.stringify({ reason: 'No longer needed' }),
+      })
     })
 
     it('should reschedule booking', async () => {
@@ -472,14 +428,11 @@ describe('CalApiClient', () => {
       const result = await client.rescheduleBooking('booking-uid-123', rescheduleData)
 
       expect(result).toEqual(mockBooking)
-      expect(mockFetch).toHaveBeenCalledWith(
-        'https://api.cal.com/v2/bookings/booking-uid-123/reschedule',
-        {
-          method: 'POST',
-          headers: expect.any(Object),
-          body: JSON.stringify(rescheduleData),
-        }
-      )
+      expect(mockFetch).toHaveBeenCalledWith('https://api.cal.com/v2/bookings/booking-uid-123/reschedule', {
+        method: 'POST',
+        headers: expect.any(Object),
+        body: JSON.stringify(rescheduleData),
+      })
     })
   })
 
@@ -499,10 +452,7 @@ describe('CalApiClient', () => {
       const result = await client.getSchedules()
 
       expect(result).toEqual(mockSchedules)
-      expect(mockFetch).toHaveBeenCalledWith(
-        'https://api.cal.com/v2/schedules',
-        expect.any(Object)
-      )
+      expect(mockFetch).toHaveBeenCalledWith('https://api.cal.com/v2/schedules', expect.any(Object))
     })
 
     it('should create schedule', async () => {
@@ -523,14 +473,11 @@ describe('CalApiClient', () => {
       const result = await client.createSchedule(scheduleData)
 
       expect(result).toEqual(mockSchedule)
-      expect(mockFetch).toHaveBeenCalledWith(
-        'https://api.cal.com/v2/schedules',
-        {
-          method: 'POST',
-          headers: expect.any(Object),
-          body: JSON.stringify(scheduleData),
-        }
-      )
+      expect(mockFetch).toHaveBeenCalledWith('https://api.cal.com/v2/schedules', {
+        method: 'POST',
+        headers: expect.any(Object),
+        body: JSON.stringify(scheduleData),
+      })
     })
   })
 
@@ -589,7 +536,7 @@ describe('CalApiClient', () => {
         expect.any(String),
         expect.objectContaining({
           headers: expect.objectContaining({
-            'Authorization': 'Bearer test-access-token',
+            Authorization: 'Bearer test-access-token',
           }),
         })
       )
@@ -613,7 +560,7 @@ describe('CalApiClient', () => {
         expect.any(String),
         expect.objectContaining({
           headers: expect.not.objectContaining({
-            'Authorization': expect.any(String),
+            Authorization: expect.any(String),
           }),
         })
       )

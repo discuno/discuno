@@ -1,0 +1,32 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    /* Web-specific overrides */
+    "lib": ["dom", "dom.iterable", "es2022"],
+
+    /* Next.js specific */
+    "plugins": [{ "name": "next" }],
+    "checkJs": true,
+    "incremental": true,
+
+    /* Path Aliases */
+    "baseUrl": ".",
+    "paths": {
+      "~/*": ["./src/*"],
+      "@discuno/atoms": ["../../packages/discuno-atoms/src"],
+      "@discuno/atoms/*": ["../../packages/discuno-atoms/src/*"]
+    }
+  },
+  "composite": true,
+  "include": [
+    "eslint.config.mjs",
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    "**/*.cjs",
+    "**/*.js",
+    ".next/types/**/*.ts",
+    "prettier.config.mjs"
+  ],
+  "exclude": ["node_modules", "coverage", "src/components/ui"]
+}

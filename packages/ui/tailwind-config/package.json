@@ -1,0 +1,64 @@
+{
+  "name": "@discuno/tailwind-config",
+  "version": "1.0.0",
+  "description": "Shared Tailwind CSS configuration for the Discuno monorepo",
+  "keywords": [
+    "tailwindcss",
+    "config",
+    "design-system",
+    "ui",
+    "typescript"
+  ],
+  "homepage": "https://github.com/discuno/discuno#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/discuno/discuno.git",
+    "directory": "packages/ui/tailwind-config"
+  },
+  "bugs": {
+    "url": "https://github.com/discuno/discuno/issues"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "Discuno Team",
+    "url": "https://github.com/discuno"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "main": "./src/tailwind.config.js",
+  "module": "./src/tailwind.config.js",
+  "types": "./src/tailwind.config.ts",
+  "files": [
+    "src"
+  ],
+  "exports": {
+    ".": {
+      "import": "./src/tailwind.config.ts",
+      "types": "./src/tailwind.config.ts"
+    },
+    "./tailwind.config": "./src/tailwind.config.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . --max-warnings 0 --config ../../../eslint.config.mjs",
+    "lint:fix": "eslint . --fix --max-warnings 0 --config ../../../eslint.config.mjs",
+    "clean": "rm -rf dist",
+    "format:write": "prettier --write \"src/**/*.{ts,js}\" --cache",
+    "format:check": "prettier --check \"src/**/*.{ts,js}\" --cache"
+  },
+  "dependencies": {
+    "tailwindcss": "^4.1.10"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.1",
+    "typescript": "^5.8.3"
+  },
+  "peerDependencies": {
+    "tailwindcss": "^4.0.0"
+  },
+  "packageManager": "pnpm@10.12.1"
+}

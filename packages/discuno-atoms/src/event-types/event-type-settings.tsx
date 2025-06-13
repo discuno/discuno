@@ -1,10 +1,10 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useCalApi } from '../provider/cal-provider'
-import type { EventType, Location, BookingField } from '../types'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useEffect, useState } from 'react'
 import { Button } from '../components/ui/button'
+import { useCalApi } from '../provider/cal-provider'
+import type { BookingField, EventType, Location } from '../types'
 
 interface EventTypeSettingsProps {
   eventTypeId?: number
@@ -13,12 +13,7 @@ interface EventTypeSettingsProps {
   className?: string
 }
 
-export function EventTypeSettings({
-  eventTypeId,
-  onSave,
-  onError,
-  className,
-}: EventTypeSettingsProps) {
+export function EventTypeSettings({ eventTypeId, onSave, onError, className }: EventTypeSettingsProps) {
   const { apiClient } = useCalApi()
   const queryClient = useQueryClient()
 
@@ -40,8 +35,8 @@ export function EventTypeSettings({
   const { data: eventType, isLoading } = useQuery({
     queryKey: ['eventType', eventTypeId],
     queryFn: () => {
-      if (!apiClient) throw new Error('API client not available')
-      return apiClient.getEventType(eventTypeId!)
+      if (!apiClient || !eventTypeId) throw new Error('API client or event type ID not available')
+      return apiClient.getEventType(eventTypeId)
     },
     enabled: !!(apiClient && eventTypeId),
   })
@@ -54,8 +49,8 @@ export function EventTypeSettings({
         description: eventType.description,
         length: eventType.length,
         slug: eventType.slug,
-        locations: eventType.locations || [],
-        bookingFields: eventType.bookingFields || [],
+        locations: eventType.locations ?? [],
+        bookingFields: eventType.bookingFields ?? [],
         requiresConfirmation: eventType.requiresConfirmation,
         disableGuests: eventType.disableGuests,
         minimumBookingNotice: eventType.minimumBookingNotice,
@@ -75,12 +70,12 @@ export function EventTypeSettings({
         return await apiClient.createEventType(data)
       }
     },
-    onSuccess: (savedEventType) => {
+    onSuccess: savedEventType => {
       onSave?.(savedEventType)
-      queryClient.invalidateQueries({ queryKey: ['eventTypes'] })
-      queryClient.invalidateQueries({ queryKey: ['eventType', eventTypeId] })
+      void queryClient.invalidateQueries({ queryKey: ['eventTypes'] })
+      void queryClient.invalidateQueries({ queryKey: ['eventType', eventTypeId] })
     },
-    onError: (error) => {
+    onError: error => {
       onError?.(error instanceof Error ? error : new Error('Failed to save event type'))
     },
   })
@@ -89,7 +84,7 @@ export function EventTypeSettings({
     saveEventTypeMutation.mutate(formData)
   }
 
-  const updateFormData = (field: keyof EventType, value: any) => {
+  const updateFormData = (field: keyof EventType, value: unknown) => {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
@@ -98,18 +93,23 @@ export function EventTypeSettings({
       type: 'integrations:zoom',
       displayLocationPublicly: true,
     }
-    updateFormData('locations', [...(formData.locations || []), newLocation])
+    updateFormData('locations', [...(formData.locations ?? []), newLocation])
   }
 
   const removeLocation = (index: number) => {
-    const locations = formData.locations || []
-    updateFormData('locations', locations.filter((_, i) => i !== index))
+    const locations = formData.locations ?? []
+    updateFormData(
+      'locations',
+      locations.filter((_, i) => i !== index)
+    )
   }
 
-  const updateLocation = (index: number, field: keyof Location, value: any) => {
-    const locations = [...(formData.locations || [])]
-    locations[index] = { ...locations[index], [field]: value }
-    updateFormData('locations', locations)
+  const updateLocation = (index: number, field: keyof Location, value: string | number | boolean) => {
+    const locations = [...(formData.locations ?? [])]
+    if (locations[index]) {
+      locations[index] = { ...locations[index], [field]: value }
+      updateFormData('locations', locations)
+    }
   }
 
   const addBookingField = () => {
@@ -119,18 +119,23 @@ export function EventTypeSettings({
       label: 'Custom Field',
       required: false,
     }
-    updateFormData('bookingFields', [...(formData.bookingFields || []), newField])
+    updateFormData('bookingFields', [...(formData.bookingFields ?? []), newField])
   }
 
   const removeBookingField = (index: number) => {
-    const fields = formData.bookingFields || []
-    updateFormData('bookingFields', fields.filter((_, i) => i !== index))
+    const fields = formData.bookingFields ?? []
+    updateFormData(
+      'bookingFields',
+      fields.filter((_, i) => i !== index)
+    )
   }
 
-  const updateBookingField = (index: number, field: keyof BookingField, value: any) => {
-    const fields = [...(formData.bookingFields || [])]
-    fields[index] = { ...fields[index], [field]: value }
-    updateFormData('bookingFields', fields)
+  const updateBookingField = (index: number, field: keyof BookingField, value: string | boolean | string[]) => {
+    const fields = [...(formData.bookingFields ?? [])]
+    if (fields[index]) {
+      fields[index] = { ...fields[index], [field]: value }
+      updateFormData('bookingFields', fields)
+    }
   }
 
   if (!apiClient) {
@@ -142,12 +147,17 @@ export function EventTypeSettings({
   }
 
   return (
-    <div className={`event-type-settings ${className || ''}`}>
+    <div className={`event-type-settings ${className ?? ''}`}>
       <div className="settings-header">
         <h2>{eventTypeId ? 'Edit Event Type' : 'Create Event Type'}</h2>
       </div>
 
-      <form onSubmit={(e) => { e.preventDefault(); handleSave(); }}>
+      <form
+        onSubmit={e => {
+          e.preventDefault()
+          handleSave()
+        }}
+      >
         {/* Basic Information */}
         <div className="form-section">
           <h3>Basic Information</h3>
@@ -159,7 +169,9 @@ export function EventTypeSettings({
               type="text"
               required
               value={formData.title}
-              onChange={(e) => updateFormData('title', e.target.value)}
+              onChange={e => {
+                updateFormData('title', e.target.value)
+              }}
               placeholder="30 Minute Meeting"
             />
           </div>
@@ -171,7 +183,9 @@ export function EventTypeSettings({
               type="text"
               required
               value={formData.slug}
-              onChange={(e) => updateFormData('slug', e.target.value)}
+              onChange={e => {
+                updateFormData('slug', e.target.value)
+              }}
               placeholder="30min"
             />
           </div>
@@ -180,8 +194,10 @@ export function EventTypeSettings({
             <label htmlFor="description">Description</label>
             <textarea
               id="description"
-              value={formData.description || ''}
-              onChange={(e) => updateFormData('description', e.target.value)}
+              value={formData.description ?? ''}
+              onChange={e => {
+                updateFormData('description', e.target.value)
+              }}
               placeholder="A brief description of this meeting"
             />
           </div>
@@ -195,7 +211,9 @@ export function EventTypeSettings({
               min="1"
               max="1440"
               value={formData.length}
-              onChange={(e) => updateFormData('length', parseInt(e.target.value))}
+              onChange={e => {
+                updateFormData('length', parseInt(e.target.value))
+              }}
             />
           </div>
         </div>
@@ -209,7 +227,9 @@ export function EventTypeSettings({
                 <label>Location Type</label>
                 <select
                   value={location.type}
-                  onChange={(e) => updateLocation(index, 'type', e.target.value)}
+                  onChange={e => {
+                    updateLocation(index, 'type', e.target.value)
+                  }}
                 >
                   <option value="integrations:zoom">Zoom</option>
                   <option value="integrations:googlemeet">Google Meet</option>
@@ -225,8 +245,10 @@ export function EventTypeSettings({
                   <label>Address</label>
                   <input
                     type="text"
-                    value={location.address || ''}
-                    onChange={(e) => updateLocation(index, 'address', e.target.value)}
+                    value={location.address ?? ''}
+                    onChange={e => {
+                      updateLocation(index, 'address', e.target.value)
+                    }}
                     placeholder="123 Main St, City, State"
                   />
                 </div>
@@ -237,8 +259,10 @@ export function EventTypeSettings({
                   <label>Meeting Link</label>
                   <input
                     type="url"
-                    value={location.link || ''}
-                    onChange={(e) => updateLocation(index, 'link', e.target.value)}
+                    value={location.link ?? ''}
+                    onChange={e => {
+                      updateLocation(index, 'link', e.target.value)
+                    }}
                     placeholder="https://example.com/meeting"
                   />
                 </div>
@@ -249,7 +273,9 @@ export function EventTypeSettings({
                   <input
                     type="checkbox"
                     checked={location.displayLocationPublicly}
-                    onChange={(e) => updateLocation(index, 'displayLocationPublicly', e.target.checked)}
+                    onChange={e => {
+                      updateLocation(index, 'displayLocationPublicly', e.target.checked)
+                    }}
                   />
                   Display location publicly
                 </label>
@@ -259,7 +285,9 @@ export function EventTypeSettings({
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => removeLocation(index)}
+                onClick={() => {
+                  removeLocation(index)
+                }}
               >
                 Remove Location
               </Button>
@@ -280,7 +308,9 @@ export function EventTypeSettings({
               <input
                 type="checkbox"
                 checked={formData.requiresConfirmation}
-                onChange={(e) => updateFormData('requiresConfirmation', e.target.checked)}
+                onChange={e => {
+                  updateFormData('requiresConfirmation', e.target.checked)
+                }}
               />
               Require confirmation before booking
             </label>
@@ -291,7 +321,9 @@ export function EventTypeSettings({
               <input
                 type="checkbox"
                 checked={formData.disableGuests}
-                onChange={(e) => updateFormData('disableGuests', e.target.checked)}
+                onChange={e => {
+                  updateFormData('disableGuests', e.target.checked)
+                }}
               />
               Disable additional guests
             </label>
@@ -304,7 +336,9 @@ export function EventTypeSettings({
               type="number"
               min="0"
               value={formData.minimumBookingNotice}
-              onChange={(e) => updateFormData('minimumBookingNotice', parseInt(e.target.value))}
+              onChange={e => {
+                updateFormData('minimumBookingNotice', parseInt(e.target.value))
+              }}
             />
           </div>
 
@@ -315,7 +349,9 @@ export function EventTypeSettings({
               type="number"
               min="0"
               value={formData.beforeEventBuffer}
-              onChange={(e) => updateFormData('beforeEventBuffer', parseInt(e.target.value))}
+              onChange={e => {
+                updateFormData('beforeEventBuffer', parseInt(e.target.value))
+              }}
             />
           </div>
 
@@ -326,7 +362,9 @@ export function EventTypeSettings({
               type="number"
               min="0"
               value={formData.afterEventBuffer}
-              onChange={(e) => updateFormData('afterEventBuffer', parseInt(e.target.value))}
+              onChange={e => {
+                updateFormData('afterEventBuffer', parseInt(e.target.value))
+              }}
             />
           </div>
         </div>
@@ -340,8 +378,10 @@ export function EventTypeSettings({
                 <label>Field Label</label>
                 <input
                   type="text"
-                  value={field.label || ''}
-                  onChange={(e) => updateBookingField(index, 'label', e.target.value)}
+                  value={field.label ?? ''}
+                  onChange={e => {
+                    updateBookingField(index, 'label', e.target.value)
+                  }}
                   placeholder="Field Label"
                 />
               </div>
@@ -350,7 +390,9 @@ export function EventTypeSettings({
                 <label>Field Type</label>
                 <select
                   value={field.type}
-                  onChange={(e) => updateBookingField(index, 'type', e.target.value)}
+                  onChange={e => {
+                    updateBookingField(index, 'type', e.target.value)
+                  }}
                 >
                   <option value="text">Text</option>
                   <option value="textarea">Textarea</option>
@@ -368,7 +410,9 @@ export function EventTypeSettings({
                   <input
                     type="checkbox"
                     checked={field.required}
-                    onChange={(e) => updateBookingField(index, 'required', e.target.checked)}
+                    onChange={e => {
+                      updateBookingField(index, 'required', e.target.checked)
+                    }}
                   />
                   Required field
                 </label>
@@ -378,7 +422,9 @@ export function EventTypeSettings({
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => removeBookingField(index)}
+                onClick={() => {
+                  removeBookingField(index)
+                }}
               >
                 Remove Field
               </Button>

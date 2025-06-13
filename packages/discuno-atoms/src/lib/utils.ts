@@ -20,7 +20,7 @@ export function formatTime(date: Date | string, timeZone?: string): string {
   return new Intl.DateTimeFormat('en-US', {
     hour: 'numeric',
     minute: '2-digit',
-    timeZone: timeZone || 'UTC',
+    timeZone: timeZone ?? 'UTC',
   }).format(dateObj)
 }
 
@@ -38,8 +38,8 @@ export function formatDuration(minutes: number): string {
 
 export function getTimezoneOffset(timeZone: string): string {
   const date = new Date()
-  const utc = date.getTime() + (date.getTimezoneOffset() * 60000)
-  const targetTime = new Date(utc + (getTimezoneOffsetMinutes(timeZone) * 60000))
+  const utc = date.getTime() + date.getTimezoneOffset() * 60000
+  const targetTime = new Date(utc + getTimezoneOffsetMinutes(timeZone) * 60000)
   const offset = targetTime.getTimezoneOffset()
   const sign = offset > 0 ? '-' : '+'
   const hours = Math.floor(Math.abs(offset) / 60)
@@ -51,7 +51,7 @@ function getTimezoneOffsetMinutes(timeZone: string): number {
   const date = new Date()
   const formatter = new Intl.DateTimeFormat('en', {
     timeZone,
-    timeZoneName: 'longOffset'
+    timeZoneName: 'longOffset',
   })
   const parts = formatter.formatToParts(date)
   const offsetPart = parts.find(part => part.type === 'timeZoneName')
@@ -60,8 +60,8 @@ function getTimezoneOffsetMinutes(timeZone: string): number {
   const offset = offsetPart.value
   if (offset === 'GMT') return 0
 
-  const match = offset.match(/GMT([+-])(\d{2}):(\d{2})/)
-  if (!match) return 0
+  const match = /GMT([+-])(\d{2}):(\d{2})/.exec(offset)
+  if (!match?.[1] || !match[2] || !match[3]) return 0
 
   const sign = match[1] === '+' ? 1 : -1
   const hours = parseInt(match[2], 10)
@@ -76,7 +76,7 @@ export function isValidEmail(email: string): boolean {
 }
 
 export function isValidPhoneNumber(phone: string): boolean {
-  const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/
+  const phoneRegex = /^[+]?[1-9][\d]{0,15}$/
   return phoneRegex.test(phone.replace(/\s/g, ''))
 }
 
@@ -107,7 +107,7 @@ export function formatCalComDateTime(date: Date): string {
 export function getAvailableTimeSlots(
   availability: { startTime: string; endTime: string }[],
   duration: number,
-  interval: number = 30
+  interval = 30
 ): string[] {
   const slots: string[] = []
 
@@ -116,27 +116,29 @@ export function getAvailableTimeSlots(
     const end = new Date(`1970-01-01T${endTime}`)
 
     let current = new Date(start)
-    while (current.getTime() + (duration * 60 * 1000) <= end.getTime()) {
+    while (current.getTime() + duration * 60 * 1000 <= end.getTime()) {
       slots.push(current.toTimeString().slice(0, 5))
-      current = new Date(current.getTime() + (interval * 60 * 1000))
+      current = new Date(current.getTime() + interval * 60 * 1000)
     }
   }
 
   return slots
 }
 
-export function debounce<T extends (...args: any[]) => void>(
+export function debounce<T extends (...args: unknown[]) => void>(
   func: T,
   delay: number
 ): (...args: Parameters<T>) => void {
   let timeoutId: ReturnType<typeof setTimeout>
   return (...args: Parameters<T>) => {
     clearTimeout(timeoutId)
-    timeoutId = setTimeout(() => func(...args), delay)
+    timeoutId = setTimeout(() => {
+      func(...args)
+    }, delay)
   }
 }
 
-export function throttle<T extends (...args: any[]) => void>(
+export function throttle<T extends (...args: unknown[]) => void>(
   func: T,
   limit: number
 ): (...args: Parameters<T>) => void {
@@ -145,7 +147,7 @@ export function throttle<T extends (...args: any[]) => void>(
     if (!inThrottle) {
       func(...args)
       inThrottle = true
-      setTimeout(() => inThrottle = false, limit)
+      setTimeout(() => (inThrottle = false), limit)
     }
   }
 }

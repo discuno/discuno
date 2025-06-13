@@ -1,0 +1,47 @@
+# Code Owners
+# This file defines who should be automatically requested for reviews
+# when certain files are modified.
+
+# Global owners for the entire repository
+* @discuno/maintainers
+
+# Root configuration files
+package.json @discuno/maintainers
+pnpm-lock.yaml @discuno/maintainers
+pnpm-workspace.yaml @discuno/maintainers
+turbo.json @discuno/maintainers
+tsconfig.json @discuno/maintainers
+.nvmrc @discuno/maintainers
+
+# CI/CD and GitHub configuration
+.github/ @discuno/maintainers
+.github/workflows/ @discuno/maintainers
+
+# Documentation
+README.md @discuno/maintainers
+CONTRIBUTING.md @discuno/maintainers
+CODE_OF_CONDUCT.md @discuno/maintainers
+SECURITY.md @discuno/maintainers
+CHANGELOG.md @discuno/maintainers
+docs/ @discuno/maintainers
+
+# Web application
+apps/web/ @discuno/web-team
+apps/web/src/app/ @discuno/web-team
+apps/web/src/components/ @discuno/web-team @discuno/ui-team
+apps/web/src/lib/ @discuno/web-team
+apps/web/src/server/ @discuno/backend-team
+apps/web/drizzle/ @discuno/backend-team
+
+# Shared component library
+packages/discuno-atoms/ @discuno/ui-team
+packages/discuno-atoms/src/components/ @discuno/ui-team
+
+# Security-sensitive files
+SECURITY.md @discuno/security-team
+apps/web/src/server/auth/ @discuno/security-team
+apps/web/src/lib/auth/ @discuno/security-team
+
+# Database and schema changes
+apps/web/drizzle/ @discuno/backend-team @discuno/maintainers
+apps/web/src/server/db/ @discuno/backend-team

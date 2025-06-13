@@ -1,14 +1,21 @@
 {
-  "extends": "../../tsconfig.json",
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    /* Package-specific overrides */
+    "lib": ["dom", "dom.iterable", "es2022"],
     "jsx": "react-jsx",
+
+    /* Build output configuration */
+    "noEmit": false,
     "outDir": "./dist",
     "declarationDir": "./dist",
     "declaration": true,
     "emitDeclarationOnly": false,
+
+    /* Path mappings */
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
+      "~/*": ["./src/*"],
       "@/components/*": ["./src/components/*"],
       "@/lib/*": ["./src/lib/*"],
       "@/hooks/*": ["./src/hooks/*"],
@@ -16,13 +23,6 @@
     }
   },
   "composite": true,
-  "include": [
-    "src/**/*",
-    "*.ts",
-    "*.tsx"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist"
-  ]
+  "include": ["src/**/*", "*.ts", "*.tsx"],
+  "exclude": ["node_modules", "dist", "coverage", "tailwind.config.js", "eslint.config.mjs"]
 }

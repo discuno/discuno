@@ -1,0 +1,81 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+Vitest Testing Best Practices – 2025 (Next.js + TypeScript + App Router)
+
+✅ GENERAL SETUP
+- Use Vitest + React Testing Library + jsdom
+- Enable coverage, use native ESM
+- Use `setup.ts` to include global testing config (e.g., @testing-library/jest-dom)
+
+✅ TEST STRUCTURE
+- Organize tests alongside source files: src/components/Button/Button.test.tsx
+- Use `.test.ts` or `.test.tsx` extension for all test files
+- Prefer `describe()` blocks for grouping tests logically
+
+✅ ASSERTIONS
+- Use `@testing-library/jest-dom` matchers: toBeInTheDocument(), toHaveTextContent(), etc.
+- Prefer behavior-driven assertions over implementation details
+
+✅ COMPONENT TESTING
+- Always use React Testing Library for rendering components
+- Use `user-event` for simulating real user interactions
+- Don’t test internal state — test UI/DOM effects
+
+✅ MOCKING
+- Use `vi.mock()` or `vi.fn()` for mocking dependencies
+- Avoid mocking components unless necessary — prefer real rendering
+- For fetch/API, use `msw` (Mock Service Worker) or `vi.stubGlobal('fetch', fn)`
+
+✅ SNAPSHOTS
+- Avoid snapshot tests for DOM unless snapshot is intentional + manually reviewed
+- Prefer testing actual content with `getByText`, `getByRole`, etc.
+
+✅ CLEANUP
+- Tests must clean up after themselves automatically via `afterEach(cleanup)`
+- Prefer `beforeEach()` for setup shared across multiple tests
+
+✅ E2E vs UNIT TESTS
+- Use Vitest for fast unit/component tests
+- Use Playwright for full E2E (login, booking, API integrations)
+
+✅ COVERAGE
+- Use `pnpm vitest run --coverage` in CI
+- Enforce thresholds via vitest config (e.g. 90% statements)
+
+✅ CI
+- Make test runs fast + parallelizable
+- Use `--run` flag to avoid running in watch mode in CI
+
+✅ FILE ORGANIZATION
+- Keep tests near the code they test
+- Separate test data/mocks into __mocks__ or test-utils files
+
+✅ ENVIRONMENT
+- jsdom environment should be the default for React component testing
+- Use `--environment node` only for pure logic or utility files
+
+✅ EXAMPLE CONFIG SNIPPET
+// vitest.config.ts
+import { defineConfig } from 'vitest/config'
+import react from '@vitejs/plugin-react'
+
+export default defineConfig({
+  plugins: [react()],
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: './vitest.setup.ts',
+    coverage: {
+      reporter: ['text', 'html'],
+      lines: 90,
+      functions: 90,
+    },
+  },
+})
+
+✅ EXAMPLE SETUP FILE
+// vitest.setup.ts
+import '@testing-library/jest-dom'

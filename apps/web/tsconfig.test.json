@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "strict": false,
+    "noUncheckedIndexedAccess": false,
+    "checkJs": false,
+    "types": ["vitest"]
+  },
+  "include": ["src/**/*.test.*", "src/__tests__/**/*", "test-utils.*"]
+}

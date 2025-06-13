@@ -1,0 +1,13 @@
+echo "🔍 Validating commit message..."
+
+# Lint commit messages with commitlint
+npx --no -- commitlint --edit "${1}"
+
+if [ $? -eq 0 ]; then
+  echo "✅ Commit message is valid!"
+else
+  echo "❌ Commit message validation failed. Please follow conventional commit format."
+  echo "Example: feat: add new feature"
+  echo "Types: feat, fix, docs, style, refactor, test, chore"
+  exit 1
+fi

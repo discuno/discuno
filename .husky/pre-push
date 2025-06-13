@@ -1,0 +1,26 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🚀 Running pre-push checks..."
+
+# Run tests across the monorepo
+echo "🧪 Running tests..."
+pnpm test:run
+
+if [ $? -eq 0 ]; then
+  echo "✅ All tests passed!"
+else
+  echo "❌ Tests failed. Please fix failing tests before pushing."
+  exit 1
+fi
+
+echo "🔍 Running final build check..."
+pnpm build
+
+if [ $? -eq 0 ]; then
+  echo "✅ Build successful!"
+  echo "🎉 Ready to push!"
+else
+  echo "❌ Build failed. Please fix build errors before pushing."
+  exit 1
+fi

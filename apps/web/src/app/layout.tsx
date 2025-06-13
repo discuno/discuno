@@ -1,0 +1,39 @@
+import '~/styles/globals.css'
+
+import { GeistSans } from 'geist/font/sans'
+import { type Metadata } from 'next'
+import { ThemeProvider } from '~/lib/providers/ThemeProvider'
+import { Toaster } from 'sonner'
+
+export const metadata: Metadata = {
+  title: 'Discuno - Your Guide to College Success',
+  description: 'Discover personalized advice, resources, and tools to help you get into your dream college.',
+  icons: [{ rel: 'icon', url: '/favicon.ico' }],
+}
+
+const RootLayout = async ({ children }: Readonly<{ children: React.ReactNode }>) => {
+  return (
+    <html lang="en" dir="ltr" className={`${GeistSans.variable}`} suppressHydrationWarning>
+      <body className="bg-background text-foreground min-h-screen font-sans antialiased transition-colors duration-300">
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange={false}>
+          {children}
+          <Toaster
+            theme="system"
+            className="toaster group"
+            toastOptions={{
+              classNames: {
+                toast:
+                  'group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border group-[.toaster]:shadow-lg',
+                description: 'group-[.toast]:text-muted-foreground',
+                actionButton: 'group-[.toast]:bg-primary group-[.toast]:text-primary-foreground',
+                cancelButton: 'group-[.toast]:bg-muted group-[.toast]:text-muted-foreground',
+              },
+            }}
+          />
+        </ThemeProvider>
+      </body>
+    </html>
+  )
+}
+
+export default RootLayout

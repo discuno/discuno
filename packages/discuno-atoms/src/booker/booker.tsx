@@ -1,27 +1,27 @@
 'use client'
 
-import React, { useState, useEffect, useMemo } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { format, addDays, startOfMonth, endOfMonth } from 'date-fns'
-import { useCalApi, useCalConfig, useCalContext } from '../provider/cal-provider'
-import type { EventType, AvailabilitySlot, BookingRequest, Booking } from '../types'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { addDays, format } from 'date-fns'
+import React, { useEffect, useState } from 'react'
 import { Button } from '../components/ui/button'
+import { useCalContext } from '../provider/cal-provider'
+import type { Booking, BookingRequest, EventType } from '../types'
 
 export interface BookerProps {
   eventTypeId?: number
   eventTypeSlug?: string
   username?: string
-  month?: string
+  _month?: string
   date?: string
   duration?: number
   layout?: 'mobile' | 'desktop' | 'mobile_embed'
-  isTeamEvent?: boolean
-  entity?: any
-  bookingForm?: any
+  _isTeamEvent?: boolean
+  _entity?: Record<string, unknown>
+  _bookingForm?: Record<string, unknown>
   hashedLink?: string
-  isInstantMeeting?: boolean
-  rescheduleUid?: string
-  bookingUid?: string
+  _isInstantMeeting?: boolean
+  _rescheduleUid?: string
+  _bookingUid?: string
   onBookingComplete?: (booking: Booking) => void
   onError?: (error: Error) => void
   className?: string
@@ -34,7 +34,7 @@ interface BookingFormData {
   phone?: string
   notes?: string
   guests?: string[]
-  responses?: Record<string, any>
+  responses?: Record<string, unknown>
   timeZone: string
   location?: string
 }
@@ -43,24 +43,23 @@ export function Booker({
   eventTypeId,
   eventTypeSlug,
   username,
-  month,
+  _month,
   date,
   duration,
   layout = 'desktop',
-  isTeamEvent = false,
-  entity,
-  bookingForm,
+  _isTeamEvent = false,
+  _entity,
+  _bookingForm,
   hashedLink,
-  isInstantMeeting = false,
-  rescheduleUid,
-  bookingUid,
+  _isInstantMeeting = false,
+  _rescheduleUid,
+  _bookingUid,
   onBookingComplete,
   onError,
   className,
   style,
 }: BookerProps) {
-  const { apiClient, isAuthenticated } = useCalContext()
-  const config = useCalConfig()
+  const { apiClient } = useCalContext()
   const queryClient = useQueryClient()
 
   // Add hydration check to prevent SSR/client mismatches
@@ -80,8 +79,10 @@ export function Booker({
   }
 
   // All hooks must be at the top level
-  const [currentStep, setCurrentStep] = useState<'eventType' | 'datetime' | 'form' | 'confirmation'>(computeInitialStep())
-  const [selectedDate, setSelectedDate] = useState<string | null>(date || null)
+  const [currentStep, setCurrentStep] = useState<'eventType' | 'datetime' | 'form' | 'confirmation'>(
+    computeInitialStep()
+  )
+  const [selectedDate, setSelectedDate] = useState<string | null>(date ?? null)
   const [selectedTime, setSelectedTime] = useState<string | null>(null)
   const [selectedEventType, setSelectedEventType] = useState<EventType | null>(null)
   const [bookingData, setBookingData] = useState<BookingFormData>({
@@ -92,7 +93,11 @@ export function Booker({
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Fetch event type
-  const { data: eventType, isLoading: isLoadingEventType, error: eventTypeError } = useQuery({
+  const {
+    data: eventType,
+    isLoading: isLoadingEventType,
+    error: eventTypeError,
+  } = useQuery({
     queryKey: ['eventType', eventTypeId, eventTypeSlug, username],
     queryFn: async () => {
       if (!apiClient) throw new Error('API client not available')
@@ -104,7 +109,7 @@ export function Booker({
       }
       throw new Error('No event type identifier provided')
     },
-    enabled: !!(isHydrated && apiClient && (eventTypeId || (eventTypeSlug && username))),
+    enabled: !!(isHydrated && apiClient && (eventTypeId ?? (eventTypeSlug && username))),
     retry: 1,
     staleTime: 0, // Force fresh data to avoid hydration issues
   })
@@ -118,12 +123,7 @@ export function Booker({
       const startTime = `${selectedDate}T00:00:00.000Z`
       const endTime = `${selectedDate}T23:59:59.999Z`
 
-      return await apiClient.getAvailableSlots(
-        eventType.id,
-        startTime,
-        endTime,
-        bookingData.timeZone
-      )
+      return await apiClient.getAvailableSlots(eventType.id, startTime, endTime, bookingData.timeZone)
     },
     enabled: !!(isHydrated && apiClient && eventType?.id && selectedDate),
     retry: 1,
@@ -143,14 +143,14 @@ export function Booker({
       if (!apiClient) throw new Error('API client not available')
       return await apiClient.createBooking(data)
     },
-    onSuccess: (booking) => {
+    onSuccess: booking => {
       setCurrentStep('confirmation')
       onBookingComplete?.(booking)
       // Invalidate relevant queries
-      queryClient.invalidateQueries({ queryKey: ['bookings'] })
-      queryClient.invalidateQueries({ queryKey: ['availableSlots'] })
+      void queryClient.invalidateQueries({ queryKey: ['bookings'] })
+      void queryClient.invalidateQueries({ queryKey: ['availableSlots'] })
     },
-    onError: (error) => {
+    onError: error => {
       onError?.(error instanceof Error ? error : new Error('Booking failed'))
     },
   })
@@ -169,7 +169,7 @@ export function Booker({
         start: `${selectedDate}T${selectedTime}:00.000Z`,
         end: new Date(
           new Date(`${selectedDate}T${selectedTime}:00.000Z`).getTime() +
-          (duration || selectedEventType.length) * 60 * 1000
+            (duration ?? selectedEventType.length) * 60 * 1000
         ).toISOString(),
         responses: {
           name: bookingData.name,
@@ -198,7 +198,12 @@ export function Booker({
   }
 
   // Determine if we should show loading state
-  const shouldShowLoading = !isHydrated || !apiClient || (isLoadingEventType && (eventTypeId || eventTypeSlug)) || isLoadingSlots || isSubmitting
+  const shouldShowLoading =
+    !isHydrated ||
+    !apiClient ||
+    (isLoadingEventType && Boolean(eventTypeId ?? eventTypeSlug)) ||
+    isLoadingSlots ||
+    isSubmitting
 
   // Handle errors
   useEffect(() => {
@@ -207,20 +212,24 @@ export function Booker({
     }
   }, [eventTypeError, onError])
 
-  const containerClasses = `cal-booker ${layout} ${className || ''}`
+  const containerClasses = `cal-booker ${layout} ${className ?? ''}`
 
   // Show consistent loading state until hydrated and API client is ready
   if (shouldShowLoading) {
     return (
       <div className={containerClasses} style={style}>
         <div className="loading-state p-6 text-center">
-          <div className="animate-spin inline-block w-6 h-6 border-2 border-gray-300 border-t-blue-600 rounded-full mb-4"></div>
+          <div className="mb-4 inline-block h-6 w-6 animate-spin rounded-full border-2 border-gray-300 border-t-blue-600"></div>
           <p className="text-gray-600">
-            {!isHydrated ? 'Loading...' :
-             !apiClient ? 'Initializing Cal.com connection...' :
-             isLoadingEventType ? 'Loading event type...' :
-             isLoadingSlots ? 'Loading available times...' :
-             'Loading...'}
+            {!isHydrated
+              ? 'Loading...'
+              : !apiClient
+                ? 'Initializing Cal.com connection...'
+                : isLoadingEventType
+                  ? 'Loading event type...'
+                  : isLoadingSlots
+                    ? 'Loading available times...'
+                    : 'Loading...'}
           </p>
         </div>
       </div>
@@ -234,10 +243,13 @@ export function Booker({
         <div className="step-event-type">
           <h2>Select a meeting type</h2>
           {eventType ? (
-            <div className="event-type-card" onClick={() => {
-              setSelectedEventType(eventType)
-              setCurrentStep('datetime')
-            }}>
+            <div
+              className="event-type-card"
+              onClick={() => {
+                setSelectedEventType(eventType)
+                setCurrentStep('datetime')
+              }}
+            >
               <h3>{eventType.title}</h3>
               <p>{eventType.description}</p>
               <span>{eventType.length} minutes</span>
@@ -268,7 +280,9 @@ export function Booker({
                   <Button
                     key={dateStr}
                     variant={selectedDate === dateStr ? 'default' : 'outline'}
-                    onClick={() => setSelectedDate(dateStr)}
+                    onClick={() => {
+                      setSelectedDate(dateStr)
+                    }}
                   >
                     {format(date, 'MMM d')}
                   </Button>
@@ -281,7 +295,7 @@ export function Booker({
                 <h3>Select Time</h3>
                 {availableSlots?.length ? (
                   <div className="time-slots">
-                    {availableSlots.map((slot) => (
+                    {availableSlots.map(slot => (
                       <Button
                         key={slot.time}
                         variant={selectedTime === slot.time ? 'default' : 'outline'}
@@ -304,15 +318,20 @@ export function Booker({
       )}
 
       {/* Booking Form Step */}
-      {currentStep === 'form' && selectedEventType && selectedDate && selectedTime && (
+      {currentStep === 'form' && (
         <div className="step-form">
           <div className="booking-summary">
-            <h3>{selectedEventType.title}</h3>
+            <h3>{selectedEventType?.title}</h3>
             <p>{format(new Date(`${selectedDate}T${selectedTime}`), 'EEEE, MMMM d, yyyy at h:mm a')}</p>
-            <p>{selectedEventType.length} minutes</p>
+            <p>{selectedEventType?.length} minutes</p>
           </div>
 
-          <form onSubmit={(e) => { e.preventDefault(); handleBookingSubmit(); }}>
+          <form
+            onSubmit={e => {
+              e.preventDefault()
+              void handleBookingSubmit()
+            }}
+          >
             <div className="form-group">
               <label htmlFor="name">Name *</label>
               <input
@@ -320,7 +339,9 @@ export function Booker({
                 type="text"
                 required
                 value={bookingData.name}
-                onChange={(e) => setBookingData(prev => ({ ...prev, name: e.target.value }))}
+                onChange={e => {
+                  setBookingData(prev => ({ ...prev, name: e.target.value }))
+                }}
               />
             </div>
 
@@ -331,7 +352,9 @@ export function Booker({
                 type="email"
                 required
                 value={bookingData.email}
-                onChange={(e) => setBookingData(prev => ({ ...prev, email: e.target.value }))}
+                onChange={e => {
+                  setBookingData(prev => ({ ...prev, email: e.target.value }))
+                }}
               />
             </div>
 
@@ -340,8 +363,10 @@ export function Booker({
               <input
                 id="phone"
                 type="tel"
-                value={bookingData.phone || ''}
-                onChange={(e) => setBookingData(prev => ({ ...prev, phone: e.target.value }))}
+                value={bookingData.phone ?? ''}
+                onChange={e => {
+                  setBookingData(prev => ({ ...prev, phone: e.target.value }))
+                }}
               />
             </div>
 
@@ -349,17 +374,25 @@ export function Booker({
               <label htmlFor="notes">Additional Notes</label>
               <textarea
                 id="notes"
-                value={bookingData.notes || ''}
-                onChange={(e) => setBookingData(prev => ({ ...prev, notes: e.target.value }))}
+                value={bookingData.notes ?? ''}
+                onChange={e => {
+                  setBookingData(prev => ({ ...prev, notes: e.target.value }))
+                }}
               />
             </div>
 
             <div className="form-actions">
-              <Button type="button" variant="outline" onClick={() => setCurrentStep('datetime')}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setCurrentStep('datetime')
+                }}
+              >
                 Back
               </Button>
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Booking...' : 'Confirm Booking'}
+                Confirm Booking
               </Button>
             </div>
           </form>
@@ -373,7 +406,7 @@ export function Booker({
           <p>Your booking has been successfully created.</p>
           <div className="confirmation-details">
             <h3>{selectedEventType?.title}</h3>
-            <p>{selectedDate && selectedTime && format(new Date(`${selectedDate}T${selectedTime}`), 'EEEE, MMMM d, yyyy at h:mm a')}</p>
+            <p>{format(new Date(`${selectedDate}T${selectedTime}`), 'EEEE, MMMM d, yyyy at h:mm a')}</p>
             <p>{selectedEventType?.length} minutes</p>
           </div>
         </div>

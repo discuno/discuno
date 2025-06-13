@@ -1,14 +1,14 @@
 import type {
-    App,
-    AvailabilitySlot,
-    Booking,
-    BookingRequest,
-    CalApiConfig,
-    Credential,
-    EventType,
-    Schedule,
-    Team,
-    User
+  App,
+  AvailabilitySlot,
+  Booking,
+  BookingRequest,
+  CalApiConfig,
+  Credential,
+  EventType,
+  Schedule,
+  Team,
+  User,
 } from '../types'
 
 export class CalApiClient {
@@ -19,18 +19,15 @@ export class CalApiClient {
     this.config = config
     this.baseHeaders = {
       'Content-Type': 'application/json',
-      'Accept': 'application/json',
+      Accept: 'application/json',
     }
 
     if (config.accessToken) {
-      this.baseHeaders['Authorization'] = `Bearer ${config.accessToken}`
+      this.baseHeaders.Authorization = `Bearer ${config.accessToken}`
     }
   }
 
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<{ data: T; status: string }> {
+  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<{ data: T; status: string }> {
     const url = `${this.config.apiUrl}${endpoint}`
 
     const response = await fetch(url, {
@@ -42,17 +39,22 @@ export class CalApiClient {
     })
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-
-      // Handle specific Cal.com API error format
-      if (errorData.error && errorData.error.code === 'TokenExpiredException') {
-        throw new Error(`TokenExpiredException: ${errorData.error.message}`)
+      const errorData = (await response.json().catch(() => ({}))) as {
+        error?: { code?: string; message?: string }
+        message?: string
       }
 
-      throw new Error(`API Error ${response.status}: ${errorData.message || errorData.error?.message || response.statusText}`)
+      // Handle specific Cal.com API error format
+      if (errorData.error?.code === 'TokenExpiredException') {
+        throw new Error(`TokenExpiredException: ${errorData.error.message ?? 'Token expired'}`)
+      }
+
+      throw new Error(
+        `API Error ${response.status}: ${errorData.message ?? errorData.error?.message ?? response.statusText}`
+      )
     }
 
-    const data = await response.json()
+    const data = (await response.json()) as { data: T; status: string }
     return data
   }
 
@@ -133,7 +135,11 @@ export class CalApiClient {
     dateFrom?: string,
     dateTo?: string,
     timeZone?: string
-  ): Promise<{ busy: { start: string; end: string }[]; timeZone: string; workingHours: { start: string; end: string; days: number[] }[] }> {
+  ): Promise<{
+    busy: { start: string; end: string }[]
+    timeZone: string
+    workingHours: { start: string; end: string; days: number[] }[]
+  }> {
     const params = new URLSearchParams()
     if (eventTypeId) params.append('eventTypeId', eventTypeId.toString())
     if (username) params.append('username', username)
@@ -141,7 +147,11 @@ export class CalApiClient {
     if (dateTo) params.append('dateTo', dateTo)
     if (timeZone) params.append('timeZone', timeZone)
 
-    const response = await this.request<{ busy: { start: string; end: string }[]; timeZone: string; workingHours: { start: string; end: string; days: number[] }[] }>(`/availability?${params}`)
+    const response = await this.request<{
+      busy: { start: string; end: string }[]
+      timeZone: string
+      workingHours: { start: string; end: string; days: number[] }[]
+    }>(`/availability?${params}`)
     return response.data
   }
 
@@ -315,10 +325,10 @@ export class CalApiClient {
 
   // Webhook methods
   async createWebhook(data: {
-    subscriberUrl: string;
-    eventTriggers: string[];
-    payloadTemplate?: string;
-    secret?: string;
+    subscriberUrl: string
+    eventTriggers: string[]
+    payloadTemplate?: string
+    secret?: string
   }): Promise<{ id: string; webhook_url: string; created_at: string }> {
     const response = await this.request<{ id: string; webhook_url: string; created_at: string }>('/webhooks', {
       method: 'POST',
@@ -327,8 +337,9 @@ export class CalApiClient {
     return response.data
   }
 
-  async getWebhooks(): Promise<Array<{ id: string; subscriberUrl: string; eventTriggers: string[]; active: boolean }>> {
-    const response = await this.request<Array<{ id: string; subscriberUrl: string; eventTriggers: string[]; active: boolean }>>('/webhooks')
+  async getWebhooks(): Promise<{ id: string; subscriberUrl: string; eventTriggers: string[]; active: boolean }[]> {
+    const response =
+      await this.request<{ id: string; subscriberUrl: string; eventTriggers: string[]; active: boolean }[]>('/webhooks')
     return response.data
   }
 

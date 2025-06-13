@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "strict": false,
+    "noUncheckedIndexedAccess": false,
+    "checkJs": false,
+    "noImplicitAny": false,
+    "strictNullChecks": false,
+    "jsx": "react-jsx",
+    "types": ["vitest/globals", "jest", "@testing-library/jest-dom"]
+  },
+  "include": ["src/**/*.test.*", "src/**/*.spec.*", "src/__tests__/**/*", "src/**/test/**/*", "vitest.config.ts"],
+  "exclude": []
+}

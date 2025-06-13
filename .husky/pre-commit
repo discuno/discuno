@@ -1,0 +1,11 @@
+echo "🔍 Running pre-commit checks..."
+
+# Run lint-staged for staged files across the monorepo
+echo "📝 Linting and formatting staged files..."
+pnpm lint:staged
+
+# Run type checking across the entire monorepo
+echo "🔍 Running type checks..."
+pnpm typecheck
+
+echo "✅ Pre-commit checks passed!"
