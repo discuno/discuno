@@ -2,13 +2,20 @@ import '~/styles/globals.css'
 
 import { GeistSans } from 'geist/font/sans'
 import { type Metadata } from 'next'
-import { ThemeProvider } from '~/lib/providers/ThemeProvider'
 import { Toaster } from 'sonner'
+import { ThemeProvider } from '~/lib/providers/ThemeProvider'
 
 export const metadata: Metadata = {
   title: 'Discuno - Your Guide to College Success',
   description: 'Discover personalized advice, resources, and tools to help you get into your dream college.',
-  icons: [{ rel: 'icon', url: '/favicon.ico' }],
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/logos/black-icon-logo.svg', type: 'image/svg+xml' },
+    ],
+    shortcut: '/favicon.ico',
+    apple: '/favicon.ico',
+  },
 }
 
 const RootLayout = async ({ children }: Readonly<{ children: React.ReactNode }>) => {

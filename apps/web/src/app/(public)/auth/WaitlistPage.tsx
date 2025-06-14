@@ -1,22 +1,21 @@
 import {
-  Rocket,
-  Sparkles,
-  Shield,
-  Users,
-  GraduationCap,
-  Target,
-  MessageCircle,
+  BookOpen,
   CheckCircle,
+  Coffee,
+  Eye,
+  GraduationCap,
   Mail,
   MapPin,
-  Coffee,
-  BookOpen,
-  Eye,
+  MessageCircle,
+  Rocket,
+  Shield,
+  Sparkles,
+  Target,
+  Users,
 } from 'lucide-react'
+import { WaitlistForm } from '~/app/(public)/auth/WaitlistForm'
 import { Badge } from '~/components/ui/badge'
 import { Card, CardContent } from '~/components/ui/card'
-import { WaitlistForm } from '~/app/(public)/auth/WaitlistForm'
-import Image from 'next/image'
 
 const features = [
   {
@@ -83,8 +82,8 @@ export const WaitlistPage = () => {
 
             <div className="mb-8 flex items-center justify-center gap-4">
               {/* Company Logo/Name */}
-              <Image src="/logos/black-icon-logo.svg" alt="Discuno" width={64} height={64} className="dark:hidden" />
-              <Image
+              <img src="/logos/black-icon-logo.svg" alt="Discuno" width={64} height={64} className="dark:hidden" />
+              <img
                 src="/logos/white-icon-logo.svg"
                 alt="Discuno"
                 width={64}

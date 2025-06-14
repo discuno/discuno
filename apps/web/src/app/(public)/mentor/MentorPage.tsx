@@ -1,21 +1,20 @@
 'use client'
 
 import {
+  Briefcase,
   Calendar,
-  DollarSign,
   Clock,
+  DollarSign,
+  GraduationCap,
+  Network,
+  Star,
+  Target,
   TrendingUp,
   Users,
-  Star,
-  Briefcase,
-  Network,
-  GraduationCap,
-  Target,
 } from 'lucide-react'
+import { WaitlistForm } from '~/app/(public)/auth/WaitlistForm'
 import { Badge } from '~/components/ui/badge'
 import { Card, CardContent } from '~/components/ui/card'
-import { WaitlistForm } from '~/app/(public)/auth/WaitlistForm'
-import Image from 'next/image'
 
 const mentorBenefits = [
   {
@@ -128,8 +127,8 @@ export const MentorPage = () => {
 
             {/* Company Logo/Name */}
             <div className="mb-8 flex items-center justify-center gap-4">
-              <Image src="/logos/black-icon-logo.svg" alt="Discuno" width={64} height={64} className="dark:hidden" />
-              <Image
+              <img src="/logos/black-icon-logo.svg" alt="Discuno" width={64} height={64} className="dark:hidden" />
+              <img
                 src="/logos/white-icon-logo.svg"
                 alt="Discuno"
                 width={64}
