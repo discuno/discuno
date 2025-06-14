@@ -1,0 +1,89 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:best-practices", "group:monorepos", "group:recommended"],
+  "description": "Automated dependency updates for Discuno monorepo",
+  "timezone": "UTC",
+  "schedule": ["before 10am on Monday"],
+  "labels": ["dependencies"],
+  "reviewers": ["discuno/maintainers"],
+  "assignees": ["discuno/maintainers"],
+  "prHourlyLimit": 2,
+  "prConcurrentLimit": 10,
+  "branchConcurrentLimit": 20,
+  "platformAutomerge": false,
+  "dependencyDashboard": true,
+  "dependencyDashboardTitle": "🤖 Dependency Dashboard",
+  "commitMessagePrefix": "chore:",
+  "semanticCommits": "enabled",
+  "separateMajorMinor": true,
+  "separateMultipleMajor": true,
+  "ignorePaths": ["**/node_modules/**", "**/dist/**", "**/build/**", "**/.next/**"],
+  "packageRules": [
+    {
+      "description": "Group React ecosystem updates",
+      "groupName": "React ecosystem",
+      "matchPackagePatterns": ["^react", "^@types/react"],
+      "matchPackageNames": ["next"],
+      "schedule": ["before 10am on Monday"]
+    },
+    {
+      "description": "Group UI component libraries",
+      "groupName": "UI components",
+      "matchPackagePatterns": ["^@radix-ui/", "^tailwind", "^@tailwindcss/"],
+      "matchPackageNames": ["lucide-react", "class-variance-authority", "clsx", "tailwind-merge"]
+    },
+    {
+      "description": "Group TypeScript and linting tools",
+      "groupName": "TypeScript and linting",
+      "matchPackagePatterns": ["^@types/", "^eslint", "^@typescript-eslint/"],
+      "matchPackageNames": ["typescript", "prettier"]
+    },
+    {
+      "description": "Group build tools and monorepo utilities",
+      "groupName": "Build tools",
+      "matchPackageNames": ["turbo", "nx", "lerna"]
+    },
+    {
+      "description": "Auto-merge patch and minor updates for dev dependencies",
+      "matchDepTypes": ["devDependencies"],
+      "matchUpdateTypes": ["patch", "minor"],
+      "automerge": true
+    },
+    {
+      "description": "Auto-merge patch updates for production dependencies",
+      "matchDepTypes": ["dependencies"],
+      "matchUpdateTypes": ["patch"],
+      "automerge": true
+    },
+    {
+      "description": "Require manual approval for major updates",
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "addLabels": ["major-update"]
+    },
+    {
+      "description": "GitHub Actions updates",
+      "matchManagers": ["github-actions"],
+      "groupName": "GitHub Actions",
+      "commitMessagePrefix": "chore(ci):",
+      "addLabels": ["ci"]
+    },
+    {
+      "description": "Pin Docker digests",
+      "matchDatasources": ["docker"],
+      "pinDigests": true
+    }
+  ],
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "addLabels": ["security"]
+  },
+  "osvVulnerabilityAlerts": true,
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 10am on Monday"],
+    "commitMessageAction": "Lock file maintenance"
+  },
+  "postUpdateOptions": ["pnpmDedupe"],
+  "rangeStrategy": "bump"
+}
