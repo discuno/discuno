@@ -20,8 +20,8 @@ export const env = createEnv({
     JWT_SECRET: z.string(),
     SENDGRID_API_KEY: z.string(),
     STRIPE_SECRET_KEY: z.string(),
-    CRON_SECRET: z.string(),
     STRIPE_WEBHOOK_SECRET: z.string(),
+    CRON_SECRET: z.string(),
     NEXTAUTH_URL: z.string(),
     SMTP_HOST: z.string(),
     SMTP_PORT: z.coerce.number(),
@@ -31,6 +31,8 @@ export const env = createEnv({
     SENTRY_AUTH_TOKEN: z.string(),
     AUTH_EMAIL_SERVER: z.string(),
     X_CAL_SECRET_KEY: z.string(),
+    SENTRY_DSN: z.string(),
+    SENTRY_ENVIRONMENT: z.string(),
   },
 
   /**
@@ -42,6 +44,7 @@ export const env = createEnv({
     NEXT_PUBLIC_BASE_URL: z.string(),
     NEXT_PUBLIC_X_CAL_ID: z.string(),
     NEXT_PUBLIC_CALCOM_API_URL: z.string(),
+    NEXT_PUBLIC_STRIPE_PUBLIC_KEY: z.string(),
   },
 
   /**
@@ -73,7 +76,10 @@ export const env = createEnv({
     AUTH_EMAIL_SERVER: process.env.AUTH_EMAIL_SERVER,
     NEXT_PUBLIC_X_CAL_ID: process.env.NEXT_PUBLIC_X_CAL_ID,
     X_CAL_SECRET_KEY: process.env.X_CAL_SECRET_KEY,
+    SENTRY_DSN: process.env.SENTRY_DSN,
+    SENTRY_ENVIRONMENT: process.env.SENTRY_ENVIRONMENT,
     NEXT_PUBLIC_CALCOM_API_URL: process.env.NEXT_PUBLIC_CALCOM_API_URL,
+    NEXT_PUBLIC_STRIPE_PUBLIC_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially
