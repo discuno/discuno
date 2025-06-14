@@ -17,26 +17,42 @@
   "semanticCommits": "enabled",
   "separateMajorMinor": true,
   "separateMultipleMajor": true,
-  "ignorePaths": ["**/node_modules/**", "**/dist/**", "**/build/**", "**/.next/**"],
+  "ignorePaths": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/build/**",
+    "**/.next/**"
+  ],
   "packageRules": [
     {
       "description": "Group React ecosystem updates",
       "groupName": "React ecosystem",
-      "matchPackagePatterns": ["^react", "^@types/react"],
-      "matchPackageNames": ["next"],
+      "matchPackageNames": ["next", "/^react/", "/^@types/react/"],
       "schedule": ["before 10am on Monday"]
     },
     {
       "description": "Group UI component libraries",
       "groupName": "UI components",
-      "matchPackagePatterns": ["^@radix-ui/", "^tailwind", "^@tailwindcss/"],
-      "matchPackageNames": ["lucide-react", "class-variance-authority", "clsx", "tailwind-merge"]
+      "matchPackageNames": [
+        "lucide-react",
+        "class-variance-authority",
+        "clsx",
+        "tailwind-merge",
+        "/^@radix-ui//",
+        "/^tailwind/",
+        "/^@tailwindcss//"
+      ]
     },
     {
       "description": "Group TypeScript and linting tools",
       "groupName": "TypeScript and linting",
-      "matchPackagePatterns": ["^@types/", "^eslint", "^@typescript-eslint/"],
-      "matchPackageNames": ["typescript", "prettier"]
+      "matchPackageNames": [
+        "typescript",
+        "prettier",
+        "/^@types//",
+        "/^eslint/",
+        "/^@typescript-eslint//"
+      ]
     },
     {
       "description": "Group build tools and monorepo utilities",
