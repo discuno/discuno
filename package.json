@@ -28,7 +28,7 @@
   },
   "engines": {
     "node": ">=18.0.0",
-    "pnpm": ">=8.0.0"
+    "pnpm": ">=10.12.1"
   },
   "packageManager": "pnpm@10.12.1",
   "scripts": {
@@ -62,11 +62,11 @@
     "@changesets/cli": "^2.29.4",
     "@commitlint/cli": "^19.8.1",
     "@commitlint/config-conventional": "^19.8.1",
-    "@eslint/js": "^9.28.0",
+    "@eslint/js": "^9.29.0",
     "@types/node": "^24.0.1",
     "@typescript-eslint/eslint-plugin": "^8.34.0",
     "@typescript-eslint/parser": "^8.34.0",
-    "eslint": "^9.28.0",
+    "eslint": "^9.29.0",
     "eslint-config-next": "^15.3.3",
     "eslint-plugin-drizzle": "^0.2.3",
     "eslint-plugin-import": "^2.31.0",
