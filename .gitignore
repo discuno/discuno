@@ -62,10 +62,8 @@ jspm_packages/
 
 # dotenv environment variable files
 .env
-.env.development.local
-.env.test.local
-.env.production.local
-.env.local
+.env.*
+!.env.example
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache
@@ -81,7 +79,8 @@ dist
 
 # Gatsby files
 .cache/
-public
+# Note: Gatsby public dir ignored, but Next.js public dirs are needed
+# public
 
 # Vuepress build output
 .vuepress/dist
@@ -148,3 +147,6 @@ storybook-static
 # Temporary files
 .tmp
 .temp
+
+# Cursorrules
+.cursor
