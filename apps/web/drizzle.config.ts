@@ -13,6 +13,6 @@ export default {
   verbose: true,
   strict: true,
   migrations: {
-    prefix: 'supabase',
+    prefix: 'index',
   },
 } satisfies Config
