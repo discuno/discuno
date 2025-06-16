@@ -1,0 +1,204 @@
+{
+  "name": "🚀 Feature Development",
+  "description": "Template for developing new features in the discuno platform",
+  "type": "feature",
+  "workflow": {
+    "stages": [
+      {
+        "name": "📋 Planning",
+        "description": "Requirements gathering and technical planning",
+        "type": "unstarted",
+        "position": 1
+      },
+      {
+        "name": "🎨 Design",
+        "description": "UI/UX design and technical architecture",
+        "type": "unstarted",
+        "position": 2
+      },
+      {
+        "name": "🏗️ Development",
+        "description": "Active development and implementation",
+        "type": "started",
+        "position": 3
+      },
+      {
+        "name": "🧪 Testing",
+        "description": "Testing, QA, and bug fixes",
+        "type": "started",
+        "position": 4
+      },
+      {
+        "name": "📱 Review",
+        "description": "Code review and stakeholder approval",
+        "type": "started",
+        "position": 5
+      },
+      {
+        "name": "🚀 Deploy",
+        "description": "Deployment to staging and production",
+        "type": "started",
+        "position": 6
+      },
+      {
+        "name": "✅ Done",
+        "description": "Feature is live and verified",
+        "type": "completed",
+        "position": 7
+      }
+    ]
+  },
+  "labels": [
+    {
+      "name": "scheduling",
+      "description": "Cal.com integration and booking features",
+      "color": "#3B82F6"
+    },
+    {
+      "name": "mentorship",
+      "description": "Mentor/mentee platform features",
+      "color": "#10B981"
+    },
+    {
+      "name": "authentication",
+      "description": "NextAuth.js and user management",
+      "color": "#F59E0B"
+    },
+    {
+      "name": "ui-components",
+      "description": "@discuno/atoms component library",
+      "color": "#8B5CF6"
+    },
+    {
+      "name": "database",
+      "description": "Drizzle ORM and database changes",
+      "color": "#EF4444"
+    },
+    {
+      "name": "api",
+      "description": "Server actions and API endpoints",
+      "color": "#06B6D4"
+    },
+    {
+      "name": "frontend",
+      "description": "React components and UI",
+      "color": "#EC4899"
+    },
+    {
+      "name": "backend",
+      "description": "Server-side logic and integrations",
+      "color": "#84CC16"
+    },
+    {
+      "name": "mobile",
+      "description": "Mobile-specific features and responsive design",
+      "color": "#F97316"
+    },
+    {
+      "name": "performance",
+      "description": "Performance optimizations",
+      "color": "#14B8A6"
+    }
+  ],
+  "issueTypes": [
+    {
+      "name": "Epic",
+      "description": "Large feature with multiple stories",
+      "icon": "🎯"
+    },
+    {
+      "name": "Story",
+      "description": "User story or feature requirement",
+      "icon": "📖"
+    },
+    {
+      "name": "Task",
+      "description": "Development task or technical work",
+      "icon": "⚙️"
+    },
+    {
+      "name": "Bug",
+      "description": "Bug report or defect",
+      "icon": "🐛"
+    },
+    {
+      "name": "Spike",
+      "description": "Research or investigation task",
+      "icon": "🔍"
+    }
+  ],
+  "milestones": [
+    {
+      "name": "📋 Requirements Complete",
+      "description": "All requirements gathered and documented"
+    },
+    {
+      "name": "🎨 Design Approved",
+      "description": "UI/UX design and technical architecture approved"
+    },
+    {
+      "name": "🏗️ MVP Complete",
+      "description": "Minimum viable implementation finished"
+    },
+    {
+      "name": "🧪 Testing Complete",
+      "description": "All testing completed and bugs resolved"
+    },
+    {
+      "name": "🚀 Production Release",
+      "description": "Feature deployed to production"
+    }
+  ],
+  "defaultAssignments": {
+    "Planning": ["product-manager", "tech-lead"],
+    "Design": ["designer", "frontend-developer"],
+    "Development": ["frontend-developer", "backend-developer"],
+    "Testing": ["qa-engineer", "developer"],
+    "Review": ["tech-lead", "senior-developer"],
+    "Deploy": ["devops-engineer", "tech-lead"]
+  },
+  "automations": [
+    {
+      "trigger": "issue_moved_to_stage",
+      "condition": "Development",
+      "action": "add_label",
+      "value": "in-progress"
+    },
+    {
+      "trigger": "issue_moved_to_stage",
+      "condition": "Testing",
+      "action": "add_label",
+      "value": "needs-testing"
+    },
+    {
+      "trigger": "issue_moved_to_stage",
+      "condition": "Done",
+      "action": "add_label",
+      "value": "released"
+    }
+  ],
+  "integrations": {
+    "github": {
+      "autoLinkPRs": true,
+      "autoCloseOnMerge": true,
+      "branchNaming": "feature/{issue-identifier}-{issue-title}"
+    },
+    "slack": {
+      "notifications": {
+        "milestoneReached": true,
+        "blockedIssues": true,
+        "deploymentReady": true
+      }
+    }
+  },
+  "templates": {
+    "epic": {
+      "title": "[EPIC] {Feature Name}",
+      "description": "## Epic Overview\n\n### Business Value\n\n### User Stories\n\n### Acceptance Criteria\n\n### Technical Requirements\n\n### Dependencies\n\n### Success Metrics"
+    },
+    "story": {
+      "title": "[STORY] As a {user type}, I want {goal} so that {benefit}",
+      "description": "## User Story\n\n**As a** {user type}\n**I want** {goal}\n**So that** {benefit}\n\n## Acceptance Criteria\n\n## Technical Notes\n\n## Dependencies"
+    }
+  }
+}

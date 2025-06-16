@@ -1,0 +1,280 @@
+{
+  "name": "🏃‍♂️ Sprint Planning",
+  "description": "2-week sprint template for agile development cycles",
+  "type": "sprint",
+  "duration": "2 weeks",
+  "workflow": {
+    "stages": [
+      {
+        "name": "📋 Backlog",
+        "description": "Sprint backlog items ready for planning",
+        "type": "unstarted",
+        "position": 1
+      },
+      {
+        "name": "🎯 Sprint Ready",
+        "description": "Items committed to current sprint",
+        "type": "unstarted",
+        "position": 2
+      },
+      {
+        "name": "🏗️ In Progress",
+        "description": "Actively being worked on",
+        "type": "started",
+        "position": 3
+      },
+      {
+        "name": "👀 Code Review",
+        "description": "Under code review",
+        "type": "started",
+        "position": 4
+      },
+      {
+        "name": "🧪 Testing",
+        "description": "In QA testing",
+        "type": "started",
+        "position": 5
+      },
+      {
+        "name": "🚀 Ready to Deploy",
+        "description": "Ready for deployment",
+        "type": "started",
+        "position": 6
+      },
+      {
+        "name": "✅ Done",
+        "description": "Completed and deployed",
+        "type": "completed",
+        "position": 7
+      }
+    ]
+  },
+  "labels": [
+    {
+      "name": "sprint-goal",
+      "description": "Contributes to sprint goal",
+      "color": "#10B981"
+    },
+    {
+      "name": "high-priority",
+      "description": "High priority for this sprint",
+      "color": "#EF4444"
+    },
+    {
+      "name": "medium-priority",
+      "description": "Medium priority",
+      "color": "#F59E0B"
+    },
+    {
+      "name": "low-priority",
+      "description": "Low priority, nice to have",
+      "color": "#6B7280"
+    },
+    {
+      "name": "blocked",
+      "description": "Blocked by external dependency",
+      "color": "#DC2626"
+    },
+    {
+      "name": "technical-debt",
+      "description": "Technical debt or refactoring",
+      "color": "#7C2D12"
+    },
+    {
+      "name": "quick-win",
+      "description": "Small task, easy to complete",
+      "color": "#059669"
+    },
+    {
+      "name": "carry-over",
+      "description": "Carried over from previous sprint",
+      "color": "#9333EA"
+    },
+    {
+      "name": "stretch-goal",
+      "description": "Stretch goal if time permits",
+      "color": "#0EA5E9"
+    }
+  ],
+  "issueTypes": [
+    {
+      "name": "Story",
+      "description": "User story for sprint",
+      "icon": "📖"
+    },
+    {
+      "name": "Task",
+      "description": "Development task",
+      "icon": "⚙️"
+    },
+    {
+      "name": "Bug",
+      "description": "Bug fix",
+      "icon": "🐛"
+    },
+    {
+      "name": "Spike",
+      "description": "Research or spike",
+      "icon": "🔍"
+    },
+    {
+      "name": "Refactor",
+      "description": "Refactoring task",
+      "icon": "🔧"
+    }
+  ],
+  "milestones": [
+    {
+      "name": "🎯 Sprint Planning Complete",
+      "description": "Sprint planning session completed, backlog committed"
+    },
+    {
+      "name": "📅 Mid-Sprint Check",
+      "description": "Mid-sprint review and adjustment"
+    },
+    {
+      "name": "🧪 Testing Phase",
+      "description": "All development complete, testing phase begins"
+    },
+    {
+      "name": "🚀 Sprint Demo",
+      "description": "Sprint demo and review session"
+    },
+    {
+      "name": "📈 Sprint Retrospective",
+      "description": "Sprint retrospective completed"
+    }
+  ],
+  "sprintActivities": [
+    {
+      "name": "Sprint Planning",
+      "day": 1,
+      "duration": "2 hours",
+      "participants": ["team", "product-owner", "scrum-master"]
+    },
+    {
+      "name": "Daily Standups",
+      "recurring": "daily",
+      "duration": "15 minutes",
+      "participants": ["development-team"]
+    },
+    {
+      "name": "Mid-Sprint Review",
+      "day": 7,
+      "duration": "1 hour",
+      "participants": ["team", "product-owner"]
+    },
+    {
+      "name": "Sprint Demo",
+      "day": 10,
+      "duration": "1 hour",
+      "participants": ["team", "stakeholders"]
+    },
+    {
+      "name": "Sprint Retrospective",
+      "day": 10,
+      "duration": "1 hour",
+      "participants": ["development-team", "scrum-master"]
+    }
+  ],
+  "velocityTracking": {
+    "estimationMethod": "story-points",
+    "velocityTarget": 40,
+    "capacityPlanning": {
+      "totalHours": 80,
+      "availableHours": 72,
+      "bufferPercentage": 10
+    }
+  },
+  "automations": [
+    {
+      "trigger": "sprint_start",
+      "action": "move_issues_to_stage",
+      "from": "Backlog",
+      "to": "Sprint Ready"
+    },
+    {
+      "trigger": "issue_moved_to_stage",
+      "condition": "In Progress",
+      "action": "assign_to_current_user"
+    },
+    {
+      "trigger": "issue_moved_to_stage",
+      "condition": "Code Review",
+      "action": "notify_reviewers"
+    },
+    {
+      "trigger": "sprint_end",
+      "action": "generate_velocity_report"
+    }
+  ],
+  "reportingDashboards": [
+    {
+      "name": "Sprint Burndown",
+      "type": "burndown-chart",
+      "metrics": ["remaining-story-points", "remaining-issues"]
+    },
+    {
+      "name": "Sprint Velocity",
+      "type": "velocity-chart",
+      "metrics": ["completed-story-points", "sprint-commitment"]
+    },
+    {
+      "name": "Team Capacity",
+      "type": "capacity-chart",
+      "metrics": ["available-hours", "committed-hours", "actual-hours"]
+    },
+    {
+      "name": "Issue Flow",
+      "type": "cumulative-flow",
+      "metrics": ["stage-progression", "cycle-time"]
+    }
+  ],
+  "integrations": {
+    "github": {
+      "autoLinkPRs": true,
+      "branchNaming": "sprint-{sprint-number}/{issue-identifier}-{issue-title}",
+      "deploymentTracking": true
+    },
+    "slack": {
+      "channels": {
+        "daily-standup": "#daily-standup",
+        "sprint-updates": "#sprint-updates"
+      },
+      "notifications": {
+        "sprintStart": true,
+        "midSprintReview": true,
+        "blockedIssues": true,
+        "sprintEnd": true
+      }
+    },
+    "calendar": {
+      "sprintEvents": true,
+      "deadlineReminders": true
+    }
+  },
+  "templates": {
+    "sprintGoal": {
+      "title": "Sprint {number} Goal",
+      "description": "## Sprint Goal\n\n### Primary Objective\n\n### Success Criteria\n\n### Key Features\n\n### Risks and Mitigations"
+    },
+    "userStory": {
+      "title": "As a {user}, I want {goal} so that {benefit}",
+      "description": "## User Story\n\n**As a** {user}\n**I want** {goal}\n**So that** {benefit}\n\n## Acceptance Criteria\n\n## Story Points\n\n## Dependencies"
+    },
+    "task": {
+      "title": "{Task Description}",
+      "description": "## Task Description\n\n## Acceptance Criteria\n\n## Technical Notes\n\n## Estimated Hours"
+    }
+  },
+  "definition_of_done": [
+    "Code is written and follows coding standards",
+    "Unit tests are written and passing",
+    "Code review is completed and approved",
+    "Integration tests are passing",
+    "Documentation is updated",
+    "Feature is deployed to staging",
+    "QA testing is completed",
+    "Product owner has accepted the story"
+  ]
+}

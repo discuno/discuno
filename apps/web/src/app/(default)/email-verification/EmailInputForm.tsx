@@ -15,10 +15,9 @@ interface EmailInputFormProps {
 }
 
 export const EmailInputForm = async ({ isVerified = false }: EmailInputFormProps) => {
-  const user = await requireAuth()
-
   const handleSubmit = async (formData: FormData) => {
     'use server'
+    const { user } = await requireAuth()
     const eduEmailRaw = formData.get('email')
 
     if (typeof eduEmailRaw !== 'string') {

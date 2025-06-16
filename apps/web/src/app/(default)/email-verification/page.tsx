@@ -1,7 +1,7 @@
 import { EmailInputForm } from '~/app/(default)/email-verification/EmailInputForm'
 import { SentEmailVerification } from '~/app/(default)/email-verification/Sent'
 import { StatusToast } from '~/components/shared/StatusToast'
-import { requireAuth } from '~/lib/auth/auth-utils'
+import { requireUserId } from '~/lib/auth/auth-utils'
 import { getProfile } from '~/server/queries'
 
 const EmailVerificationPage = async ({
@@ -9,8 +9,8 @@ const EmailVerificationPage = async ({
 }: {
   searchParams: Promise<{ status?: string }>
 }) => {
-  const { id } = await requireAuth()
   const { status } = await searchParams
+  const id = await requireUserId()
 
   // Fetch the user's profile to determine if they have an existing eduEmail
   const isVerified = (await getProfile(id))?.isEduVerified

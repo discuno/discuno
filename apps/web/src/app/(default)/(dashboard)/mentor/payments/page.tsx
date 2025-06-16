@@ -20,13 +20,12 @@ import { Alert, AlertDescription } from '~/components/ui/alert'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
-import { requireAuth } from '~/lib/auth/auth-utils'
+import { requireUserId } from '~/lib/auth/auth-utils'
 import { getProfile } from '~/server/queries'
 
 async function MentorPaymentsContent() {
-  const { id } = await requireAuth()
-
   // Check if user is verified mentor
+  const id = await requireUserId()
   const profile = await getProfile(id)
   if (!profile?.isEduVerified) {
     redirect('/email-verification')

@@ -1,21 +1,20 @@
-import { Suspense } from 'react'
+import { AlertCircle, ArrowRight, Calendar, CheckCircle, Clock, Settings } from 'lucide-react'
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { requireAuth } from '~/lib/auth/auth-utils'
-import { getProfile, getUserCalcomTokens } from '~/server/queries'
-import { CalProviderWrapper } from '~/lib/providers/CalProviderWrapper'
-import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs'
+import { Suspense } from 'react'
+import { AvailabilityShowcase } from '~/app/(default)/(dashboard)/components-showcase/components/AvailabilityShowcase'
+import { Alert, AlertDescription } from '~/components/ui/alert'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
-import { Alert, AlertDescription } from '~/components/ui/alert'
-import { Calendar, Clock, Settings, CheckCircle, AlertCircle, ArrowRight } from 'lucide-react'
-import Link from 'next/link'
-import { AvailabilityShowcase } from '~/app/(default)/(dashboard)/components-showcase/components/AvailabilityShowcase'
+import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs'
+import { requireUserId } from '~/lib/auth/auth-utils'
+import { CalProviderWrapper } from '~/lib/providers/CalProviderWrapper'
+import { getProfile, getUserCalcomTokens } from '~/server/queries'
 
 async function MentorSchedulingContent() {
-  const { id } = await requireAuth()
-
   // Check if user is verified mentor
+  const id = await requireUserId()
   const profile = await getProfile(id)
   if (!profile?.isEduVerified) {
     redirect('/email-verification')

@@ -1,8 +1,7 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 // Extend global type to include test functions
 declare global {
-  // eslint-disable-next-line no-var
   var verifyEmailFunction: (token: string) => Promise<any>
 }
 
@@ -29,6 +28,11 @@ vi.mock('~/env', () => ({
 // Mock auth utils
 vi.mock('~/lib/auth/auth-utils', () => ({
   requireAuth: vi.fn(),
+  requireUserId: vi.fn(),
+  getCurrentSession: vi.fn(),
+  isAuthenticated: vi.fn(),
+  redirectIfAuthenticated: vi.fn(),
+  getCurrentUser: vi.fn(),
 }))
 
 // Mock server queries
@@ -48,6 +52,7 @@ describe('Email Verification', () => {
   let mockFetch: any
   let mockJwt: any
   let mockRequireAuth: any
+  let mockRequireUserId: any
   let mockGetProfile: any
   let mockGetUserName: any
   let mockIsEduEmailInUse: any
@@ -58,7 +63,9 @@ describe('Email Verification', () => {
   beforeEach(async () => {
     mockFetch = global.fetch as any
     mockJwt = (await import('jsonwebtoken')).default
-    mockRequireAuth = (await import('~/lib/auth/auth-utils')).requireAuth
+    const authUtils = await import('~/lib/auth/auth-utils')
+    mockRequireAuth = authUtils.requireAuth
+    mockRequireUserId = authUtils.requireUserId
     const queries = await import('~/server/queries')
     mockGetProfile = queries.getProfile
     mockGetUserName = queries.getUserName
@@ -71,7 +78,8 @@ describe('Email Verification', () => {
     vi.clearAllMocks()
 
     // Default mock implementations
-    mockRequireAuth.mockResolvedValue({ id: 'user-123' })
+    mockRequireAuth.mockResolvedValue({ user: { id: 'user-123' }, expires: '2025-12-31' })
+    mockRequireUserId.mockResolvedValue('user-123')
     mockJwt.verify.mockReturnValue({
       userId: 'user-123',
       eduEmail: 'student@college.edu',
@@ -510,13 +518,13 @@ describe('Email Verification', () => {
 
   describe('Security', () => {
     it('should validate user authorization before proceeding', async () => {
-      mockRequireAuth.mockRejectedValue(new Error('Unauthorized'))
+      mockRequireUserId.mockRejectedValue(new Error('Unauthorized'))
 
       const result = await global.verifyEmailFunction('valid-jwt-token')
 
       expect(result.success).toBe(false)
       expect(result.message).toBe('Verification failed. Please try again.')
-      expect(mockRequireAuth).toHaveBeenCalled()
+      expect(mockRequireUserId).toHaveBeenCalled()
     })
 
     it('should not proceed if JWT user ID does not match authenticated user', async () => {

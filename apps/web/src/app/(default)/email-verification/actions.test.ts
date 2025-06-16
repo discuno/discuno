@@ -1,9 +1,9 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { checkVerificationStatus } from './actions'
 
 // Mock the auth utils
 vi.mock('~/lib/auth/auth-utils', () => ({
-  requireAuth: vi.fn(),
+  requireUserId: vi.fn(),
 }))
 
 // Mock the server queries
@@ -11,7 +11,7 @@ vi.mock('~/server/queries', () => ({
   getProfile: vi.fn(),
 }))
 
-const { requireAuth } = await import('~/lib/auth/auth-utils')
+const { requireUserId } = await import('~/lib/auth/auth-utils')
 const { getProfile } = await import('~/server/queries')
 
 describe('Email Verification Actions', () => {
@@ -39,12 +39,12 @@ describe('Email Verification Actions', () => {
         deletedAt: null,
       }
 
-      vi.mocked(requireAuth).mockResolvedValue({ id: mockUserId })
+      vi.mocked(requireUserId).mockResolvedValue(mockUserId)
       vi.mocked(getProfile).mockResolvedValue(mockProfile)
 
       const result = await checkVerificationStatus()
 
-      expect(requireAuth).toHaveBeenCalledOnce()
+      expect(requireUserId).toHaveBeenCalledOnce()
       expect(getProfile).toHaveBeenCalledWith(mockUserId)
       expect(result).toBe(true)
     })
@@ -64,12 +64,12 @@ describe('Email Verification Actions', () => {
         deletedAt: null,
       }
 
-      vi.mocked(requireAuth).mockResolvedValue({ id: mockUserId })
+      vi.mocked(requireUserId).mockResolvedValue(mockUserId)
       vi.mocked(getProfile).mockResolvedValue(mockProfile)
 
       const result = await checkVerificationStatus()
 
-      expect(requireAuth).toHaveBeenCalledOnce()
+      expect(requireUserId).toHaveBeenCalledOnce()
       expect(getProfile).toHaveBeenCalledWith(mockUserId)
       expect(result).toBe(false)
     })
@@ -77,12 +77,12 @@ describe('Email Verification Actions', () => {
     it('should return false when profile is null', async () => {
       const mockUserId = 'test-user-789'
 
-      vi.mocked(requireAuth).mockResolvedValue({ id: mockUserId })
+      vi.mocked(requireUserId).mockResolvedValue(mockUserId)
       vi.mocked(getProfile).mockResolvedValue(null)
 
       const result = await checkVerificationStatus()
 
-      expect(requireAuth).toHaveBeenCalledOnce()
+      expect(requireUserId).toHaveBeenCalledOnce()
       expect(getProfile).toHaveBeenCalledWith(mockUserId)
       expect(result).toBe(false)
     })
@@ -90,12 +90,12 @@ describe('Email Verification Actions', () => {
     it('should return false when profile is undefined', async () => {
       const mockUserId = 'test-user-101'
 
-      vi.mocked(requireAuth).mockResolvedValue({ id: mockUserId })
+      vi.mocked(requireUserId).mockResolvedValue(mockUserId)
       vi.mocked(getProfile).mockResolvedValue(null)
 
       const result = await checkVerificationStatus()
 
-      expect(requireAuth).toHaveBeenCalledOnce()
+      expect(requireUserId).toHaveBeenCalledOnce()
       expect(getProfile).toHaveBeenCalledWith(mockUserId)
       expect(result).toBe(false)
     })
@@ -115,66 +115,66 @@ describe('Email Verification Actions', () => {
         deletedAt: null,
       }
 
-      vi.mocked(requireAuth).mockResolvedValue({ id: mockUserId })
+      vi.mocked(requireUserId).mockResolvedValue(mockUserId)
       vi.mocked(getProfile).mockResolvedValue(mockProfile)
 
       const result = await checkVerificationStatus()
 
-      expect(requireAuth).toHaveBeenCalledOnce()
+      expect(requireUserId).toHaveBeenCalledOnce()
       expect(getProfile).toHaveBeenCalledWith(mockUserId)
       expect(result).toBe(false)
     })
 
     it('should handle authentication errors', async () => {
-      vi.mocked(requireAuth).mockRejectedValue(new Error('Not authenticated'))
+      vi.mocked(requireUserId).mockRejectedValue(new Error('Not authenticated'))
 
       await expect(checkVerificationStatus()).rejects.toThrow('Not authenticated')
 
-      expect(requireAuth).toHaveBeenCalledOnce()
+      expect(requireUserId).toHaveBeenCalledOnce()
       expect(getProfile).not.toHaveBeenCalled()
     })
 
     it('should handle database errors from getProfile', async () => {
       const mockUserId = 'test-user-303'
 
-      vi.mocked(requireAuth).mockResolvedValue({ id: mockUserId })
+      vi.mocked(requireUserId).mockResolvedValue(mockUserId)
       vi.mocked(getProfile).mockRejectedValue(new Error('Database connection failed'))
 
       await expect(checkVerificationStatus()).rejects.toThrow('Database connection failed')
 
-      expect(requireAuth).toHaveBeenCalledOnce()
+      expect(requireUserId).toHaveBeenCalledOnce()
       expect(getProfile).toHaveBeenCalledWith(mockUserId)
     })
 
     it('should handle missing user id from auth', async () => {
-      vi.mocked(requireAuth).mockResolvedValue({ id: undefined as any })
+      vi.mocked(requireUserId).mockResolvedValue(undefined as any)
       vi.mocked(getProfile).mockResolvedValue(null)
 
       const result = await checkVerificationStatus()
 
-      expect(requireAuth).toHaveBeenCalledOnce()
+      expect(requireUserId).toHaveBeenCalledOnce()
       expect(result).toBe(false)
     })
 
     it('should handle null user id from auth', async () => {
-      vi.mocked(requireAuth).mockResolvedValue({ id: null as any })
+      vi.mocked(requireUserId).mockResolvedValue(null as any)
       vi.mocked(getProfile).mockResolvedValue(null)
 
       const result = await checkVerificationStatus()
 
-      expect(requireAuth).toHaveBeenCalledOnce()
+      expect(requireUserId).toHaveBeenCalledOnce()
       expect(result).toBe(false)
     })
 
     it('should handle empty string user id from auth', async () => {
       const mockUserId = ''
 
-      vi.mocked(requireAuth).mockResolvedValue({ id: mockUserId })
+      vi.mocked(requireUserId).mockResolvedValue(mockUserId)
       vi.mocked(getProfile).mockResolvedValue(null)
 
       const result = await checkVerificationStatus()
 
-      expect(requireAuth).toHaveBeenCalledOnce()
+      expect(requireUserId).toHaveBeenCalledOnce()
       expect(getProfile).toHaveBeenCalledWith(mockUserId)
       expect(result).toBe(false)
     })
@@ -194,12 +194,12 @@ describe('Email Verification Actions', () => {
         deletedAt: null,
       } as any
 
-      vi.mocked(requireAuth).mockResolvedValue({ id: mockUserId })
+      vi.mocked(requireUserId).mockResolvedValue(mockUserId)
       vi.mocked(getProfile).mockResolvedValue(mockProfile)
 
       const result = await checkVerificationStatus()
 
-      expect(requireAuth).toHaveBeenCalledOnce()
+      expect(requireUserId).toHaveBeenCalledOnce()
       expect(getProfile).toHaveBeenCalledWith(mockUserId)
       expect(result).toBe(false)
     })
@@ -219,7 +219,7 @@ describe('Email Verification Actions', () => {
         deletedAt: null,
       }
 
-      vi.mocked(requireAuth).mockResolvedValue({ id: mockUserId })
+      vi.mocked(requireUserId).mockResolvedValue(mockUserId)
       vi.mocked(getProfile).mockResolvedValue(mockProfile)
 
       // Make multiple calls
@@ -231,7 +231,7 @@ describe('Email Verification Actions', () => {
 
       // All calls should return the same result
       expect(results).toEqual([true, true, true])
-      expect(requireAuth).toHaveBeenCalledTimes(3)
+      expect(requireUserId).toHaveBeenCalledTimes(3)
       expect(getProfile).toHaveBeenCalledTimes(3)
     })
 
@@ -250,7 +250,7 @@ describe('Email Verification Actions', () => {
         deletedAt: null,
       }
 
-      vi.mocked(requireAuth).mockResolvedValue({ id: mockUserId })
+      vi.mocked(requireUserId).mockResolvedValue(mockUserId)
       vi.mocked(getProfile).mockResolvedValue(mockProfile)
 
       // Make concurrent calls
@@ -263,7 +263,7 @@ describe('Email Verification Actions', () => {
       expect(result1).toBe(false)
       expect(result2).toBe(false)
       expect(result3).toBe(false)
-      expect(requireAuth).toHaveBeenCalledTimes(3)
+      expect(requireUserId).toHaveBeenCalledTimes(3)
       expect(getProfile).toHaveBeenCalledTimes(3)
     })
   })
@@ -284,17 +284,17 @@ describe('Email Verification Actions', () => {
         deletedAt: null,
       }
 
-      vi.mocked(requireAuth).mockResolvedValue({ id: mockUserId })
+      vi.mocked(requireUserId).mockResolvedValue(mockUserId)
       vi.mocked(getProfile).mockResolvedValue(mockProfile)
 
       await checkVerificationStatus()
 
-      // Should always call requireAuth first
-      expect(requireAuth).toHaveBeenCalledBefore(getProfile as any)
+      // Should always call requireUserId first
+      expect(requireUserId).toHaveBeenCalledBefore(getProfile as any)
     })
 
     it('should not make database calls without authentication', async () => {
-      vi.mocked(requireAuth).mockRejectedValue(new Error('Unauthorized'))
+      vi.mocked(requireUserId).mockRejectedValue(new Error('Unauthorized'))
 
       try {
         await checkVerificationStatus()
@@ -302,7 +302,7 @@ describe('Email Verification Actions', () => {
         // Expected to throw
       }
 
-      expect(requireAuth).toHaveBeenCalledOnce()
+      expect(requireUserId).toHaveBeenCalledOnce()
       expect(getProfile).not.toHaveBeenCalled()
     })
   })

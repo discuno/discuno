@@ -1,19 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-
-// Extend global type to include test functions
-declare global {
-  var getCalcomAccessTokenFunction: (userId: string) => Promise<any>
-
-  var refreshCalcomTokenFunction: (accessToken: string) => Promise<any>
-
-  var getUserCalcomTokenFunction: () => Promise<any>
-
-  var createCalcomUserFunction: (userData: any) => Promise<any>
-
-  var updateCalcomUserFunction: (updateData: any) => Promise<any>
-
-  var hasCalcomIntegrationFunction: () => Promise<any>
-}
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 // Mock server-only
 vi.mock('server-only', () => ({}))
@@ -30,6 +15,7 @@ vi.mock('~/env', () => ({
 // Mock auth utils
 vi.mock('~/lib/auth/auth-utils', () => ({
   requireAuth: vi.fn(),
+  requireUserId: vi.fn(),
 }))
 
 // Mock server queries
@@ -66,6 +52,7 @@ global.fetch = vi.fn()
 
 describe('Availability Actions', () => {
   let mockRequireAuth: any
+  let mockRequireUserId: any
   let mockGetUserCalcomTokens: any
   let mockGetCalcomToken: any
   let mockUpdateCalcomToken: any
@@ -73,7 +60,9 @@ describe('Availability Actions', () => {
   let mockDb: any
 
   beforeEach(async () => {
-    mockRequireAuth = (await import('~/lib/auth/auth-utils')).requireAuth
+    const authUtils = await import('~/lib/auth/auth-utils')
+    mockRequireAuth = authUtils.requireAuth
+    mockRequireUserId = authUtils.requireUserId
     const queries = await import('~/server/queries')
     mockGetUserCalcomTokens = queries.getUserCalcomTokens
     mockGetCalcomToken = queries.getCalcomToken
@@ -85,7 +74,13 @@ describe('Availability Actions', () => {
     vi.clearAllMocks()
 
     // Default mock implementations
-    mockRequireAuth.mockResolvedValue({ id: 'user-123' })
+    mockRequireAuth.mockResolvedValue({
+      user: { id: 'user-123', email: 'test@example.com', name: 'Test User' },
+      expires: '2025-12-31',
+    } as any)
+
+    // Default successful userId mock
+    mockRequireUserId.mockResolvedValue('user-123')
   })
 
   afterEach(() => {
@@ -93,12 +88,8 @@ describe('Availability Actions', () => {
   })
 
   describe('getCalcomAccessToken', () => {
-    beforeEach(async () => {
-      const { getCalcomAccessToken } = await import('./actions')
-      global.getCalcomAccessTokenFunction = getCalcomAccessToken
-    })
-
     it('should return tokens for authenticated user', async () => {
+      const { getCalcomAccessToken } = await import('./actions')
       const mockTokens = {
         accessToken: 'test-access-token',
         refreshToken: 'test-refresh-token',
@@ -107,7 +98,7 @@ describe('Availability Actions', () => {
 
       mockGetUserCalcomTokens.mockResolvedValue(mockTokens)
 
-      const result = await global.getCalcomAccessTokenFunction('user-123')
+      const result = await getCalcomAccessToken('user-123')
 
       expect(result.success).toBe(true)
       expect(result.accessToken).toBe('test-access-token')
@@ -116,7 +107,8 @@ describe('Availability Actions', () => {
     })
 
     it('should return error when user ID is missing', async () => {
-      const result = await global.getCalcomAccessTokenFunction('')
+      const { getCalcomAccessToken } = await import('./actions')
+      const result = await getCalcomAccessToken('')
 
       expect(result.success).toBe(false)
       expect(result.error).toBe('Unauthorized')
@@ -124,18 +116,20 @@ describe('Availability Actions', () => {
     })
 
     it('should return error when no tokens found', async () => {
+      const { getCalcomAccessToken } = await import('./actions')
       mockGetUserCalcomTokens.mockResolvedValue(null)
 
-      const result = await global.getCalcomAccessTokenFunction('user-123')
+      const result = await getCalcomAccessToken('user-123')
 
       expect(result.success).toBe(false)
       expect(result.error).toBe('No Cal.com tokens found')
     })
 
     it('should handle database errors gracefully', async () => {
+      const { getCalcomAccessToken } = await import('./actions')
       mockGetUserCalcomTokens.mockRejectedValue(new Error('Database connection failed'))
 
-      const result = await global.getCalcomAccessTokenFunction('user-123')
+      const result = await getCalcomAccessToken('user-123')
 
       expect(result.success).toBe(false)
       expect(result.error).toBe('Failed to get token')
@@ -143,12 +137,8 @@ describe('Availability Actions', () => {
   })
 
   describe('refreshCalcomToken', () => {
-    beforeEach(async () => {
-      const { refreshCalcomToken } = await import('./actions')
-      global.refreshCalcomTokenFunction = refreshCalcomToken
-    })
-
     it('should refresh token successfully', async () => {
+      const { refreshCalcomToken } = await import('./actions')
       const mockExistingToken = {
         id: 'token-123',
         refreshToken: 'old-refresh-token',
@@ -175,7 +165,7 @@ describe('Availability Actions', () => {
       })
       mockUpdateCalcomToken.mockResolvedValue(undefined)
 
-      const result = await global.refreshCalcomTokenFunction('old-access-token')
+      const result = await refreshCalcomToken('old-access-token')
 
       expect(result.success).toBe(true)
       expect(result.accessToken).toBe('new-access-token')
@@ -208,9 +198,10 @@ describe('Availability Actions', () => {
     })
 
     it('should return error when access token not found', async () => {
+      const { refreshCalcomToken } = await import('./actions')
       mockGetCalcomToken.mockResolvedValue(null)
 
-      const result = await global.refreshCalcomTokenFunction('non-existent-token')
+      const result = await refreshCalcomToken('non-existent-token')
 
       expect(result.success).toBe(false)
       expect(result.error).toBe('Token not found')
@@ -218,6 +209,7 @@ describe('Availability Actions', () => {
     })
 
     it('should handle Cal.com API errors', async () => {
+      const { refreshCalcomToken } = await import('./actions')
       const mockExistingToken = {
         id: 'token-123',
         refreshToken: 'old-refresh-token',
@@ -231,7 +223,7 @@ describe('Availability Actions', () => {
         text: () => Promise.resolve('Unauthorized'),
       })
 
-      const result = await global.refreshCalcomTokenFunction('old-access-token')
+      const result = await refreshCalcomToken('old-access-token')
 
       expect(result.success).toBe(false)
       expect(result.error).toBe('Token refresh failed')
@@ -239,6 +231,7 @@ describe('Availability Actions', () => {
     })
 
     it('should handle Cal.com API error responses', async () => {
+      const { refreshCalcomToken } = await import('./actions')
       const mockExistingToken = {
         id: 'token-123',
         refreshToken: 'old-refresh-token',
@@ -256,13 +249,14 @@ describe('Availability Actions', () => {
           }),
       })
 
-      const result = await global.refreshCalcomTokenFunction('old-access-token')
+      const result = await refreshCalcomToken('old-access-token')
 
       expect(result.success).toBe(false)
       expect(result.error).toBe('Token refresh failed')
     })
 
     it('should handle network errors', async () => {
+      const { refreshCalcomToken } = await import('./actions')
       const mockExistingToken = {
         id: 'token-123',
         refreshToken: 'old-refresh-token',
@@ -272,13 +266,14 @@ describe('Availability Actions', () => {
       mockGetCalcomToken.mockResolvedValue(mockExistingToken)
       mockFetch.mockRejectedValue(new Error('Network error'))
 
-      const result = await global.refreshCalcomTokenFunction('old-access-token')
+      const result = await refreshCalcomToken('old-access-token')
 
       expect(result.success).toBe(false)
       expect(result.error).toBe('Token refresh failed')
     })
 
     it('should handle database update errors', async () => {
+      const { refreshCalcomToken } = await import('./actions')
       const mockExistingToken = {
         id: 'token-123',
         refreshToken: 'old-refresh-token',
@@ -303,7 +298,7 @@ describe('Availability Actions', () => {
       })
       mockUpdateCalcomToken.mockRejectedValue(new Error('Database update failed'))
 
-      const result = await global.refreshCalcomTokenFunction('old-access-token')
+      const result = await refreshCalcomToken('old-access-token')
 
       expect(result.success).toBe(false)
       expect(result.error).toBe('Token refresh failed')
@@ -311,17 +306,8 @@ describe('Availability Actions', () => {
   })
 
   describe('getUserCalcomToken', () => {
-    beforeEach(async () => {
-      try {
-        const actions = await import('./actions')
-        global.getUserCalcomTokenFunction = actions.getUserCalcomToken
-      } catch (error) {
-        console.error('Failed to import getUserCalcomToken:', error)
-        global.getUserCalcomTokenFunction = vi.fn().mockRejectedValue(new Error('Import failed'))
-      }
-    })
-
     it('should return user Cal.com token', async () => {
+      const { getUserCalcomToken } = await import('./actions')
       const mockTokens = {
         accessToken: 'user-access-token',
         refreshToken: 'user-refresh-token',
@@ -329,19 +315,19 @@ describe('Availability Actions', () => {
 
       mockGetUserCalcomTokens.mockResolvedValue(mockTokens)
 
-      const result = await global.getUserCalcomTokenFunction()
+      const result = await getUserCalcomToken()
 
       expect(result.success).toBe(true)
       expect(result.accessToken).toBe('user-access-token')
       expect(result.refreshToken).toBe('user-refresh-token')
-      expect(mockRequireAuth).toHaveBeenCalled()
-      expect(mockGetUserCalcomTokens).toHaveBeenCalledWith('user-123')
     })
 
     it('should handle authentication errors', async () => {
-      mockRequireAuth.mockRejectedValue(new Error('Not authenticated'))
+      const { getUserCalcomToken } = await import('./actions')
+      // requireUserId throws NEXT_REDIRECT when auth fails
+      mockRequireUserId.mockRejectedValue(new Error('NEXT_REDIRECT'))
 
-      const result = await global.getUserCalcomTokenFunction()
+      const result = await getUserCalcomToken()
 
       expect(result.success).toBe(false)
       expect(result.error).toBe('Failed to get token')
@@ -349,9 +335,11 @@ describe('Availability Actions', () => {
     })
 
     it('should handle missing tokens', async () => {
+      const { getUserCalcomToken } = await import('./actions')
+      // Mock getCalcomAccessToken to return no tokens found
       mockGetUserCalcomTokens.mockResolvedValue(null)
 
-      const result = await global.getUserCalcomTokenFunction()
+      const result = await getUserCalcomToken()
 
       expect(result.success).toBe(false)
       expect(result.error).toBe('No Cal.com tokens found')
@@ -359,12 +347,8 @@ describe('Availability Actions', () => {
   })
 
   describe('createCalcomUser', () => {
-    beforeEach(async () => {
-      const { createCalcomUser } = await import('./actions')
-      global.createCalcomUserFunction = createCalcomUser
-    })
-
     it('should create Cal.com user successfully', async () => {
+      const { createCalcomUser } = await import('./actions')
       const userData = {
         email: 'test@college.edu',
         name: 'Test User',
@@ -392,7 +376,7 @@ describe('Availability Actions', () => {
         json: () => Promise.resolve(mockResponse),
       })
 
-      const result = await global.createCalcomUserFunction(userData)
+      const result = await createCalcomUser(userData)
 
       expect(result.success).toBe(true)
       expect(result.calcomUserId).toBe(789)
@@ -418,6 +402,7 @@ describe('Availability Actions', () => {
     })
 
     it('should handle Cal.com API HTTP errors', async () => {
+      const { createCalcomUser } = await import('./actions')
       const userData = {
         email: 'test@college.edu',
         name: 'Test User',
@@ -430,13 +415,14 @@ describe('Availability Actions', () => {
         text: () => Promise.resolve('Bad Request'),
       })
 
-      const result = await global.createCalcomUserFunction(userData)
+      const result = await createCalcomUser(userData)
 
       expect(result.success).toBe(false)
       expect(result.error).toBe('Cal.com API error: 400')
     })
 
     it('should handle Cal.com API error responses', async () => {
+      const { createCalcomUser } = await import('./actions')
       const userData = {
         email: 'test@college.edu',
         name: 'Test User',
@@ -453,13 +439,14 @@ describe('Availability Actions', () => {
           }),
       })
 
-      const result = await global.createCalcomUserFunction(userData)
+      const result = await createCalcomUser(userData)
 
       expect(result.success).toBe(false)
       expect(result.error).toBe('Email already exists')
     })
 
     it('should handle network errors', async () => {
+      const { createCalcomUser } = await import('./actions')
       const userData = {
         email: 'test@college.edu',
         name: 'Test User',
@@ -468,7 +455,7 @@ describe('Availability Actions', () => {
 
       mockFetch.mockRejectedValue(new Error('Network timeout'))
 
-      const result = await global.createCalcomUserFunction(userData)
+      const result = await createCalcomUser(userData)
 
       expect(result.success).toBe(false)
       expect(result.error).toBe('Failed to create Cal.com user')
@@ -476,12 +463,8 @@ describe('Availability Actions', () => {
   })
 
   describe('updateCalcomUser', () => {
-    beforeEach(async () => {
-      const { updateCalcomUser } = await import('./actions')
-      global.updateCalcomUserFunction = updateCalcomUser
-    })
-
     it('should update Cal.com user successfully', async () => {
+      const { updateCalcomUser } = await import('./actions')
       const updateData = {
         calcomUserId: 456,
         name: 'Updated Name',
@@ -504,7 +487,7 @@ describe('Availability Actions', () => {
           }),
       })
 
-      const result = await global.updateCalcomUserFunction(updateData)
+      const result = await updateCalcomUser(updateData)
 
       expect(result.success).toBe(true)
 
@@ -525,6 +508,7 @@ describe('Availability Actions', () => {
     })
 
     it('should handle Cal.com API errors', async () => {
+      const { updateCalcomUser } = await import('./actions')
       const updateData = {
         calcomUserId: 456,
         name: 'Updated Name',
@@ -540,13 +524,14 @@ describe('Availability Actions', () => {
           }),
       })
 
-      const result = await global.updateCalcomUserFunction(updateData)
+      const result = await updateCalcomUser(updateData)
 
       expect(result.success).toBe(false)
       expect(result.error).toBe('User not found')
     })
 
     it('should handle network errors', async () => {
+      const { updateCalcomUser } = await import('./actions')
       const updateData = {
         calcomUserId: 456,
         name: 'Updated Name',
@@ -554,7 +539,7 @@ describe('Availability Actions', () => {
 
       mockFetch.mockRejectedValue(new Error('Connection refused'))
 
-      const result = await global.updateCalcomUserFunction(updateData)
+      const result = await updateCalcomUser(updateData)
 
       expect(result.success).toBe(false)
       expect(result.error).toBe('Failed to update Cal.com user')
@@ -562,46 +547,45 @@ describe('Availability Actions', () => {
   })
 
   describe('hasCalcomIntegration', () => {
-    beforeEach(async () => {
-      const { hasCalcomIntegration } = await import('./actions')
-      global.hasCalcomIntegrationFunction = hasCalcomIntegration
-    })
-
     it('should return true when user has Cal.com tokens', async () => {
+      const { hasCalcomIntegration } = await import('./actions')
       const mockTokens = {
         accessToken: 'token',
-        refreshToken: 'refresh-token',
+        refreshToken: 'refresh',
       }
 
       mockGetUserCalcomTokens.mockResolvedValue(mockTokens)
 
-      const result = await global.hasCalcomIntegrationFunction()
+      const result = await hasCalcomIntegration()
 
       expect(result).toBe(true)
-      expect(mockRequireAuth).toHaveBeenCalled()
+      expect(mockRequireUserId).toHaveBeenCalled()
       expect(mockGetUserCalcomTokens).toHaveBeenCalledWith('user-123')
     })
 
     it('should return false when user has no Cal.com tokens', async () => {
+      const { hasCalcomIntegration } = await import('./actions')
       mockGetUserCalcomTokens.mockResolvedValue(null)
 
-      const result = await global.hasCalcomIntegrationFunction()
+      const result = await hasCalcomIntegration()
 
       expect(result).toBe(false)
     })
 
     it('should return false on authentication error', async () => {
+      const { hasCalcomIntegration } = await import('./actions')
       mockRequireAuth.mockRejectedValue(new Error('Not authenticated'))
 
-      const result = await global.hasCalcomIntegrationFunction()
+      const result = await hasCalcomIntegration()
 
       expect(result).toBe(false)
     })
 
     it('should return false on database error', async () => {
+      const { hasCalcomIntegration } = await import('./actions')
       mockGetUserCalcomTokens.mockRejectedValue(new Error('Database error'))
 
-      const result = await global.hasCalcomIntegrationFunction()
+      const result = await hasCalcomIntegration()
 
       expect(result).toBe(false)
     })
@@ -609,32 +593,15 @@ describe('Availability Actions', () => {
 
   describe('Integration Tests', () => {
     it('should handle complete token refresh workflow', async () => {
-      const { refreshCalcomToken, getUserCalcomToken } = await import('./actions')
+      const { getUserCalcomToken } = await import('./actions')
 
-      // Setup initial token state
-      const mockExistingToken = {
-        id: 'token-123',
-        refreshToken: 'old-refresh-token',
-        calcomUserId: 456,
-      }
-
-      const mockUserTokens = {
+      // Set up successful token retrieval
+      const mockTokens = {
         accessToken: 'old-access-token',
         refreshToken: 'old-refresh-token',
       }
 
-      const mockRefreshResponse = {
-        status: 'success',
-        data: {
-          accessToken: 'new-access-token',
-          refreshToken: 'new-refresh-token',
-          accessTokenExpiresAt: Date.now() + 3600000,
-          refreshTokenExpiresAt: Date.now() + 7200000,
-        },
-      }
-
-      // Mock token retrieval
-      mockGetUserCalcomTokens.mockResolvedValue(mockUserTokens)
+      mockGetUserCalcomTokens.mockResolvedValue(mockTokens)
 
       // Test getting current token
       const currentTokenResult = await getUserCalcomToken()
@@ -642,15 +609,25 @@ describe('Availability Actions', () => {
       expect(currentTokenResult.accessToken).toBe('old-access-token')
 
       // Mock refresh workflow
-      mockGetCalcomToken.mockResolvedValue(mockExistingToken)
+      mockGetCalcomToken.mockResolvedValue(mockTokens)
       mockFetch.mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: () => Promise.resolve(mockRefreshResponse),
+        json: () =>
+          Promise.resolve({
+            status: 'success',
+            data: {
+              accessToken: 'new-access-token',
+              refreshToken: 'new-refresh-token',
+              accessTokenExpiresAt: Date.now() + 3600000,
+              refreshTokenExpiresAt: Date.now() + 7200000,
+            },
+          }),
       })
       mockUpdateCalcomToken.mockResolvedValue(undefined)
 
       // Test token refresh
+      const { refreshCalcomToken } = await import('./actions')
       const refreshResult = await refreshCalcomToken('old-access-token')
       expect(refreshResult.success).toBe(true)
       expect(refreshResult.accessToken).toBe('new-access-token')

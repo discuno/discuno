@@ -1,13 +1,13 @@
 import { getCalcomAccessToken } from '~/app/(default)/availability/actions'
+import { requireUserId } from '~/lib/auth/auth-utils'
 import { CalcomProvider } from '~/lib/providers/CalProvider'
-import { requireAuth } from '~/lib/auth/auth-utils'
 
 interface CalProviderWrapperProps {
   children: React.ReactNode
 }
 
 export const CalProviderWrapper = async ({ children }: CalProviderWrapperProps) => {
-  const { id: userId } = await requireAuth()
+  const userId = await requireUserId()
 
   const tokenResult = await getCalcomAccessToken(userId)
   const accessToken = tokenResult.success ? (tokenResult.accessToken ?? null) : null

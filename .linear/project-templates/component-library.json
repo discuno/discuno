@@ -1,0 +1,356 @@
+{
+  "name": "🧩 Component Library",
+  "description": "Template for @discuno/atoms component library development",
+  "type": "component-library",
+  "workflow": {
+    "stages": [
+      {
+        "name": "📋 Design Spec",
+        "description": "Design specifications and requirements",
+        "type": "unstarted",
+        "position": 1
+      },
+      {
+        "name": "🎨 Design Review",
+        "description": "Design review and approval",
+        "type": "unstarted",
+        "position": 2
+      },
+      {
+        "name": "⚙️ API Design",
+        "description": "Component API and props design",
+        "type": "unstarted",
+        "position": 3
+      },
+      {
+        "name": "🏗️ Implementation",
+        "description": "Component implementation",
+        "type": "started",
+        "position": 4
+      },
+      {
+        "name": "🧪 Testing",
+        "description": "Unit and visual testing",
+        "type": "started",
+        "position": 5
+      },
+      {
+        "name": "📚 Documentation",
+        "description": "Storybook and API documentation",
+        "type": "started",
+        "position": 6
+      },
+      {
+        "name": "🔍 Accessibility",
+        "description": "Accessibility testing and compliance",
+        "type": "started",
+        "position": 7
+      },
+      {
+        "name": "📱 Integration",
+        "description": "Integration with @discuno/web",
+        "type": "started",
+        "position": 8
+      },
+      {
+        "name": "📦 Release",
+        "description": "Published to npm",
+        "type": "completed",
+        "position": 9
+      }
+    ]
+  },
+  "labels": [
+    {
+      "name": "ui-primitive",
+      "description": "Basic UI building block",
+      "color": "#8B5CF6"
+    },
+    {
+      "name": "booking-component",
+      "description": "Cal.com integration component",
+      "color": "#3B82F6"
+    },
+    {
+      "name": "user-component",
+      "description": "User profile and avatar components",
+      "color": "#10B981"
+    },
+    {
+      "name": "layout-component",
+      "description": "Layout and navigation components",
+      "color": "#F59E0B"
+    },
+    {
+      "name": "data-display",
+      "description": "Tables, cards, lists",
+      "color": "#EF4444"
+    },
+    {
+      "name": "form-component",
+      "description": "Form inputs and controls",
+      "color": "#06B6D4"
+    },
+    {
+      "name": "feedback-component",
+      "description": "Toasts, alerts, notifications",
+      "color": "#84CC16"
+    },
+    {
+      "name": "utility-component",
+      "description": "Hooks, providers, utilities",
+      "color": "#6B7280"
+    },
+    {
+      "name": "breaking-change",
+      "description": "Contains breaking changes",
+      "color": "#DC2626"
+    },
+    {
+      "name": "new-component",
+      "description": "Brand new component",
+      "color": "#059669"
+    },
+    {
+      "name": "enhancement",
+      "description": "Enhancement to existing component",
+      "color": "#7C3AED"
+    },
+    {
+      "name": "accessibility",
+      "description": "Accessibility improvements",
+      "color": "#0EA5E9"
+    }
+  ],
+  "issueTypes": [
+    {
+      "name": "Component",
+      "description": "New component development",
+      "icon": "🧩"
+    },
+    {
+      "name": "Enhancement",
+      "description": "Component enhancement or improvement",
+      "icon": "⬆️"
+    },
+    {
+      "name": "Bug",
+      "description": "Component bug fix",
+      "icon": "🐛"
+    },
+    {
+      "name": "Documentation",
+      "description": "Documentation task",
+      "icon": "📚"
+    },
+    {
+      "name": "Testing",
+      "description": "Testing improvements",
+      "icon": "🧪"
+    },
+    {
+      "name": "Accessibility",
+      "description": "Accessibility improvements",
+      "icon": "♿"
+    }
+  ],
+  "milestones": [
+    {
+      "name": "🎨 Design Complete",
+      "description": "All design specifications completed and approved"
+    },
+    {
+      "name": "⚙️ API Finalized",
+      "description": "Component API and props interface finalized"
+    },
+    {
+      "name": "🏗️ Component Complete",
+      "description": "Component implementation finished"
+    },
+    {
+      "name": "🧪 Testing Complete",
+      "description": "All tests written and passing"
+    },
+    {
+      "name": "📚 Documentation Complete",
+      "description": "Storybook stories and documentation complete"
+    },
+    {
+      "name": "♿ Accessibility Verified",
+      "description": "Accessibility testing completed and compliant"
+    },
+    {
+      "name": "📦 Published",
+      "description": "Component published and available"
+    }
+  ],
+  "qualityGates": [
+    {
+      "stage": "API Design",
+      "requirements": [
+        "TypeScript interfaces defined",
+        "Props documentation complete",
+        "API review approved by team",
+        "Breaking change impact assessed"
+      ]
+    },
+    {
+      "stage": "Implementation",
+      "requirements": [
+        "Component follows design system patterns",
+        "Responsive design implemented",
+        "Error states handled",
+        "Loading states implemented"
+      ]
+    },
+    {
+      "stage": "Testing",
+      "requirements": [
+        "Unit tests coverage > 90%",
+        "Visual regression tests added",
+        "Edge cases tested",
+        "Performance benchmarks met"
+      ]
+    },
+    {
+      "stage": "Accessibility",
+      "requirements": [
+        "ARIA labels implemented",
+        "Keyboard navigation works",
+        "Screen reader compatible",
+        "Color contrast compliant",
+        "Focus management correct"
+      ]
+    }
+  ],
+  "automations": [
+    {
+      "trigger": "issue_moved_to_stage",
+      "condition": "Implementation",
+      "action": "create_branch",
+      "pattern": "component/{component-name}"
+    },
+    {
+      "trigger": "issue_moved_to_stage",
+      "condition": "Testing",
+      "action": "run_test_suite",
+      "tests": ["unit", "visual", "accessibility"]
+    },
+    {
+      "trigger": "issue_moved_to_stage",
+      "condition": "Documentation",
+      "action": "generate_storybook_template"
+    },
+    {
+      "trigger": "pr_merged",
+      "condition": "main",
+      "action": "trigger_build_and_publish"
+    }
+  ],
+  "testing": {
+    "required": [
+      {
+        "type": "unit",
+        "framework": "vitest",
+        "coverage": 90,
+        "files": ["*.test.tsx", "*.test.ts"]
+      },
+      {
+        "type": "visual",
+        "framework": "chromatic",
+        "coverage": "all-stories"
+      },
+      {
+        "type": "accessibility",
+        "framework": "axe",
+        "coverage": "all-components"
+      },
+      {
+        "type": "integration",
+        "framework": "testing-library",
+        "scope": "user-interactions"
+      }
+    ]
+  },
+  "documentation": {
+    "required": [
+      {
+        "type": "storybook",
+        "stories": ["default", "variants", "playground"],
+        "docs": "auto-generated"
+      },
+      {
+        "type": "api-docs",
+        "format": "jsdoc",
+        "coverage": "all-props"
+      },
+      {
+        "type": "usage-examples",
+        "format": "mdx",
+        "examples": ["basic", "advanced", "integration"]
+      }
+    ]
+  },
+  "integrations": {
+    "github": {
+      "autoLinkPRs": true,
+      "branchNaming": "component/{component-name}-{issue-identifier}",
+      "prTemplates": {
+        "component": "component-pr-template.md",
+        "enhancement": "enhancement-pr-template.md"
+      }
+    },
+    "npm": {
+      "autoPublish": true,
+      "versionStrategy": "semantic",
+      "betaReleases": true
+    },
+    "storybook": {
+      "autoGenerate": true,
+      "chromatic": true,
+      "deployment": "auto"
+    }
+  },
+  "templates": {
+    "newComponent": {
+      "title": "[COMPONENT] {Component Name}",
+      "description": "## Component Overview\n\n### Purpose\n\n### Design Specs\n\n### API Design\n```tsx\ninterface {ComponentName}Props {\n  // Define props\n}\n```\n\n### Acceptance Criteria\n\n### Accessibility Requirements\n\n### Testing Requirements"
+    },
+    "enhancement": {
+      "title": "[ENHANCEMENT] {Component Name} - {Enhancement Description}",
+      "description": "## Enhancement Overview\n\n### Current Behavior\n\n### Proposed Changes\n\n### Breaking Changes\n\n### Migration Guide\n\n### Testing Updates"
+    },
+    "bugFix": {
+      "title": "[BUG] {Component Name} - {Bug Description}",
+      "description": "## Bug Description\n\n### Current Behavior\n\n### Expected Behavior\n\n### Steps to Reproduce\n\n### Root Cause\n\n### Proposed Fix"
+    }
+  },
+  "releaseProcess": {
+    "versioning": "semantic",
+    "changelogGeneration": "auto",
+    "betaReleases": {
+      "enabled": true,
+      "branch": "develop",
+      "npmTag": "beta"
+    },
+    "stableReleases": {
+      "branch": "main",
+      "npmTag": "latest",
+      "requiresApproval": true
+    }
+  },
+  "definition_of_done": [
+    "Component implementation matches design specs",
+    "TypeScript interfaces are complete and exported",
+    "Unit tests written with >90% coverage",
+    "Visual regression tests added to Storybook",
+    "Accessibility requirements met (WCAG 2.1 AA)",
+    "Documentation is complete in Storybook",
+    "Usage examples provided",
+    "Breaking changes documented with migration guide",
+    "Integration tested with @discuno/web",
+    "Performance benchmarks met",
+    "Component published to npm",
+    "Design team has approved final implementation"
+  ]
+}

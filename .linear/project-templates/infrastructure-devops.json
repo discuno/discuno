@@ -1,0 +1,403 @@
+{
+  "name": "🚀 Infrastructure & DevOps",
+  "description": "Template for infrastructure, deployment, and DevOps improvements",
+  "type": "infrastructure",
+  "workflow": {
+    "stages": [
+      {
+        "name": "📋 Planning",
+        "description": "Requirements analysis and architecture planning",
+        "type": "unstarted",
+        "position": 1
+      },
+      {
+        "name": "🔍 Research",
+        "description": "Technology research and proof of concept",
+        "type": "unstarted",
+        "position": 2
+      },
+      {
+        "name": "🏗️ Implementation",
+        "description": "Infrastructure setup and configuration",
+        "type": "started",
+        "position": 3
+      },
+      {
+        "name": "🧪 Testing",
+        "description": "Testing in staging environment",
+        "type": "started",
+        "position": 4
+      },
+      {
+        "name": "📊 Monitoring",
+        "description": "Setup monitoring and alerting",
+        "type": "started",
+        "position": 5
+      },
+      {
+        "name": "📚 Documentation",
+        "description": "Update runbooks and documentation",
+        "type": "started",
+        "position": 6
+      },
+      {
+        "name": "🚀 Production",
+        "description": "Deploy to production",
+        "type": "started",
+        "position": 7
+      },
+      {
+        "name": "✅ Verified",
+        "description": "Production deployment verified",
+        "type": "completed",
+        "position": 8
+      }
+    ]
+  },
+  "labels": [
+    {
+      "name": "deployment",
+      "description": "Deployment and release automation",
+      "color": "#10B981"
+    },
+    {
+      "name": "ci-cd",
+      "description": "Continuous integration and deployment",
+      "color": "#3B82F6"
+    },
+    {
+      "name": "monitoring",
+      "description": "Monitoring, logging, and observability",
+      "color": "#F59E0B"
+    },
+    {
+      "name": "security",
+      "description": "Security and compliance",
+      "color": "#EF4444"
+    },
+    {
+      "name": "performance",
+      "description": "Performance optimization",
+      "color": "#8B5CF6"
+    },
+    {
+      "name": "scalability",
+      "description": "Scalability improvements",
+      "color": "#06B6D4"
+    },
+    {
+      "name": "backup-recovery",
+      "description": "Backup and disaster recovery",
+      "color": "#84CC16"
+    },
+    {
+      "name": "cost-optimization",
+      "description": "Cost reduction and optimization",
+      "color": "#F97316"
+    },
+    {
+      "name": "database",
+      "description": "Database infrastructure",
+      "color": "#EC4899"
+    },
+    {
+      "name": "networking",
+      "description": "Network configuration",
+      "color": "#14B8A6"
+    },
+    {
+      "name": "automation",
+      "description": "Process automation",
+      "color": "#7C3AED"
+    },
+    {
+      "name": "maintenance",
+      "description": "Routine maintenance tasks",
+      "color": "#6B7280"
+    }
+  ],
+  "issueTypes": [
+    {
+      "name": "Infrastructure",
+      "description": "Infrastructure setup or changes",
+      "icon": "🏗️"
+    },
+    {
+      "name": "Deployment",
+      "description": "Deployment process improvements",
+      "icon": "🚀"
+    },
+    {
+      "name": "Monitoring",
+      "description": "Monitoring and alerting setup",
+      "icon": "📊"
+    },
+    {
+      "name": "Security",
+      "description": "Security improvements",
+      "icon": "🔒"
+    },
+    {
+      "name": "Performance",
+      "description": "Performance optimization",
+      "icon": "⚡"
+    },
+    {
+      "name": "Maintenance",
+      "description": "Routine maintenance task",
+      "icon": "🔧"
+    },
+    {
+      "name": "Incident",
+      "description": "Incident response and fixes",
+      "icon": "🚨"
+    }
+  ],
+  "milestones": [
+    {
+      "name": "📋 Architecture Approved",
+      "description": "Infrastructure architecture designed and approved"
+    },
+    {
+      "name": "🧪 Staging Complete",
+      "description": "Implementation tested in staging environment"
+    },
+    {
+      "name": "📊 Monitoring Active",
+      "description": "Monitoring and alerting configured"
+    },
+    {
+      "name": "📚 Documentation Complete",
+      "description": "Runbooks and documentation updated"
+    },
+    {
+      "name": "🚀 Production Deployed",
+      "description": "Successfully deployed to production"
+    },
+    {
+      "name": "✅ Post-Deploy Verified",
+      "description": "Production deployment verified and stable"
+    }
+  ],
+  "environments": [
+    {
+      "name": "Development",
+      "description": "Local development environment",
+      "requirements": ["docker", "pnpm", "node"]
+    },
+    {
+      "name": "Preview",
+      "description": "Preview/staging environment",
+      "provider": "vercel",
+      "url": "https://preview.discuno.com"
+    },
+    {
+      "name": "Production",
+      "description": "Production environment",
+      "provider": "vercel",
+      "url": "https://discuno.com",
+      "criticalPath": true
+    }
+  ],
+  "infrastructure": {
+    "hosting": {
+      "provider": "vercel",
+      "features": ["edge-functions", "analytics", "monitoring"]
+    },
+    "database": {
+      "provider": "neon",
+      "type": "postgresql",
+      "features": ["connection-pooling", "read-replicas"]
+    },
+    "monitoring": {
+      "provider": "sentry",
+      "features": ["error-tracking", "performance-monitoring"]
+    },
+    "cdn": {
+      "provider": "vercel-edge",
+      "features": ["image-optimization", "compression"]
+    }
+  },
+  "automations": [
+    {
+      "trigger": "issue_moved_to_stage",
+      "condition": "Implementation",
+      "action": "create_infrastructure_branch"
+    },
+    {
+      "trigger": "issue_moved_to_stage",
+      "condition": "Testing",
+      "action": "deploy_to_staging"
+    },
+    {
+      "trigger": "issue_moved_to_stage",
+      "condition": "Production",
+      "action": "create_deployment_checklist"
+    },
+    {
+      "trigger": "production_deployment",
+      "action": "notify_team_and_stakeholders"
+    }
+  ],
+  "deploymentChecklist": [
+    {
+      "stage": "Pre-deployment",
+      "items": [
+        "Backup current production state",
+        "Verify staging environment matches production",
+        "Check all dependencies are available",
+        "Confirm rollback plan is ready",
+        "Notify stakeholders of deployment window"
+      ]
+    },
+    {
+      "stage": "Deployment",
+      "items": [
+        "Execute deployment scripts",
+        "Monitor application health during deployment",
+        "Verify database migrations (if any)",
+        "Check all services are responding",
+        "Validate critical user paths"
+      ]
+    },
+    {
+      "stage": "Post-deployment",
+      "items": [
+        "Monitor error rates and performance metrics",
+        "Verify all features are working as expected",
+        "Check monitoring and alerting systems",
+        "Update documentation and runbooks",
+        "Communicate successful deployment to team"
+      ]
+    }
+  ],
+  "securityChecklist": [
+    "Security scanning completed",
+    "Vulnerability assessment passed",
+    "Access controls reviewed and updated",
+    "Secrets and credentials rotated if needed",
+    "Compliance requirements verified",
+    "Audit logs configured",
+    "Backup and recovery tested"
+  ],
+  "monitoring": {
+    "metrics": [
+      {
+        "name": "Application Health",
+        "type": "uptime",
+        "threshold": "99.9%",
+        "alerting": true
+      },
+      {
+        "name": "Response Time",
+        "type": "performance",
+        "threshold": "< 2s",
+        "alerting": true
+      },
+      {
+        "name": "Error Rate",
+        "type": "error",
+        "threshold": "< 1%",
+        "alerting": true
+      },
+      {
+        "name": "Database Performance",
+        "type": "database",
+        "threshold": "< 500ms",
+        "alerting": true
+      }
+    ],
+    "dashboards": [
+      "Application Overview",
+      "Infrastructure Health",
+      "Database Performance",
+      "Security Events"
+    ]
+  },
+  "integrations": {
+    "github": {
+      "autoLinkPRs": true,
+      "branchNaming": "infra/{issue-identifier}-{description}",
+      "deploymentTracking": true
+    },
+    "vercel": {
+      "autoDeployment": true,
+      "previewDeployments": true,
+      "productionProtection": true
+    },
+    "sentry": {
+      "errorTracking": true,
+      "performanceMonitoring": true,
+      "releaseTracking": true
+    },
+    "slack": {
+      "channels": {
+        "deployments": "#deployments",
+        "incidents": "#incidents",
+        "infrastructure": "#infrastructure"
+      },
+      "notifications": {
+        "deploymentStart": true,
+        "deploymentComplete": true,
+        "incidents": true,
+        "criticalAlerts": true
+      }
+    }
+  },
+  "templates": {
+    "infrastructure": {
+      "title": "[INFRA] {Infrastructure Component}",
+      "description": "## Infrastructure Overview\n\n### Objective\n\n### Current State\n\n### Proposed Changes\n\n### Architecture Diagram\n\n### Implementation Plan\n\n### Rollback Plan\n\n### Monitoring Requirements\n\n### Security Considerations"
+    },
+    "deployment": {
+      "title": "[DEPLOY] {Deployment Description}",
+      "description": "## Deployment Overview\n\n### What's Being Deployed\n\n### Deployment Strategy\n\n### Risk Assessment\n\n### Rollback Plan\n\n### Testing Checklist\n\n### Communication Plan"
+    },
+    "incident": {
+      "title": "[INCIDENT] {Incident Description}",
+      "description": "## Incident Overview\n\n### Incident Summary\n\n### Impact Assessment\n\n### Root Cause Analysis\n\n### Immediate Actions\n\n### Long-term Solutions\n\n### Prevention Measures"
+    }
+  },
+  "incidentResponse": {
+    "severity": [
+      {
+        "level": "P0",
+        "description": "Critical - Complete service outage",
+        "responseTime": "15 minutes",
+        "escalation": "immediate"
+      },
+      {
+        "level": "P1",
+        "description": "High - Major feature impacted",
+        "responseTime": "1 hour",
+        "escalation": "within 2 hours"
+      },
+      {
+        "level": "P2",
+        "description": "Medium - Minor feature impacted",
+        "responseTime": "4 hours",
+        "escalation": "within 8 hours"
+      },
+      {
+        "level": "P3",
+        "description": "Low - No immediate impact",
+        "responseTime": "24 hours",
+        "escalation": "not required"
+      }
+    ]
+  },
+  "definition_of_done": [
+    "Infrastructure changes tested in staging environment",
+    "Security review completed and approved",
+    "Monitoring and alerting configured",
+    "Documentation and runbooks updated",
+    "Deployment checklist completed",
+    "Rollback plan tested and verified",
+    "Team trained on new infrastructure",
+    "Production deployment successful",
+    "Post-deployment verification completed",
+    "Performance metrics within acceptable range",
+    "No critical issues identified in first 24 hours",
+    "Stakeholders notified of successful deployment"
+  ]
+}

@@ -4,12 +4,11 @@ import { redirect } from 'next/navigation'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
-import { requireAuth } from '~/lib/auth/auth-utils'
+import { requireUserId } from '~/lib/auth/auth-utils'
 import { getProfileWithImage } from '~/server/queries'
 
 const ViewProfilePage = async () => {
-  const { id } = await requireAuth()
-
+  const id = await requireUserId()
   try {
     const userProfile = await getProfileWithImage(id)
 

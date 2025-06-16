@@ -22,12 +22,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { CardContent, CardHeader, CardTitle, Card as UICard } from '~/components/ui/card'
-import { requireAuth } from '~/lib/auth/auth-utils'
 import { getPostById } from '~/server/queries'
 
 export const PostPage = async ({ id }: { id: string }) => {
-  await requireAuth()
-
   const postId = Number(id)
 
   if (Number.isNaN(postId)) {

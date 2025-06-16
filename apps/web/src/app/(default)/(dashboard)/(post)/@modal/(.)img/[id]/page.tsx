@@ -7,12 +7,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { Separator } from '~/components/ui/separator'
-import { requireAuth } from '~/lib/auth/auth-utils'
 import { getPostById } from '~/server/queries'
 
 export default async function PostModal({ params }: { params: Promise<{ id: string }> }) {
-  await requireAuth()
-
   const { id: postId } = await params
   const idAsNumber = Number(postId)
 

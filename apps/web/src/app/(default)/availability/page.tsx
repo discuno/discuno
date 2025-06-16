@@ -1,13 +1,12 @@
 import { redirect } from 'next/navigation'
-import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
-import { requireAuth } from '~/lib/auth/auth-utils'
-import { getProfile } from '~/server/queries'
 import { AvailabilitySettingsComponent } from '~/app/(default)/availability/AvailabilitySettings'
+import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
+import { requireUserId } from '~/lib/auth/auth-utils'
+import { getProfile } from '~/server/queries'
 
 const AvailabilityPage = async () => {
-  const { id } = await requireAuth()
-
   try {
+    const id = await requireUserId()
     const userProfile = await getProfile(id)
 
     // Only verified mentors (.edu email verified) can access this page

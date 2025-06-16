@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '~/components/ui/select'
-import { requireAuth } from '~/lib/auth/auth-utils'
+import { requireUserId } from '~/lib/auth/auth-utils'
 import { getProfileWithImage } from '~/server/queries'
 
 const EditProfilePage = async ({
@@ -19,7 +19,7 @@ const EditProfilePage = async ({
 }: {
   searchParams: Promise<{ status?: string }>
 }) => {
-  const { id } = await requireAuth()
+  const id = await requireUserId()
   const userProfile = await getProfileWithImage(id)
 
   // If the user is not a mentor or their .edu email is not verified, redirect them

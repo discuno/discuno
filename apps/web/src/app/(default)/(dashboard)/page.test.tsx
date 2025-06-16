@@ -32,6 +32,12 @@ const { fetchPostsAction, fetchPostsByFilterAction } = await import(
   '~/app/(default)/(dashboard)/(post)/actions'
 )
 
+// Mock session for consistent testing
+const mockSession = {
+  user: { id: 'test-user', email: 'test@example.com', name: 'Test User' },
+  expires: '2025-12-31',
+} as any
+
 // Create a mock HomePage component that mimics the structure
 const MockHomePage = async ({
   searchParams = {},
@@ -103,7 +109,7 @@ describe('Dashboard HomePage', () => {
   ]
 
   it('should require authentication', async () => {
-    vi.mocked(requireAuth).mockResolvedValue({ id: 'test-user' })
+    vi.mocked(requireAuth).mockResolvedValue(mockSession)
     vi.mocked(getMajors).mockResolvedValue(mockMajors)
     vi.mocked(getSchools).mockResolvedValue(mockSchools)
     vi.mocked(fetchPostsAction).mockResolvedValue(mockPosts)
@@ -114,7 +120,7 @@ describe('Dashboard HomePage', () => {
   })
 
   it('should fetch schools and majors data', async () => {
-    vi.mocked(requireAuth).mockResolvedValue({ id: 'test-user' })
+    vi.mocked(requireAuth).mockResolvedValue(mockSession)
     vi.mocked(getMajors).mockResolvedValue(mockMajors)
     vi.mocked(getSchools).mockResolvedValue(mockSchools)
     vi.mocked(fetchPostsAction).mockResolvedValue(mockPosts)
@@ -126,7 +132,7 @@ describe('Dashboard HomePage', () => {
   })
 
   it('should fetch all posts when no filters are applied', async () => {
-    vi.mocked(requireAuth).mockResolvedValue({ id: 'test-user' })
+    vi.mocked(requireAuth).mockResolvedValue(mockSession)
     vi.mocked(getMajors).mockResolvedValue(mockMajors)
     vi.mocked(getSchools).mockResolvedValue(mockSchools)
     vi.mocked(fetchPostsAction).mockResolvedValue(mockPosts)
@@ -144,7 +150,7 @@ describe('Dashboard HomePage', () => {
       gradYear: '2025',
     }
 
-    vi.mocked(requireAuth).mockResolvedValue({ id: 'test-user' })
+    vi.mocked(requireAuth).mockResolvedValue(mockSession)
     vi.mocked(getMajors).mockResolvedValue(mockMajors)
     vi.mocked(getSchools).mockResolvedValue(mockSchools)
     vi.mocked(fetchPostsByFilterAction).mockResolvedValue(mockPosts)
@@ -160,7 +166,7 @@ describe('Dashboard HomePage', () => {
       school: 'Test University',
     }
 
-    vi.mocked(requireAuth).mockResolvedValue({ id: 'test-user' })
+    vi.mocked(requireAuth).mockResolvedValue(mockSession)
     vi.mocked(getMajors).mockResolvedValue(mockMajors)
     vi.mocked(getSchools).mockResolvedValue(mockSchools)
     vi.mocked(fetchPostsByFilterAction).mockResolvedValue(mockPosts)
@@ -171,7 +177,7 @@ describe('Dashboard HomePage', () => {
   })
 
   it('should generate correct graduation years array', async () => {
-    vi.mocked(requireAuth).mockResolvedValue({ id: 'test-user' })
+    vi.mocked(requireAuth).mockResolvedValue(mockSession)
     vi.mocked(getMajors).mockResolvedValue(mockMajors)
     vi.mocked(getSchools).mockResolvedValue(mockSchools)
     vi.mocked(fetchPostsAction).mockResolvedValue(mockPosts)
@@ -191,14 +197,14 @@ describe('Dashboard HomePage', () => {
   })
 
   it('should handle data fetching errors', async () => {
-    vi.mocked(requireAuth).mockResolvedValue({ id: 'test-user' })
+    vi.mocked(requireAuth).mockResolvedValue(mockSession)
     vi.mocked(getMajors).mockRejectedValue(new Error('Database error'))
 
     await expect(MockHomePage({})).rejects.toThrow('Database error')
   })
 
   it('should handle posts fetching errors', async () => {
-    vi.mocked(requireAuth).mockResolvedValue({ id: 'test-user' })
+    vi.mocked(requireAuth).mockResolvedValue(mockSession)
     vi.mocked(getMajors).mockResolvedValue(mockMajors)
     vi.mocked(getSchools).mockResolvedValue(mockSchools)
     vi.mocked(fetchPostsAction).mockRejectedValue(new Error('Posts fetch error'))
@@ -213,7 +219,7 @@ describe('Dashboard HomePage', () => {
       gradYear: '1999',
     }
 
-    vi.mocked(requireAuth).mockResolvedValue({ id: 'test-user' })
+    vi.mocked(requireAuth).mockResolvedValue(mockSession)
     vi.mocked(getMajors).mockResolvedValue(mockMajors)
     vi.mocked(getSchools).mockResolvedValue(mockSchools)
     vi.mocked(fetchPostsByFilterAction).mockResolvedValue([])
@@ -226,7 +232,7 @@ describe('Dashboard HomePage', () => {
 
   describe('Server Component Behavior', () => {
     it('should execute all data fetching on server side', async () => {
-      vi.mocked(requireAuth).mockResolvedValue({ id: 'test-user' })
+      vi.mocked(requireAuth).mockResolvedValue(mockSession)
       vi.mocked(getMajors).mockResolvedValue(mockMajors)
       vi.mocked(getSchools).mockResolvedValue(mockSchools)
       vi.mocked(fetchPostsAction).mockResolvedValue(mockPosts)
@@ -246,7 +252,7 @@ describe('Dashboard HomePage', () => {
         school: 'Test University',
       })
 
-      vi.mocked(requireAuth).mockResolvedValue({ id: 'test-user' })
+      vi.mocked(requireAuth).mockResolvedValue(mockSession)
       vi.mocked(getMajors).mockResolvedValue(mockMajors)
       vi.mocked(getSchools).mockResolvedValue(mockSchools)
       vi.mocked(fetchPostsByFilterAction).mockResolvedValue(mockPosts)
@@ -263,7 +269,7 @@ describe('Dashboard HomePage', () => {
     it('should correctly map school names to IDs', async () => {
       const searchParams = { school: 'Test University' }
 
-      vi.mocked(requireAuth).mockResolvedValue({ id: 'test-user' })
+      vi.mocked(requireAuth).mockResolvedValue(mockSession)
       vi.mocked(getMajors).mockResolvedValue(mockMajors)
       vi.mocked(getSchools).mockResolvedValue(mockSchools)
       vi.mocked(fetchPostsByFilterAction).mockResolvedValue(mockPosts)
@@ -276,7 +282,7 @@ describe('Dashboard HomePage', () => {
     it('should correctly map major names to IDs', async () => {
       const searchParams = { major: 'Computer Science' }
 
-      vi.mocked(requireAuth).mockResolvedValue({ id: 'test-user' })
+      vi.mocked(requireAuth).mockResolvedValue(mockSession)
       vi.mocked(getMajors).mockResolvedValue(mockMajors)
       vi.mocked(getSchools).mockResolvedValue(mockSchools)
       vi.mocked(fetchPostsByFilterAction).mockResolvedValue(mockPosts)
@@ -289,7 +295,7 @@ describe('Dashboard HomePage', () => {
     it('should correctly parse graduation year', async () => {
       const searchParams = { gradYear: '2025' }
 
-      vi.mocked(requireAuth).mockResolvedValue({ id: 'test-user' })
+      vi.mocked(requireAuth).mockResolvedValue(mockSession)
       vi.mocked(getMajors).mockResolvedValue(mockMajors)
       vi.mocked(getSchools).mockResolvedValue(mockSchools)
       vi.mocked(fetchPostsByFilterAction).mockResolvedValue(mockPosts)

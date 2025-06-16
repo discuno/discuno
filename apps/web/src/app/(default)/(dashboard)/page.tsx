@@ -1,22 +1,19 @@
-import { getMajors, getSchools } from '~/server/queries'
-import { FilterButton } from '~/app/(default)/(dashboard)/FilterButton'
-import { PostGrid } from '~/app/(default)/(dashboard)/(post)/PostGrid'
 import { Filter } from 'lucide-react'
-import { Popover, PopoverContent, PopoverTrigger } from '~/components/ui/popover'
-import { Button } from '~/components/ui/button'
 import {
   fetchPostsAction,
   fetchPostsByFilterAction,
 } from '~/app/(default)/(dashboard)/(post)/actions'
-import { requireAuth } from '~/lib/auth/auth-utils'
+import { PostGrid } from '~/app/(default)/(dashboard)/(post)/PostGrid'
+import { FilterButton } from '~/app/(default)/(dashboard)/FilterButton'
+import { Button } from '~/components/ui/button'
+import { Popover, PopoverContent, PopoverTrigger } from '~/components/ui/popover'
+import { getMajors, getSchools } from '~/server/queries'
 
 const HomePage = async ({
   searchParams,
 }: {
   searchParams: Promise<{ school?: string; major?: string; gradYear?: string }>
 }) => {
-  await requireAuth()
-
   const params = await searchParams
 
   const schools = await getSchools()

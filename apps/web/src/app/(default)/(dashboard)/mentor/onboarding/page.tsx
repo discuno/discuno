@@ -6,7 +6,7 @@ import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
 import { Progress } from '~/components/ui/progress'
-import { requireAuth } from '~/lib/auth/auth-utils'
+import { requireUserId } from '~/lib/auth/auth-utils'
 import { getProfile, getUserCalcomTokens } from '~/server/queries'
 
 interface OnboardingStep {
@@ -20,9 +20,8 @@ interface OnboardingStep {
 }
 
 async function MentorOnboardingContent() {
-  const { id } = await requireAuth()
-
   // Check if user is verified mentor
+  const id = await requireUserId()
   const profile = await getProfile(id)
   if (!profile?.isEduVerified) {
     redirect('/email-verification')

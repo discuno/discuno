@@ -2,7 +2,7 @@
 
 import type { CalcomToken, CreateCalcomUserInput, UpdateCalcomUserInput } from '~/app/types'
 import { env } from '~/env'
-import { requireAuth } from '~/lib/auth/auth-utils'
+import { requireUserId } from '~/lib/auth/auth-utils'
 import {
   getCalcomToken,
   getUserCalcomTokens,
@@ -234,7 +234,7 @@ const forceRefreshCalcomToken = async (
  */
 const hasCalcomIntegration = async () => {
   try {
-    const { id } = await requireAuth()
+    const id = await requireUserId()
     const tokens = await getUserCalcomTokens(id)
     return !!tokens
   } catch (error) {
@@ -253,7 +253,7 @@ const getUserCalcomToken = async (): Promise<{
   error?: string
 }> => {
   try {
-    const { id } = await requireAuth()
+    const id = await requireUserId()
     return await getCalcomAccessToken(id)
   } catch (error) {
     console.error('Get user Cal.com token error:', error)
@@ -276,7 +276,7 @@ const createCalcomUser = async (
   error?: string
 }> => {
   try {
-    const { id } = await requireAuth()
+    const id = await requireUserId()
     const { email, name, timeZone = 'America/New_York' } = data
 
     console.log('Creating Cal.com user for:', { email, name, userId: id })
@@ -356,7 +356,6 @@ const updateCalcomUser = async (
   error?: string
 }> => {
   try {
-    await requireAuth()
     const { calcomUserId, ...rest } = data
 
     const response = await fetch(

@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken'
 import type { CreateCalcomUserInput, UpdateCalcomUserInput } from '~/app/types'
 import { env } from '~/env'
-import { requireAuth } from '~/lib/auth/auth-utils'
+import { requireUserId } from '~/lib/auth/auth-utils'
 import {
   getCalcomUserId,
   getProfile,
@@ -149,7 +149,7 @@ export const verifyEmail = async (token: string): Promise<VerificationResultProp
       }
     }
 
-    const { id } = await requireAuth()
+    const id = await requireUserId()
     // decode jwt
     const decoded = jwt.verify(token, env.JWT_SECRET) as {
       userId: string

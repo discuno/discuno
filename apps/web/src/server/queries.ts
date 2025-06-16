@@ -292,6 +292,11 @@ export const getProfile = async (userId: string): Promise<UserProfile | null> =>
 export const getProfileWithImage = async (userId: string): Promise<UserProfileWithImage | null> => {
   await requireAuth()
 
+  if (!userId) {
+    console.error('getProfileWithImage called with undefined userId')
+    return null
+  }
+
   try {
     const profile = await db.query.userProfiles.findFirst({
       where: (model, { eq }) => eq(model.userId, userId),
