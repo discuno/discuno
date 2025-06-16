@@ -149,9 +149,6 @@ const runSafetyTests = async () => {
     const test = tests[i]
     console.log(`${colors.blue}Running test ${i + 1}/${tests.length}...${colors.reset}`)
     try {
-      if (!test) {
-        throw new Error('Test function is undefined')
-      }
       const result = await test()
       results.push(result)
 
