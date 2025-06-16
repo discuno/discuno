@@ -95,6 +95,8 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build packages
+        env:
+          SKIP_ENV_VALIDATION: true
         run: pnpm build
 
       - name: Perform CodeQL Analysis
@@ -155,3 +157,4 @@ jobs:
           else
             echo "❌ Incompatible licenses found"
             exit 1
+          fi
