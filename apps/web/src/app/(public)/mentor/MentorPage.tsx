@@ -127,7 +127,13 @@ export const MentorPage = () => {
 
             {/* Company Logo/Name */}
             <div className="mb-8 flex items-center justify-center gap-4">
-              <img src="/logos/black-icon-logo.svg" alt="Discuno" width={64} height={64} className="dark:hidden" />
+              <img
+                src="/logos/black-icon-logo.svg"
+                alt="Discuno"
+                width={64}
+                height={64}
+                className="dark:hidden"
+              />
               <img
                 src="/logos/white-icon-logo.svg"
                 alt="Discuno"
@@ -149,15 +155,17 @@ export const MentorPage = () => {
 
             {/* Hero Subheading */}
             <p className="text-muted-foreground mx-auto mb-8 max-w-3xl text-xl leading-relaxed">
-              Help the next generation make informed college decisions while earning money on your own schedule.
-              It&apos;s mentoring made simple.
+              Help the next generation make informed college decisions while earning money on your
+              own schedule. It&apos;s mentoring made simple.
             </p>
 
             {/* Quick Stats */}
             <div className="mx-auto mb-12 grid max-w-2xl grid-cols-3 gap-6">
               {stats.map((stat, index) => (
                 <div key={index} className="text-center">
-                  <div className="mb-1 text-2xl font-bold text-green-600 dark:text-green-400">{stat.number}</div>
+                  <div className="mb-1 text-2xl font-bold text-green-600 dark:text-green-400">
+                    {stat.number}
+                  </div>
                   <div className="text-muted-foreground text-sm">{stat.label}</div>
                 </div>
               ))}
@@ -169,7 +177,9 @@ export const MentorPage = () => {
 
             {/* What You'll Share */}
             <div className="mx-auto mb-16 max-w-4xl">
-              <h3 className="text-foreground mb-6 text-xl font-semibold">What you&apos;ll share:</h3>
+              <h3 className="text-foreground mb-6 text-xl font-semibold">
+                What you&apos;ll share:
+              </h3>
               <div className="grid gap-3 text-center sm:grid-cols-2 lg:grid-cols-4">
                 {mentorTypes.map((type, index) => (
                   <div
@@ -193,7 +203,8 @@ export const MentorPage = () => {
               Why Become a Discuno Mentor
             </h2>
             <p className="text-muted-foreground mx-auto max-w-2xl text-lg">
-              It&apos;s more than just earning extra money - it&apos;s about building your future while helping others.
+              It&apos;s more than just earning extra money - it&apos;s about building your future
+              while helping others.
             </p>
           </div>
 
@@ -208,7 +219,9 @@ export const MentorPage = () => {
                     {benefit.icon}
                   </div>
                   <h3 className="text-foreground mb-2 text-lg font-semibold">{benefit.title}</h3>
-                  <p className="text-muted-foreground text-sm leading-relaxed">{benefit.description}</p>
+                  <p className="text-muted-foreground text-sm leading-relaxed">
+                    {benefit.description}
+                  </p>
                 </CardContent>
               </Card>
             ))}
@@ -224,8 +237,8 @@ export const MentorPage = () => {
               Invest in Your Future Career
             </h2>
             <p className="text-muted-foreground mx-auto max-w-2xl text-lg">
-              As we expand beyond college mentoring, you&apos;ll get exclusive access to connect with professionals in
-              your dream field.
+              As we expand beyond college mentoring, you&apos;ll get exclusive access to connect
+              with professionals in your dream field.
             </p>
           </div>
 
@@ -254,20 +267,29 @@ export const MentorPage = () => {
               <CardContent className="p-8">
                 <div className="mb-4 flex items-center justify-center gap-2">
                   <Target className="text-primary h-6 w-6" />
-                  <h3 className="text-foreground text-2xl font-semibold">Coming Soon: Career Mentorship</h3>
+                  <h3 className="text-foreground text-2xl font-semibold">
+                    Coming Soon: Career Mentorship
+                  </h3>
                 </div>
                 <p className="text-muted-foreground mb-6 text-lg">
-                  Join as a college mentor now and get early access to connect with professionals in any industry, role,
-                  or location when we expand our platform.
+                  Join as a college mentor now and get early access to connect with professionals in
+                  any industry, role, or location when we expand our platform.
                 </p>
                 <div className="flex flex-wrap justify-center gap-2">
-                  {['Tech', 'Finance', 'Consulting', 'Medicine', 'Law', 'Startups', 'Non-profit', 'Government'].map(
-                    field => (
-                      <Badge key={field} variant="outline" className="text-xs">
-                        {field}
-                      </Badge>
-                    )
-                  )}
+                  {[
+                    'Tech',
+                    'Finance',
+                    'Consulting',
+                    'Medicine',
+                    'Law',
+                    'Startups',
+                    'Non-profit',
+                    'Government',
+                  ].map(field => (
+                    <Badge key={field} variant="outline" className="text-xs">
+                      {field}
+                    </Badge>
+                  ))}
                 </div>
               </CardContent>
             </Card>
@@ -279,7 +301,9 @@ export const MentorPage = () => {
       <section className="bg-muted/30 py-16 lg:py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mb-16 text-center">
-            <h2 className="text-foreground mb-4 text-3xl font-bold tracking-tight sm:text-4xl">What Our Mentors Say</h2>
+            <h2 className="text-foreground mb-4 text-3xl font-bold tracking-tight sm:text-4xl">
+              What Our Mentors Say
+            </h2>
             <p className="text-muted-foreground mx-auto max-w-2xl text-lg">
               Hear from current students who are already making a difference (and extra income).
             </p>
@@ -299,7 +323,9 @@ export const MentorPage = () => {
                       {testimonial.earnings}
                     </Badge>
                   </div>
-                  <blockquote className="text-muted-foreground mb-4">&ldquo;{testimonial.content}&rdquo;</blockquote>
+                  <blockquote className="text-muted-foreground mb-4">
+                    &ldquo;{testimonial.content}&rdquo;
+                  </blockquote>
                   <div>
                     <div className="text-foreground font-semibold">{testimonial.name}</div>
                     <div className="text-muted-foreground text-sm">{testimonial.school}</div>
@@ -315,7 +341,9 @@ export const MentorPage = () => {
       <section className="py-16 lg:py-24">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
           <div className="mb-16 text-center">
-            <h2 className="text-foreground mb-4 text-3xl font-bold tracking-tight sm:text-4xl">How It Works</h2>
+            <h2 className="text-foreground mb-4 text-3xl font-bold tracking-tight sm:text-4xl">
+              How It Works
+            </h2>
             <p className="text-muted-foreground text-lg">
               Getting started is simple. We handle the platform, you share your story.
             </p>
@@ -328,7 +356,8 @@ export const MentorPage = () => {
               </div>
               <h3 className="text-foreground mb-2 text-xl font-semibold">Sign Up</h3>
               <p className="text-muted-foreground">
-                Join our waitlist and we&apos;ll contact you when we&apos;re ready to onboard mentors
+                Join our waitlist and we&apos;ll contact you when we&apos;re ready to onboard
+                mentors
               </p>
             </div>
             <div className="text-center">
@@ -363,7 +392,8 @@ export const MentorPage = () => {
             Ready to Start Earning?
           </h2>
           <p className="text-muted-foreground mb-8 text-xl">
-            Join our mentor waitlist and be among the first to start sharing your college experience for money.
+            Join our mentor waitlist and be among the first to start sharing your college experience
+            for money.
           </p>
 
           <div className="mx-auto max-w-md">
@@ -371,7 +401,8 @@ export const MentorPage = () => {
           </div>
 
           <p className="text-muted-foreground mt-6 text-sm">
-            💰 Earn $25-50/hour • 📅 Flexible schedule • 🚀 Early mentor access • 🔮 Future career opportunities
+            💰 Earn $25-50/hour • 📅 Flexible schedule • 🚀 Early mentor access • 🔮 Future career
+            opportunities
           </p>
         </div>
       </section>

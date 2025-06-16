@@ -13,7 +13,9 @@ async function SchedulingPageContent() {
     <div className="container mx-auto max-w-6xl p-6">
       <div className="mb-8">
         <h1 className="text-foreground text-4xl font-bold">Scheduling Center</h1>
-        <p className="text-muted-foreground mt-2">Manage your availability, event types, and booking preferences</p>
+        <p className="text-muted-foreground mt-2">
+          Manage your availability, event types, and booking preferences
+        </p>
       </div>
 
       <Tabs defaultValue="availability" className="w-full">
@@ -57,7 +59,9 @@ async function SchedulingPageContent() {
               <CardTitle>Integration Settings</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground">OAuth connections and integration settings coming soon...</p>
+              <p className="text-muted-foreground">
+                OAuth connections and integration settings coming soon...
+              </p>
             </CardContent>
           </Card>
         </TabsContent>

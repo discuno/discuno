@@ -402,7 +402,10 @@ describe('API Security Tests', () => {
 
   describe('Rate Limiting and DoS Protection', () => {
     it('should handle rapid concurrent requests', async () => {
-      const requests = Array.from({ length: 100 }, (_, i) => new NextRequest(`http://localhost/api/test?id=${i}`))
+      const requests = Array.from(
+        { length: 100 },
+        (_, i) => new NextRequest(`http://localhost/api/test?id=${i}`)
+      )
 
       // Should handle many requests without throwing errors
       expect(() => {
@@ -466,7 +469,11 @@ describe('API Security Tests', () => {
     })
 
     it('should handle session token validation', () => {
-      const maliciousTokens = ['valid-token\r\nAdmin: true', 'valid-token\nRole: admin', 'valid-token\u0000injection']
+      const maliciousTokens = [
+        'valid-token\r\nAdmin: true',
+        'valid-token\nRole: admin',
+        'valid-token\u0000injection',
+      ]
 
       for (const token of maliciousTokens) {
         // NextJS should reject malformed session tokens

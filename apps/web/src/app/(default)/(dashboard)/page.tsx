@@ -4,7 +4,10 @@ import { PostGrid } from '~/app/(default)/(dashboard)/(post)/PostGrid'
 import { Filter } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '~/components/ui/popover'
 import { Button } from '~/components/ui/button'
-import { fetchPostsAction, fetchPostsByFilterAction } from '~/app/(default)/(dashboard)/(post)/actions'
+import {
+  fetchPostsAction,
+  fetchPostsByFilterAction,
+} from '~/app/(default)/(dashboard)/(post)/actions'
 import { requireAuth } from '~/lib/auth/auth-utils'
 
 const HomePage = async ({
@@ -33,7 +36,9 @@ const HomePage = async ({
 
   const schoolId = params.school ? (schools.find(s => s.label === params.school)?.id ?? null) : null
   const majorId = params.major ? (majors.find(m => m.label === params.major)?.id ?? null) : null
-  const graduationYear = params.gradYear ? (gradYears.find(g => g.label === params.gradYear)?.id ?? null) : null
+  const graduationYear = params.gradYear
+    ? (gradYears.find(g => g.label === params.gradYear)?.id ?? null)
+    : null
 
   const initialPosts =
     schoolId || majorId || graduationYear
@@ -54,7 +59,10 @@ const HomePage = async ({
               Filters
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="border/40 bg-background/60 ml-2 w-80 p-4 shadow-lg backdrop-blur-md" align="end">
+          <PopoverContent
+            className="border/40 bg-background/60 ml-2 w-80 p-4 shadow-lg backdrop-blur-md"
+            align="end"
+          >
             <div className="space-y-4">
               <h2 className="text-foreground font-semibold">Filter Mentors</h2>
               <div className="flex flex-col gap-3">
@@ -83,7 +91,12 @@ const HomePage = async ({
       </div>
 
       {/* Post Grid */}
-      <PostGrid posts={initialPosts} schoolId={schoolId} majorId={majorId} graduationYear={graduationYear} />
+      <PostGrid
+        posts={initialPosts}
+        schoolId={schoolId}
+        majorId={majorId}
+        graduationYear={graduationYear}
+      />
     </main>
   )
 }

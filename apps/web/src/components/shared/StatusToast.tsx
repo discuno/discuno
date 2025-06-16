@@ -61,7 +61,8 @@ export const StatusToast = ({ status }: StatusToastProps) => {
         break
       case 'email-in-use':
         toastContent.title = 'Email Already in Use'
-        toastContent.description = 'The email you entered is already in use. Please try a different one.'
+        toastContent.description =
+          'The email you entered is already in use. Please try a different one.'
         toastContent.variant = 'error'
         break
       case 'invalid-email':
@@ -71,7 +72,8 @@ export const StatusToast = ({ status }: StatusToastProps) => {
         break
       case 'sent':
         toastContent.title = 'Email Sent'
-        toastContent.description = "We've sent you an email to verify your email address. Please check your inbox."
+        toastContent.description =
+          "We've sent you an email to verify your email address. Please check your inbox."
         break
       case 'not-verified':
         toastContent.title = 'Email Not Verified'

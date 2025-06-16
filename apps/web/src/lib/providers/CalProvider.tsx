@@ -11,7 +11,12 @@ interface CalcomProviderProps {
   userId?: string
 }
 
-export const CalcomProvider = ({ children, accessToken, refreshToken, userId: _userId }: CalcomProviderProps) => {
+export const CalcomProvider = ({
+  children,
+  accessToken,
+  refreshToken,
+  userId: _userId,
+}: CalcomProviderProps) => {
   const config = {
     apiUrl: env.NEXT_PUBLIC_CALCOM_API_URL,
     accessToken: accessToken ?? undefined,

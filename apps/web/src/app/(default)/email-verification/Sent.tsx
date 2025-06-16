@@ -7,8 +7,8 @@ export const SentEmailVerification = async () => {
         <div className="space-y-2 text-center">
           <h1 className="text-primary text-3xl font-bold">Email Sent</h1>
           <p className="text-muted-foreground">
-            We&apos;ve sent a verification link to your email address. Please check your inbox and click the link to
-            verify your email.
+            We&apos;ve sent a verification link to your email address. Please check your inbox and
+            click the link to verify your email.
           </p>
         </div>
         <ContinueButton />

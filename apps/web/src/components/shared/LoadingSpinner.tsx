@@ -43,7 +43,10 @@ export interface LoadingSpinnerProps
 }
 
 export const LoadingSpinner = React.forwardRef<HTMLDivElement, LoadingSpinnerProps>(
-  ({ className, size, align, text = 'Loading...', showText = true, spinnerSize, ...props }, ref) => {
+  (
+    { className, size, align, text = 'Loading...', showText = true, spinnerSize, ...props },
+    ref
+  ) => {
     const effectiveSpinnerSize = spinnerSize ?? size
 
     return (

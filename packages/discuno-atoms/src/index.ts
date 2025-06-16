@@ -1,8 +1,20 @@
 'use client'
 
 // Main exports
-export { CalProvider, useCalContext, useCal, useCalApi, useCalConfig, useCalAuth } from './provider/cal-provider'
-export { CalApiClient, createApiClient, getApiClient, isApiClientInitialized } from './lib/api-client'
+export {
+  CalProvider,
+  useCalContext,
+  useCal,
+  useCalApi,
+  useCalConfig,
+  useCalAuth,
+} from './provider/cal-provider'
+export {
+  CalApiClient,
+  createApiClient,
+  getApiClient,
+  isApiClientInitialized,
+} from './lib/api-client'
 
 // Components
 export { Booker } from './booker/booker'

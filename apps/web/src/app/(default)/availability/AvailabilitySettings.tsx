@@ -8,7 +8,9 @@ export const AvailabilitySettingsComponent = () => {
     <div className="availability-settings-container mx-auto max-w-4xl p-6">
       <div className="mb-6">
         <h1 className="text-foreground text-3xl font-bold">Manage Your Availability</h1>
-        <p className="text-muted-foreground mt-2">Set your working hours and availability preferences</p>
+        <p className="text-muted-foreground mt-2">
+          Set your working hours and availability preferences
+        </p>
       </div>
 
       <AvailabilitySettings

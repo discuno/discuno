@@ -43,11 +43,19 @@ const Page = () => {
 
         <p className="description">
           Click the button below, and view the sample error on the Sentry{' '}
-          <a target="_blank" rel="noreferrer" href="https://brad-mcnew.sentry.io/issues/?project=4508479143149568">
+          <a
+            target="_blank"
+            rel="noreferrer"
+            href="https://brad-mcnew.sentry.io/issues/?project=4508479143149568"
+          >
             Issues Page
           </a>
           . For more details about setting up Sentry,{' '}
-          <a target="_blank" rel="noreferrer" href="https://docs.sentry.io/platforms/javascript/guides/nextjs/">
+          <a
+            target="_blank"
+            rel="noreferrer"
+            href="https://docs.sentry.io/platforms/javascript/guides/nextjs/"
+          >
             read our docs
           </a>
           .
@@ -65,7 +73,9 @@ const Page = () => {
                 const res = await fetch('/api/sentry-example-api')
                 if (!res.ok) {
                   setHasSentError(true)
-                  throw new SentryExampleFrontendError('This error is raised on the frontend of the example page.')
+                  throw new SentryExampleFrontendError(
+                    'This error is raised on the frontend of the example page.'
+                  )
                 }
               }
             )
@@ -79,8 +89,8 @@ const Page = () => {
         ) : !isConnected ? (
           <div className="connectivity-error">
             <p>
-              The Sentry SDK is not able to reach Sentry right now - this may be due to an adblocker. For more
-              information, see{' '}
+              The Sentry SDK is not able to reach Sentry right now - this may be due to an
+              adblocker. For more information, see{' '}
               <a
                 target="_blank"
                 rel="noreferrer"

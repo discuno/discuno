@@ -53,7 +53,8 @@ describe('StatusToast Component', () => {
       renderWithProviders(<StatusToast status="sent" />)
 
       expect(mockToast.success).toHaveBeenCalledWith('Email Sent', {
-        description: "We've sent you an email to verify your email address. Please check your inbox.",
+        description:
+          "We've sent you an email to verify your email address. Please check your inbox.",
       })
     })
   })
@@ -135,7 +136,8 @@ describe('StatusToast Component', () => {
       renderWithProviders(<StatusToast status="not-verified" />)
 
       expect(mockToast.error).toHaveBeenCalledWith('Email Not Verified', {
-        description: 'Your email has not been verified. Please check your inbox for the verification link.',
+        description:
+          'Your email has not been verified. Please check your inbox for the verification link.',
       })
     })
   })

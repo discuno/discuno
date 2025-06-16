@@ -20,7 +20,9 @@ export const PostCard = ({ card }: { card: Card; index: number }) => {
 
         {/* Name overlay on image */}
         <div className="absolute bottom-4 left-4 right-4">
-          <h2 className="text-xl font-bold text-white drop-shadow-lg">{card.name ?? 'Student Name'}</h2>
+          <h2 className="text-xl font-bold text-white drop-shadow-lg">
+            {card.name ?? 'Student Name'}
+          </h2>
         </div>
       </div>
 
@@ -53,7 +55,9 @@ export const PostCard = ({ card }: { card: Card; index: number }) => {
                 <div className="text-muted-foreground hover:text-foreground flex items-center gap-2 transition-colors">
                   <User className="h-4 w-4 flex-shrink-0" />
                   <span className="truncate text-sm">
-                    {card.description.length > 40 ? `${card.description.substring(0, 40)}...` : card.description}
+                    {card.description.length > 40
+                      ? `${card.description.substring(0, 40)}...`
+                      : card.description}
                   </span>
                 </div>
               </button>

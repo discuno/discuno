@@ -169,16 +169,30 @@ describe('UserAvatar Component', () => {
       const { getByRole } = renderWithProviders(<AvatarIcon {...defaultProps} />)
 
       const avatarButton = getByRole('button', { name: 'User menu' })
-      expect(avatarButton).toHaveClass('h-10', 'w-10', 'rounded-full', 'focus:ring-2', 'focus:ring-primary')
+      expect(avatarButton).toHaveClass(
+        'h-10',
+        'w-10',
+        'rounded-full',
+        'focus:ring-2',
+        'focus:ring-primary'
+      )
     })
 
     it('has correct container layout', () => {
       const { container } = renderWithProviders(<AvatarIcon {...defaultProps} />)
 
       // Find the main container div with the flex classes
-      const containerDiv = container.querySelector('.flex.flex-row.items-center.justify-end.space-x-4')
+      const containerDiv = container.querySelector(
+        '.flex.flex-row.items-center.justify-end.space-x-4'
+      )
       expect(containerDiv).toBeInTheDocument()
-      expect(containerDiv).toHaveClass('flex', 'flex-row', 'items-center', 'justify-end', 'space-x-4')
+      expect(containerDiv).toHaveClass(
+        'flex',
+        'flex-row',
+        'items-center',
+        'justify-end',
+        'space-x-4'
+      )
     })
 
     it('has proper avatar dimensions', () => {

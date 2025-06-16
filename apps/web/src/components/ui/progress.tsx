@@ -5,7 +5,11 @@ import * as ProgressPrimitive from '@radix-ui/react-progress'
 
 import { cn } from '~/lib/utils'
 
-const Progress = ({ className, value, ...props }: React.ComponentProps<typeof ProgressPrimitive.Root>) => {
+const Progress = ({
+  className,
+  value,
+  ...props
+}: React.ComponentProps<typeof ProgressPrimitive.Root>) => {
   return (
     <ProgressPrimitive.Root
       data-slot="progress"

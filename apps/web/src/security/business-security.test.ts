@@ -155,7 +155,10 @@ describe('Business Logic Security Tests', () => {
     it('should prevent session fixation attacks', () => {
       // Simulate session management
       class SessionManager {
-        private sessions = new Map<string, { userId: string; created: number; lastAccess: number }>()
+        private sessions = new Map<
+          string,
+          { userId: string; created: number; lastAccess: number }
+        >()
 
         createSession(userId: string): string {
           // Generate secure random session ID
@@ -242,7 +245,9 @@ describe('Business Logic Security Tests', () => {
         }
 
         const expectedPermissions = rolePermissions[payload.role as keyof typeof rolePermissions]
-        const hasValidPermissions = payload.permissions.every((perm: string) => expectedPermissions.includes(perm))
+        const hasValidPermissions = payload.permissions.every((perm: string) =>
+          expectedPermissions.includes(perm)
+        )
 
         return hasValidPermissions
       }
@@ -265,7 +270,10 @@ describe('Business Logic Security Tests', () => {
     it('should implement secure password reset flow', () => {
       // Simulate password reset security measures
       class PasswordResetManager {
-        private resetTokens = new Map<string, { email: string; token: string; expires: number; used: boolean }>()
+        private resetTokens = new Map<
+          string,
+          { email: string; token: string; expires: number; used: boolean }
+        >()
 
         generateResetToken(email: string): string {
           // Generate cryptographically secure token
@@ -330,7 +338,10 @@ describe('Business Logic Security Tests', () => {
   describe('Data Validation and Sanitization Security', () => {
     it('should prevent SQL injection in dynamic queries', () => {
       // Simulate parameterized query building
-      const buildSafeQuery = (table: string, conditions: Record<string, any>): { query: string; params: any[] } => {
+      const buildSafeQuery = (
+        table: string,
+        conditions: Record<string, any>
+      ): { query: string; params: any[] } => {
         // Validate table name against whitelist
         const allowedTables = ['users', 'posts', 'bookings', 'profiles']
         if (!allowedTables.includes(table)) {
@@ -372,7 +383,12 @@ describe('Business Logic Security Tests', () => {
 
     it('should validate file upload security', () => {
       // Simulate file upload validation
-      const validateFileUpload = (file: { name: string; type: string; size: number; content?: string }): boolean => {
+      const validateFileUpload = (file: {
+        name: string
+        type: string
+        size: number
+        content?: string
+      }): boolean => {
         const MAX_SIZE = 10 * 1024 * 1024 // 10MB
         const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf']
         const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.pdf']
@@ -496,7 +512,15 @@ describe('Business Logic Security Tests', () => {
           }
 
           // Check for email header injection patterns
-          const injectionPatterns = [/bcc:/i, /cc:/i, /to:/i, /from:/i, /subject:/i, /content-type:/i, /x-mailer:/i]
+          const injectionPatterns = [
+            /bcc:/i,
+            /cc:/i,
+            /to:/i,
+            /from:/i,
+            /subject:/i,
+            /content-type:/i,
+            /x-mailer:/i,
+          ]
 
           if (injectionPatterns.some(pattern => pattern.test(field))) {
             return false
@@ -513,15 +537,23 @@ describe('Business Logic Security Tests', () => {
       }
 
       // Test valid email
-      expect(validateEmailFields('user@example.com', 'Meeting Confirmation', 'Your meeting has been confirmed.')).toBe(
-        true
-      )
+      expect(
+        validateEmailFields(
+          'user@example.com',
+          'Meeting Confirmation',
+          'Your meeting has been confirmed.'
+        )
+      ).toBe(true)
 
       // Test header injection in subject
-      expect(validateEmailFields('user@example.com', 'Subject\r\nBcc: attacker@evil.com', 'Body content')).toBe(false)
+      expect(
+        validateEmailFields('user@example.com', 'Subject\r\nBcc: attacker@evil.com', 'Body content')
+      ).toBe(false)
 
       // Test header injection in body
-      expect(validateEmailFields('user@example.com', 'Valid Subject', 'Body\nBcc: attacker@evil.com')).toBe(false)
+      expect(
+        validateEmailFields('user@example.com', 'Valid Subject', 'Body\nBcc: attacker@evil.com')
+      ).toBe(false)
 
       // Test invalid email format
       expect(validateEmailFields('invalid-email', 'Subject', 'Body')).toBe(false)
@@ -547,7 +579,11 @@ describe('Business Logic Security Tests', () => {
         },
       ]
 
-      const canAccessBooking = (bookingId: number, currentUserId: string, userRole: string): boolean => {
+      const canAccessBooking = (
+        bookingId: number,
+        currentUserId: string,
+        userRole: string
+      ): boolean => {
         const booking = bookings.find(b => b.id === bookingId)
         if (!booking) return false
 
@@ -617,7 +653,10 @@ describe('Business Logic Security Tests', () => {
           return true
         }
 
-        updateBooking(bookingId: number, updates: Partial<{ status: string; amount: number }>): boolean {
+        updateBooking(
+          bookingId: number,
+          updates: Partial<{ status: string; amount: number }>
+        ): boolean {
           const booking = this.bookings.get(bookingId)
           if (!booking) return false
 
@@ -673,7 +712,10 @@ describe('Business Logic Security Tests', () => {
           console.error('Internal error:', error.message, context)
         }
 
-        handleError(error: Error, isProduction: boolean = true): { message: string; code?: string } {
+        handleError(
+          error: Error,
+          isProduction: boolean = true
+        ): { message: string; code?: string } {
           // Log full error details internally
           this.logError(error, { timestamp: new Date().toISOString() })
 
@@ -770,7 +812,9 @@ describe('Business Logic Security Tests', () => {
 
       // Test normal usage within limits
       for (let i = 0; i < 5; i++) {
-        expect(rateLimiter.isRateLimited('192.168.1.1', 'user123', 'api/booking/create')).toBe(false)
+        expect(rateLimiter.isRateLimited('192.168.1.1', 'user123', 'api/booking/create')).toBe(
+          false
+        )
       }
 
       // Test user rate limit

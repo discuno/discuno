@@ -2,17 +2,16 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 // Extend global type to include test functions
 declare global {
-  // eslint-disable-next-line no-var
   var getCalcomAccessTokenFunction: (userId: string) => Promise<any>
-  // eslint-disable-next-line no-var
+
   var refreshCalcomTokenFunction: (accessToken: string) => Promise<any>
-  // eslint-disable-next-line no-var
+
   var getUserCalcomTokenFunction: () => Promise<any>
-  // eslint-disable-next-line no-var
+
   var createCalcomUserFunction: (userData: any) => Promise<any>
-  // eslint-disable-next-line no-var
+
   var updateCalcomUserFunction: (updateData: any) => Promise<any>
-  // eslint-disable-next-line no-var
+
   var hasCalcomIntegrationFunction: () => Promise<any>
 }
 
@@ -399,20 +398,23 @@ describe('Availability Actions', () => {
       expect(result.calcomUserId).toBe(789)
       expect(result.username).toBe('test-user')
 
-      expect(mockFetch).toHaveBeenCalledWith('https://api.cal.com/v2/oauth-clients/test-client-id/users', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-cal-secret-key': 'test-secret-key',
-        },
-        body: JSON.stringify({
-          email: 'test@college.edu',
-          name: 'Test User',
-          timeZone: 'America/New_York',
-          timeFormat: 12,
-          weekStart: 'Sunday',
-        }),
-      })
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://api.cal.com/v2/oauth-clients/test-client-id/users',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-cal-secret-key': 'test-secret-key',
+          },
+          body: JSON.stringify({
+            email: 'test@college.edu',
+            name: 'Test User',
+            timeZone: 'America/New_York',
+            timeFormat: 12,
+            weekStart: 'Sunday',
+          }),
+        }
+      )
     })
 
     it('should handle Cal.com API HTTP errors', async () => {
@@ -506,17 +508,20 @@ describe('Availability Actions', () => {
 
       expect(result.success).toBe(true)
 
-      expect(mockFetch).toHaveBeenCalledWith('https://api.cal.com/v2/oauth-clients/test-client-id/users/456', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-cal-secret-key': 'test-secret-key',
-        },
-        body: JSON.stringify({
-          name: 'Updated Name',
-          email: 'updated@college.edu',
-        }),
-      })
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://api.cal.com/v2/oauth-clients/test-client-id/users/456',
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-cal-secret-key': 'test-secret-key',
+          },
+          body: JSON.stringify({
+            name: 'Updated Name',
+            email: 'updated@college.edu',
+          }),
+        }
+      )
     })
 
     it('should handle Cal.com API errors', async () => {

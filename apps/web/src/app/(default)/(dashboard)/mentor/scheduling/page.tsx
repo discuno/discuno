@@ -32,7 +32,9 @@ async function MentorSchedulingContent() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-foreground text-4xl font-bold">Scheduling Center</h1>
-            <p className="text-muted-foreground mt-2">Set your availability and create mentoring session types</p>
+            <p className="text-muted-foreground mt-2">
+              Set your availability and create mentoring session types
+            </p>
           </div>
           <div className="flex items-center gap-2">
             {hasCalcomIntegration ? (
@@ -55,7 +57,10 @@ async function MentorSchedulingContent() {
         <Alert className="mb-6 border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-950/30">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription className="flex items-center justify-between">
-            <span>Complete your Cal.com integration first to set your availability and create event types.</span>
+            <span>
+              Complete your Cal.com integration first to set your availability and create event
+              types.
+            </span>
             <Button asChild size="sm">
               <Link href="/mentor/onboarding">
                 Complete Setup
@@ -109,7 +114,8 @@ async function MentorSchedulingContent() {
                 <Clock className="text-muted-foreground mx-auto mb-4 h-16 w-16" />
                 <h3 className="mb-2 text-lg font-semibold">Cal.com Integration Required</h3>
                 <p className="text-muted-foreground mx-auto mb-4 max-w-md">
-                  Connect your Cal.com account first to manage your availability and allow students to book sessions.
+                  Connect your Cal.com account first to manage your availability and allow students
+                  to book sessions.
                 </p>
                 <Button asChild>
                   <Link href="/mentor/onboarding">Complete Integration</Link>
@@ -176,7 +182,9 @@ async function MentorSchedulingContent() {
                                 <div className="text-muted-foreground">{template.duration}</div>
                               </div>
                             </div>
-                            <p className="text-muted-foreground mb-3 text-sm">{template.description}</p>
+                            <p className="text-muted-foreground mb-3 text-sm">
+                              {template.description}
+                            </p>
                             <Button size="sm" variant="outline" className="w-full">
                               Create This Event Type
                             </Button>
@@ -195,8 +203,8 @@ async function MentorSchedulingContent() {
                           <Calendar className="text-muted-foreground mx-auto mb-3 h-12 w-12" />
                           <h5 className="mb-2 font-semibold">Create Custom Event</h5>
                           <p className="text-muted-foreground mb-4 text-sm">
-                            Build a completely custom mentoring session type with your own pricing, duration, and
-                            requirements.
+                            Build a completely custom mentoring session type with your own pricing,
+                            duration, and requirements.
                           </p>
                           <Button>
                             <Calendar className="mr-2 h-4 w-4" />
@@ -211,7 +219,8 @@ async function MentorSchedulingContent() {
                     <Calendar className="text-muted-foreground mx-auto mb-4 h-16 w-16" />
                     <h3 className="mb-2 text-lg font-semibold">Event Types Coming Soon</h3>
                     <p className="text-muted-foreground mx-auto mb-4 max-w-md">
-                      Complete your Cal.com integration to create different types of mentoring sessions.
+                      Complete your Cal.com integration to create different types of mentoring
+                      sessions.
                     </p>
                     <Button asChild>
                       <Link href="/mentor/onboarding">Complete Setup</Link>
@@ -232,19 +241,27 @@ async function MentorSchedulingContent() {
               <CardContent>
                 <div className="grid gap-4 md:grid-cols-3">
                   <div className="rounded-lg bg-blue-50 p-4 dark:bg-blue-950/30">
-                    <h5 className="mb-1 font-semibold text-blue-900 dark:text-blue-100">New Mentor</h5>
+                    <h5 className="mb-1 font-semibold text-blue-900 dark:text-blue-100">
+                      New Mentor
+                    </h5>
                     <div className="mb-1 text-2xl font-bold text-blue-600">$20-30</div>
                     <p className="text-sm text-blue-700 dark:text-blue-300">
                       Start here to build reviews and experience
                     </p>
                   </div>
                   <div className="rounded-lg bg-green-50 p-4 dark:bg-green-950/30">
-                    <h5 className="mb-1 font-semibold text-green-900 dark:text-green-100">Experienced</h5>
+                    <h5 className="mb-1 font-semibold text-green-900 dark:text-green-100">
+                      Experienced
+                    </h5>
                     <div className="mb-1 text-2xl font-bold text-green-600">$35-45</div>
-                    <p className="text-sm text-green-700 dark:text-green-300">After 10+ sessions with great reviews</p>
+                    <p className="text-sm text-green-700 dark:text-green-300">
+                      After 10+ sessions with great reviews
+                    </p>
                   </div>
                   <div className="rounded-lg bg-purple-50 p-4 dark:bg-purple-950/30">
-                    <h5 className="mb-1 font-semibold text-purple-900 dark:text-purple-100">Expert</h5>
+                    <h5 className="mb-1 font-semibold text-purple-900 dark:text-purple-100">
+                      Expert
+                    </h5>
                     <div className="mb-1 text-2xl font-bold text-purple-600">$50+</div>
                     <p className="text-sm text-purple-700 dark:text-purple-300">
                       Premium schools or specialized expertise
@@ -276,7 +293,9 @@ async function MentorSchedulingContent() {
                       />
                       <div>
                         <h5 className="font-semibold">Cal.com Integration</h5>
-                        <p className="text-muted-foreground text-sm">Manage your scheduling and bookings</p>
+                        <p className="text-muted-foreground text-sm">
+                          Manage your scheduling and bookings
+                        </p>
                       </div>
                     </div>
                     <Badge variant={hasCalcomIntegration ? 'default' : 'outline'}>
@@ -289,7 +308,9 @@ async function MentorSchedulingContent() {
                       <div className="h-3 w-3 rounded-full bg-gray-300" />
                       <div>
                         <h5 className="font-semibold">Stripe Payments</h5>
-                        <p className="text-muted-foreground text-sm">Receive payments for your sessions</p>
+                        <p className="text-muted-foreground text-sm">
+                          Receive payments for your sessions
+                        </p>
                       </div>
                     </div>
                     <Badge variant="outline">Coming Soon</Badge>
@@ -302,14 +323,18 @@ async function MentorSchedulingContent() {
             <Card>
               <CardHeader>
                 <CardTitle>Notification Preferences</CardTitle>
-                <p className="text-muted-foreground text-sm">Control how and when you receive booking notifications</p>
+                <p className="text-muted-foreground text-sm">
+                  Control how and when you receive booking notifications
+                </p>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
                       <h5 className="font-medium">New Booking Notifications</h5>
-                      <p className="text-muted-foreground text-sm">Get notified when students book sessions</p>
+                      <p className="text-muted-foreground text-sm">
+                        Get notified when students book sessions
+                      </p>
                     </div>
                     <Button variant="outline" size="sm">
                       Configure
@@ -319,7 +344,9 @@ async function MentorSchedulingContent() {
                   <div className="flex items-center justify-between">
                     <div>
                       <h5 className="font-medium">Reminder Notifications</h5>
-                      <p className="text-muted-foreground text-sm">Reminders for upcoming sessions</p>
+                      <p className="text-muted-foreground text-sm">
+                        Reminders for upcoming sessions
+                      </p>
                     </div>
                     <Button variant="outline" size="sm">
                       Configure

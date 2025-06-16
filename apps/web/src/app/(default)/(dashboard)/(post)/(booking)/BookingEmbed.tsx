@@ -10,7 +10,12 @@ interface BookingEmbedProps {
   eventTypeId?: number
 }
 
-export const BookingEmbed = ({ username, eventSlug = '30min', layout = 'desktop', eventTypeId }: BookingEmbedProps) => {
+export const BookingEmbed = ({
+  username,
+  eventSlug = '30min',
+  layout = 'desktop',
+  eventTypeId,
+}: BookingEmbedProps) => {
   return (
     <div className="bg-background h-full min-h-[600px] w-full rounded-lg border">
       <Booker

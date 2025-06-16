@@ -37,7 +37,11 @@ interface CustomRenderOptions extends Omit<RenderOptions, 'wrapper'> {
 
 export const renderWithProviders = (
   ui: ReactElement,
-  { session = mockSession, queryClient = createTestQueryClient(), ...renderOptions }: CustomRenderOptions = {}
+  {
+    session = mockSession,
+    queryClient = createTestQueryClient(),
+    ...renderOptions
+  }: CustomRenderOptions = {}
 ) => {
   const Wrapper = ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>

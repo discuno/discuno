@@ -87,21 +87,34 @@ export const PostPage = async ({ id }: { id: string }) => {
                   </AvatarFallback>
                 </Avatar>
 
-                <h1 className="mb-4 text-5xl font-bold drop-shadow-lg">{post.name ?? 'Student Name'}</h1>
+                <h1 className="mb-4 text-5xl font-bold drop-shadow-lg">
+                  {post.name ?? 'Student Name'}
+                </h1>
 
                 <div className="mb-4 flex flex-wrap justify-center gap-3">
-                  <Badge variant="secondary" className="border-white/30 bg-white/20 px-4 py-2 text-lg text-white">
+                  <Badge
+                    variant="secondary"
+                    className="border-white/30 bg-white/20 px-4 py-2 text-lg text-white"
+                  >
                     {post.school}
                   </Badge>
-                  <Badge variant="secondary" className="bg-primary/20 border-primary/30 px-4 py-2 text-lg text-white">
+                  <Badge
+                    variant="secondary"
+                    className="bg-primary/20 border-primary/30 px-4 py-2 text-lg text-white"
+                  >
                     {post.major}
                   </Badge>
-                  <Badge variant="secondary" className="bg-accent/20 border-accent/30 px-4 py-2 text-lg text-white">
+                  <Badge
+                    variant="secondary"
+                    className="bg-accent/20 border-accent/30 px-4 py-2 text-lg text-white"
+                  >
                     Class of {post.graduationYear}
                   </Badge>
                 </div>
 
-                <p className="max-w-2xl text-xl text-white/90">{post.description?.substring(0, 120)}...</p>
+                <p className="max-w-2xl text-xl text-white/90">
+                  {post.description?.substring(0, 120)}...
+                </p>
               </div>
             </div>
           </div>
@@ -123,7 +136,9 @@ export const PostPage = async ({ id }: { id: string }) => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-muted-foreground text-lg leading-relaxed">{post.description}</p>
+                  <p className="text-muted-foreground text-lg leading-relaxed">
+                    {post.description}
+                  </p>
                 </CardContent>
               </UICard>
 
@@ -146,7 +161,9 @@ export const PostPage = async ({ id }: { id: string }) => {
                       <div className="flex-1">
                         <h3 className="text-lg font-semibold">{post.school}</h3>
                         <p className="text-muted-foreground">Current University</p>
-                        <p className="text-muted-foreground mt-1 text-sm">Pursuing excellence in higher education</p>
+                        <p className="text-muted-foreground mt-1 text-sm">
+                          Pursuing excellence in higher education
+                        </p>
                       </div>
                     </div>
 
@@ -180,7 +197,12 @@ export const PostPage = async ({ id }: { id: string }) => {
                   <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
                     <div className="bg-muted/30 rounded-lg p-6 text-center">
                       <div className="text-primary mb-2 text-3xl font-bold">
-                        {Math.max(0, new Date().getFullYear() - (post.graduationYear ?? new Date().getFullYear()))}+
+                        {Math.max(
+                          0,
+                          new Date().getFullYear() -
+                            (post.graduationYear ?? new Date().getFullYear())
+                        )}
+                        +
                       </div>
                       <div className="text-muted-foreground text-sm">Years Experience</div>
                     </div>
@@ -189,7 +211,9 @@ export const PostPage = async ({ id }: { id: string }) => {
                       <div className="text-muted-foreground text-sm">Current Academic Year</div>
                     </div>
                     <div className="bg-muted/30 rounded-lg p-6 text-center">
-                      <div className="text-primary mb-2 text-3xl font-bold">{post.major?.split(' ').length ?? 1}</div>
+                      <div className="text-primary mb-2 text-3xl font-bold">
+                        {post.major?.split(' ').length ?? 1}
+                      </div>
                       <div className="text-muted-foreground text-sm">Areas of Expertise</div>
                     </div>
                   </div>
@@ -205,7 +229,11 @@ export const PostPage = async ({ id }: { id: string }) => {
                   <CardTitle className="text-xl">Connect with {post.name}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <BookingInterface userId={post.createdById ?? ''} variant="modal" className="w-full">
+                  <BookingInterface
+                    userId={post.createdById ?? ''}
+                    variant="modal"
+                    className="w-full"
+                  >
                     <Calendar className="mr-2 h-4 w-4" />
                     Schedule Meeting
                   </BookingInterface>

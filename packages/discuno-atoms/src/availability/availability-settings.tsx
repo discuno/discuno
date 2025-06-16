@@ -34,12 +34,20 @@ const DAYS_OF_WEEK = [
   { key: 'saturday', label: 'Saturday', value: 6 },
 ]
 
-export function AvailabilitySettings({ scheduleId, userId, onSave, onError, className }: AvailabilitySettingsProps) {
+export function AvailabilitySettings({
+  scheduleId,
+  userId,
+  onSave,
+  onError,
+  className,
+}: AvailabilitySettingsProps) {
   const { apiClient } = useCalContext()
   const queryClient = useQueryClient()
 
   // Add hydration check but be less aggressive about showing loading states
-  const [isHydrated, setIsHydrated] = useState(typeof window !== 'undefined' && process.env.NODE_ENV === 'test')
+  const [isHydrated, setIsHydrated] = useState(
+    typeof window !== 'undefined' && process.env.NODE_ENV === 'test'
+  )
 
   useEffect(() => {
     setIsHydrated(true)
@@ -102,7 +110,9 @@ export function AvailabilitySettings({ scheduleId, userId, onSave, onError, clas
                 ? avail.startTime
                 : new Date(avail.startTime).toTimeString().slice(0, 5)
             const endTime =
-              typeof avail.endTime === 'string' ? avail.endTime : new Date(avail.endTime).toTimeString().slice(0, 5)
+              typeof avail.endTime === 'string'
+                ? avail.endTime
+                : new Date(avail.endTime).toTimeString().slice(0, 5)
 
             newWeeklyAvailability[day.key] = {
               enabled: true,
@@ -185,7 +195,12 @@ export function AvailabilitySettings({ scheduleId, userId, onSave, onError, clas
     })
   }
 
-  const updateTimeSlot = (dayKey: string, slotIndex: number, field: 'start' | 'end', value: string) => {
+  const updateTimeSlot = (
+    dayKey: string,
+    slotIndex: number,
+    field: 'start' | 'end',
+    value: string
+  ) => {
     setWeeklyAvailability(prev => {
       const currentDay = prev[dayKey]
       if (!currentDay) return prev
@@ -194,7 +209,9 @@ export function AvailabilitySettings({ scheduleId, userId, onSave, onError, clas
         ...prev,
         [dayKey]: {
           ...currentDay,
-          slots: currentDay.slots.map((slot, index) => (index === slotIndex ? { ...slot, [field]: value } : slot)),
+          slots: currentDay.slots.map((slot, index) =>
+            index === slotIndex ? { ...slot, [field]: value } : slot
+          ),
         },
       }
     })

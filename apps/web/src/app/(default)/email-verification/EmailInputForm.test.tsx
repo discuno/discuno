@@ -231,9 +231,13 @@ describe('EmailInputForm Server Actions', () => {
         const eduEmailRaw = formData.get('email')
         const lowerCaseEduEmail = (eduEmailRaw as string).toLowerCase()
 
-        const token = mockJwt.sign({ userId: user.id, eduEmail: lowerCaseEduEmail }, 'test-jwt-secret', {
-          expiresIn: '10m',
-        })
+        const token = mockJwt.sign(
+          { userId: user.id, eduEmail: lowerCaseEduEmail },
+          'test-jwt-secret',
+          {
+            expiresIn: '10m',
+          }
+        )
 
         expect(token).toBe('mock-jwt-token')
       })
@@ -261,7 +265,9 @@ describe('EmailInputForm Server Actions', () => {
           const eduEmailRaw = formData.get('email')
           const lowerCaseEduEmail = (eduEmailRaw as string).toLowerCase()
 
-          mockJwt.sign({ userId: user.id, eduEmail: lowerCaseEduEmail }, 'test-jwt-secret', { expiresIn: '10m' })
+          mockJwt.sign({ userId: user.id, eduEmail: lowerCaseEduEmail }, 'test-jwt-secret', {
+            expiresIn: '10m',
+          })
         } catch (error) {
           mockRedirect('/email-verification?status=error')
         }
@@ -283,9 +289,13 @@ describe('EmailInputForm Server Actions', () => {
         const eduEmailRaw = formData.get('email')
         const lowerCaseEduEmail = (eduEmailRaw as string).toLowerCase()
 
-        const token = mockJwt.sign({ userId: user.id, eduEmail: lowerCaseEduEmail }, 'test-jwt-secret', {
-          expiresIn: '10m',
-        })
+        const token = mockJwt.sign(
+          { userId: user.id, eduEmail: lowerCaseEduEmail },
+          'test-jwt-secret',
+          {
+            expiresIn: '10m',
+          }
+        )
 
         const verifyUrl = `https://discuno.com/verify-email/?token=${token}`
 
@@ -336,9 +346,13 @@ describe('EmailInputForm Server Actions', () => {
         const eduEmailRaw = formData.get('email')
         const lowerCaseEduEmail = (eduEmailRaw as string).toLowerCase()
 
-        const token = mockJwt.sign({ userId: user.id, eduEmail: lowerCaseEduEmail }, 'test-jwt-secret', {
-          expiresIn: '10m',
-        })
+        const token = mockJwt.sign(
+          { userId: user.id, eduEmail: lowerCaseEduEmail },
+          'test-jwt-secret',
+          {
+            expiresIn: '10m',
+          }
+        )
 
         const verifyUrl = `https://discuno.com/verify-email/?token=${token}`
 
@@ -380,9 +394,13 @@ describe('EmailInputForm Server Actions', () => {
           const eduEmailRaw = formData.get('email')
           const lowerCaseEduEmail = (eduEmailRaw as string).toLowerCase()
 
-          const token = mockJwt.sign({ userId: user.id, eduEmail: lowerCaseEduEmail }, 'test-jwt-secret', {
-            expiresIn: '10m',
-          })
+          const token = mockJwt.sign(
+            { userId: user.id, eduEmail: lowerCaseEduEmail },
+            'test-jwt-secret',
+            {
+              expiresIn: '10m',
+            }
+          )
 
           const verifyUrl = `https://discuno.com/verify-email/?token=${token}`
 
@@ -443,9 +461,13 @@ describe('EmailInputForm Server Actions', () => {
         }
 
         try {
-          const token = mockJwt.sign({ userId: user.id, eduEmail: lowerCaseEduEmail }, 'test-jwt-secret', {
-            expiresIn: '10m',
-          })
+          const token = mockJwt.sign(
+            { userId: user.id, eduEmail: lowerCaseEduEmail },
+            'test-jwt-secret',
+            {
+              expiresIn: '10m',
+            }
+          )
 
           const verifyUrl = `https://discuno.com/verify-email/?token=${token}`
 
@@ -581,9 +603,13 @@ describe('EmailInputForm Server Actions', () => {
         const eduEmailRaw = formData.get('email')
         const lowerCaseEduEmail = (eduEmailRaw as string).toLowerCase()
 
-        const token = mockJwt.sign({ userId: user.id, eduEmail: lowerCaseEduEmail }, 'test-jwt-secret', {
-          expiresIn: '10m',
-        })
+        const token = mockJwt.sign(
+          { userId: user.id, eduEmail: lowerCaseEduEmail },
+          'test-jwt-secret',
+          {
+            expiresIn: '10m',
+          }
+        )
 
         const verifyUrl = `https://discuno.com/verify-email/?token=${token}`
 
@@ -602,12 +628,16 @@ describe('EmailInputForm Server Actions', () => {
         const eduEmailRaw = formData.get('email')
         const lowerCaseEduEmail = (eduEmailRaw as string).toLowerCase()
 
-        mockJwt.sign({ userId: user.id, eduEmail: lowerCaseEduEmail }, 'test-jwt-secret', { expiresIn: '10m' })
+        mockJwt.sign({ userId: user.id, eduEmail: lowerCaseEduEmail }, 'test-jwt-secret', {
+          expiresIn: '10m',
+        })
       })
 
       await handleSubmit(formData)
 
-      expect(mockJwt.sign).toHaveBeenCalledWith(expect.any(Object), 'test-jwt-secret', { expiresIn: '10m' })
+      expect(mockJwt.sign).toHaveBeenCalledWith(expect.any(Object), 'test-jwt-secret', {
+        expiresIn: '10m',
+      })
     })
 
     it('should include user ID in JWT payload for authorization', async () => {
@@ -619,7 +649,9 @@ describe('EmailInputForm Server Actions', () => {
         const eduEmailRaw = formData.get('email')
         const lowerCaseEduEmail = (eduEmailRaw as string).toLowerCase()
 
-        mockJwt.sign({ userId: user.id, eduEmail: lowerCaseEduEmail }, 'test-jwt-secret', { expiresIn: '10m' })
+        mockJwt.sign({ userId: user.id, eduEmail: lowerCaseEduEmail }, 'test-jwt-secret', {
+          expiresIn: '10m',
+        })
       })
 
       await handleSubmit(formData)

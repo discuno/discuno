@@ -157,7 +157,10 @@ describe('CalApiClient', () => {
       const result = await client.getEventTypes()
 
       expect(result).toEqual(mockEventTypes)
-      expect(mockFetch).toHaveBeenCalledWith('https://api.cal.com/v2/event-types', expect.any(Object))
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://api.cal.com/v2/event-types',
+        expect.any(Object)
+      )
     })
 
     it('should get single event type', async () => {
@@ -172,7 +175,10 @@ describe('CalApiClient', () => {
       const result = await client.getEventType(1)
 
       expect(result).toEqual(mockEventType)
-      expect(mockFetch).toHaveBeenCalledWith('https://api.cal.com/v2/event-types/1', expect.any(Object))
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://api.cal.com/v2/event-types/1',
+        expect.any(Object)
+      )
     })
 
     it('should create event type', async () => {
@@ -250,7 +256,13 @@ describe('CalApiClient', () => {
         json: () => Promise.resolve({ status: 'success', data: mockAvailability }),
       })
 
-      const result = await client.getAvailability(123, 'john-doe', '2024-01-15', '2024-01-15', 'UTC')
+      const result = await client.getAvailability(
+        123,
+        'john-doe',
+        '2024-01-15',
+        '2024-01-15',
+        'UTC'
+      )
 
       expect(result).toEqual(mockAvailability)
       expect(mockFetch).toHaveBeenCalledWith(
@@ -275,7 +287,10 @@ describe('CalApiClient', () => {
       const result = await client.getAvailability()
 
       expect(result).toEqual(mockAvailability)
-      expect(mockFetch).toHaveBeenCalledWith('https://api.cal.com/v2/availability?', expect.any(Object))
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://api.cal.com/v2/availability?',
+        expect.any(Object)
+      )
     })
 
     it('should get available slots', async () => {
@@ -290,7 +305,12 @@ describe('CalApiClient', () => {
         json: () => Promise.resolve({ status: 'success', data: mockSlots }),
       })
 
-      const result = await client.getAvailableSlots(123, '2024-01-15T00:00:00.000Z', '2024-01-15T23:59:59.999Z', 'UTC')
+      const result = await client.getAvailableSlots(
+        123,
+        '2024-01-15T00:00:00.000Z',
+        '2024-01-15T23:59:59.999Z',
+        'UTC'
+      )
 
       expect(result).toEqual(mockSlots)
       expect(mockFetch).toHaveBeenCalledWith(
@@ -379,7 +399,10 @@ describe('CalApiClient', () => {
       const result = await client.getBooking('booking-uid-123')
 
       expect(result).toEqual(mockBooking)
-      expect(mockFetch).toHaveBeenCalledWith('https://api.cal.com/v2/bookings/booking-uid-123', expect.any(Object))
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://api.cal.com/v2/bookings/booking-uid-123',
+        expect.any(Object)
+      )
     })
 
     it('should cancel booking', async () => {
@@ -398,11 +421,14 @@ describe('CalApiClient', () => {
       const result = await client.cancelBooking('booking-uid-123', 'No longer needed')
 
       expect(result).toEqual(mockBooking)
-      expect(mockFetch).toHaveBeenCalledWith('https://api.cal.com/v2/bookings/booking-uid-123/cancel', {
-        method: 'POST',
-        headers: expect.any(Object),
-        body: JSON.stringify({ reason: 'No longer needed' }),
-      })
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://api.cal.com/v2/bookings/booking-uid-123/cancel',
+        {
+          method: 'POST',
+          headers: expect.any(Object),
+          body: JSON.stringify({ reason: 'No longer needed' }),
+        }
+      )
     })
 
     it('should reschedule booking', async () => {
@@ -428,11 +454,14 @@ describe('CalApiClient', () => {
       const result = await client.rescheduleBooking('booking-uid-123', rescheduleData)
 
       expect(result).toEqual(mockBooking)
-      expect(mockFetch).toHaveBeenCalledWith('https://api.cal.com/v2/bookings/booking-uid-123/reschedule', {
-        method: 'POST',
-        headers: expect.any(Object),
-        body: JSON.stringify(rescheduleData),
-      })
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://api.cal.com/v2/bookings/booking-uid-123/reschedule',
+        {
+          method: 'POST',
+          headers: expect.any(Object),
+          body: JSON.stringify(rescheduleData),
+        }
+      )
     })
   })
 

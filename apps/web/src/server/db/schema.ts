@@ -1,14 +1,14 @@
 import { relations, sql } from 'drizzle-orm'
 import {
+  boolean,
+  check,
   index,
   integer,
+  pgTableCreator,
+  primaryKey,
   text,
   timestamp,
   varchar,
-  check,
-  boolean,
-  pgTableCreator,
-  primaryKey,
 } from 'drizzle-orm/pg-core'
 import { type AdapterAccount } from 'next-auth/adapters'
 import { timestamps } from '~/server/db/columns.helpers'
@@ -19,7 +19,7 @@ import { timestamps } from '~/server/db/columns.helpers'
  *
  * @see https://orm.drizzle.team/docs/goodies#multi-project-schema
  */
-export const createTable = pgTableCreator(name => `college-advice_${name}`)
+export const createTable = pgTableCreator(name => `discuno_${name}`)
 
 export const users = createTable('user', {
   id: varchar('id', { length: 255 })
@@ -50,7 +50,10 @@ export const posts = createTable(
   example => ({
     createdByIdIdx: index('created_by_idx').on(example.createdById),
     nameIndex: index('name_idx').on(example.name),
-    createdAtCreatedByIdx: index('created_at_created_by_idx').on(example.createdAt, example.createdById),
+    createdAtCreatedByIdx: index('created_at_created_by_idx').on(
+      example.createdAt,
+      example.createdById
+    ),
     partialCreatedAtIdx: index('posts_created_at_partial_idx')
       .on(example.createdAt)
       .where(sql`deleted_at IS NULL`),
@@ -152,8 +155,14 @@ export const userProfiles = createTable(
     ...timestamps,
   },
   table => ({
-    graduationYearSchoolYearIdx: index('graduation_school_year_idx').on(table.graduationYear, table.schoolYear),
-    checkConstraint: check('grad_year_check', sql`${table.graduationYear} >= EXTRACT(YEAR FROM CURRENT_DATE)`),
+    graduationYearSchoolYearIdx: index('graduation_school_year_idx').on(
+      table.graduationYear,
+      table.schoolYear
+    ),
+    checkConstraint: check(
+      'grad_year_check',
+      sql`${table.graduationYear} >= EXTRACT(YEAR FROM CURRENT_DATE)`
+    ),
     userProfilesCompoundIdx: index('user_profiles_compound_idx').on(
       table.userId,
       table.graduationYear,

@@ -52,7 +52,14 @@ describe('Middleware', () => {
 
   it('should allow access to public paths without authentication', async () => {
     const { default: middleware } = await import('./middleware')
-    const publicPaths = ['/auth', '/mentor', '/auth/signin', '/auth/signup', '/api/auth/signin', '/pricing']
+    const publicPaths = [
+      '/auth',
+      '/mentor',
+      '/auth/signin',
+      '/auth/signup',
+      '/api/auth/signin',
+      '/pricing',
+    ]
 
     for (const path of publicPaths) {
       const req = createMockRequest(path, null)

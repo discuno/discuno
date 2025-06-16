@@ -7,7 +7,8 @@ import { ThemeProvider } from '~/lib/providers/ThemeProvider'
 
 export const metadata: Metadata = {
   title: 'Discuno - Your Guide to College Success',
-  description: 'Discover personalized advice, resources, and tools to help you get into your dream college.',
+  description:
+    'Discover personalized advice, resources, and tools to help you get into your dream college.',
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: 'any' },
@@ -22,7 +23,12 @@ const RootLayout = async ({ children }: Readonly<{ children: React.ReactNode }>)
   return (
     <html lang="en" dir="ltr" className={`${GeistSans.variable}`} suppressHydrationWarning>
       <body className="bg-background text-foreground min-h-screen font-sans antialiased transition-colors duration-300">
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange={false}>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange={false}
+        >
           {children}
           <Toaster
             theme="system"

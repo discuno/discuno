@@ -24,8 +24,8 @@ async function ComponentsShowcaseContent() {
             </h1>
           </div>
           <p className="text-muted-foreground mx-auto max-w-3xl text-xl leading-relaxed">
-            A modern, hydration-safe replacement for @calcom/atoms. Built with Next.js 15, TypeScript, and zero
-            hydration issues.
+            A modern, hydration-safe replacement for @calcom/atoms. Built with Next.js 15,
+            TypeScript, and zero hydration issues.
           </p>
           <div className="mt-6 flex items-center justify-center gap-4">
             <Badge variant="secondary" className="px-3 py-1">
@@ -139,7 +139,9 @@ async function ComponentsShowcaseContent() {
                   <Settings className="h-5 w-5" />
                   Event Type Management
                 </CardTitle>
-                <CardDescription>Create and manage different types of meetings and appointments</CardDescription>
+                <CardDescription>
+                  Create and manage different types of meetings and appointments
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="py-12 text-center">
@@ -162,7 +164,9 @@ async function ComponentsShowcaseContent() {
                   <Github className="h-5 w-5" />
                   OAuth Integrations
                 </CardTitle>
-                <CardDescription>Connect with Google Calendar, Outlook, Zoom, and other platforms</CardDescription>
+                <CardDescription>
+                  Connect with Google Calendar, Outlook, Zoom, and other platforms
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -180,7 +184,10 @@ async function ComponentsShowcaseContent() {
                       <CardContent className="p-4 text-center">
                         <div className="mb-2 text-2xl">{integration.icon}</div>
                         <h3 className="font-semibold">{integration.name}</h3>
-                        <Badge variant={integration.status === 'Available' ? 'default' : 'secondary'} className="mt-2">
+                        <Badge
+                          variant={integration.status === 'Available' ? 'default' : 'secondary'}
+                          className="mt-2"
+                        >
                           {integration.status}
                         </Badge>
                       </CardContent>
@@ -196,7 +203,9 @@ async function ComponentsShowcaseContent() {
         <Card className="mt-12">
           <CardHeader>
             <CardTitle>Migration from @calcom/atoms</CardTitle>
-            <CardDescription>Easy migration path with improved performance and developer experience</CardDescription>
+            <CardDescription>
+              Easy migration path with improved performance and developer experience
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">

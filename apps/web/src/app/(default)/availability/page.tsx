@@ -20,8 +20,8 @@ const AvailabilityPage = async () => {
         <div className="mb-8">
           <h1 className="text-foreground mb-2 text-3xl font-bold">Manage Your Availability</h1>
           <p className="text-muted-foreground">
-            Set your available time slots for mentoring sessions. Students will only be able to book meetings during
-            these times.
+            Set your available time slots for mentoring sessions. Students will only be able to book
+            meetings during these times.
           </p>
         </div>
 

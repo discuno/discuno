@@ -1,6 +1,14 @@
 'use client'
 
-import { AlertCircle, ArrowRight, CheckCircle, Loader2, Mail, Sparkles, XCircle } from 'lucide-react'
+import {
+  AlertCircle,
+  ArrowRight,
+  CheckCircle,
+  Loader2,
+  Mail,
+  Sparkles,
+  XCircle,
+} from 'lucide-react'
 import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { Button } from '~/components/ui/button'
@@ -25,7 +33,8 @@ export function WaitlistForm({ variant = 'default' }: WaitlistFormProps) {
         switch (result.status) {
           case 'success':
             toast.success('Welcome to the waitlist!', {
-              description: "We'll notify you as soon as Discuno launches. Check your email for confirmation.",
+              description:
+                "We'll notify you as soon as Discuno launches. Check your email for confirmation.",
               icon: <CheckCircle className="h-5 w-5" />,
               duration: 6000,
             })
@@ -98,7 +107,9 @@ export function WaitlistForm({ variant = 'default' }: WaitlistFormProps) {
             <Sparkles className="mr-2 h-5 w-5 transition-transform group-hover:scale-110" />
           )}
           Join Waitlist
-          {!isPending && <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />}
+          {!isPending && (
+            <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+          )}
         </Button>
       </form>
     )
@@ -146,7 +157,9 @@ export function WaitlistForm({ variant = 'default' }: WaitlistFormProps) {
         )}
       </Button>
 
-      <p className="text-muted-foreground text-center text-sm">Get notified when we launch. No spam, ever.</p>
+      <p className="text-muted-foreground text-center text-sm">
+        Get notified when we launch. No spam, ever.
+      </p>
     </form>
   )
 }

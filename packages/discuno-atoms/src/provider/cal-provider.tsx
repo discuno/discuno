@@ -32,7 +32,10 @@ export function CalProvider({ children, config, onError }: CalProviderProps) {
             gcTime: 10 * 60 * 1000, // 10 minutes
             retry: (failureCount, error) => {
               // Don't retry on 401/403 errors
-              if (error instanceof Error && (error.message.includes('401') || error.message.includes('403'))) {
+              if (
+                error instanceof Error &&
+                (error.message.includes('401') || error.message.includes('403'))
+              ) {
                 return false
               }
               return failureCount < 3
@@ -45,7 +48,9 @@ export function CalProvider({ children, config, onError }: CalProviderProps) {
   )
 
   // In test environment, assume we're hydrated immediately
-  const [isHydrated, setIsHydrated] = useState(typeof window !== 'undefined' && process.env.NODE_ENV === 'test')
+  const [isHydrated, setIsHydrated] = useState(
+    typeof window !== 'undefined' && process.env.NODE_ENV === 'test'
+  )
   const [apiClient, setApiClient] = useState<CalApiClient | null>(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [user, setUser] = useState<User | null>(null)

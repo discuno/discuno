@@ -52,7 +52,9 @@ async function MentorPaymentsContent() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-foreground text-4xl font-bold">Payments & Earnings</h1>
-            <p className="text-muted-foreground mt-2">Connect Stripe to receive payments and track your earnings</p>
+            <p className="text-muted-foreground mt-2">
+              Connect Stripe to receive payments and track your earnings
+            </p>
           </div>
           <div className="flex items-center gap-3">
             {hasStripeConnected ? (
@@ -75,7 +77,9 @@ async function MentorPaymentsContent() {
         <Alert className="mb-6 border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-950/30">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription className="flex items-center justify-between">
-            <span>Connect your Stripe account to start receiving payments from your mentoring sessions.</span>
+            <span>
+              Connect your Stripe account to start receiving payments from your mentoring sessions.
+            </span>
             <Button size="sm" className="bg-purple-600 hover:bg-purple-700">
               Connect Stripe
               <ArrowRight className="ml-1 h-3 w-3" />
@@ -142,7 +146,9 @@ async function MentorPaymentsContent() {
                   <div>
                     <p className="text-muted-foreground text-sm">Sessions</p>
                     <p className="text-2xl font-bold">{earningsData.completedSessions}</p>
-                    <p className="text-sm text-orange-600">{earningsData.upcomingSessions} upcoming</p>
+                    <p className="text-sm text-orange-600">
+                      {earningsData.upcomingSessions} upcoming
+                    </p>
                   </div>
                 </div>
               </CardContent>
@@ -258,22 +264,34 @@ async function MentorPaymentsContent() {
           <Card>
             <CardHeader>
               <CardTitle>Pricing & Fees</CardTitle>
-              <p className="text-muted-foreground text-sm">Transparent pricing with no hidden fees</p>
+              <p className="text-muted-foreground text-sm">
+                Transparent pricing with no hidden fees
+              </p>
             </CardHeader>
             <CardContent>
               <div className="grid gap-4 md:grid-cols-3">
                 <div className="rounded-lg bg-green-50 p-4 text-center dark:bg-green-950/30">
-                  <h5 className="mb-1 font-semibold text-green-900 dark:text-green-100">Platform Fee</h5>
+                  <h5 className="mb-1 font-semibold text-green-900 dark:text-green-100">
+                    Platform Fee
+                  </h5>
                   <div className="mb-1 text-3xl font-bold text-green-600">15%</div>
-                  <p className="text-sm text-green-700 dark:text-green-300">Per completed session</p>
+                  <p className="text-sm text-green-700 dark:text-green-300">
+                    Per completed session
+                  </p>
                 </div>
                 <div className="rounded-lg bg-blue-50 p-4 text-center dark:bg-blue-950/30">
-                  <h5 className="mb-1 font-semibold text-blue-900 dark:text-blue-100">Stripe Fee</h5>
+                  <h5 className="mb-1 font-semibold text-blue-900 dark:text-blue-100">
+                    Stripe Fee
+                  </h5>
                   <div className="mb-1 text-3xl font-bold text-blue-600">2.9%</div>
-                  <p className="text-sm text-blue-700 dark:text-blue-300">+ $0.30 per transaction</p>
+                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                    + $0.30 per transaction
+                  </p>
                 </div>
                 <div className="rounded-lg bg-purple-50 p-4 text-center dark:bg-purple-950/30">
-                  <h5 className="mb-1 font-semibold text-purple-900 dark:text-purple-100">You Keep</h5>
+                  <h5 className="mb-1 font-semibold text-purple-900 dark:text-purple-100">
+                    You Keep
+                  </h5>
                   <div className="mb-1 text-3xl font-bold text-purple-600">~82%</div>
                   <p className="text-sm text-purple-700 dark:text-purple-300">Of session price</p>
                 </div>
@@ -323,11 +341,13 @@ async function MentorPaymentsContent() {
                   },
                   {
                     question: 'Can I change my payout method?',
-                    answer: 'Yes, you can update your bank account information anytime through your Stripe dashboard.',
+                    answer:
+                      'Yes, you can update your bank account information anytime through your Stripe dashboard.',
                   },
                   {
                     question: 'Are there any monthly fees?',
-                    answer: 'No monthly fees! You only pay the platform and Stripe fees on completed sessions.',
+                    answer:
+                      'No monthly fees! You only pay the platform and Stripe fees on completed sessions.',
                   },
                 ].map((faq, index) => (
                   <div key={index} className="border-b pb-3 last:border-b-0">

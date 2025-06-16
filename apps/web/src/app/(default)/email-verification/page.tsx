@@ -4,7 +4,11 @@ import { StatusToast } from '~/components/shared/StatusToast'
 import { requireAuth } from '~/lib/auth/auth-utils'
 import { getProfile } from '~/server/queries'
 
-const EmailVerificationPage = async ({ searchParams }: { searchParams: Promise<{ status?: string }> }) => {
+const EmailVerificationPage = async ({
+  searchParams,
+}: {
+  searchParams: Promise<{ status?: string }>
+}) => {
   const { id } = await requireAuth()
   const { status } = await searchParams
 

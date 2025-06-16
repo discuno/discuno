@@ -31,7 +31,9 @@ const ViewProfilePage = async () => {
           </div>
           <div className="flex-1 text-center">
             <h1 className="text-primary text-2xl font-bold">Your Mentor Profile</h1>
-            <p className="text-md text-muted-foreground">View and manage your profile information</p>
+            <p className="text-md text-muted-foreground">
+              View and manage your profile information
+            </p>
           </div>
           <div className="w-24" />
         </div>

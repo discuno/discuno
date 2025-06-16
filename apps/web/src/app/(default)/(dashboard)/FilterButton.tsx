@@ -5,7 +5,14 @@ import { useState } from 'react'
 
 import { useRouter } from 'next/navigation'
 import { Button } from '~/components/ui/button'
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '~/components/ui/command'
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '~/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '~/components/ui/popover'
 import { cn } from '~/lib/utils'
 
@@ -23,7 +30,9 @@ interface FilterProps {
 
 export const FilterButton = ({ filterItems, queryName, startValue }: FilterProps) => {
   const [open, setOpen] = useState(false)
-  const [value, setValue] = useState(filterItems.find(item => item.label === startValue)?.value ?? '')
+  const [value, setValue] = useState(
+    filterItems.find(item => item.label === startValue)?.value ?? ''
+  )
   const router = useRouter()
 
   const handleFilterChange = (itemId: number) => {
@@ -71,7 +80,12 @@ export const FilterButton = ({ filterItems, queryName, startValue }: FilterProps
                   }}
                   className="text-foreground hover:bg-muted"
                 >
-                  <Check className={cn('mr-2 h-4 w-4', value === item.value ? 'opacity-100' : 'opacity-0')} />
+                  <Check
+                    className={cn(
+                      'mr-2 h-4 w-4',
+                      value === item.value ? 'opacity-100' : 'opacity-0'
+                    )}
+                  />
                   {item.label}
                 </CommandItem>
               ))}

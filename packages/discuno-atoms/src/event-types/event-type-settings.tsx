@@ -13,7 +13,12 @@ interface EventTypeSettingsProps {
   className?: string
 }
 
-export function EventTypeSettings({ eventTypeId, onSave, onError, className }: EventTypeSettingsProps) {
+export function EventTypeSettings({
+  eventTypeId,
+  onSave,
+  onError,
+  className,
+}: EventTypeSettingsProps) {
   const { apiClient } = useCalApi()
   const queryClient = useQueryClient()
 
@@ -104,7 +109,11 @@ export function EventTypeSettings({ eventTypeId, onSave, onError, className }: E
     )
   }
 
-  const updateLocation = (index: number, field: keyof Location, value: string | number | boolean) => {
+  const updateLocation = (
+    index: number,
+    field: keyof Location,
+    value: string | number | boolean
+  ) => {
     const locations = [...(formData.locations ?? [])]
     if (locations[index]) {
       locations[index] = { ...locations[index], [field]: value }
@@ -130,7 +139,11 @@ export function EventTypeSettings({ eventTypeId, onSave, onError, className }: E
     )
   }
 
-  const updateBookingField = (index: number, field: keyof BookingField, value: string | boolean | string[]) => {
+  const updateBookingField = (
+    index: number,
+    field: keyof BookingField,
+    value: string | boolean | string[]
+  ) => {
     const fields = [...(formData.bookingFields ?? [])]
     if (fields[index]) {
       fields[index] = { ...fields[index], [field]: value }

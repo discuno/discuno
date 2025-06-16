@@ -27,7 +27,10 @@ export class CalApiClient {
     }
   }
 
-  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<{ data: T; status: string }> {
+  private async request<T>(
+    endpoint: string,
+    options: RequestInit = {}
+  ): Promise<{ data: T; status: string }> {
     const url = `${this.config.apiUrl}${endpoint}`
 
     const response = await fetch(url, {
@@ -60,15 +63,18 @@ export class CalApiClient {
 
   // Authentication methods
   async refreshToken(refreshToken: string): Promise<{ accessToken: string; refreshToken: string }> {
-    const response = await this.request<{ access_token: string; refresh_token: string }>('/oauth/token', {
-      method: 'POST',
-      body: JSON.stringify({
-        grant_type: 'refresh_token',
-        refresh_token: refreshToken,
-        client_id: this.config.clientId,
-        client_secret: this.config.clientSecret,
-      }),
-    })
+    const response = await this.request<{ access_token: string; refresh_token: string }>(
+      '/oauth/token',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          grant_type: 'refresh_token',
+          refresh_token: refreshToken,
+          client_id: this.config.clientId,
+          client_secret: this.config.clientSecret,
+        }),
+      }
+    )
 
     return {
       accessToken: response.data.access_token,
@@ -167,7 +173,9 @@ export class CalApiClient {
     })
     if (timeZone) params.append('timeZone', timeZone)
 
-    const response = await this.request<AvailabilitySlot[]>(`/event-types/${eventTypeId}/slots?${params}`)
+    const response = await this.request<AvailabilitySlot[]>(
+      `/event-types/${eventTypeId}/slots?${params}`
+    )
     return response.data
   }
 
@@ -190,7 +198,9 @@ export class CalApiClient {
     if (take) params.append('take', take.toString())
     if (skip !== undefined) params.append('skip', skip.toString())
 
-    const response = await this.request<{ bookings: Booking[]; nextCursor?: string }>(`/bookings?${params}`)
+    const response = await this.request<{ bookings: Booking[]; nextCursor?: string }>(
+      `/bookings?${params}`
+    )
     return response.data
   }
 
@@ -215,7 +225,10 @@ export class CalApiClient {
     return response.data
   }
 
-  async rescheduleBooking(uid: string, data: { start: string; end: string; reason?: string }): Promise<Booking> {
+  async rescheduleBooking(
+    uid: string,
+    data: { start: string; end: string; reason?: string }
+  ): Promise<Booking> {
     const response = await this.request<Booking>(`/bookings/${uid}/reschedule`, {
       method: 'POST',
       body: JSON.stringify(data),
@@ -330,16 +343,23 @@ export class CalApiClient {
     payloadTemplate?: string
     secret?: string
   }): Promise<{ id: string; webhook_url: string; created_at: string }> {
-    const response = await this.request<{ id: string; webhook_url: string; created_at: string }>('/webhooks', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    })
+    const response = await this.request<{ id: string; webhook_url: string; created_at: string }>(
+      '/webhooks',
+      {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }
+    )
     return response.data
   }
 
-  async getWebhooks(): Promise<{ id: string; subscriberUrl: string; eventTriggers: string[]; active: boolean }[]> {
+  async getWebhooks(): Promise<
+    { id: string; subscriberUrl: string; eventTriggers: string[]; active: boolean }[]
+  > {
     const response =
-      await this.request<{ id: string; subscriberUrl: string; eventTriggers: string[]; active: boolean }[]>('/webhooks')
+      await this.request<
+        { id: string; subscriberUrl: string; eventTriggers: string[]; active: boolean }[]
+      >('/webhooks')
     return response.data
   }
 

@@ -27,12 +27,14 @@ const features = [
   {
     icon: <MessageCircle className="h-6 w-6" />,
     title: 'Ask Anything',
-    description: 'No question too small - from course difficulty to weekend vibes, our mentors share honest insights',
+    description:
+      'No question too small - from course difficulty to weekend vibes, our mentors share honest insights',
   },
   {
     icon: <Target className="h-6 w-6" />,
     title: 'Beyond Applications',
-    description: 'Connect with mentors in your dream major, clubs, cities, or career paths for personalized guidance',
+    description:
+      'Connect with mentors in your dream major, clubs, cities, or career paths for personalized guidance',
   },
 ]
 
@@ -82,7 +84,13 @@ export const WaitlistPage = () => {
 
             <div className="mb-8 flex items-center justify-center gap-4">
               {/* Company Logo/Name */}
-              <img src="/logos/black-icon-logo.svg" alt="Discuno" width={64} height={64} className="dark:hidden" />
+              <img
+                src="/logos/black-icon-logo.svg"
+                alt="Discuno"
+                width={64}
+                height={64}
+                className="dark:hidden"
+              />
               <img
                 src="/logos/white-icon-logo.svg"
                 alt="Discuno"
@@ -104,8 +112,8 @@ export const WaitlistPage = () => {
 
             {/* Hero Subheading */}
             <p className="text-muted-foreground mx-auto mb-8 max-w-3xl text-xl leading-relaxed">
-              Connect with current students at top universities for honest insights about campus life, academics, and
-              everything in between. No fluff, just real experiences.
+              Connect with current students at top universities for honest insights about campus
+              life, academics, and everything in between. No fluff, just real experiences.
             </p>
 
             {/* Floating Questions Preview */}
@@ -161,10 +169,12 @@ export const WaitlistPage = () => {
       <section className="bg-muted/30 py-16 lg:py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mb-16 text-center">
-            <h2 className="text-foreground mb-4 text-3xl font-bold tracking-tight sm:text-4xl">Why Choose Discuno</h2>
+            <h2 className="text-foreground mb-4 text-3xl font-bold tracking-tight sm:text-4xl">
+              Why Choose Discuno
+            </h2>
             <p className="text-muted-foreground mx-auto max-w-2xl text-lg">
-              Skip the college tours. Get real answers from students who are actually living your dream college
-              experience.
+              Skip the college tours. Get real answers from students who are actually living your
+              dream college experience.
             </p>
           </div>
 
@@ -191,10 +201,12 @@ export const WaitlistPage = () => {
       <section className="py-16 lg:py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mb-16 text-center">
-            <h2 className="text-foreground mb-4 text-3xl font-bold tracking-tight sm:text-4xl">Perfect For</h2>
+            <h2 className="text-foreground mb-4 text-3xl font-bold tracking-tight sm:text-4xl">
+              Perfect For
+            </h2>
             <p className="text-muted-foreground mx-auto max-w-2xl text-lg">
-              Whether you&apos;re just starting your college journey or looking ahead to your career, we connect you
-              with the right insiders.
+              Whether you&apos;re just starting your college journey or looking ahead to your
+              career, we connect you with the right insiders.
             </p>
           </div>
 
@@ -254,9 +266,12 @@ export const WaitlistPage = () => {
       <section className="bg-muted/30 py-16 lg:py-24">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <h2 className="text-foreground mb-4 text-3xl font-bold tracking-tight sm:text-4xl">What&apos;s Coming</h2>
+            <h2 className="text-foreground mb-4 text-3xl font-bold tracking-tight sm:text-4xl">
+              What&apos;s Coming
+            </h2>
             <p className="text-muted-foreground mb-12 text-lg">
-              We&apos;re building the ultimate platform for connecting with insiders across colleges and careers
+              We&apos;re building the ultimate platform for connecting with insiders across colleges
+              and careers
             </p>
 
             <div className="grid gap-8 md:grid-cols-3">
@@ -302,8 +317,8 @@ export const WaitlistPage = () => {
             Get Early Access to Insider Insights
           </h2>
           <p className="text-muted-foreground mb-8 text-xl">
-            Join our waitlist and be the first to connect with student insiders when we launch. No spam, just real
-            insights.
+            Join our waitlist and be the first to connect with student insiders when we launch. No
+            spam, just real insights.
           </p>
 
           <div className="mx-auto max-w-md">

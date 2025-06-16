@@ -28,7 +28,9 @@ vi.mock('~/app/(default)/(dashboard)/(post)/PostGrid', () => ({
 
 const { getMajors, getSchools } = await import('~/server/queries')
 const { requireAuth } = await import('~/lib/auth/auth-utils')
-const { fetchPostsAction, fetchPostsByFilterAction } = await import('~/app/(default)/(dashboard)/(post)/actions')
+const { fetchPostsAction, fetchPostsByFilterAction } = await import(
+  '~/app/(default)/(dashboard)/(post)/actions'
+)
 
 // Create a mock HomePage component that mimics the structure
 const MockHomePage = async ({

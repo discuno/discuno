@@ -52,7 +52,9 @@ async function BookingPageContent({ params, searchParams }: BookingPageProps) {
                   </Avatar>
 
                   <div>
-                    <h1 className="text-foreground text-2xl font-bold">{profile.name ?? 'Mentor'}</h1>
+                    <h1 className="text-foreground text-2xl font-bold">
+                      {profile.name ?? 'Mentor'}
+                    </h1>
                     <p className="text-muted-foreground">Mentor & Advisor</p>
                   </div>
 
@@ -87,7 +89,8 @@ async function BookingPageContent({ params, searchParams }: BookingPageProps) {
             <div className="mb-6">
               <h2 className="text-foreground mb-2 text-3xl font-bold">Book a Meeting</h2>
               <p className="text-muted-foreground">
-                Schedule a one-on-one mentoring session with {profile.name?.split(' ')[0] ?? 'this mentor'}
+                Schedule a one-on-one mentoring session with{' '}
+                {profile.name?.split(' ')[0] ?? 'this mentor'}
               </p>
             </div>
 

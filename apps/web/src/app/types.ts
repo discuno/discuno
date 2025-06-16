@@ -114,7 +114,14 @@ export type CalcomLocale =
   | 'uk'
   | 'zh-TW'
 
-export type DayOfWeek = 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday'
+export type DayOfWeek =
+  | 'Monday'
+  | 'Tuesday'
+  | 'Wednesday'
+  | 'Thursday'
+  | 'Friday'
+  | 'Saturday'
+  | 'Sunday'
 
 export interface CreateCalcomUserInput {
   email: string

@@ -92,7 +92,10 @@ export function AdminLoginPage() {
 
         {/* Back to main site link */}
         <div className="mt-6 text-center">
-          <a href="/auth" className="text-muted-foreground hover:text-foreground text-sm transition-colors">
+          <a
+            href="/auth"
+            className="text-muted-foreground hover:text-foreground text-sm transition-colors"
+          >
             ← Back to main site
           </a>
         </div>

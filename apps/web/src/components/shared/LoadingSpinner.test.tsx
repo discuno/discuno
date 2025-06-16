@@ -93,7 +93,9 @@ describe('LoadingSpinner Component', () => {
     })
 
     it('sets aria-label when text is hidden', () => {
-      const { getByRole } = renderWithProviders(<LoadingSpinner showText={false} text="Custom loading" />)
+      const { getByRole } = renderWithProviders(
+        <LoadingSpinner showText={false} text="Custom loading" />
+      )
 
       const spinner = getByRole('status')
       expect(spinner).toHaveAttribute('aria-label', 'Custom loading')

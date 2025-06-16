@@ -15,7 +15,14 @@ interface OAuthConnectProps {
   children?: React.ReactNode
 }
 
-export function OAuthConnect({ appSlug, redirectUri, onSuccess, onError, className, children }: OAuthConnectProps) {
+export function OAuthConnect({
+  appSlug,
+  redirectUri,
+  onSuccess,
+  onError,
+  className,
+  children,
+}: OAuthConnectProps) {
   const { apiClient } = useCalApi()
   const queryClient = useQueryClient()
   const [isConnecting, setIsConnecting] = useState(false)
@@ -37,7 +44,8 @@ export function OAuthConnect({ appSlug, redirectUri, onSuccess, onError, classNa
     mutationFn: async () => {
       if (!apiClient) throw new Error('API client not available')
       const currentUrl = new URL(window.location.href)
-      const redirect = redirectUri ?? `${currentUrl.protocol}//${currentUrl.host}${currentUrl.pathname}`
+      const redirect =
+        redirectUri ?? `${currentUrl.protocol}//${currentUrl.host}${currentUrl.pathname}`
 
       const { url } = await apiClient.getOAuthUrl(appSlug, redirect)
       return url
@@ -106,7 +114,11 @@ export function OAuthConnect({ appSlug, redirectUri, onSuccess, onError, classNa
   }
 
   return (
-    <Button onClick={handleConnect} disabled={isConnecting || connectMutation.isPending} className={className}>
+    <Button
+      onClick={handleConnect}
+      disabled={isConnecting || connectMutation.isPending}
+      className={className}
+    >
       {isConnecting || connectMutation.isPending ? (
         <>
           <span className="mr-2 animate-spin">⟳</span>

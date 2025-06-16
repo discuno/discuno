@@ -15,7 +15,6 @@ indent_size = 2
 # TypeScript and JavaScript files
 [*.{js,jsx,ts,tsx}]
 indent_size = 2
-max_line_length = 100
 
 # JSON files
 [*.json]

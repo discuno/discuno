@@ -3,7 +3,12 @@
 import type { CalcomToken, CreateCalcomUserInput, UpdateCalcomUserInput } from '~/app/types'
 import { env } from '~/env'
 import { requireAuth } from '~/lib/auth/auth-utils'
-import { getCalcomToken, getUserCalcomTokens, storeCalcomTokens, updateCalcomToken } from '~/server/queries'
+import {
+  getCalcomToken,
+  getUserCalcomTokens,
+  storeCalcomTokens,
+  updateCalcomToken,
+} from '~/server/queries'
 
 /**
  * Get user's current Cal.com access token
@@ -119,7 +124,9 @@ const refreshCalcomToken = async (
     }
 
     // Use the expiration times from the API response
-    const newAccessTokenExpiresAt = new Date(refreshData.data.accessTokenExpiresAt ?? Date.now() + 60 * 60 * 1000)
+    const newAccessTokenExpiresAt = new Date(
+      refreshData.data.accessTokenExpiresAt ?? Date.now() + 60 * 60 * 1000
+    )
     const newRefreshTokenExpiresAt = new Date(
       refreshData.data.refreshTokenExpiresAt ?? Date.now() + 365 * 24 * 60 * 60 * 1000
     )
@@ -190,7 +197,9 @@ const forceRefreshCalcomToken = async (
     }
 
     // Use the expiration times from the API response
-    const newAccessTokenExpiresAt = new Date(forceRefreshData.data.accessTokenExpiresAt ?? Date.now() + 60 * 60 * 1000)
+    const newAccessTokenExpiresAt = new Date(
+      forceRefreshData.data.accessTokenExpiresAt ?? Date.now() + 60 * 60 * 1000
+    )
     const newRefreshTokenExpiresAt = new Date(
       forceRefreshData.data.refreshTokenExpiresAt ?? Date.now() + 365 * 24 * 60 * 60 * 1000
     )
@@ -273,20 +282,23 @@ const createCalcomUser = async (
     console.log('Creating Cal.com user for:', { email, name, userId: id })
 
     // Create managed user in Cal.com
-    const response = await fetch(`${env.NEXT_PUBLIC_CALCOM_API_URL}/oauth-clients/${env.NEXT_PUBLIC_X_CAL_ID}/users`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-cal-secret-key': env.X_CAL_SECRET_KEY,
-      },
-      body: JSON.stringify({
-        email,
-        name,
-        timeZone,
-        timeFormat: 12,
-        weekStart: 'Sunday',
-      }),
-    })
+    const response = await fetch(
+      `${env.NEXT_PUBLIC_CALCOM_API_URL}/oauth-clients/${env.NEXT_PUBLIC_X_CAL_ID}/users`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-cal-secret-key': env.X_CAL_SECRET_KEY,
+        },
+        body: JSON.stringify({
+          email,
+          name,
+          timeZone,
+          timeFormat: 12,
+          weekStart: 'Sunday',
+        }),
+      }
+    )
 
     if (!response.ok) {
       const errorText = await response.text()

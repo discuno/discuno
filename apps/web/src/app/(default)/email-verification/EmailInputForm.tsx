@@ -43,7 +43,9 @@ export const EmailInputForm = async ({ isVerified = false }: EmailInputFormProps
 
     try {
       // Generate a verification token
-      const token = jwt.sign({ userId: user.id, eduEmail: lowerCaseEduEmail }, env.JWT_SECRET, { expiresIn: '10m' })
+      const token = jwt.sign({ userId: user.id, eduEmail: lowerCaseEduEmail }, env.JWT_SECRET, {
+        expiresIn: '10m',
+      })
 
       // Construct the verification URL
       const verifyUrl = `${env.NEXT_PUBLIC_BASE_URL}/verify-email/?token=${token}`
@@ -94,13 +96,22 @@ export const EmailInputForm = async ({ isVerified = false }: EmailInputFormProps
           <h1 className="text-primary text-3xl font-bold">
             {isVerified ? 'Edit Your College Email' : 'Enter Your College Email'}
           </h1>
-          <p className="text-muted-foreground">We need to verify your email to ensure you are a student.</p>
+          <p className="text-muted-foreground">
+            We need to verify your email to ensure you are a student.
+          </p>
         </div>
 
         <form action={handleSubmit} className="space-y-4">
           <div>
             <Label htmlFor="email">College Email</Label>
-            <Input id="email" name="email" type="email" placeholder="you@college.edu" required className="mt-1" />
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              placeholder="you@college.edu"
+              required
+              className="mt-1"
+            />
           </div>
           <Button type="submit" className="w-full">
             Send Verification Email

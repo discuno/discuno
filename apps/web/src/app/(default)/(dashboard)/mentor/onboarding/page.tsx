@@ -154,12 +154,17 @@ async function MentorOnboardingContent() {
                       {step.title}
                     </h3>
                     {step.completed && (
-                      <Badge variant="outline" className="border-green-300 bg-green-100 text-xs text-green-700">
+                      <Badge
+                        variant="outline"
+                        className="border-green-300 bg-green-100 text-xs text-green-700"
+                      >
                         Complete
                       </Badge>
                     )}
                   </div>
-                  <p className="text-muted-foreground text-sm leading-relaxed">{step.description}</p>
+                  <p className="text-muted-foreground text-sm leading-relaxed">
+                    {step.description}
+                  </p>
                 </div>
 
                 {/* Action Button */}
@@ -194,10 +199,12 @@ async function MentorOnboardingContent() {
             <div className="mb-4">
               <CheckCircle className="mx-auto h-16 w-16 text-green-500" />
             </div>
-            <h2 className="text-foreground mb-2 text-2xl font-bold">Congratulations! You&apos;re All Set!</h2>
+            <h2 className="text-foreground mb-2 text-2xl font-bold">
+              Congratulations! You&apos;re All Set!
+            </h2>
             <p className="text-muted-foreground mx-auto mb-6 max-w-2xl">
-              Your mentor profile is now live and students can start booking sessions with you. You&apos;ll start
-              earning money for every session you complete.
+              Your mentor profile is now live and students can start booking sessions with you.
+              You&apos;ll start earning money for every session you complete.
             </p>
             <div className="flex justify-center gap-4">
               <Button asChild size="lg">
@@ -214,7 +221,8 @@ async function MentorOnboardingContent() {
           <CardContent className="p-6 text-center">
             <h3 className="mb-2 text-lg font-semibold">Ready to Start Earning?</h3>
             <p className="text-muted-foreground mb-4">
-              Complete the remaining steps to activate your mentor profile and start receiving bookings.
+              Complete the remaining steps to activate your mentor profile and start receiving
+              bookings.
             </p>
             <Button asChild>
               <Link href={steps.find(s => !s.completed)?.href ?? '#'}>Continue Setup</Link>
@@ -236,5 +244,6 @@ export default function MentorOnboardingPage() {
 
 export const metadata = {
   title: 'Mentor Onboarding | Discuno',
-  description: 'Complete your mentor setup and start earning money by sharing your college experience',
+  description:
+    'Complete your mentor setup and start earning money by sharing your college experience',
 }

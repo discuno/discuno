@@ -109,7 +109,10 @@ describe('Auth Actions', () => {
 
       expect(getWaitlistEntry).toHaveBeenCalledWith(email.toLowerCase().trim())
       expect(result).toEqual({ status: 'error' })
-      expect(consoleErrorSpy).toHaveBeenCalledWith('Error in joinWaitlist action:', expect.any(Error))
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        'Error in joinWaitlist action:',
+        expect.any(Error)
+      )
 
       consoleErrorSpy.mockRestore()
     })

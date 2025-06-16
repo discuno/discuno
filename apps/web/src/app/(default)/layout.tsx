@@ -4,7 +4,10 @@ import { NavBar } from '~/app/(default)/(layout)/nav/NavBar'
 import { Footer } from '~/app/(default)/(layout)/Footer'
 import { Suspense } from 'react'
 
-const RootLayout = async ({ children, modal }: Readonly<{ children: React.ReactNode; modal: React.ReactNode }>) => {
+const RootLayout = async ({
+  children,
+  modal,
+}: Readonly<{ children: React.ReactNode; modal: React.ReactNode }>) => {
   return (
     <div className="bg-background flex min-h-screen flex-col">
       <Suspense fallback={<div className="bg-card h-16 animate-pulse border border-b" />}>

@@ -111,10 +111,22 @@ describe('Dashboard Post Actions', () => {
       const filteredPosts: Card[] = [mockPosts[0] as Card]
       vi.mocked(getPostsByFilters).mockResolvedValue(filteredPosts)
 
-      const result = await fetchPostsByFilterAction(schoolId, majorId, graduationYear, limit, offset)
+      const result = await fetchPostsByFilterAction(
+        schoolId,
+        majorId,
+        graduationYear,
+        limit,
+        offset
+      )
 
       expect(requireAuth).toHaveBeenCalledOnce()
-      expect(getPostsByFilters).toHaveBeenCalledWith(schoolId, majorId, graduationYear, limit, offset)
+      expect(getPostsByFilters).toHaveBeenCalledWith(
+        schoolId,
+        majorId,
+        graduationYear,
+        limit,
+        offset
+      )
       expect(result).toEqual(filteredPosts)
     })
 
@@ -210,7 +222,11 @@ describe('Dashboard Post Actions', () => {
       vi.mocked(getPosts).mockResolvedValue(mockPosts)
       vi.mocked(getPostsByFilters).mockResolvedValue(mockPosts)
 
-      const promises = [fetchPostsAction(), fetchPostsByFilterAction(1, null, null), fetchPostsAction(10, 5)]
+      const promises = [
+        fetchPostsAction(),
+        fetchPostsByFilterAction(1, null, null),
+        fetchPostsAction(10, 5),
+      ]
 
       const results = await Promise.all(promises)
 

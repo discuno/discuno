@@ -34,10 +34,16 @@ export const BookingButton = ({ bookingData, children, className }: BookingButto
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="max-h-[90vh] max-w-4xl overflow-hidden p-0">
           <DialogHeader className="p-6 pb-0">
-            <DialogTitle className="text-xl font-semibold">Schedule with {bookingData.name}</DialogTitle>
+            <DialogTitle className="text-xl font-semibold">
+              Schedule with {bookingData.name}
+            </DialogTitle>
             <div className="mt-2 flex items-center gap-3">
               {bookingData.image && (
-                <Image src={bookingData.image} alt={bookingData.name} className="h-10 w-10 rounded-full object-cover" />
+                <Image
+                  src={bookingData.image}
+                  alt={bookingData.name}
+                  className="h-10 w-10 rounded-full object-cover"
+                />
               )}
               <div>
                 <p className="text-muted-foreground text-sm">

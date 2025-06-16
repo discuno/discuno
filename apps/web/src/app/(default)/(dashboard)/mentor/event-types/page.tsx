@@ -68,7 +68,9 @@ async function MentorEventTypesContent() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-foreground text-4xl font-bold">Event Types</h1>
-            <p className="text-muted-foreground mt-2">Create and manage different types of mentoring sessions</p>
+            <p className="text-muted-foreground mt-2">
+              Create and manage different types of mentoring sessions
+            </p>
           </div>
           <div className="flex items-center gap-3">
             {hasCalcomIntegration ? (
@@ -129,7 +131,8 @@ async function MentorEventTypesContent() {
                     title: 'College Q&A Session',
                     duration: '30 minutes',
                     price: '$25',
-                    description: 'Answer questions about your college experience, campus life, and academics',
+                    description:
+                      'Answer questions about your college experience, campus life, and academics',
                     popular: true,
                     color: 'blue',
                   },
@@ -138,7 +141,8 @@ async function MentorEventTypesContent() {
                     title: 'Application Review',
                     duration: '60 minutes',
                     price: '$50',
-                    description: 'Review and provide feedback on essays, resumes, or application materials',
+                    description:
+                      'Review and provide feedback on essays, resumes, or application materials',
                     popular: false,
                     color: 'purple',
                   },
@@ -147,12 +151,16 @@ async function MentorEventTypesContent() {
                     title: 'Major Deep Dive',
                     duration: '45 minutes',
                     price: '$35',
-                    description: 'Detailed discussion about your academic program and course experiences',
+                    description:
+                      'Detailed discussion about your academic program and course experiences',
                     popular: false,
                     color: 'green',
                   },
                 ].map((template, index) => (
-                  <Card key={index} className="relative border-dashed transition-all hover:border-solid">
+                  <Card
+                    key={index}
+                    className="relative border-dashed transition-all hover:border-solid"
+                  >
                     {template.popular && (
                       <Badge className="absolute -right-2 -top-2 bg-orange-100 text-xs text-orange-800">
                         Most Popular
@@ -178,7 +186,9 @@ async function MentorEventTypesContent() {
                         <DollarSign className="h-4 w-4" />
                         {template.price}
                       </div>
-                      <p className="text-muted-foreground mb-4 text-sm leading-relaxed">{template.description}</p>
+                      <p className="text-muted-foreground mb-4 text-sm leading-relaxed">
+                        {template.description}
+                      </p>
                       <Button variant="outline" className="w-full">
                         Use This Template
                       </Button>
@@ -197,12 +207,17 @@ async function MentorEventTypesContent() {
                   <Settings className="h-5 w-5" />
                   Your Event Types
                 </CardTitle>
-                <p className="text-muted-foreground text-sm">Manage your existing mentoring session types</p>
+                <p className="text-muted-foreground text-sm">
+                  Manage your existing mentoring session types
+                </p>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   {existingEventTypes.map(eventType => (
-                    <div key={eventType.id} className="flex items-center justify-between rounded-lg border p-4">
+                    <div
+                      key={eventType.id}
+                      className="flex items-center justify-between rounded-lg border p-4"
+                    >
                       <div className="flex items-center gap-4">
                         <div className="bg-primary/10 flex h-10 w-10 items-center justify-center rounded-lg">
                           <Calendar className="text-primary h-5 w-5" />
@@ -282,24 +297,36 @@ async function MentorEventTypesContent() {
             <CardContent>
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <div className="rounded-lg bg-blue-50 p-4 dark:bg-blue-950/30">
-                  <h5 className="mb-2 font-semibold text-blue-900 dark:text-blue-100">Q&A Sessions</h5>
+                  <h5 className="mb-2 font-semibold text-blue-900 dark:text-blue-100">
+                    Q&A Sessions
+                  </h5>
                   <div className="mb-1 text-2xl font-bold text-blue-600">$20-35</div>
                   <p className="text-sm text-blue-700 dark:text-blue-300">
                     30-45 minute conversations about college life
                   </p>
                 </div>
                 <div className="rounded-lg bg-green-50 p-4 dark:bg-green-950/30">
-                  <h5 className="mb-2 font-semibold text-green-900 dark:text-green-100">Application Reviews</h5>
+                  <h5 className="mb-2 font-semibold text-green-900 dark:text-green-100">
+                    Application Reviews
+                  </h5>
                   <div className="mb-1 text-2xl font-bold text-green-600">$40-70</div>
-                  <p className="text-sm text-green-700 dark:text-green-300">Essay feedback and application guidance</p>
+                  <p className="text-sm text-green-700 dark:text-green-300">
+                    Essay feedback and application guidance
+                  </p>
                 </div>
                 <div className="rounded-lg bg-purple-50 p-4 dark:bg-purple-950/30">
-                  <h5 className="mb-2 font-semibold text-purple-900 dark:text-purple-100">Academic Consulting</h5>
+                  <h5 className="mb-2 font-semibold text-purple-900 dark:text-purple-100">
+                    Academic Consulting
+                  </h5>
                   <div className="mb-1 text-2xl font-bold text-purple-600">$50-80</div>
-                  <p className="text-sm text-purple-700 dark:text-purple-300">Course selection and major planning</p>
+                  <p className="text-sm text-purple-700 dark:text-purple-300">
+                    Course selection and major planning
+                  </p>
                 </div>
                 <div className="rounded-lg bg-orange-50 p-4 dark:bg-orange-950/30">
-                  <h5 className="mb-2 font-semibold text-orange-900 dark:text-orange-100">Specialized Topics</h5>
+                  <h5 className="mb-2 font-semibold text-orange-900 dark:text-orange-100">
+                    Specialized Topics
+                  </h5>
                   <div className="mb-1 text-2xl font-bold text-orange-600">$60+</div>
                   <p className="text-sm text-orange-700 dark:text-orange-300">
                     Pre-med, engineering, or other specialized advice
@@ -315,7 +342,8 @@ async function MentorEventTypesContent() {
             <Calendar className="text-muted-foreground mx-auto mb-4 h-16 w-16" />
             <h3 className="mb-2 text-lg font-semibold">Cal.com Integration Required</h3>
             <p className="text-muted-foreground mx-auto mb-4 max-w-md">
-              Connect your Cal.com account first to create and manage different types of mentoring sessions.
+              Connect your Cal.com account first to create and manage different types of mentoring
+              sessions.
             </p>
             <Button asChild>
               <Link href="/mentor/onboarding">Complete Integration</Link>

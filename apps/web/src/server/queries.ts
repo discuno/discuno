@@ -10,7 +10,16 @@ import type {
 } from '~/app/types'
 import { requireAuth } from '~/lib/auth/auth-utils'
 import { db } from '~/server/db'
-import { calcomTokens, majors, posts, schools, userMajors, userProfiles, users, userSchools } from '~/server/db/schema'
+import {
+  calcomTokens,
+  majors,
+  posts,
+  schools,
+  userMajors,
+  userProfiles,
+  users,
+  userSchools,
+} from '~/server/db/schema'
 
 export const getPosts = async (limit = 20, offset = 0): Promise<Card[]> => {
   await requireAuth()
@@ -319,7 +328,7 @@ export const updateCalcomToken = async (token: CalcomToken, userId: string): Pro
       })
       .where(eq(calcomTokens.userId, userId))
 
-    if (res.rowCount === 0) {
+    if (res.length === 0) {
       throw new Error('Failed to update calcom token')
     }
   } catch (err) {
@@ -373,7 +382,7 @@ export const storeCalcomTokens = async ({
       refreshTokenExpiresAt: refreshExpiry,
     })
 
-    if (res.rowCount === 0) {
+    if (res.length === 0) {
       throw new Error('Failed to store calcom tokens')
     }
   } catch (err) {
@@ -443,7 +452,7 @@ export const updateEduEmail = async (userId: string, eduEmail: string): Promise<
       })
       .where(eq(userProfiles.userId, userId))
 
-    if (res.rowCount === 0) {
+    if (res.length === 0) {
       throw new Error('Failed to update edu email')
     }
   } catch (err) {

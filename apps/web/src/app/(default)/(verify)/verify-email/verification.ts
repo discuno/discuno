@@ -24,20 +24,23 @@ const createCalcomUser = async (data: CreateCalcomUserInput, userId: string) => 
     console.log('Creating Cal.com user for:', { email, name, userId }) // Debug log
 
     // Create managed user in Cal.com
-    const response = await fetch(`${env.NEXT_PUBLIC_CALCOM_API_URL}/oauth-clients/${env.NEXT_PUBLIC_X_CAL_ID}/users`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-cal-secret-key': env.X_CAL_SECRET_KEY,
-      },
-      body: JSON.stringify({
-        email,
-        name,
-        timeZone,
-        timeFormat: 12,
-        weekStart: 'Sunday',
-      }),
-    })
+    const response = await fetch(
+      `${env.NEXT_PUBLIC_CALCOM_API_URL}/oauth-clients/${env.NEXT_PUBLIC_X_CAL_ID}/users`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-cal-secret-key': env.X_CAL_SECRET_KEY,
+        },
+        body: JSON.stringify({
+          email,
+          name,
+          timeZone,
+          timeFormat: 12,
+          weekStart: 'Sunday',
+        }),
+      }
+    )
 
     // Check HTTP response status first
     if (!response.ok) {

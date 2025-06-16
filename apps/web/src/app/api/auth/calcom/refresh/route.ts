@@ -10,7 +10,10 @@ export const GET = async (req: NextRequest): Promise<NextResponse> => {
     // Extract access token from Authorization header
     const authHeader = req.headers.get('Authorization')
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Missing or invalid Authorization header' }, { status: 401 })
+      return NextResponse.json(
+        { error: 'Missing or invalid Authorization header' },
+        { status: 401 }
+      )
     }
 
     const accessToken = authHeader.substring(7) // Remove "Bearer " prefix

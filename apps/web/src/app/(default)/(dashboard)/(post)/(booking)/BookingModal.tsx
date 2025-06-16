@@ -46,7 +46,9 @@ export const BookingModal = ({ bookingData, children, className }: BookingModalP
                   />
                 )}
                 <div className="flex-1">
-                  <DialogTitle className="mb-2 text-2xl font-bold">Schedule with {bookingData.name}</DialogTitle>
+                  <DialogTitle className="mb-2 text-2xl font-bold">
+                    Schedule with {bookingData.name}
+                  </DialogTitle>
                   <div className="mb-3 flex flex-wrap gap-2">
                     <Badge variant="secondary" className="bg-primary/10 text-primary">
                       {bookingData.school}
@@ -54,7 +56,9 @@ export const BookingModal = ({ bookingData, children, className }: BookingModalP
                     <Badge variant="outline">{bookingData.major}</Badge>
                   </div>
                   {bookingData.bio && (
-                    <p className="text-muted-foreground text-sm leading-relaxed">{bookingData.bio}</p>
+                    <p className="text-muted-foreground text-sm leading-relaxed">
+                      {bookingData.bio}
+                    </p>
                   )}
                 </div>
               </div>

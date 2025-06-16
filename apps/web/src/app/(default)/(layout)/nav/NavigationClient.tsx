@@ -28,7 +28,9 @@ export function NavBarBase({ profilePic, isMentor }: { profilePic: string; isMen
                       className="from-primary/10 to-primary/5 hover:bg-primary/10 dark:from-primary/20 dark:to-primary/10 dark:hover:bg-primary/20 bg-linear-to-b outline-hidden flex h-full w-full select-none flex-col justify-end rounded-md p-6 no-underline transition-colors focus:shadow-md"
                       href="/browse"
                     >
-                      <div className="text-foreground mb-2 mt-4 text-lg font-medium">Browse Mentors</div>
+                      <div className="text-foreground mb-2 mt-4 text-lg font-medium">
+                        Browse Mentors
+                      </div>
                       <p className="text-muted-foreground text-sm leading-tight">
                         Find college students who match your interests and goals
                       </p>

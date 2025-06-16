@@ -7,7 +7,8 @@ const features = [
   {
     icon: <Users className="h-6 w-6" />,
     title: 'Expert Mentors',
-    description: 'Connect with verified college students and recent graduates from top universities',
+    description:
+      'Connect with verified college students and recent graduates from top universities',
   },
   {
     icon: <MessageCircle className="h-6 w-6" />,
@@ -21,7 +22,16 @@ const features = [
   },
 ]
 
-const universities = ['Harvard', 'Stanford', 'MIT', 'Yale', 'Princeton', 'Columbia', 'UPenn', 'Dartmouth']
+const universities = [
+  'Harvard',
+  'Stanford',
+  'MIT',
+  'Yale',
+  'Princeton',
+  'Columbia',
+  'UPenn',
+  'Dartmouth',
+]
 
 const testimonials = [
   {
@@ -41,7 +51,8 @@ const testimonials = [
   {
     name: 'Emily Rodriguez',
     role: "MIT '26",
-    content: 'Having a mentor who understood my goals helped me focus on what truly mattered for my applications.',
+    content:
+      'Having a mentor who understood my goals helped me focus on what truly mattered for my applications.',
     rating: 5,
   },
 ]
@@ -81,8 +92,8 @@ export function LoginPage() {
 
               {/* Hero Subheading */}
               <p className="text-muted-foreground mb-8 max-w-xl text-lg">
-                Connect with experienced mentors from top universities. Get personalized guidance, expert advice, and
-                proven strategies to succeed in your college applications.
+                Connect with experienced mentors from top universities. Get personalized guidance,
+                expert advice, and proven strategies to succeed in your college applications.
               </p>
 
               {/* Trust Indicators */}
@@ -128,9 +139,12 @@ export function LoginPage() {
       <section className="bg-muted/30 py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mb-12 text-center">
-            <h2 className="text-foreground mb-4 text-3xl font-bold tracking-tight sm:text-4xl">Why Choose Discuno?</h2>
+            <h2 className="text-foreground mb-4 text-3xl font-bold tracking-tight sm:text-4xl">
+              Why Choose Discuno?
+            </h2>
             <p className="text-muted-foreground mx-auto max-w-2xl text-lg">
-              We provide the guidance and support you need to make informed decisions about your academic future.
+              We provide the guidance and support you need to make informed decisions about your
+              academic future.
             </p>
           </div>
 
@@ -154,7 +168,9 @@ export function LoginPage() {
       <section className="py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mb-12 text-center">
-            <h2 className="text-foreground mb-4 text-3xl font-bold tracking-tight sm:text-4xl">Success Stories</h2>
+            <h2 className="text-foreground mb-4 text-3xl font-bold tracking-tight sm:text-4xl">
+              Success Stories
+            </h2>
             <p className="text-muted-foreground mx-auto max-w-2xl text-lg">
               Hear from students who achieved their college dreams with our guidance.
             </p>
@@ -169,7 +185,9 @@ export function LoginPage() {
                       <Star key={i} className="fill-primary text-primary h-4 w-4" />
                     ))}
                   </div>
-                  <blockquote className="text-muted-foreground mb-4">&ldquo;{testimonial.content}&rdquo;</blockquote>
+                  <blockquote className="text-muted-foreground mb-4">
+                    &ldquo;{testimonial.content}&rdquo;
+                  </blockquote>
                   <div>
                     <div className="text-foreground font-semibold">{testimonial.name}</div>
                     <div className="text-muted-foreground text-sm">{testimonial.role}</div>
@@ -188,7 +206,8 @@ export function LoginPage() {
             Ready to Start Your Journey?
           </h2>
           <p className="text-muted-foreground mb-8 text-xl">
-            Join thousands of students who have successfully navigated their college applications with expert guidance.
+            Join thousands of students who have successfully navigated their college applications
+            with expert guidance.
           </p>
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
             <LoginForm variant="cta" />

@@ -24,7 +24,9 @@ describe('Utils', () => {
 
     it('handles custom format options', () => {
       const date = new Date('2024-01-15T10:30:00Z')
-      expect(formatDate(date, { month: 'short', day: 'numeric', year: 'numeric' })).toMatch(/Jan 15, 2024/)
+      expect(formatDate(date, { month: 'short', day: 'numeric', year: 'numeric' })).toMatch(
+        /Jan 15, 2024/
+      )
     })
   })
 

@@ -55,7 +55,9 @@ export function LoginForm({ variant = 'default' }: LoginFormProps) {
   return (
     <Card className="border/50 bg-card/95 w-full shadow-xl backdrop-blur-sm">
       <CardHeader className="space-y-2 pb-6">
-        <CardTitle className="text-foreground text-center text-2xl font-bold">Welcome to Discuno</CardTitle>
+        <CardTitle className="text-foreground text-center text-2xl font-bold">
+          Welcome to Discuno
+        </CardTitle>
         <CardDescription className="text-muted-foreground text-center">
           Sign in to connect with expert college mentors and start your journey to success.
         </CardDescription>
@@ -107,7 +109,8 @@ export function LoginForm({ variant = 'default' }: LoginFormProps) {
             <span className="text-foreground text-sm font-medium">Launching Soon</span>
           </div>
           <p className="text-muted-foreground text-xs">
-            We&apos;re putting the finishing touches on the platform. Sign up now to be first in line!
+            We&apos;re putting the finishing touches on the platform. Sign up now to be first in
+            line!
           </p>
         </div>
 

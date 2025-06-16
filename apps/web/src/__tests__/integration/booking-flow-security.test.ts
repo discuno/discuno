@@ -85,7 +85,12 @@ describe('Booking Flow Security Integration Tests', () => {
   describe('End-to-End Booking Security', () => {
     it('should prevent unauthorized booking creation', async () => {
       // Simulate booking creation request
-      const createBooking = async (userId: string, eventTypeId: number, timeSlot: string, userRole: string) => {
+      const createBooking = async (
+        userId: string,
+        eventTypeId: number,
+        timeSlot: string,
+        userRole: string
+      ) => {
         // Authentication check
         const user = mockDatabase.users.get(userId)
         if (!user) {
@@ -130,9 +135,9 @@ describe('Booking Flow Security Integration Tests', () => {
       expect(validBooking.status).toBe('pending_payment')
 
       // Test unauthorized user
-      await expect(createBooking('invalid_user', 123, '2024-06-15T11:00:00Z', 'student')).rejects.toThrow(
-        'Authentication required'
-      )
+      await expect(
+        createBooking('invalid_user', 123, '2024-06-15T11:00:00Z', 'student')
+      ).rejects.toThrow('Authentication required')
 
       // Test unverified user
       mockDatabase.users.set('unverified_user', {
@@ -142,14 +147,14 @@ describe('Booking Flow Security Integration Tests', () => {
         isEduVerified: false,
       })
 
-      await expect(createBooking('unverified_user', 123, '2024-06-15T14:00:00Z', 'student')).rejects.toThrow(
-        'Email verification required'
-      )
+      await expect(
+        createBooking('unverified_user', 123, '2024-06-15T14:00:00Z', 'student')
+      ).rejects.toThrow('Email verification required')
 
       // Test invalid time slot
-      await expect(createBooking('user123', 123, '2024-06-15T99:00:00Z', 'student')).rejects.toThrow(
-        'Time slot not available'
-      )
+      await expect(
+        createBooking('user123', 123, '2024-06-15T99:00:00Z', 'student')
+      ).rejects.toThrow('Time slot not available')
     })
 
     it('should prevent payment manipulation attacks', async () => {
@@ -231,7 +236,9 @@ describe('Booking Flow Security Integration Tests', () => {
       })
 
       // Test double payment prevention
-      await expect(processPayment('booking123', 50, 'USD')).rejects.toThrow('Payment already processed')
+      await expect(processPayment('booking123', 50, 'USD')).rejects.toThrow(
+        'Payment already processed'
+      )
     })
 
     it('should handle concurrent booking attempts securely', async () => {
@@ -303,7 +310,9 @@ describe('Booking Flow Security Integration Tests', () => {
       failures.forEach(failure => {
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
         if (failure.status === 'rejected') {
-          expect(['Booking already in progress', 'Time slot no longer available']).toContain(failure.reason.message)
+          expect(['Booking already in progress', 'Time slot no longer available']).toContain(
+            failure.reason.message
+          )
         }
       })
     })
@@ -405,9 +414,9 @@ describe('Booking Flow Security Integration Tests', () => {
 
       // Test unauthorized cancellation
       futureBooking.status = 'confirmed'
-      await expect(cancelBooking('booking_future', 'other_user', 'Trying to cancel')).rejects.toThrow(
-        'Unauthorized to cancel this booking'
-      )
+      await expect(
+        cancelBooking('booking_future', 'other_user', 'Trying to cancel')
+      ).rejects.toThrow('Unauthorized to cancel this booking')
 
       // Test late cancellation policy
       const lateBooking = {
@@ -561,7 +570,11 @@ describe('Booking Flow Security Integration Tests', () => {
         })
       }
 
-      const createBookingWithAudit = async (userId: string, eventTypeId: number, timeSlot: string) => {
+      const createBookingWithAudit = async (
+        userId: string,
+        eventTypeId: number,
+        timeSlot: string
+      ) => {
         const bookingId = `booking_audit_${Date.now()}`
 
         logAuditEvent('BOOKING_CREATED', bookingId, userId, {

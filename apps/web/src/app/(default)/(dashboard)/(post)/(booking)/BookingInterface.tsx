@@ -23,7 +23,12 @@ interface BookingData {
   major: string
 }
 
-export const BookingInterface = async ({ userId, children, variant = 'button', className }: BookingInterfaceProps) => {
+export const BookingInterface = async ({
+  userId,
+  children,
+  variant = 'button',
+  className,
+}: BookingInterfaceProps) => {
   // Server-side data fetching
   const profile = await getFullProfile(userId)
 

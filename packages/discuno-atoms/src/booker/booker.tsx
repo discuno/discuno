@@ -64,7 +64,9 @@ export function Booker({
 
   // Add hydration check to prevent SSR/client mismatches
   // In test environment, assume we're hydrated
-  const [isHydrated, setIsHydrated] = useState(typeof window !== 'undefined' && process.env.NODE_ENV === 'test')
+  const [isHydrated, setIsHydrated] = useState(
+    typeof window !== 'undefined' && process.env.NODE_ENV === 'test'
+  )
 
   useEffect(() => {
     setIsHydrated(true)
@@ -79,9 +81,9 @@ export function Booker({
   }
 
   // All hooks must be at the top level
-  const [currentStep, setCurrentStep] = useState<'eventType' | 'datetime' | 'form' | 'confirmation'>(
-    computeInitialStep()
-  )
+  const [currentStep, setCurrentStep] = useState<
+    'eventType' | 'datetime' | 'form' | 'confirmation'
+  >(computeInitialStep())
   const [selectedDate, setSelectedDate] = useState<string | null>(date ?? null)
   const [selectedTime, setSelectedTime] = useState<string | null>(null)
   const [selectedEventType, setSelectedEventType] = useState<EventType | null>(null)
@@ -123,7 +125,12 @@ export function Booker({
       const startTime = `${selectedDate}T00:00:00.000Z`
       const endTime = `${selectedDate}T23:59:59.999Z`
 
-      return await apiClient.getAvailableSlots(eventType.id, startTime, endTime, bookingData.timeZone)
+      return await apiClient.getAvailableSlots(
+        eventType.id,
+        startTime,
+        endTime,
+        bookingData.timeZone
+      )
     },
     enabled: !!(isHydrated && apiClient && eventType?.id && selectedDate),
     retry: 1,
@@ -322,7 +329,9 @@ export function Booker({
         <div className="step-form">
           <div className="booking-summary">
             <h3>{selectedEventType?.title}</h3>
-            <p>{format(new Date(`${selectedDate}T${selectedTime}`), 'EEEE, MMMM d, yyyy at h:mm a')}</p>
+            <p>
+              {format(new Date(`${selectedDate}T${selectedTime}`), 'EEEE, MMMM d, yyyy at h:mm a')}
+            </p>
             <p>{selectedEventType?.length} minutes</p>
           </div>
 
@@ -406,7 +415,9 @@ export function Booker({
           <p>Your booking has been successfully created.</p>
           <div className="confirmation-details">
             <h3>{selectedEventType?.title}</h3>
-            <p>{format(new Date(`${selectedDate}T${selectedTime}`), 'EEEE, MMMM d, yyyy at h:mm a')}</p>
+            <p>
+              {format(new Date(`${selectedDate}T${selectedTime}`), 'EEEE, MMMM d, yyyy at h:mm a')}
+            </p>
             <p>{selectedEventType?.length} minutes</p>
           </div>
         </div>

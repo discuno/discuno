@@ -10,7 +10,11 @@ interface CalEmbedButtonProps {
   children: React.ReactNode
 }
 
-export const CalEmbedButton = ({ username, eventSlug = '30min', children }: CalEmbedButtonProps) => {
+export const CalEmbedButton = ({
+  username,
+  eventSlug = '30min',
+  children,
+}: CalEmbedButtonProps) => {
   const [showBooker, setShowBooker] = useState(false)
 
   if (showBooker) {

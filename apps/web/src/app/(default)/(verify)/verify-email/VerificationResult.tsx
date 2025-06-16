@@ -25,11 +25,18 @@ export const VerificationResult = ({ success, message }: VerificationResultProps
         </h2>
         <p className="mt-2 text-center">{message}</p>
         {!success && (
-          <button onClick={() => window.close()} className="mt-4 w-full rounded bg-blue-600 px-4 py-2 text-white">
+          <button
+            onClick={() => window.close()}
+            className="mt-4 w-full rounded bg-blue-600 px-4 py-2 text-white"
+          >
             Close
           </button>
         )}
-        {success && <p className="mt-4 text-center text-sm text-gray-500">You can now return to the original tab.</p>}
+        {success && (
+          <p className="mt-4 text-center text-sm text-gray-500">
+            You can now return to the original tab.
+          </p>
+        )}
       </div>
     </div>
   )

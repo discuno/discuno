@@ -1,1 +1,8 @@
-export { CalProvider, useCalContext, useCal, useCalApi, useCalConfig, useCalAuth } from './cal-provider'
+export {
+  CalProvider,
+  useCalContext,
+  useCal,
+  useCalApi,
+  useCalConfig,
+  useCalAuth,
+} from './cal-provider'

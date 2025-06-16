@@ -11,7 +11,9 @@ const RootLoading = () => {
           </div>
           <div className="space-y-2 text-center">
             <h2 className="text-primary text-xl font-semibold">Loading</h2>
-            <p className="text-muted-foreground text-sm">Please wait while we prepare your experience...</p>
+            <p className="text-muted-foreground text-sm">
+              Please wait while we prepare your experience...
+            </p>
           </div>
         </div>
       </div>
