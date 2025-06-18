@@ -1,14 +1,13 @@
-import { Suspense } from 'react'
-import { getFullProfile } from '~/server/queries'
-import { BookingModal } from '~/app/(default)/(dashboard)/(post)/(booking)/BookingModal'
-import { BookingButton } from '~/app/(default)/(dashboard)/(post)/(booking)/BookingButton'
 import { Calendar } from 'lucide-react'
+import { Suspense } from 'react'
+import { BookingButton } from '~/app/(default)/(dashboard)/(post)/(booking)/BookingButton'
 import { BookingEmbed } from '~/app/(default)/(dashboard)/(post)/(booking)/BookingEmbed'
 import { BookingEmbedSkeleton } from '~/app/(default)/(dashboard)/(post)/(booking)/BookingEmbedSkeleton'
+import { BookingModal } from '~/app/(default)/(dashboard)/(post)/(booking)/BookingModal'
 import { CalProviderWrapper } from '~/lib/providers/CalProviderWrapper'
+import { getFullProfile } from '~/server/queries'
 
 interface BookingInterfaceProps {
-  userId: string
   children?: React.ReactNode
   variant?: 'button' | 'modal' | 'inline'
   className?: string
@@ -24,13 +23,12 @@ interface BookingData {
 }
 
 export const BookingInterface = async ({
-  userId,
   children,
   variant = 'button',
   className,
 }: BookingInterfaceProps) => {
   // Server-side data fetching
-  const profile = await getFullProfile(userId)
+  const profile = await getFullProfile()
 
   if (!profile) {
     return null

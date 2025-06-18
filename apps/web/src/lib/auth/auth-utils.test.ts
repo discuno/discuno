@@ -38,20 +38,21 @@ describe('requireAuth', () => {
     mockAuth.mockResolvedValue(mockSession as any)
 
     const result = await requireAuth()
-    expect(result).toEqual(mockSession)
-  })
-
-  it('should redirect when no session exists', async () => {
-    mockAuth.mockResolvedValue(null as any)
-    mockRedirect.mockImplementation(() => {
-      throw new Error('NEXT_REDIRECT')
+    // Should return the user object with guaranteed id
+    expect(result).toEqual({
+      id: 'user123',
+      email: 'test@example.com',
+      name: 'Test User',
     })
-
-    await expect(requireAuth()).rejects.toThrow('NEXT_REDIRECT')
-    expect(mockRedirect).toHaveBeenCalledWith('/auth')
   })
 
-  it('should return session when session exists', async () => {
+  it('should throw UnauthenticatedError when no session exists', async () => {
+    mockAuth.mockResolvedValue(null as any)
+
+    await expect(requireAuth()).rejects.toThrow('Not authenticated')
+  })
+
+  it('should throw UnauthenticatedError when session exists but user is null', async () => {
     const mockSession = {
       user: null,
       expires: '2025-12-31',
@@ -59,11 +60,10 @@ describe('requireAuth', () => {
 
     mockAuth.mockResolvedValue(mockSession as any)
 
-    const result = await requireAuth()
-    expect(result).toEqual(mockSession)
+    await expect(requireAuth()).rejects.toThrow('Not authenticated')
   })
 
-  it('should return session when user exists but no id', async () => {
+  it('should throw UnauthenticatedError when user exists but no id', async () => {
     const mockSession = {
       user: {
         id: null,
@@ -75,11 +75,10 @@ describe('requireAuth', () => {
 
     mockAuth.mockResolvedValue(mockSession as any)
 
-    const result = await requireAuth()
-    expect(result).toEqual(mockSession)
+    await expect(requireAuth()).rejects.toThrow('Not authenticated')
   })
 
-  it('should return session when user id is empty string', async () => {
+  it('should throw UnauthenticatedError when user id is empty string', async () => {
     const mockSession = {
       user: {
         id: '',
@@ -91,19 +90,13 @@ describe('requireAuth', () => {
 
     mockAuth.mockResolvedValue(mockSession as any)
 
-    const result = await requireAuth()
-    expect(result).toEqual(mockSession)
+    await expect(requireAuth()).rejects.toThrow('Not authenticated')
   })
 
-  it('should redirect when auth function throws error', async () => {
-    // When auth() throws an error, getCurrentSession catches it and returns null
-    // Then requireAuth redirects to /auth
+  it('should throw UnauthenticatedError when auth function throws error', async () => {
+    // When auth() throws an error, requireAuth should also throw
     mockAuth.mockRejectedValue(new Error('Database connection failed'))
-    mockRedirect.mockImplementation(() => {
-      throw new Error('NEXT_REDIRECT')
-    })
 
-    await expect(requireAuth()).rejects.toThrow('NEXT_REDIRECT')
-    expect(mockRedirect).toHaveBeenCalledWith('/auth')
+    await expect(requireAuth()).rejects.toThrow('Database connection failed')
   })
 })

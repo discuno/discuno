@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cn } from './utils'
+import { cn } from './tailwind'
 
 describe('cn utility function', () => {
   it('merges multiple class strings correctly', () => {

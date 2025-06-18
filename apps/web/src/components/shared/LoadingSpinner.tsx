@@ -1,6 +1,6 @@
 import { cva, type VariantProps } from 'class-variance-authority'
 import React from 'react'
-import { cn } from '~/lib/utils'
+import { cn } from '~/lib/utils/tailwind'
 
 const loadingSpinnerVariants = cva('inline-flex items-center justify-center gap-2', {
   variants: {

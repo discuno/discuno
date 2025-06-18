@@ -8,6 +8,8 @@ import globals from 'globals'
 import tseslint from 'typescript-eslint'
 // @ts-expect-error - plugin has no types
 import drizzle from 'eslint-plugin-drizzle'
+// @ts-expect-error - plugin has no types
+import pluginNext from '@next/eslint-plugin-next'
 
 // =============================================================================
 // REUSABLE RULE SETS (DRY Principle)
@@ -260,8 +262,11 @@ export default [
     plugins: {
       drizzle,
       import: pluginImport,
+      '@next/next': pluginNext,
     },
     rules: {
+      ...pluginNext.configs.recommended.rules,
+      ...pluginNext.configs['core-web-vitals'].rules,
       'import/no-default-export': 'error',
       // Drizzle ORM safety rules
       'drizzle/enforce-delete-with-where': [

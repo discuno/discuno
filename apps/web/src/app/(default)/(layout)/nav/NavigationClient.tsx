@@ -1,8 +1,7 @@
 'use client'
 
-import * as React from 'react'
 import Link from 'next/link'
-import { cn } from '~/lib/utils'
+import * as React from 'react'
 import { AvatarIcon } from '~/components/shared/UserAvatar'
 import {
   NavigationMenu,
@@ -12,6 +11,7 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from '~/components/ui/navigation-menu'
+import { cn } from '~/lib/utils/tailwind'
 
 export function NavBarBase({ profilePic, isMentor }: { profilePic: string; isMentor: boolean }) {
   return (

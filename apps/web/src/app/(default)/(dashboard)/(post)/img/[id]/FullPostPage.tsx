@@ -226,11 +226,7 @@ export const PostPage = async ({ id }: { id: string }) => {
                   <CardTitle className="text-xl">Connect with {post.name}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <BookingInterface
-                    userId={post.createdById ?? ''}
-                    variant="modal"
-                    className="w-full"
-                  >
+                  <BookingInterface variant="modal" className="w-full">
                     <Calendar className="mr-2 h-4 w-4" />
                     Schedule Meeting
                   </BookingInterface>

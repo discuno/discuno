@@ -34,9 +34,10 @@ const { fetchPostsAction, fetchPostsByFilterAction } = await import(
 
 // Mock session for consistent testing
 const mockSession = {
-  user: { id: 'test-user', email: 'test@example.com', name: 'Test User' },
-  expires: '2025-12-31',
-} as any
+  id: 'test-user-id',
+  name: 'Test User',
+  email: 'test@example.com',
+}
 
 // Create a mock HomePage component that mimics the structure
 const MockHomePage = async ({
@@ -50,19 +51,29 @@ const MockHomePage = async ({
   const schools = await getSchools()
   const majors = await getMajors()
 
-  // Simulate real filter mapping logic
-  const schoolId =
-    searchParams.school && schools.find(s => s.label === searchParams.school)
-      ? schools.find(s => s.label === searchParams.school)!.id
-      : null
-  const majorId =
-    searchParams.major && majors.find(m => m.label === searchParams.major)
-      ? majors.find(m => m.label === searchParams.major)!.id
-      : null
-  const graduationYear = searchParams.gradYear ? parseInt(searchParams.gradYear, 10) : null
+  const gradYears: {
+    value: string
+    label: string
+    id: number
+  }[] = Array.from({ length: 6 }, (_, i) => {
+    const year = 2025 + i
+    return {
+      id: year,
+      value: year.toString(),
+      label: year.toString(),
+    }
+  })
+
+  const schoolId = searchParams.school
+    ? (schools.find(s => s.label === searchParams.school)?.id ?? null)
+    : null
+  const majorId = searchParams.major
+    ? (majors.find(m => m.label === searchParams.major)?.id ?? null)
+    : null
+  const graduationYear = searchParams.gradYear ? parseInt(searchParams.gradYear) : null
 
   const initialPosts =
-    (schoolId ?? majorId ?? graduationYear)
+    schoolId || majorId || graduationYear
       ? await fetchPostsByFilterAction(schoolId, majorId, graduationYear)
       : await fetchPostsAction()
 
@@ -73,7 +84,7 @@ const MockHomePage = async ({
         <div data-testid="filter-major">Filter: {searchParams.major ?? ''}</div>
         <div data-testid="filter-gradyear">Filter: {searchParams.gradYear ?? ''}</div>
       </div>
-      <div data-testid="post-grid">Posts: {initialPosts.length}</div>
+      <div data-testid="post-grid">Posts: {initialPosts.posts.length}</div>
     </main>
   )
 }
@@ -93,7 +104,7 @@ describe('Dashboard HomePage', () => {
     { id: 2, label: 'Computer Science', value: 'computer-science' },
   ]
 
-  const mockPosts = [
+  const mockPostsArray = [
     {
       id: 1,
       name: 'Test Post',
@@ -108,11 +119,23 @@ describe('Dashboard HomePage', () => {
     },
   ]
 
+  const mockPostsResponse = {
+    posts: mockPostsArray,
+    nextCursor: 123,
+    hasMore: true,
+  }
+
+  const emptyPostsResponse = {
+    posts: [],
+    nextCursor: undefined,
+    hasMore: false,
+  }
+
   it('should require authentication', async () => {
     vi.mocked(requireAuth).mockResolvedValue(mockSession)
     vi.mocked(getMajors).mockResolvedValue(mockMajors)
     vi.mocked(getSchools).mockResolvedValue(mockSchools)
-    vi.mocked(fetchPostsAction).mockResolvedValue(mockPosts)
+    vi.mocked(fetchPostsAction).mockResolvedValue(mockPostsResponse)
 
     await MockHomePage({})
 
@@ -123,7 +146,7 @@ describe('Dashboard HomePage', () => {
     vi.mocked(requireAuth).mockResolvedValue(mockSession)
     vi.mocked(getMajors).mockResolvedValue(mockMajors)
     vi.mocked(getSchools).mockResolvedValue(mockSchools)
-    vi.mocked(fetchPostsAction).mockResolvedValue(mockPosts)
+    vi.mocked(fetchPostsAction).mockResolvedValue(mockPostsResponse)
 
     await MockHomePage({})
 
@@ -135,7 +158,7 @@ describe('Dashboard HomePage', () => {
     vi.mocked(requireAuth).mockResolvedValue(mockSession)
     vi.mocked(getMajors).mockResolvedValue(mockMajors)
     vi.mocked(getSchools).mockResolvedValue(mockSchools)
-    vi.mocked(fetchPostsAction).mockResolvedValue(mockPosts)
+    vi.mocked(fetchPostsAction).mockResolvedValue(mockPostsResponse)
 
     await MockHomePage({})
 
@@ -153,7 +176,7 @@ describe('Dashboard HomePage', () => {
     vi.mocked(requireAuth).mockResolvedValue(mockSession)
     vi.mocked(getMajors).mockResolvedValue(mockMajors)
     vi.mocked(getSchools).mockResolvedValue(mockSchools)
-    vi.mocked(fetchPostsByFilterAction).mockResolvedValue(mockPosts)
+    vi.mocked(fetchPostsByFilterAction).mockResolvedValue(mockPostsResponse)
 
     await MockHomePage({ searchParams })
 
@@ -169,7 +192,7 @@ describe('Dashboard HomePage', () => {
     vi.mocked(requireAuth).mockResolvedValue(mockSession)
     vi.mocked(getMajors).mockResolvedValue(mockMajors)
     vi.mocked(getSchools).mockResolvedValue(mockSchools)
-    vi.mocked(fetchPostsByFilterAction).mockResolvedValue(mockPosts)
+    vi.mocked(fetchPostsByFilterAction).mockResolvedValue(mockPostsResponse)
 
     await MockHomePage({ searchParams })
 
@@ -180,7 +203,7 @@ describe('Dashboard HomePage', () => {
     vi.mocked(requireAuth).mockResolvedValue(mockSession)
     vi.mocked(getMajors).mockResolvedValue(mockMajors)
     vi.mocked(getSchools).mockResolvedValue(mockSchools)
-    vi.mocked(fetchPostsAction).mockResolvedValue(mockPosts)
+    vi.mocked(fetchPostsAction).mockResolvedValue(mockPostsResponse)
 
     await MockHomePage({})
 
@@ -222,7 +245,7 @@ describe('Dashboard HomePage', () => {
     vi.mocked(requireAuth).mockResolvedValue(mockSession)
     vi.mocked(getMajors).mockResolvedValue(mockMajors)
     vi.mocked(getSchools).mockResolvedValue(mockSchools)
-    vi.mocked(fetchPostsByFilterAction).mockResolvedValue([])
+    vi.mocked(fetchPostsByFilterAction).mockResolvedValue(emptyPostsResponse)
 
     await MockHomePage({ searchParams })
 
@@ -235,7 +258,7 @@ describe('Dashboard HomePage', () => {
       vi.mocked(requireAuth).mockResolvedValue(mockSession)
       vi.mocked(getMajors).mockResolvedValue(mockMajors)
       vi.mocked(getSchools).mockResolvedValue(mockSchools)
-      vi.mocked(fetchPostsAction).mockResolvedValue(mockPosts)
+      vi.mocked(fetchPostsAction).mockResolvedValue(mockPostsResponse)
 
       await MockHomePage({})
 
@@ -255,7 +278,7 @@ describe('Dashboard HomePage', () => {
       vi.mocked(requireAuth).mockResolvedValue(mockSession)
       vi.mocked(getMajors).mockResolvedValue(mockMajors)
       vi.mocked(getSchools).mockResolvedValue(mockSchools)
-      vi.mocked(fetchPostsByFilterAction).mockResolvedValue(mockPosts)
+      vi.mocked(fetchPostsByFilterAction).mockResolvedValue(mockPostsResponse)
 
       // This would be how the real component handles it
       const resolvedParams = await promiseSearchParams
@@ -272,7 +295,7 @@ describe('Dashboard HomePage', () => {
       vi.mocked(requireAuth).mockResolvedValue(mockSession)
       vi.mocked(getMajors).mockResolvedValue(mockMajors)
       vi.mocked(getSchools).mockResolvedValue(mockSchools)
-      vi.mocked(fetchPostsByFilterAction).mockResolvedValue(mockPosts)
+      vi.mocked(fetchPostsByFilterAction).mockResolvedValue(mockPostsResponse)
 
       await MockHomePage({ searchParams })
 
@@ -285,20 +308,20 @@ describe('Dashboard HomePage', () => {
       vi.mocked(requireAuth).mockResolvedValue(mockSession)
       vi.mocked(getMajors).mockResolvedValue(mockMajors)
       vi.mocked(getSchools).mockResolvedValue(mockSchools)
-      vi.mocked(fetchPostsByFilterAction).mockResolvedValue(mockPosts)
+      vi.mocked(fetchPostsByFilterAction).mockResolvedValue(mockPostsResponse)
 
       await MockHomePage({ searchParams })
 
       expect(fetchPostsByFilterAction).toHaveBeenCalledWith(null, 2, null)
     })
 
-    it('should correctly parse graduation year', async () => {
+    it('should correctly map graduation years', async () => {
       const searchParams = { gradYear: '2025' }
 
       vi.mocked(requireAuth).mockResolvedValue(mockSession)
       vi.mocked(getMajors).mockResolvedValue(mockMajors)
       vi.mocked(getSchools).mockResolvedValue(mockSchools)
-      vi.mocked(fetchPostsByFilterAction).mockResolvedValue(mockPosts)
+      vi.mocked(fetchPostsByFilterAction).mockResolvedValue(mockPostsResponse)
 
       await MockHomePage({ searchParams })
 

@@ -1,20 +1,20 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { fetchPostsAction, fetchPostsByFilterAction } from './actions'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Card } from '~/app/types'
+import { fetchPostsAction, fetchPostsByFilterAction } from './actions'
 
 // Mock the auth utils
 vi.mock('~/lib/auth/auth-utils', () => ({
   requireAuth: vi.fn().mockResolvedValue({ id: 'test-user-id' }),
 }))
 
-// Mock the server queries
+// Mock the queries
 vi.mock('~/server/queries', () => ({
-  getPosts: vi.fn(),
+  getPostsCursor: vi.fn(),
   getPostsByFilters: vi.fn(),
 }))
 
 const { requireAuth } = await import('~/lib/auth/auth-utils')
-const { getPosts, getPostsByFilters } = await import('~/server/queries')
+const { getPostsCursor, getPostsByFilters } = await import('~/server/queries')
 
 const mockPosts: Card[] = [
   {
@@ -43,6 +43,12 @@ const mockPosts: Card[] = [
   },
 ]
 
+const mockPostsResponse = {
+  posts: mockPosts,
+  nextCursor: 123,
+  hasMore: true,
+}
+
 describe('Dashboard Post Actions', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -54,49 +60,48 @@ describe('Dashboard Post Actions', () => {
 
   describe('fetchPostsAction', () => {
     it('should fetch posts with default parameters', async () => {
-      vi.mocked(getPosts).mockResolvedValue(mockPosts)
+      vi.mocked(getPostsCursor).mockResolvedValue(mockPostsResponse)
 
       const result = await fetchPostsAction()
 
-      expect(requireAuth).toHaveBeenCalledOnce()
-      expect(getPosts).toHaveBeenCalledWith(20, 0)
-      expect(result).toEqual(mockPosts)
+      expect(getPostsCursor).toHaveBeenCalledWith(20, undefined)
+      expect(result).toEqual(mockPostsResponse)
     })
 
-    it('should fetch posts with custom limit and offset', async () => {
+    it('should fetch posts with custom limit and cursor', async () => {
       const customLimit = 10
-      const customOffset = 5
-      vi.mocked(getPosts).mockResolvedValue([mockPosts[0] as Card])
+      const customCursor = 456
+      const customResponse = {
+        posts: [mockPosts[0]!],
+        nextCursor: 789,
+        hasMore: false,
+      }
+      vi.mocked(getPostsCursor).mockResolvedValue(customResponse)
 
-      const result = await fetchPostsAction(customLimit, customOffset)
+      const result = await fetchPostsAction(customLimit, customCursor)
 
-      expect(requireAuth).toHaveBeenCalledOnce()
-      expect(getPosts).toHaveBeenCalledWith(customLimit, customOffset)
-      expect(result).toEqual([mockPosts[0]])
-    })
-
-    it('should handle authentication errors', async () => {
-      vi.mocked(requireAuth).mockRejectedValue(new Error('Unauthorized'))
-
-      await expect(fetchPostsAction()).rejects.toThrow('Unauthorized')
-      expect(getPosts).not.toHaveBeenCalled()
+      expect(getPostsCursor).toHaveBeenCalledWith(customLimit, customCursor)
+      expect(result).toEqual(customResponse)
     })
 
     it('should handle database errors', async () => {
-      vi.mocked(getPosts).mockRejectedValue(new Error('Database connection failed'))
+      vi.mocked(getPostsCursor).mockRejectedValue(new Error('Database connection failed'))
 
       await expect(fetchPostsAction()).rejects.toThrow('Database connection failed')
-      expect(requireAuth).toHaveBeenCalledOnce()
     })
 
-    it('should return empty array when no posts found', async () => {
-      vi.mocked(getPosts).mockResolvedValue([])
+    it('should return empty response when no posts found', async () => {
+      const emptyResponse = {
+        posts: [],
+        nextCursor: undefined,
+        hasMore: false,
+      }
+      vi.mocked(getPostsCursor).mockResolvedValue(emptyResponse)
 
       const result = await fetchPostsAction()
 
-      expect(requireAuth).toHaveBeenCalledOnce()
-      expect(getPosts).toHaveBeenCalledWith(20, 0)
-      expect(result).toEqual([])
+      expect(getPostsCursor).toHaveBeenCalledWith(20, undefined)
+      expect(result).toEqual(emptyResponse)
     })
   })
 
@@ -106,28 +111,31 @@ describe('Dashboard Post Actions', () => {
       const majorId = 2
       const graduationYear = 2025
       const limit = 15
-      const offset = 10
+      const cursor = 10
 
-      const filteredPosts: Card[] = [mockPosts[0] as Card]
-      vi.mocked(getPostsByFilters).mockResolvedValue(filteredPosts)
+      const filteredResponse = {
+        posts: [mockPosts[0]!],
+        nextCursor: 99,
+        hasMore: true,
+      }
+      vi.mocked(getPostsByFilters).mockResolvedValue(filteredResponse)
 
       const result = await fetchPostsByFilterAction(
         schoolId,
         majorId,
         graduationYear,
         limit,
-        offset
+        cursor
       )
 
-      expect(requireAuth).toHaveBeenCalledOnce()
       expect(getPostsByFilters).toHaveBeenCalledWith(
         schoolId,
         majorId,
         graduationYear,
         limit,
-        offset
+        cursor
       )
-      expect(result).toEqual(filteredPosts)
+      expect(result).toEqual(filteredResponse)
     })
 
     it('should handle null filters', async () => {
@@ -135,25 +143,30 @@ describe('Dashboard Post Actions', () => {
       const majorId = null
       const graduationYear = null
 
-      vi.mocked(getPostsByFilters).mockResolvedValue(mockPosts)
+      vi.mocked(getPostsByFilters).mockResolvedValue(mockPostsResponse)
 
       const result = await fetchPostsByFilterAction(schoolId, majorId, graduationYear)
 
-      expect(requireAuth).toHaveBeenCalledOnce()
-      expect(getPostsByFilters).toHaveBeenCalledWith(null, null, null, 20, 0)
-      expect(result).toEqual(mockPosts)
+      expect(getPostsByFilters).toHaveBeenCalledWith(null, null, null, 20, undefined)
+      expect(result).toEqual(mockPostsResponse)
     })
 
-    it('should use default limit and offset when not provided', async () => {
+    it('should use default limit and cursor when not provided', async () => {
       const schoolId = 1
       const majorId = null
       const graduationYear = null
 
-      vi.mocked(getPostsByFilters).mockResolvedValue(mockPosts)
+      vi.mocked(getPostsByFilters).mockResolvedValue(mockPostsResponse)
 
       await fetchPostsByFilterAction(schoolId, majorId, graduationYear)
 
-      expect(getPostsByFilters).toHaveBeenCalledWith(schoolId, majorId, graduationYear, 20, 0)
+      expect(getPostsByFilters).toHaveBeenCalledWith(
+        schoolId,
+        majorId,
+        graduationYear,
+        20,
+        undefined
+      )
     })
 
     it('should handle mixed null and valid filters', async () => {
@@ -161,30 +174,29 @@ describe('Dashboard Post Actions', () => {
       const majorId = null
       const graduationYear = 2026
 
-      const mixedFilterPosts: Card[] = [mockPosts[1] as Card]
-      vi.mocked(getPostsByFilters).mockResolvedValue(mixedFilterPosts)
+      const mixedFilterResponse = {
+        posts: [mockPosts[1]!],
+        nextCursor: 456,
+        hasMore: false,
+      }
+      vi.mocked(getPostsByFilters).mockResolvedValue(mixedFilterResponse)
 
       const result = await fetchPostsByFilterAction(schoolId, majorId, graduationYear)
 
-      expect(requireAuth).toHaveBeenCalledOnce()
-      expect(getPostsByFilters).toHaveBeenCalledWith(schoolId, majorId, graduationYear, 20, 0)
-      expect(result).toEqual(mixedFilterPosts)
-    })
-
-    it('should handle authentication errors in filter action', async () => {
-      vi.mocked(requireAuth).mockRejectedValue(new Error('Authentication failed'))
-
-      await expect(fetchPostsByFilterAction(1, 2, 2025)).rejects.toThrow('Authentication failed')
-
-      expect(getPostsByFilters).not.toHaveBeenCalled()
+      expect(getPostsByFilters).toHaveBeenCalledWith(
+        schoolId,
+        majorId,
+        graduationYear,
+        20,
+        undefined
+      )
+      expect(result).toEqual(mixedFilterResponse)
     })
 
     it('should handle database errors in filter queries', async () => {
       vi.mocked(getPostsByFilters).mockRejectedValue(new Error('Filter query failed'))
 
       await expect(fetchPostsByFilterAction(1, 2, 2025)).rejects.toThrow('Filter query failed')
-
-      expect(requireAuth).toHaveBeenCalledOnce()
     })
 
     it('should handle edge case filter values', async () => {
@@ -192,35 +204,30 @@ describe('Dashboard Post Actions', () => {
       const majorId = -1 // Edge case: negative ID (might be used as "no filter")
       const graduationYear = 3000 // Edge case: future year
 
-      vi.mocked(getPostsByFilters).mockResolvedValue([])
+      const emptyResponse = {
+        posts: [],
+        nextCursor: undefined,
+        hasMore: false,
+      }
+      vi.mocked(getPostsByFilters).mockResolvedValue(emptyResponse)
 
       const result = await fetchPostsByFilterAction(schoolId, majorId, graduationYear)
 
-      expect(getPostsByFilters).toHaveBeenCalledWith(schoolId, majorId, graduationYear, 20, 0)
-      expect(result).toEqual([])
+      expect(getPostsByFilters).toHaveBeenCalledWith(
+        schoolId,
+        majorId,
+        graduationYear,
+        20,
+        undefined
+      )
+      expect(result).toEqual(emptyResponse)
     })
   })
 
   describe('Server Action Requirements', () => {
-    it('should always require authentication for fetchPostsAction', async () => {
-      vi.mocked(getPosts).mockResolvedValue([])
-
-      await fetchPostsAction()
-
-      expect(requireAuth).toHaveBeenCalledOnce()
-    })
-
-    it('should always require authentication for fetchPostsByFilterAction', async () => {
-      vi.mocked(getPostsByFilters).mockResolvedValue([])
-
-      await fetchPostsByFilterAction(1, 2, 2025)
-
-      expect(requireAuth).toHaveBeenCalledOnce()
-    })
-
     it('should handle concurrent requests properly', async () => {
-      vi.mocked(getPosts).mockResolvedValue(mockPosts)
-      vi.mocked(getPostsByFilters).mockResolvedValue(mockPosts)
+      vi.mocked(getPostsCursor).mockResolvedValue(mockPostsResponse)
+      vi.mocked(getPostsByFilters).mockResolvedValue(mockPostsResponse)
 
       const promises = [
         fetchPostsAction(),
@@ -230,10 +237,10 @@ describe('Dashboard Post Actions', () => {
 
       const results = await Promise.all(promises)
 
-      expect(requireAuth).toHaveBeenCalledTimes(3)
       expect(results).toHaveLength(3)
       results.forEach(result => {
-        expect(Array.isArray(result)).toBe(true)
+        expect(result).toHaveProperty('posts')
+        expect(result).toHaveProperty('hasMore')
       })
     })
   })

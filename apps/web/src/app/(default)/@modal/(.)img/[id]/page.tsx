@@ -7,12 +7,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { Separator } from '~/components/ui/separator'
-import { requireAuth } from '~/lib/auth/auth-utils'
 import { getPostById } from '~/server/queries'
 
 const PostModal = async ({ params }: { params: Promise<{ id: string }> }) => {
-  await requireAuth()
-
   const { id: postId } = await params
   const idAsNumber = Number(postId)
 
@@ -111,7 +108,7 @@ const PostModal = async ({ params }: { params: Promise<{ id: string }> }) => {
 
           {/* Action Buttons */}
           <div className="flex flex-col gap-3 pt-2 sm:flex-row">
-            <BookingInterface userId={post.createdById ?? ''} variant="modal" className="flex-1">
+            <BookingInterface variant="modal" className="flex-1">
               <Calendar className="mr-2 h-4 w-4" />
               Schedule Meeting
             </BookingInterface>

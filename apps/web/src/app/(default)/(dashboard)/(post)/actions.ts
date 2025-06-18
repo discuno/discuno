@@ -1,15 +1,12 @@
 'use server'
 
-import { requireAuth } from '~/lib/auth/auth-utils'
-import { getPosts, getPostsByFilters } from '~/server/queries'
+import { getPostsByFilters, getPostsCursor } from '~/server/queries'
 
-/*
- * Infinite scroll server actions
+/**
+ * Server actions for infinite scroll with cursor-based pagination
  */
-export const fetchPostsAction = async (limit = 20, offset = 0) => {
-  await requireAuth()
-  const posts = await getPosts(limit, offset)
-  return posts
+export const fetchPostsAction = async (limit = 20, cursor?: number) => {
+  return await getPostsCursor(limit, cursor)
 }
 
 export const fetchPostsByFilterAction = async (
@@ -17,9 +14,7 @@ export const fetchPostsByFilterAction = async (
   majorId: number | null,
   graduationYear: number | null,
   limit = 20,
-  offset = 0
+  cursor?: number
 ) => {
-  await requireAuth()
-  const posts = await getPostsByFilters(schoolId, majorId, graduationYear, limit, offset)
-  return posts
+  return await getPostsByFilters(schoolId, majorId, graduationYear, limit, cursor)
 }

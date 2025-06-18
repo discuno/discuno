@@ -124,6 +124,7 @@ export type DayOfWeek =
   | 'Sunday'
 
 export interface CreateCalcomUserInput {
+  userId: string
   email: string
   name: string
   timeFormat?: '12' | '24'
@@ -136,6 +137,7 @@ export interface CreateCalcomUserInput {
 }
 
 export interface UpdateCalcomUserInput extends Partial<CreateCalcomUserInput> {
+  userId: string
   calcomUserId: number
 }
 
@@ -153,4 +155,5 @@ export interface FullUserProfile {
   name: string | null
   school: string | null
   major: string | null
+  calcomUserId: number | null
 }

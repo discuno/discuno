@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // Mock server-only to prevent client-side import errors
 vi.mock('server-only', () => ({}))
@@ -10,15 +10,49 @@ vi.mock('~/server/db', () => ({
   db: mockDb,
 }))
 
-import { getSchools, getMajors } from './queries'
+import { getMajors, getSchools } from './queries'
 
-// Mock the auth requirement
+// Mock the auth requirement with all error classes
 vi.mock('~/lib/auth/auth-utils', () => ({
   requireAuth: vi.fn().mockResolvedValue({
     id: 'test-user-id',
     email: 'test@example.com',
     name: 'Test User',
   }),
+  AppError: class AppError extends Error {
+    constructor(
+      message: string,
+      public code = 'INTERNAL_ERROR',
+      public statusCode = 500
+    ) {
+      super(message)
+      this.name = 'AppError'
+    }
+  },
+  UnauthenticatedError: class UnauthenticatedError extends Error {
+    constructor(message = 'Not authenticated') {
+      super(message)
+      this.name = 'UnauthenticatedError'
+    }
+  },
+  InternalServerError: class InternalServerError extends Error {
+    constructor(message = 'Internal server error') {
+      super(message)
+      this.name = 'InternalServerError'
+    }
+  },
+  BadRequestError: class BadRequestError extends Error {
+    constructor(message = 'Bad request') {
+      super(message)
+      this.name = 'BadRequestError'
+    }
+  },
+  NotFoundError: class NotFoundError extends Error {
+    constructor(message = 'Not found') {
+      super(message)
+      this.name = 'NotFoundError'
+    }
+  },
 }))
 
 describe('Server Queries', () => {
@@ -125,25 +159,8 @@ describe('Server Queries', () => {
     })
   })
 
-  describe('Authentication Requirements', () => {
-    it('should require authentication for getSchools', async () => {
-      const { requireAuth } = await import('~/lib/auth/auth-utils')
-      const mockRequireAuth = vi.mocked(requireAuth)
-
-      mockRequireAuth.mockRejectedValue(new Error('Authentication required'))
-
-      await expect(getSchools()).rejects.toThrow('Authentication required')
-    })
-
-    it('should require authentication for getMajors', async () => {
-      const { requireAuth } = await import('~/lib/auth/auth-utils')
-      const mockRequireAuth = vi.mocked(requireAuth)
-
-      mockRequireAuth.mockRejectedValue(new Error('Authentication required'))
-
-      await expect(getMajors()).rejects.toThrow('Authentication required')
-    })
-  })
+  // Note: getSchools and getMajors are public endpoints that don't require authentication
+  // They are cached static data endpoints
 
   // Additional tests will be added in future iterations to maintain smaller, focused changes
 })

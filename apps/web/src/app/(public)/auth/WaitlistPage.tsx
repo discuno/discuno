@@ -14,6 +14,7 @@ import {
   Users,
 } from 'lucide-react'
 import { WaitlistForm } from '~/app/(public)/auth/WaitlistForm'
+import { IconLogo } from '~/components/icons/IconLogo'
 import { Badge } from '~/components/ui/badge'
 import { Card, CardContent } from '~/components/ui/card'
 
@@ -84,20 +85,7 @@ export const WaitlistPage = () => {
 
             <div className="mb-8 flex items-center justify-center gap-4">
               {/* Company Logo/Name */}
-              <img
-                src="/logos/black-icon-logo.svg"
-                alt="Discuno"
-                width={64}
-                height={64}
-                className="dark:hidden"
-              />
-              <img
-                src="/logos/white-icon-logo.svg"
-                alt="Discuno"
-                width={64}
-                height={64}
-                className="hidden dark:block"
-              />
+              <IconLogo size={64} className="text-gray-900 dark:text-white" />
               <h1 className="text-foreground text-4xl font-bold">Discuno</h1>
             </div>
 

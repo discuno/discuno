@@ -5,8 +5,8 @@ import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
 import { Label } from '~/components/ui/label'
 import { env } from '~/env'
-import { requireAuth } from '~/lib/auth/auth-utils'
-import { db } from '~/server/db'
+import { NotFoundError, requireAuth } from '~/lib/auth/auth-utils'
+import { getProfileByEduEmail } from '~/server/queries'
 
 interface EmailInputFormProps {
   message?: string
@@ -17,7 +17,6 @@ interface EmailInputFormProps {
 export const EmailInputForm = async ({ isVerified = false }: EmailInputFormProps) => {
   const handleSubmit = async (formData: FormData) => {
     'use server'
-    const { user } = await requireAuth()
     const eduEmailRaw = formData.get('email')
 
     if (typeof eduEmailRaw !== 'string') {
@@ -26,23 +25,35 @@ export const EmailInputForm = async ({ isVerified = false }: EmailInputFormProps
 
     const lowerCaseEduEmail = eduEmailRaw.toLowerCase()
 
-    const userProfile = await db.query.userProfiles.findFirst({
-      where: (table, { eq }) => eq(table.eduEmail, lowerCaseEduEmail),
-    })
-
-    // Check if the email is already in use
-    if (userProfile) {
-      redirect('/email-verification?status=email-in-use')
-    }
-
     // Validate the email format
     if (!lowerCaseEduEmail.endsWith('.edu')) {
       redirect('/email-verification?status=invalid-email')
     }
 
+    // Check if the email is already in use
     try {
+      await getProfileByEduEmail(lowerCaseEduEmail)
+      // If we get here, the profile exists (email is already in use)
+      redirect('/email-verification?status=email-in-use')
+    } catch (error) {
+      if (error instanceof NotFoundError) {
+        // If profile not found, that's what we want - email is available
+        // We'll continue with sending the verification email
+      } else {
+        throw error
+      }
+    }
+
+    try {
+      // We need to get the current user's info for the verification email
+      const { id: userId, name: userName } = await requireAuth()
+
+      if (!userName) {
+        redirect('/email-verification?status=error')
+      }
+
       // Generate a verification token
-      const token = jwt.sign({ userId: user.id, eduEmail: lowerCaseEduEmail }, env.JWT_SECRET, {
+      const token = jwt.sign({ userId, eduEmail: lowerCaseEduEmail }, env.JWT_SECRET, {
         expiresIn: '10m',
       })
 
@@ -57,7 +68,7 @@ export const EmailInputForm = async ({ isVerified = false }: EmailInputFormProps
         from: env.AUTH_EMAIL_FROM,
         subject: 'Verify Your College Email to Become a Mentor',
         html: `
-          <p>Hi ${user.name ?? 'there'},</p>
+          <p>Hi ${userName},</p>
           <p>Thank you for your interest in becoming a mentor at College Advice.</p>
           <p>Please verify your college email by clicking the link below:</p>
           <a href="${verifyUrl}">Verify Email</a>

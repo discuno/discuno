@@ -2,34 +2,24 @@
 
 import type { CalcomToken, CreateCalcomUserInput, UpdateCalcomUserInput } from '~/app/types'
 import { env } from '~/env'
-import { requireUserId } from '~/lib/auth/auth-utils'
+import { BadRequestError, ExternalApiError } from '~/lib/auth/auth-utils'
 import {
-  getCalcomToken,
-  getUserCalcomTokens,
-  storeCalcomTokens,
-  updateCalcomToken,
-} from '~/server/queries'
+  createCalcomUser as createCalcomUserCore,
+  updateCalcomUser as updateCalcomUserCore,
+} from '~/lib/calcom'
+import { getCalcomToken, getUserCalcomTokens, updateCalcomToken } from '~/server/queries'
 
 /**
  * Get user's current Cal.com access token
  */
-const getCalcomAccessToken = async (
-  userId: string
-): Promise<{
+const getCalcomAccessToken = async (): Promise<{
   success: boolean
   accessToken?: string
   refreshToken?: string
   error?: string
 }> => {
   try {
-    if (!userId) {
-      return {
-        success: false,
-        error: 'Unauthorized',
-      }
-    }
-
-    const tokens = await getUserCalcomTokens(userId)
+    const tokens = await getUserCalcomTokens()
 
     if (!tokens) {
       return {
@@ -138,7 +128,7 @@ const refreshCalcomToken = async (
       refreshTokenExpiresAt: newRefreshTokenExpiresAt,
     }
 
-    await updateCalcomToken(token, tokenRecord.userId)
+    await updateCalcomToken(token)
 
     console.log('Token refresh successful')
 
@@ -211,7 +201,7 @@ const forceRefreshCalcomToken = async (
       refreshTokenExpiresAt: newRefreshTokenExpiresAt,
     }
 
-    await updateCalcomToken(token, userId)
+    await updateCalcomToken(token)
 
     console.log('Force refresh successful for user:', userId)
 
@@ -234,8 +224,7 @@ const forceRefreshCalcomToken = async (
  */
 const hasCalcomIntegration = async () => {
   try {
-    const id = await requireUserId()
-    const tokens = await getUserCalcomTokens(id)
+    const tokens = await getUserCalcomTokens()
     return !!tokens
   } catch (error) {
     console.error('Check Cal.com integration error:', error)
@@ -253,8 +242,7 @@ const getUserCalcomToken = async (): Promise<{
   error?: string
 }> => {
   try {
-    const id = await requireUserId()
-    return await getCalcomAccessToken(id)
+    return await getCalcomAccessToken()
   } catch (error) {
     console.error('Get user Cal.com token error:', error)
     return {
@@ -265,129 +253,41 @@ const getUserCalcomToken = async (): Promise<{
 }
 
 /**
- * Create Cal.com user
+ * Create Cal.com user (server action wrapper)
  */
 const createCalcomUser = async (
   data: CreateCalcomUserInput
 ): Promise<{
-  success: boolean
   calcomUserId?: number
   username?: string
-  error?: string
 }> => {
   try {
-    const id = await requireUserId()
-    const { email, name, timeZone = 'America/New_York' } = data
-
-    console.log('Creating Cal.com user for:', { email, name, userId: id })
-
-    // Create managed user in Cal.com
-    const response = await fetch(
-      `${env.NEXT_PUBLIC_CALCOM_API_URL}/oauth-clients/${env.NEXT_PUBLIC_X_CAL_ID}/users`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-cal-secret-key': env.X_CAL_SECRET_KEY,
-        },
-        body: JSON.stringify({
-          email,
-          name,
-          timeZone,
-          timeFormat: 12,
-          weekStart: 'Sunday',
-        }),
-      }
-    )
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('Cal.com API HTTP error:', response.status, errorText)
-      return {
-        success: false,
-        error: `Cal.com API error: ${response.status}`,
-      }
-    }
-
-    const responseData = await response.json()
-    console.log('Cal.com response:', responseData)
-
-    if (responseData.status !== 'success') {
-      console.error('Cal.com API error:', responseData.error)
-      return {
-        success: false,
-        error: responseData.error ?? 'Unknown Cal.com error',
-      }
-    }
-
-    // Store tokens in database
-    await storeCalcomTokens({
-      userId: id,
-      calcomUserId: responseData.data.user.id,
-      accessToken: responseData.data.accessToken,
-      refreshToken: responseData.data.refreshToken,
-      accessTokenExpiresAt: responseData.data.accessTokenExpiresAt,
-      refreshTokenExpiresAt: responseData.data.refreshTokenExpiresAt,
-    })
-
-    console.log('Tokens stored successfully')
-
+    const result = await createCalcomUserCore(data)
     return {
-      success: true,
-      calcomUserId: responseData.data.user.id,
-      username: responseData.data.user.username,
+      calcomUserId: result.calcomUserId,
+      username: result.username,
     }
   } catch (error) {
     console.error('Cal.com user creation error:', error)
-    return {
-      success: false,
-      error: 'Failed to create Cal.com user',
+    if (error instanceof ExternalApiError) {
+      throw error
     }
+    throw new BadRequestError('Failed to create Cal.com user')
   }
 }
 
 /**
- * Update Cal.com user
+ * Update Cal.com user (server action wrapper)
  */
-const updateCalcomUser = async (
-  data: UpdateCalcomUserInput
-): Promise<{
-  success: boolean
-  error?: string
-}> => {
+const updateCalcomUser = async (data: UpdateCalcomUserInput): Promise<void> => {
   try {
-    const { calcomUserId, ...rest } = data
-
-    const response = await fetch(
-      `${env.NEXT_PUBLIC_CALCOM_API_URL}/oauth-clients/${env.NEXT_PUBLIC_X_CAL_ID}/users/${calcomUserId}`,
-      {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-cal-secret-key': env.X_CAL_SECRET_KEY,
-        },
-        body: JSON.stringify(rest),
-      }
-    )
-
-    const responseData = await response.json()
-
-    if (responseData.status !== 'success') {
-      return {
-        success: false,
-        error: responseData.error,
-      }
-    }
-
-    return {
-      success: true,
-    }
+    await updateCalcomUserCore(data)
   } catch (error) {
     console.error('Cal.com user update error:', error)
-    return {
-      success: false,
-      error: 'Failed to update Cal.com user',
+    if (error instanceof ExternalApiError) {
+      throw error
     }
+    throw new BadRequestError('Failed to update Cal.com user')
   }
 }
 

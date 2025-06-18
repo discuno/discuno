@@ -1,75 +1,78 @@
-import type { Session } from 'next-auth'
-import { redirect } from 'next/navigation'
+import type { Session, User } from 'next-auth'
+import { cache } from 'react'
 import { auth } from '~/server/auth'
 
-/**
- * Get the current session on the server side
- * Use this in Server Components, Server Actions, and API Routes
- */
-export const getCurrentSession = async (): Promise<Session | null> => {
-  try {
-    return await auth()
-  } catch (error) {
-    console.error('Error getting session:', error)
-    return null
+export type AuthenticatedUser = User & {
+  id: string
+}
+
+export class AppError extends Error {
+  public statusCode: number
+  public code: string
+
+  constructor(message: string, code = 'INTERNAL_ERROR', statusCode = 500) {
+    super(message)
+    this.name = 'AppError'
+    this.code = code
+    this.statusCode = statusCode
+  }
+}
+export class UnauthenticatedError extends AppError {
+  constructor(message = 'Not authenticated') {
+    super(message, 'UNAUTHENTICATED', 401)
+  }
+}
+
+export class UnauthorizedError extends AppError {
+  constructor(message = 'Not authorized') {
+    super(message, 'UNAUTHORIZED', 403)
+  }
+}
+
+export class InternalServerError extends AppError {
+  constructor(message = 'Internal server error') {
+    super(message, 'INTERNAL_SERVER_ERROR', 500)
+  }
+}
+
+export class ExternalApiError extends AppError {
+  constructor(message = 'Unkown external API error') {
+    super(message, 'EXTERNAL_API_ERROR', 502)
+  }
+}
+
+export class BadRequestError extends AppError {
+  constructor(message = 'Bad request') {
+    super(message, 'BAD_REQUEST', 400)
+  }
+}
+
+export class ConflictError extends AppError {
+  constructor(message = 'Conflict') {
+    super(message, 'CONFLICT', 409)
+  }
+}
+
+export class NotFoundError extends AppError {
+  constructor(message = 'Not found') {
+    super(message, 'NOT_FOUND', 404)
   }
 }
 
 /**
  * Require authentication for a page
- * Redirects to /auth if not authenticated
  * Use this in Server Components that require authentication
  */
-export const requireAuth = async (): Promise<Session> => {
-  const session: Session | null = await getCurrentSession()
+export const requireAuth = cache(async (): Promise<AuthenticatedUser> => {
+  const session: Session | null = await auth()
 
-  if (!session) {
-    redirect('/auth')
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  if (!session?.user?.id) {
+    throw new UnauthenticatedError()
   }
 
-  return session
-}
-
-/**
- * Redirect authenticated users away from auth pages
- * Use this on pages like /auth where logged-in users shouldn't be
- */
-export const redirectIfAuthenticated = async (redirectTo: string = '/'): Promise<void> => {
-  const session = await getCurrentSession()
-
-  if (session) {
-    redirect(redirectTo)
+  return {
+    ...session.user,
+    id: session.user.id,
   }
-}
-
-/**
- * Get user ID from session
- * Throws error if not authenticated
- */
-export const requireUserId = async (): Promise<string> => {
-  const session: Session = await requireAuth()
-
-  if (!session.user.id) {
-    throw new Error('User ID not found in session')
-  }
-
-  return session.user.id
-}
-
-/**
- * Check if user is authenticated (returns boolean)
- * Use this when you need to conditionally render content
- */
-export const isAuthenticated = async (): Promise<boolean> => {
-  const session: Session | null = await getCurrentSession()
-  return !!session
-}
-
-/**
- * Get user from session with error handling
- * Returns null if not authenticated or user not found
- */
-export const getCurrentUser = async (): Promise<Session['user'] | null> => {
-  const session: Session | null = await getCurrentSession()
-  return session?.user ?? null
-}
+})
