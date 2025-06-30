@@ -1,52 +1,30 @@
 import { ArrowLeft, Calendar, Clock, Star, User } from 'lucide-react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { BookingEmbed } from '~/app/(default)/(dashboard)/(post)/(booking)/BookingEmbed'
+import { BookingEmbed } from '~/app/(default)/(dashboard)/book/components/BookingEmbed'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
+import { CalProviderWrapper } from '~/lib/providers/CalProviderWrapper'
+import { getMentorCalcomTokensByUsername, getProfileByCalcomUsername } from '~/server/queries'
 
 interface BookingContentProps {
   username: string
   eventType?: string
 }
 
-interface MentorProfile {
-  id: string
-  name: string
-  image?: string
-  school: string
-  major: string
-  bio?: string
-  schoolYear: string
-  graduationYear: number
-}
-
-// TODO: Mock function - replace with actual implementation
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const getProfileByUsername = async (username: string): Promise<MentorProfile | null> => {
-  // This would fetch the user profile by username from the database
-  // For now, return a mock profile for demonstration
-  return {
-    id: '1',
-    name: 'John Doe',
-    image: '/images/placeholder.jpg',
-    school: 'MIT',
-    major: 'Computer Science',
-    bio: 'I love helping students navigate their college journey and sharing my experiences at MIT.',
-    schoolYear: 'Senior',
-    graduationYear: 2025,
-  }
-}
-
 export const BookingContent = async ({ username, eventType }: BookingContentProps) => {
-  // Get the mentor's profile
-  const mentorProfile = await getProfileByUsername(username)
+  // Get the mentor's profile by Cal.com username
+  const mentorProfile = await getProfileByCalcomUsername(username)
+  console.log(mentorProfile)
 
   if (!mentorProfile) {
     notFound()
   }
+
+  // Get the mentor's Cal.com tokens for booking
+  const mentorTokens = await getMentorCalcomTokensByUsername(username)
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -66,8 +44,10 @@ export const BookingContent = async ({ username, eventType }: BookingContentProp
           <Card>
             <CardHeader className="text-center">
               <Avatar className="mx-auto mb-4 h-24 w-24">
-                <AvatarImage src={mentorProfile.image ?? ''} alt={mentorProfile.name} />
-                <AvatarFallback className="text-2xl">{mentorProfile.name.charAt(0)}</AvatarFallback>
+                <AvatarImage src={mentorProfile.image ?? ''} alt={mentorProfile.name ?? ''} />
+                <AvatarFallback className="text-2xl">
+                  {mentorProfile.name?.charAt(0) ?? 'M'}
+                </AvatarFallback>
               </Avatar>
               <CardTitle className="text-xl">{mentorProfile.name}</CardTitle>
               <div className="mt-2 flex justify-center gap-2">
@@ -123,7 +103,23 @@ export const BookingContent = async ({ username, eventType }: BookingContentProp
               </p>
             </CardHeader>
             <CardContent>
-              <BookingEmbed username={username} eventSlug={eventType ?? '30min'} layout="desktop" />
+              {mentorTokens ? (
+                <CalProviderWrapper
+                  mentorAccessToken={mentorTokens.accessToken}
+                  mentorRefreshToken={mentorTokens.refreshToken}
+                >
+                  <BookingEmbed
+                    username={mentorTokens.calcomUsername}
+                    eventSlug={eventType ?? '30min'}
+                  />
+                </CalProviderWrapper>
+              ) : (
+                <div className="py-8 text-center">
+                  <p className="text-muted-foreground">
+                    This mentor hasn&apos;t set up their scheduling yet. Please check back later.
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
 

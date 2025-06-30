@@ -1,11 +1,12 @@
 import sgMail from '@sendgrid/mail'
 import jwt from 'jsonwebtoken'
 import { redirect } from 'next/navigation'
+import { isExpectedProfileError } from '~/app/(default)/email-verification/utils'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
 import { Label } from '~/components/ui/label'
 import { env } from '~/env'
-import { NotFoundError, requireAuth } from '~/lib/auth/auth-utils'
+import { requireAuth } from '~/lib/auth/auth-utils'
 import { getProfileByEduEmail } from '~/server/queries'
 
 interface EmailInputFormProps {
@@ -36,7 +37,7 @@ export const EmailInputForm = async ({ isVerified = false }: EmailInputFormProps
       // If we get here, the profile exists (email is already in use)
       redirect('/email-verification?status=email-in-use')
     } catch (error) {
-      if (error instanceof NotFoundError) {
+      if (isExpectedProfileError(error)) {
         // If profile not found, that's what we want - email is available
         // We'll continue with sending the verification email
       } else {

@@ -68,6 +68,7 @@ export interface CalcomToken {
 export interface CalcomTokenWithId extends CalcomToken {
   userId: string
   calcomUserId: number
+  calcomUsername: string
 }
 
 export type CalcomLocale =

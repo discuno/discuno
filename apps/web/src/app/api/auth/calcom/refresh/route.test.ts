@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // Mock server-only
 vi.mock('server-only', () => ({}))
@@ -9,8 +9,8 @@ vi.mock('~/app/(default)/availability/actions', () => ({
   refreshCalcomToken: vi.fn(),
 }))
 
+import { refreshCalcomToken } from '~/app/(default)/(dashboard)/scheduling/actions'
 import { GET } from './route'
-import { refreshCalcomToken } from '~/app/(default)/availability/actions'
 
 const mockRefreshCalcomToken = vi.mocked(refreshCalcomToken)
 

@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server'
-import { refreshCalcomToken } from '~/app/(default)/availability/actions'
+import { refreshCalcomToken } from '~/app/(default)/(dashboard)/scheduling/actions'
 
 /**
  * Cal.com refresh token endpoint

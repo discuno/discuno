@@ -11,13 +11,35 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from '~/components/ui/navigation-menu'
+import { Skeleton } from '~/components/ui/skeleton'
 import { cn } from '~/lib/utils/tailwind'
 
-export function NavBarBase({ profilePic, isMentor }: { profilePic: string; isMentor: boolean }) {
+interface NavBarBaseProps {
+  profilePic: string
+  isMentor: boolean
+  userName?: string | null
+}
+
+/**
+ * Enhanced Navigation Bar Component for Discuno
+ *
+ * Features:
+ * - Dynamic menu items based on mentor status
+ * - Proper authentication state handling
+ * - Responsive design with modern UI
+ * - Accessibility improvements
+ * - Loading skeleton support
+ *
+ * @param profilePic - User's profile picture URL
+ * @param isMentor - Whether the user is a verified mentor
+ * @param userName - User's name for generating booking links
+ */
+export function NavBarBase({ profilePic, isMentor, userName }: NavBarBaseProps) {
   return (
     <div className="border/40 bg-background/80 text-foreground backdrop-blur-xs fixed left-0 right-0 top-0 z-20 flex items-center justify-between border-b p-4 transition-colors duration-300">
       <NavigationMenu>
         <NavigationMenuList>
+          {/* Find Mentors Menu */}
           <NavigationMenuItem>
             <NavigationMenuTrigger>Find Mentors</NavigationMenuTrigger>
             <NavigationMenuContent>
@@ -26,7 +48,7 @@ export function NavBarBase({ profilePic, isMentor }: { profilePic: string; isMen
                   <NavigationMenuLink asChild>
                     <Link
                       className="from-primary/10 to-primary/5 hover:bg-primary/10 dark:from-primary/20 dark:to-primary/10 dark:hover:bg-primary/20 bg-linear-to-b outline-hidden flex h-full w-full select-none flex-col justify-end rounded-md p-6 no-underline transition-colors focus:shadow-md"
-                      href="/browse"
+                      href="/dashboard"
                     >
                       <div className="text-foreground mb-2 mt-4 text-lg font-medium">
                         Browse Mentors
@@ -37,19 +59,20 @@ export function NavBarBase({ profilePic, isMentor }: { profilePic: string; isMen
                     </Link>
                   </NavigationMenuLink>
                 </li>
-                <ListItem href="/search/schools" title="Search by School">
+                <ListItem href="/dashboard?filter=school" title="Search by School">
                   Find mentors from specific colleges and universities
                 </ListItem>
-                <ListItem href="/search/majors" title="Search by Major">
+                <ListItem href="/dashboard?filter=major" title="Search by Major">
                   Connect with students in your intended field of study
                 </ListItem>
-                <ListItem href="/search/interests" title="Search by Interests">
+                <ListItem href="/dashboard?filter=interests" title="Search by Interests">
                   Discover mentors who share your passions
                 </ListItem>
               </ul>
             </NavigationMenuContent>
           </NavigationMenuItem>
 
+          {/* Resources Menu */}
           <NavigationMenuItem>
             <NavigationMenuTrigger>Resources</NavigationMenuTrigger>
             <NavigationMenuContent>
@@ -70,6 +93,35 @@ export function NavBarBase({ profilePic, isMentor }: { profilePic: string; isMen
             </NavigationMenuContent>
           </NavigationMenuItem>
 
+          {/* Mentor-specific Menu */}
+          {isMentor && (
+            <NavigationMenuItem>
+              <NavigationMenuTrigger>Mentor Tools</NavigationMenuTrigger>
+              <NavigationMenuContent>
+                <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2">
+                  <ListItem href="/mentor/onboarding" title="Mentor Onboarding">
+                    Complete your mentor profile setup
+                  </ListItem>
+                  <ListItem href="/mentor/event-types" title="Event Types">
+                    Manage your mentoring session types
+                  </ListItem>
+                  <ListItem href="/mentor/scheduling" title="Scheduling">
+                    Set your availability and calendar
+                  </ListItem>
+                  <ListItem href="/mentor/payments" title="Payments">
+                    Manage your earnings and payment settings
+                  </ListItem>
+                  {userName && (
+                    <ListItem href={`/book/${userName}`} title="Your Booking Page">
+                      View your public booking page
+                    </ListItem>
+                  )}
+                </ul>
+              </NavigationMenuContent>
+            </NavigationMenuItem>
+          )}
+
+          {/* My Account Menu */}
           <NavigationMenuItem>
             <NavigationMenuTrigger>My Account</NavigationMenuTrigger>
             <NavigationMenuContent>
@@ -77,11 +129,14 @@ export function NavBarBase({ profilePic, isMentor }: { profilePic: string; isMen
                 <ListItem href="/dashboard" title="Dashboard">
                   View your mentorship connections and messages
                 </ListItem>
-                <ListItem href="/meetings" title="My Meetings">
+                <ListItem href="/scheduling" title="My Schedule">
                   Manage your scheduled video meetings
                 </ListItem>
                 <ListItem href="/profile/edit" title="Edit Profile">
                   Update your profile information
+                </ListItem>
+                <ListItem href="/profile/view" title="View Profile">
+                  See how others view your profile
                 </ListItem>
                 {isMentor && (
                   <ListItem href="/availability" title="Availability">
@@ -91,12 +146,34 @@ export function NavBarBase({ profilePic, isMentor }: { profilePic: string; isMen
                 <ListItem href="/settings" title="Settings">
                   Adjust your account preferences
                 </ListItem>
+                {!isMentor && (
+                  <ListItem href="/email-verification" title="Become a Mentor">
+                    Join as a mentor and help other students
+                  </ListItem>
+                )}
               </ul>
             </NavigationMenuContent>
           </NavigationMenuItem>
         </NavigationMenuList>
       </NavigationMenu>
-      <AvatarIcon profilePic={profilePic} />
+      <AvatarIcon profilePic={profilePic} isAuthenticated={!!profilePic} />
+    </div>
+  )
+}
+
+// Loading skeleton for navbar
+export function NavBarSkeleton() {
+  return (
+    <div className="border/40 bg-background/80 text-foreground backdrop-blur-xs fixed left-0 right-0 top-0 z-20 flex items-center justify-between border-b p-4 transition-colors duration-300">
+      <div className="flex items-center space-x-6">
+        <Skeleton className="h-6 w-20" />
+        <Skeleton className="h-6 w-20" />
+        <Skeleton className="h-6 w-20" />
+      </div>
+      <div className="flex items-center space-x-4">
+        <Skeleton className="h-8 w-8 rounded" />
+        <Skeleton className="h-10 w-10 rounded-full" />
+      </div>
     </div>
   )
 }
@@ -106,7 +183,7 @@ interface ListItemProps extends React.ComponentPropsWithoutRef<'a'> {
   className?: string
 }
 
-const ListItem = React.forwardRef<React.ElementRef<'a'>, ListItemProps>(
+const ListItem = React.forwardRef<React.ComponentRef<'a'>, ListItemProps>(
   ({ className, title, children, ...props }, ref) => {
     return (
       <li>

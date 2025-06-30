@@ -48,6 +48,7 @@ export const createCalcomUser = async (
   // Store tokens in database
   await storeCalcomTokens({
     calcomUserId: responseData.data.user.id,
+    calcomUsername: responseData.data.user.username,
     accessToken: responseData.data.accessToken,
     refreshToken: responseData.data.refreshToken,
     accessTokenExpiresAt: responseData.data.accessTokenExpiresAt,

@@ -1,7 +1,8 @@
 import { EmailInputForm } from '~/app/(default)/email-verification/EmailInputForm'
+import { SentEmailVerification } from '~/app/(default)/email-verification/Sent'
 import { StatusToast } from '~/components/shared/StatusToast'
+import { NotFoundError } from '~/lib/errors'
 import { getProfile } from '~/server/queries'
-import { SentEmailVerification } from '../Sent'
 
 interface EmailVerificationContentProps {
   searchParams: { status?: string }
@@ -17,14 +18,16 @@ export const EmailVerificationContent = async ({ searchParams }: EmailVerificati
 
   let isVerified = false
 
+  // Fetch the user's profile to determine verification status
   try {
-    // Fetch the user's profile to determine verification status
     const { profile } = await getProfile()
     isVerified = profile?.isEduVerified ?? false
   } catch (error) {
-    console.error('Failed to fetch profile:', error)
-    // Continue with default verification status on error
-    // This provides graceful degradation instead of breaking the component
+    if (error instanceof NotFoundError) {
+      isVerified = false
+    } else {
+      throw error
+    }
   }
 
   return (

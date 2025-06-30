@@ -72,8 +72,7 @@
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.9.1",
-    "@discuno/atoms": "workspace:*",
-    "@discuno/tailwind-config": "workspace:*",
+    "@calcom/atoms": "^1.0.114",
     "@neondatabase/serverless": "^1.0.1",
     "@radix-ui/react-avatar": "^1.1.10",
     "@radix-ui/react-dialog": "^1.1.14",

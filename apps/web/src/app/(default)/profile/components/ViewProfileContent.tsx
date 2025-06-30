@@ -7,6 +7,7 @@ import { getFullProfile } from '~/server/queries'
 
 export const ViewProfileContent = async () => {
   const profile = await getFullProfile()
+  console.log(profile)
 
   if (!profile) {
     return (

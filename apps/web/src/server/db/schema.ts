@@ -256,6 +256,7 @@ export const calcomTokens = createTable(
       .unique()
       .references(() => users.id),
     calcomUserId: integer('calcom_user_id').notNull(), // Cal.com managed user ID
+    calcomUsername: varchar('calcom_username', { length: 255 }).notNull(), // Cal.com generated username
     accessToken: text('access_token').notNull(),
     refreshToken: text('refresh_token').notNull(),
     accessTokenExpiresAt: timestamp('access_token_expires_at', {
@@ -271,6 +272,7 @@ export const calcomTokens = createTable(
   table => ({
     userIdIdx: index('calcom_tokens_user_id_idx').on(table.userId),
     accessTokenIdx: index('calcom_tokens_access_token_idx').on(table.accessToken),
+    calcomUsernameIdx: index('calcom_tokens_username_idx').on(table.calcomUsername),
   })
 )
 

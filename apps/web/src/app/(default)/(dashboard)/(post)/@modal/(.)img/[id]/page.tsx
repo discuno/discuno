@@ -1,8 +1,9 @@
 import { Calendar, Clock, ExternalLink, GraduationCap, School, User } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { BookingInterface } from '~/app/(default)/(dashboard)/(post)/(booking)/BookingInterface'
+import { notFound } from 'next/navigation'
 import { Modal } from '~/app/(default)/(dashboard)/(post)/@modal/(.)img/[id]/modal'
+import { BookingInterface } from '~/app/(default)/(dashboard)/book/components/BookingInterface'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
@@ -14,7 +15,7 @@ export default async function PostModal({ params }: { params: Promise<{ id: stri
   const idAsNumber = Number(postId)
 
   if (Number.isNaN(idAsNumber)) {
-    throw new Error('Invalid post ID')
+    return notFound()
   }
 
   const post = await getPostById(idAsNumber)
@@ -108,10 +109,12 @@ export default async function PostModal({ params }: { params: Promise<{ id: stri
 
           {/* Action Buttons */}
           <div className="flex flex-col gap-3 pt-2 sm:flex-row">
-            <BookingInterface variant="modal" className="flex-1">
-              <Calendar className="mr-2 h-4 w-4" />
-              Schedule Meeting
-            </BookingInterface>
+            {post.createdById && (
+              <BookingInterface variant="modal" className="flex-1" userId={post.createdById}>
+                <Calendar className="mr-2 h-4 w-4" />
+                Schedule Meeting
+              </BookingInterface>
+            )}
 
             <Button variant="outline" asChild className="flex-1">
               <Link href={`/img/${post.id}`}>

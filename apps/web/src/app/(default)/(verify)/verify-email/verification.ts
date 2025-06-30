@@ -1,9 +1,11 @@
 import jwt from 'jsonwebtoken'
+import { type UserProfile } from '~/app/types'
 import { env } from '~/env'
 import {
   BadRequestError,
   ConflictError,
   InternalServerError,
+  NotFoundError,
   UnauthorizedError,
 } from '~/lib/auth/auth-utils'
 import { createCalcomUser, updateCalcomUser } from '~/lib/calcom'
@@ -16,14 +18,11 @@ import {
 } from '~/server/queries'
 
 export const verifyEmail = async (token: string): Promise<void> => {
-  // if not in use check if user already has edu email
-  const { profile, userId: id } = await getProfile()
-
   if (!token || token.trim() === '') {
     throw new BadRequestError('Verification failed. Please try again.')
   }
 
-  // decode jwt
+  // Decode JWT first to get userId
   const decoded = jwt.verify(token, env.JWT_SECRET) as {
     userId: string
     eduEmail: string
@@ -31,40 +30,63 @@ export const verifyEmail = async (token: string): Promise<void> => {
 
   const { userId, eduEmail } = decoded
 
-  if (id !== userId) {
+  // Try to get existing profile, but don't fail if it doesn't exist
+  let profile: UserProfile | null = null
+  let profileUserId: string = userId // Default to token userId
+
+  try {
+    const { profile: p, userId: i } = await getProfile()
+    profile = p
+    profileUserId = i
+  } catch (error) {
+    if (error instanceof NotFoundError) {
+      // Profile doesn't exist yet - this is expected for first-time verification
+      // We'll create it when we call updateEduEmail
+      profile = null
+      profileUserId = userId
+    } else {
+      throw error // Re-throw unexpected errors
+    }
+  }
+
+  // Verify the token belongs to the current user
+  if (profileUserId !== userId) {
     throw new UnauthorizedError('Unauthorized. Please try again.')
   }
 
-  // Check if email is already in use
+  // Check if email is already in use by another user
   const emailInUse = await isEduEmailInUse(eduEmail)
   if (emailInUse) {
     throw new ConflictError('Email already in use. Please try again.')
   }
 
+  // Get user name (required for Cal.com user creation)
+  const name = await getUserName()
+  if (!name) {
+    throw new BadRequestError('Please set your name in the profile page.')
+  }
+
+  // Handle existing verified profile - update email and Cal.com user
   if (profile?.isEduVerified) {
-    // update calcom user with new email
     const calcomUserId = await getCalcomUserId()
     if (!calcomUserId) {
       throw new InternalServerError('Failed to get calcom user id. Please try again.')
     }
-    // update calcom user with new email
+
+    // Update Cal.com user with new email
     await updateCalcomUser({
       userId,
       calcomUserId,
       email: eduEmail,
     })
 
-    // update user profile with new email
+    // Update user profile with new email
     await updateEduEmail(eduEmail)
+    return
   }
 
-  // if not in use and not verified, create calcom user
-  const name = await getUserName()
-  if (!name) {
-    throw new BadRequestError('Please set your name in the profile page.')
-  }
-
-  // create calcom user
+  // Handle first-time verification or unverified profile
+  // Create Cal.com user for new mentor
   await createCalcomUser({
     userId,
     email: eduEmail,
@@ -73,5 +95,6 @@ export const verifyEmail = async (token: string): Promise<void> => {
     timeZone: 'America/New_York',
   })
 
+  // Create/update user profile with verified email
   await updateEduEmail(eduEmail)
 }

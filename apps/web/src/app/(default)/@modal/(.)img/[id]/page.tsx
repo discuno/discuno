@@ -1,7 +1,7 @@
 import { Calendar, Clock, ExternalLink, GraduationCap, School, User } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { BookingInterface } from '~/app/(default)/(dashboard)/(post)/(booking)/BookingInterface'
+import { BookingInterface } from '~/app/(default)/(dashboard)/book/components/BookingInterface'
 import { Modal } from '~/app/(default)/@modal/(.)img/[id]/modal'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { Badge } from '~/components/ui/badge'
@@ -108,10 +108,12 @@ const PostModal = async ({ params }: { params: Promise<{ id: string }> }) => {
 
           {/* Action Buttons */}
           <div className="flex flex-col gap-3 pt-2 sm:flex-row">
-            <BookingInterface variant="modal" className="flex-1">
-              <Calendar className="mr-2 h-4 w-4" />
-              Schedule Meeting
-            </BookingInterface>
+            {post.createdById && (
+              <BookingInterface variant="modal" className="flex-1" userId={post.createdById}>
+                <Calendar className="mr-2 h-4 w-4" />
+                Schedule Meeting
+              </BookingInterface>
+            )}
 
             <Button variant="outline" asChild className="flex-1">
               <Link href={`/img/${post.id}`}>

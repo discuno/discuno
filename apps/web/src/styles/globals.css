@@ -1,13 +1,12 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @custom-variant dark (&:is(.dark *));
 
 @theme {
   --font-sans:
-    var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system,
-    BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
-    "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
-    "Segoe UI Symbol", "Noto Color Emoji";
+    var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+    'Segoe UI Symbol', 'Noto Color Emoji';
 
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
@@ -345,5 +344,127 @@
     --border: 222 47% 11%;
     --input: 222 47% 11%;
     --ring: 346 89% 60%; /* rose-500 */
+  }
+}
+
+/* Cal.com Atoms Integration Styles */
+@layer components {
+  .cal-atoms-wrapper {
+    /* Reset Cal.com default styles and apply theme colors */
+    @apply text-foreground;
+    /* Ensure proper height and scrolling */
+    min-height: 500px;
+    max-height: 100%;
+    overflow-y: auto;
+  }
+
+  /* Style Cal.com form inputs to match our theme */
+  .cal-atoms-wrapper input,
+  .cal-atoms-wrapper textarea,
+  .cal-atoms-wrapper select {
+    @apply bg-background border-border text-foreground placeholder:text-muted-foreground;
+    @apply focus:border-ring focus:ring-ring/20 focus:outline-none focus:ring-2;
+    @apply rounded-md px-3 py-2 text-sm transition-colors;
+  }
+
+  /* Style Cal.com labels */
+  .cal-atoms-wrapper label {
+    @apply text-foreground mb-1 block text-sm font-medium;
+  }
+
+  /* Style Cal.com buttons */
+  .cal-atoms-wrapper button {
+    @apply rounded-md text-sm font-medium transition-colors;
+  }
+
+  /* Style Cal.com primary buttons */
+  .cal-atoms-wrapper button[type='submit'] {
+    @apply bg-primary hover:bg-primary/90 text-primary-foreground;
+    @apply focus:ring-ring focus:outline-none focus:ring-2 focus:ring-offset-2;
+  }
+
+  /* Style Cal.com secondary buttons */
+  .cal-atoms-wrapper button:not([type='submit']) {
+    @apply bg-secondary hover:bg-secondary/80 text-secondary-foreground border-border border;
+    @apply focus:ring-ring focus:outline-none focus:ring-2 focus:ring-offset-2;
+  }
+
+  /* Style Cal.com headings */
+  .cal-atoms-wrapper h1,
+  .cal-atoms-wrapper h2,
+  .cal-atoms-wrapper h3,
+  .cal-atoms-wrapper h4,
+  .cal-atoms-wrapper h5,
+  .cal-atoms-wrapper h6 {
+    @apply text-foreground;
+  }
+
+  /* Style Cal.com paragraphs and other text */
+  .cal-atoms-wrapper p,
+  .cal-atoms-wrapper span:not([class*='icon']) {
+    @apply text-muted-foreground;
+  }
+
+  /* Style Cal.com containers and panels */
+  .cal-atoms-wrapper .cal-sidebar,
+  .cal-atoms-wrapper [data-testid*='sidebar'] {
+    @apply bg-card border-border;
+  }
+
+  /* Style Cal.com main content areas */
+  .cal-atoms-wrapper .cal-main,
+  .cal-atoms-wrapper [data-testid*='main'] {
+    @apply bg-background;
+  }
+
+  /* Override any conflicting Cal.com styles */
+  .cal-atoms-wrapper * {
+    @apply border-border;
+  }
+
+  /* Ensure scrollable areas within Cal.com atoms */
+  .cal-atoms-wrapper .cal-scrollable,
+  .cal-atoms-wrapper [data-testid*='scroll'] {
+    overflow-y: auto !important;
+    max-height: 70vh !important;
+  }
+
+  /* Style dropdowns and selects */
+  .cal-atoms-wrapper select,
+  .cal-atoms-wrapper [role='combobox'] {
+    @apply bg-background border-border text-foreground;
+  }
+
+  /* Style toggles and switches */
+  .cal-atoms-wrapper [role='switch'] {
+    @apply bg-secondary border-border;
+  }
+
+  .cal-atoms-wrapper [role='switch'][data-state='checked'] {
+    @apply bg-primary;
+  }
+
+  /* Style tabs */
+  .cal-atoms-wrapper [role='tablist'] {
+    @apply bg-muted border-border rounded-lg;
+  }
+
+  .cal-atoms-wrapper [role='tab'] {
+    @apply text-muted-foreground hover:text-foreground;
+  }
+
+  .cal-atoms-wrapper [role='tab'][data-state='active'] {
+    @apply bg-background text-foreground;
+  }
+
+  /* Ensure form containers can scroll */
+  .cal-atoms-wrapper form {
+    max-height: none !important;
+    overflow-y: visible !important;
+  }
+
+  /* Add padding to bottom of Cal.com content to prevent cutoff */
+  .cal-atoms-wrapper > div:last-child {
+    padding-bottom: 2rem !important;
   }
 }
