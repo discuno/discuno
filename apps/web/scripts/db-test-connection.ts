@@ -27,7 +27,14 @@ const loadEnvironmentConfig = (environment: Environment) => {
     production: '.env.production',
   }
 
-  config({ path: envFiles[environment] })
+  const envFile = envFiles[environment]
+  console.log(`📄 Loading environment config from: ${envFile}`)
+
+  try {
+    config({ path: envFile })
+  } catch {
+    console.log(`⚠️  Could not load ${envFile}, using default environment variables`)
+  }
 }
 
 const testConnection = async (environment: Environment) => {

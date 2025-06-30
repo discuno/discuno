@@ -54,11 +54,13 @@ const runCommand = (
 const tests: Array<() => Promise<TestResult>> = [
   // Test 1: Seed script rejects production
   async () => {
-    const result = await runCommand('tsx', ['scripts/db-seed.ts', 'production'])
+    const result = await runCommand('pnpm', ['exec', 'tsx', 'scripts/db-seed.ts', 'production'])
     const passed =
       result.exitCode !== 0 &&
-      (result.stderr.includes('production not allowed') ||
-        result.stdout.includes('production not allowed'))
+      (result.stderr.includes('Invalid environment') ||
+        result.stdout.includes('Invalid environment') ||
+        result.stderr.includes('Production seeding is disabled') ||
+        result.stdout.includes('Production seeding is disabled'))
 
     return {
       name: 'Seed script rejects production environment',
@@ -71,10 +73,13 @@ const tests: Array<() => Promise<TestResult>> = [
 
   // Test 2: Reset script rejects production
   async () => {
-    const result = await runCommand('tsx', ['scripts/db-reset.ts', 'production'])
+    const result = await runCommand('pnpm', ['exec', 'tsx', 'scripts/db-reset.ts', 'production'])
     const passed =
       result.exitCode !== 0 &&
-      (result.stderr.includes('production') || result.stdout.includes('production'))
+      (result.stderr.includes('Invalid environment') ||
+        result.stdout.includes('Invalid environment') ||
+        result.stderr.includes('Production reset is disabled') ||
+        result.stdout.includes('Production reset is disabled'))
 
     return {
       name: 'Reset script rejects production environment',
@@ -87,7 +92,7 @@ const tests: Array<() => Promise<TestResult>> = [
 
   // Test 3: Seed script requires environment parameter
   async () => {
-    const result = await runCommand('tsx', ['scripts/db-seed.ts'])
+    const result = await runCommand('pnpm', ['exec', 'tsx', 'scripts/db-seed.ts'])
     const passed =
       result.exitCode !== 0 &&
       (result.stderr.includes('Environment is required') ||
@@ -104,7 +109,7 @@ const tests: Array<() => Promise<TestResult>> = [
 
   // Test 4: Reset script requires environment parameter
   async () => {
-    const result = await runCommand('tsx', ['scripts/db-reset.ts'])
+    const result = await runCommand('pnpm', ['exec', 'tsx', 'scripts/db-reset.ts'])
     const passed =
       result.exitCode !== 0 &&
       (result.stderr.includes('Environment is required') ||
@@ -121,7 +126,7 @@ const tests: Array<() => Promise<TestResult>> = [
 
   // Test 5: Invalid environment rejection
   async () => {
-    const result = await runCommand('tsx', ['scripts/db-seed.ts', 'invalid'])
+    const result = await runCommand('pnpm', ['exec', 'tsx', 'scripts/db-seed.ts', 'invalid'])
     const passed =
       result.exitCode !== 0 &&
       (result.stderr.includes('Invalid environment') ||
