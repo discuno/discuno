@@ -42,23 +42,24 @@ export const EventTypeListClient = ({ eventTypes }: EventTypeListClientProps) =>
   const [editId, setEditId] = useState<number | null>(null)
   const [showCreate, setShowCreate] = useState(false)
 
+  // Handle the create→edit flow
+  const handleEventTypeCreated = (eventTypeId: number) => {
+    // Close create modal and open edit modal for the newly created event type
+    setShowCreate(false)
+    setEditId(eventTypeId)
+  }
+
   // Debug log to see the actual data structure
   console.log('Event types data:', eventTypes)
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-foreground text-3xl font-bold tracking-tight">Event Types</h1>
-          <p className="text-muted-foreground mt-2">
-            Manage your availability, event types, and booking preferences
-          </p>
-        </div>
+      <div className="flex items-center justify-end">
         <Button
           onClick={() => setShowCreate(true)}
           className="bg-primary hover:bg-primary/90 text-primary-foreground"
         >
-          + New
+          + New Event Type
         </Button>
       </div>
 
@@ -155,7 +156,15 @@ export const EventTypeListClient = ({ eventTypes }: EventTypeListClientProps) =>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto px-1 py-4">
             <Suspense fallback={<LoadingSkeleton />}>
-              <CreateEventTypeComponent />
+              <CreateEventTypeComponent
+                onSuccess={eventType => {
+                  console.log('EventType created successfully', eventType)
+                  // Trigger the create→edit flow
+                  if (eventType?.id) {
+                    handleEventTypeCreated(eventType.id)
+                  }
+                }}
+              />
             </Suspense>
           </div>
         </DialogContent>
@@ -172,7 +181,11 @@ export const EventTypeListClient = ({ eventTypes }: EventTypeListClientProps) =>
           <div className="flex-1 overflow-y-auto px-1 py-4">
             {editId && (
               <Suspense fallback={<LoadingSkeleton />}>
-                <EventTypeSettingsComponent key={editId} eventTypeId={editId} />
+                <EventTypeSettingsComponent
+                  key={editId}
+                  eventTypeId={editId}
+                  setEditId={setEditId}
+                />
               </Suspense>
             )}
           </div>

@@ -19,7 +19,9 @@ const getCalcomAccessToken = async (): Promise<{
   error?: string
 }> => {
   try {
+    console.log('getCalcomAccessToken')
     const tokens = await getUserCalcomTokens()
+    console.log('tokens', tokens)
 
     if (!tokens) {
       return {
@@ -27,6 +29,8 @@ const getCalcomAccessToken = async (): Promise<{
         error: 'No Cal.com tokens found',
       }
     }
+
+    console.log('tokens.accessToken', tokens.accessToken)
 
     return {
       success: true,
@@ -53,8 +57,9 @@ const refreshCalcomToken = async (
   error?: string
 }> => {
   try {
+    console.log('refreshCalcomToken')
     const tokenRecord = await getCalcomToken(accessToken)
-
+    console.log('tokenRecord', tokenRecord)
     if (!tokenRecord) {
       return {
         success: false,
