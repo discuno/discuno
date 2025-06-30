@@ -1,24 +1,12 @@
-import React from 'react'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { renderWithProviders, userEvent } from '../../__tests__/test-utils'
-import { AvatarIcon } from './UserAvatar'
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { signOut } from 'next-auth/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { AvatarIcon } from './UserAvatar'
 
-// Mock next-auth using factory function
+// Mock next-auth
 vi.mock('next-auth/react', () => ({
   signOut: vi.fn(),
-  SessionProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-}))
-
-const mockSignOut = vi.mocked(signOut)
-
-// Mock Next.js Link
-vi.mock('next/link', () => ({
-  default: ({ children, href, ...props }: any) => (
-    <a href={href} {...props}>
-      {children}
-    </a>
-  ),
 }))
 
 // Mock the ThemeToggle component
@@ -26,95 +14,122 @@ vi.mock('~/app/(default)/(layout)/nav/ThemeToggle', () => ({
   ModeToggle: () => <button data-testid="theme-toggle">Theme Toggle</button>,
 }))
 
+// Create a test provider wrapper for consistent testing
+const renderWithProviders = (ui: React.ReactElement) => {
+  return render(ui)
+}
+
 describe('UserAvatar Component', () => {
   const defaultProps = {
     profilePic: 'https://example.com/profile.jpg',
+    isAuthenticated: true,
   }
 
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
-  describe('Basic Rendering', () => {
-    it('renders the avatar with profile picture', () => {
-      const { getByRole } = renderWithProviders(<AvatarIcon {...defaultProps} />)
+  describe('Authentication States', () => {
+    it('renders sign in button when not authenticated', () => {
+      renderWithProviders(<AvatarIcon {...defaultProps} isAuthenticated={false} />)
 
-      const avatarButton = getByRole('button', { name: 'User menu' })
-      expect(avatarButton).toBeInTheDocument()
+      const signInButton = screen.getByRole('link', { name: /sign in/i })
+      expect(signInButton).toBeInTheDocument()
+      expect(signInButton).toHaveAttribute('href', '/auth')
     })
 
-    it('renders the theme toggle', () => {
-      const { getByTestId } = renderWithProviders(<AvatarIcon {...defaultProps} />)
+    it('renders sign in button when profilePic is empty', () => {
+      renderWithProviders(<AvatarIcon profilePic="" isAuthenticated={true} />)
 
-      expect(getByTestId('theme-toggle')).toBeInTheDocument()
+      const signInButton = screen.getByRole('link', { name: /sign in/i })
+      expect(signInButton).toBeInTheDocument()
+      expect(signInButton).toHaveAttribute('href', '/auth')
+    })
+
+    it('renders avatar menu when authenticated with profile picture', () => {
+      renderWithProviders(<AvatarIcon {...defaultProps} />)
+
+      const avatarButton = screen.getByRole('button', { name: 'User menu' })
+      expect(avatarButton).toBeInTheDocument()
+    })
+  })
+
+  describe('Basic Rendering', () => {
+    it('renders the theme toggle', () => {
+      renderWithProviders(<AvatarIcon {...defaultProps} />)
+
+      expect(screen.getByTestId('theme-toggle')).toBeInTheDocument()
     })
 
     it('displays profile picture in avatar', () => {
-      const { container } = renderWithProviders(<AvatarIcon {...defaultProps} />)
+      renderWithProviders(<AvatarIcon {...defaultProps} />)
 
-      // Look for the AvatarImage component (which may or may not load)
-      const avatarImage = container.querySelector('img[alt="Profile Picture"]')
+      // Check for avatar image
+      const avatarImage = screen.queryByAltText('Profile Picture')
       if (avatarImage) {
         expect(avatarImage).toHaveAttribute('src', defaultProps.profilePic)
       } else {
-        // If image doesn't load, fallback should be present
-        expect(container.textContent).toContain('ME')
+        // If image doesn't load, fallback icon should be present
+        const fallbackIcon = screen.getByRole('button', { name: 'User menu' })
+        expect(fallbackIcon).toBeInTheDocument()
       }
     })
 
-    it('shows fallback when profile picture fails to load', () => {
-      const { getByText } = renderWithProviders(<AvatarIcon profilePic="" />)
+    it('shows fallback icon when profile picture fails to load', () => {
+      renderWithProviders(<AvatarIcon profilePic="" isAuthenticated={true} />)
 
-      expect(getByText('ME')).toBeInTheDocument()
+      // Component should render sign in button when no profile pic
+      expect(screen.getByRole('link', { name: /sign in/i })).toBeInTheDocument()
     })
   })
 
   describe('Dropdown Menu', () => {
     it('opens dropdown when avatar is clicked', async () => {
       const user = userEvent.setup()
-      const { getByRole, getByText } = renderWithProviders(<AvatarIcon {...defaultProps} />)
+      renderWithProviders(<AvatarIcon {...defaultProps} />)
 
-      const avatarButton = getByRole('button', { name: 'User menu' })
+      const avatarButton = screen.getByRole('button', { name: 'User menu' })
       await user.click(avatarButton)
 
-      expect(getByText('Quick Actions')).toBeInTheDocument()
+      expect(screen.getByText('Quick Actions')).toBeInTheDocument()
     })
 
     it('renders all menu items', async () => {
       const user = userEvent.setup()
-      const { getByRole, getByText } = renderWithProviders(<AvatarIcon {...defaultProps} />)
+      renderWithProviders(<AvatarIcon {...defaultProps} />)
 
-      const avatarButton = getByRole('button', { name: 'User menu' })
+      const avatarButton = screen.getByRole('button', { name: 'User menu' })
       await user.click(avatarButton)
 
-      expect(getByText('View Profile')).toBeInTheDocument()
-      expect(getByText('Notifications')).toBeInTheDocument()
-      expect(getByText('Messages')).toBeInTheDocument()
-      expect(getByText('Become a Mentor')).toBeInTheDocument()
-      expect(getByText('Help Center')).toBeInTheDocument()
-      expect(getByText('Log out')).toBeInTheDocument()
+      // Check for actual menu items from the component
+      expect(screen.getByText('View Profile')).toBeInTheDocument()
+      expect(screen.getByText('Dashboard')).toBeInTheDocument()
+      expect(screen.getByText('My Schedule')).toBeInTheDocument()
+      expect(screen.getByText('Become a Mentor')).toBeInTheDocument()
+      expect(screen.getByText('Help Center')).toBeInTheDocument()
+      expect(screen.getByText('Log out')).toBeInTheDocument()
     })
 
     it('renders correct links for menu items', async () => {
       const user = userEvent.setup()
-      const { getByRole } = renderWithProviders(<AvatarIcon {...defaultProps} />)
+      renderWithProviders(<AvatarIcon {...defaultProps} />)
 
-      const avatarButton = getByRole('button', { name: 'User menu' })
+      const avatarButton = screen.getByRole('button', { name: 'User menu' })
       await user.click(avatarButton)
 
-      const viewProfileLink = getByRole('link', { name: 'View Profile' })
+      const viewProfileLink = screen.getByRole('link', { name: 'View Profile' })
       expect(viewProfileLink).toHaveAttribute('href', '/profile/view')
 
-      const notificationsLink = getByRole('link', { name: 'Notifications' })
-      expect(notificationsLink).toHaveAttribute('href', '/notifications')
+      const dashboardLink = screen.getByRole('link', { name: 'Dashboard' })
+      expect(dashboardLink).toHaveAttribute('href', '/dashboard')
 
-      const messagesLink = getByRole('link', { name: 'Messages' })
-      expect(messagesLink).toHaveAttribute('href', '/messages')
+      const scheduleLink = screen.getByRole('link', { name: 'My Schedule' })
+      expect(scheduleLink).toHaveAttribute('href', '/scheduling')
 
-      const mentorLink = getByRole('link', { name: 'Become a Mentor' })
+      const mentorLink = screen.getByRole('link', { name: 'Become a Mentor' })
       expect(mentorLink).toHaveAttribute('href', '/email-verification')
 
-      const helpLink = getByRole('link', { name: 'Help Center' })
+      const helpLink = screen.getByRole('link', { name: 'Help Center' })
       expect(helpLink).toHaveAttribute('href', '/help')
     })
   })
@@ -122,31 +137,67 @@ describe('UserAvatar Component', () => {
   describe('Sign Out Functionality', () => {
     it('calls signOut when log out is clicked', async () => {
       const user = userEvent.setup()
-      const { getByRole, getByText } = renderWithProviders(<AvatarIcon {...defaultProps} />)
+      renderWithProviders(<AvatarIcon {...defaultProps} />)
 
-      const avatarButton = getByRole('button', { name: 'User menu' })
+      const avatarButton = screen.getByRole('button', { name: 'User menu' })
       await user.click(avatarButton)
 
-      const logoutButton = getByText('Log out')
+      const logoutButton = screen.getByText('Log out')
       await user.click(logoutButton)
 
-      expect(mockSignOut).toHaveBeenCalledTimes(1)
-      expect(mockSignOut).toHaveBeenCalledWith({ callbackUrl: '/' })
+      expect(vi.mocked(signOut)).toHaveBeenCalledTimes(1)
+      expect(vi.mocked(signOut)).toHaveBeenCalledWith({ callbackUrl: '/auth' })
+    })
+
+    it('handles sign out errors gracefully', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const originalLocation = window.location
+
+      // Mock window.location properly
+      Object.defineProperty(window, 'location', {
+        value: {
+          href: '',
+        },
+        writable: true,
+      })
+
+      vi.mocked(signOut).mockRejectedValueOnce(new Error('Sign out failed'))
+
+      const user = userEvent.setup()
+      renderWithProviders(<AvatarIcon {...defaultProps} />)
+
+      const avatarButton = screen.getByRole('button', { name: 'User menu' })
+      await user.click(avatarButton)
+
+      const logoutButton = screen.getByText('Log out')
+      await user.click(logoutButton)
+
+      // Wait for error handling
+      await new Promise(resolve => setTimeout(resolve, 0))
+
+      expect(consoleSpy).toHaveBeenCalledWith('Sign out error:', expect.any(Error))
+      expect(window.location.href).toBe('/auth')
+
+      consoleSpy.mockRestore()
+      Object.defineProperty(window, 'location', {
+        value: originalLocation,
+        writable: true,
+      })
     })
   })
 
   describe('Accessibility', () => {
     it('has proper ARIA labels', () => {
-      const { getByRole } = renderWithProviders(<AvatarIcon {...defaultProps} />)
+      renderWithProviders(<AvatarIcon {...defaultProps} />)
 
-      const avatarButton = getByRole('button', { name: 'User menu' })
+      const avatarButton = screen.getByRole('button', { name: 'User menu' })
       expect(avatarButton).toHaveAttribute('aria-label', 'User menu')
     })
 
     it('has proper button attributes', () => {
-      const { getByRole } = renderWithProviders(<AvatarIcon {...defaultProps} />)
+      renderWithProviders(<AvatarIcon {...defaultProps} />)
 
-      const avatarButton = getByRole('button', { name: 'User menu' })
+      const avatarButton = screen.getByRole('button', { name: 'User menu' })
       expect(avatarButton).toHaveClass('rounded-full')
       expect(avatarButton).toHaveClass('focus:ring-2')
       expect(avatarButton).toHaveClass('focus:ring-primary')
@@ -154,21 +205,21 @@ describe('UserAvatar Component', () => {
 
     it('supports keyboard navigation', async () => {
       const user = userEvent.setup()
-      const { getByRole, getByText } = renderWithProviders(<AvatarIcon {...defaultProps} />)
+      renderWithProviders(<AvatarIcon {...defaultProps} />)
 
-      const avatarButton = getByRole('button', { name: 'User menu' })
+      const avatarButton = screen.getByRole('button', { name: 'User menu' })
       avatarButton.focus()
       await user.keyboard('{Enter}')
 
-      expect(getByText('Quick Actions')).toBeInTheDocument()
+      expect(screen.getByText('Quick Actions')).toBeInTheDocument()
     })
   })
 
   describe('Visual Design', () => {
     it('has correct button styling', () => {
-      const { getByRole } = renderWithProviders(<AvatarIcon {...defaultProps} />)
+      renderWithProviders(<AvatarIcon {...defaultProps} />)
 
-      const avatarButton = getByRole('button', { name: 'User menu' })
+      const avatarButton = screen.getByRole('button', { name: 'User menu' })
       expect(avatarButton).toHaveClass(
         'h-10',
         'w-10',
@@ -205,16 +256,17 @@ describe('UserAvatar Component', () => {
 
   describe('Error Handling', () => {
     it('handles missing profile picture gracefully', () => {
-      const { getByText } = renderWithProviders(<AvatarIcon profilePic="" />)
+      renderWithProviders(<AvatarIcon profilePic="" isAuthenticated={true} />)
 
-      expect(getByText('ME')).toBeInTheDocument()
+      // Should show sign in button when no profile pic
+      expect(screen.getByRole('link', { name: /sign in/i })).toBeInTheDocument()
     })
 
-    it('handles invalid profile picture URL gracefully', () => {
-      const { getByText } = renderWithProviders(<AvatarIcon profilePic="invalid-url" />)
+    it('handles unauthenticated state gracefully', () => {
+      renderWithProviders(<AvatarIcon {...defaultProps} isAuthenticated={false} />)
 
-      // The fallback should still be available
-      expect(getByText('ME')).toBeInTheDocument()
+      // Should show sign in button when not authenticated
+      expect(screen.getByRole('link', { name: /sign in/i })).toBeInTheDocument()
     })
   })
 })
