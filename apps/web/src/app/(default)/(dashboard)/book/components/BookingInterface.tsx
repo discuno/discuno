@@ -46,7 +46,11 @@ export const BookingInterface = async ({
   }
 
   return (
-    <CalProviderWrapper useCurrentUserTokens={true}>
+    // TODO: pass mentorAccessToken and mentorRefreshToken to CalProviderWrapper
+    <CalProviderWrapper
+      mentorAccessToken={profile.accessToken}
+      mentorRefreshToken={profile.refreshToken}
+    >
       <Suspense fallback={<BookingEmbedSkeleton />}>
         {variant === 'button' && (
           <BookingButton bookingData={bookingData} className={className}>

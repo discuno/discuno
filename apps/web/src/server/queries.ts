@@ -631,6 +631,8 @@ export const getFullProfile = cache(async (): Promise<FullUserProfile | null> =>
 
       // Cal.com integration
       calcomUserId: calcomTokens.calcomUserId,
+      accessToken: calcomTokens.accessToken,
+      refreshToken: calcomTokens.refreshToken,
     })
     .from(users)
     .leftJoin(userProfiles, eq(users.id, userProfiles.userId))
@@ -663,6 +665,8 @@ export const getFullProfile = cache(async (): Promise<FullUserProfile | null> =>
     school: userData.schoolName,
     major: userData.majorName,
     calcomUserId: userData.calcomUserId,
+    accessToken: userData.accessToken,
+    refreshToken: userData.refreshToken,
   }
 })
 
@@ -694,6 +698,8 @@ export const getFullProfileByUserId = cache(
 
         // Cal.com integration
         calcomUserId: calcomTokens.calcomUserId,
+        accessToken: calcomTokens.accessToken,
+        refreshToken: calcomTokens.refreshToken,
       })
       .from(users)
       .leftJoin(userProfiles, eq(users.id, userProfiles.userId))
@@ -726,6 +732,8 @@ export const getFullProfileByUserId = cache(
       school: userData.schoolName,
       major: userData.majorName,
       calcomUserId: userData.calcomUserId,
+      accessToken: userData.accessToken,
+      refreshToken: userData.refreshToken,
     }
   }
 )
@@ -758,6 +766,8 @@ export const getProfileByUsername = cache(
 
         // Cal.com integration
         calcomUserId: calcomTokens.calcomUserId,
+        accessToken: calcomTokens.accessToken,
+        refreshToken: calcomTokens.refreshToken,
       })
       .from(users)
       .leftJoin(userProfiles, eq(users.id, userProfiles.userId))
@@ -790,6 +800,8 @@ export const getProfileByUsername = cache(
       school: userData.schoolName,
       major: userData.majorName,
       calcomUserId: userData.calcomUserId,
+      accessToken: userData.accessToken,
+      refreshToken: userData.refreshToken,
     }
   }
 )
@@ -822,6 +834,8 @@ export const getProfileByCalcomUsername = cache(
 
         // Cal.com integration
         calcomUserId: calcomTokens.calcomUserId,
+        accessToken: calcomTokens.accessToken,
+        refreshToken: calcomTokens.refreshToken,
       })
       .from(calcomTokens)
       .innerJoin(users, eq(calcomTokens.userId, users.id))
@@ -854,6 +868,8 @@ export const getProfileByCalcomUsername = cache(
       school: userData.schoolName,
       major: userData.majorName,
       calcomUserId: userData.calcomUserId,
+      accessToken: userData.accessToken,
+      refreshToken: userData.refreshToken,
     }
   }
 )
