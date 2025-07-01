@@ -1,16 +1,16 @@
 'use client'
 
-import { useState } from 'react'
+import { Chrome, Code, Computer, Loader2, Shield } from 'lucide-react'
 import { signIn } from 'next-auth/react'
+import { useState } from 'react'
+import { toast } from 'sonner'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
-import { Chrome, MessageSquare, Loader2, Shield, Code } from 'lucide-react'
-import { toast } from 'sonner'
 
 export function AdminLoginPage() {
   const [isLoading, setIsLoading] = useState<string | null>(null)
 
-  const handleSignIn = async (provider: 'google' | 'discord') => {
+  const handleSignIn = async (provider: 'google' | 'microsoft-entra-id') => {
     try {
       setIsLoading(provider)
       await signIn(provider, {
@@ -65,18 +65,18 @@ export function AdminLoginPage() {
               Continue with Google
             </Button>
 
-            {/* Discord Sign In */}
+            {/* Microsoft Entra ID Sign In */}
             <Button
-              onClick={() => handleSignIn('discord')}
+              onClick={() => handleSignIn('microsoft-entra-id')}
               disabled={isLoading !== null}
               className="h-12 w-full border-0 bg-[#5865F2] text-base font-medium text-white shadow-sm transition-all duration-200 hover:bg-[#4752C4]"
             >
-              {isLoading === 'discord' ? (
+              {isLoading === 'microsoft-entra-id' ? (
                 <Loader2 className="mr-3 h-5 w-5 animate-spin" />
               ) : (
-                <MessageSquare className="mr-3 h-5 w-5" />
+                <Computer className="mr-3 h-5 w-5" />
               )}
-              Continue with Discord
+              Continue with Microsoft Entra ID
             </Button>
 
             {/* Development Notice */}

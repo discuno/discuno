@@ -28,6 +28,9 @@ export const env = createEnv({
     X_CAL_SECRET_KEY: z.string(),
     SENTRY_DSN: z.string(),
     SENTRY_ENVIRONMENT: z.string(),
+    AUTH_MICROSOFT_ENTRA_ID_ISSUER: z.string(),
+    AUTH_MICROSOFT_ENTRA_ID_ID: z.string(),
+    AUTH_MICROSOFT_ENTRA_ID_SECRET: z.string(),
   },
 
   /**
@@ -70,6 +73,9 @@ export const env = createEnv({
     SENTRY_ENVIRONMENT: process.env.SENTRY_ENVIRONMENT,
     NEXT_PUBLIC_CALCOM_API_URL: process.env.NEXT_PUBLIC_CALCOM_API_URL,
     NEXT_PUBLIC_STRIPE_PUBLIC_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY,
+    AUTH_MICROSOFT_ENTRA_ID_ISSUER: process.env.AUTH_MICROSOFT_ENTRA_ID_ISSUER,
+    AUTH_MICROSOFT_ENTRA_ID_ID: process.env.AUTH_MICROSOFT_ENTRA_ID_ID,
+    AUTH_MICROSOFT_ENTRA_ID_SECRET: process.env.AUTH_MICROSOFT_ENTRA_ID_SECRET,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

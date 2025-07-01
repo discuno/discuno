@@ -1,8 +1,9 @@
 import { DrizzleAdapter } from '@auth/drizzle-adapter'
 import { type DefaultSession, type NextAuthConfig } from 'next-auth'
 import GoogleProvider from 'next-auth/providers/google'
+import MicrosoftEntraID from 'next-auth/providers/microsoft-entra-id'
+
 // import EmailProvider from "next-auth/providers/nodemailer";
-import DiscordProvider from 'next-auth/providers/discord'
 import { env } from '~/env'
 
 import { db } from '~/server/db'
@@ -36,14 +37,16 @@ declare module 'next-auth' {
  */
 export const authConfig = {
   providers: [
-    DiscordProvider({
-      clientId: env.AUTH_DISCORD_ID,
-      clientSecret: env.AUTH_DISCORD_SECRET,
+    MicrosoftEntraID({
+      clientId: env.AUTH_MICROSOFT_ENTRA_ID_ID,
+      clientSecret: env.AUTH_MICROSOFT_ENTRA_ID_SECRET,
+      issuer: env.AUTH_MICROSOFT_ENTRA_ID_ISSUER,
     }),
     GoogleProvider({
       clientId: env.AUTH_GOOGLE_ID,
       clientSecret: env.AUTH_GOOGLE_SECRET,
     }),
+
     // Email provider cannot run in edge runtime in middleware
     /*EmailProvider({
       server: {
