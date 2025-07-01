@@ -1,4 +1,4 @@
-import 'dotenv/config'
+import { config } from 'dotenv'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import { migrate } from 'drizzle-orm/postgres-js/migrator'
 import postgres from 'postgres'
@@ -10,16 +10,44 @@ import postgres from 'postgres'
 
 type Environment = 'local' | 'preview' | 'production'
 
+const loadEnvironmentConfig = (environment?: Environment) => {
+  if (!environment) {
+    // Load default .env if no environment specified
+    config({ path: '.env' })
+    return
+  }
+
+  const envFiles = {
+    local: '.env.local',
+    preview: '.env.preview',
+    production: '.env.production',
+  }
+
+  const envFile = envFiles[environment]
+  console.log(`📄 Loading environment config from: ${envFile}`)
+
+  try {
+    // Load environment-specific file first with override
+    config({ path: envFile, override: true })
+
+    // Load default .env as fallback for any missing variables
+    config({ path: '.env' })
+  } catch {
+    console.log(`⚠️  Could not load ${envFile}, trying .env as fallback`)
+    config({ path: '.env' })
+  }
+}
+
 const getConnectionString = (environment?: Environment): string => {
-  // Use explicit environment or fallback to local for development/test
-  const targetEnv = environment
+  // Load the appropriate environment configuration
+  loadEnvironmentConfig(environment)
 
   // Use the environment-specific DATABASE_URL
   // Railway typically provides these as DATABASE_URL in each environment
   const databaseUrl = process.env.DATABASE_URL
 
   if (!databaseUrl) {
-    throw new Error(`DATABASE_URL environment variable is not set for environment: ${targetEnv}`)
+    throw new Error(`DATABASE_URL environment variable is not set for environment: ${environment}`)
   }
 
   return databaseUrl

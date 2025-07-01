@@ -1,4 +1,4 @@
-import 'dotenv/config'
+import { config } from 'dotenv'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 import {
@@ -32,11 +32,42 @@ import {
 
 type Environment = 'local' | 'preview' | 'production'
 
-const createSeedConnection = () => {
+const loadEnvironmentConfig = (environment?: Environment) => {
+  if (!environment) {
+    // Load default .env if no environment specified
+    config({ path: '.env' })
+    return
+  }
+
+  const envFiles = {
+    local: '.env.local',
+    preview: '.env.preview',
+    production: '.env.production',
+  }
+
+  const envFile = envFiles[environment]
+  console.log(`📄 Loading environment config from: ${envFile}`)
+
+  try {
+    // Load environment-specific file first with override
+    config({ path: envFile, override: true })
+
+    // Load default .env as fallback for any missing variables
+    config({ path: '.env' })
+  } catch {
+    console.log(`⚠️  Could not load ${envFile}, trying .env as fallback`)
+    config({ path: '.env' })
+  }
+}
+
+const createSeedConnection = (environment?: Environment) => {
+  // Load the appropriate environment configuration
+  loadEnvironmentConfig(environment)
+
   const databaseUrl = process.env.DATABASE_URL
 
   if (!databaseUrl) {
-    throw new Error('DATABASE_URL environment variable is not set')
+    throw new Error(`DATABASE_URL environment variable is not set for environment: ${environment}`)
   }
 
   const seedClient = postgres(databaseUrl, {
@@ -529,128 +560,148 @@ export const seedDatabase = async (environment?: Environment) => {
 
   console.log(`🌱 Starting database seeding for environment: ${targetEnv}`)
 
-  const { client, db } = createSeedConnection()
+  const { client, db } = createSeedConnection(environment)
 
   try {
-    // Step 1: Insert majors
-    console.log('📚 Inserting majors...')
-    const insertedMajors = await db
-      .insert(majors)
-      .values(majorNames.map(name => ({ name })))
-      .returning()
+    // Use transaction for atomic seeding - rollback everything if any step fails
+    await db.transaction(async tx => {
+      console.log('🔄 Starting database transaction...')
 
-    // Step 2: Insert schools
-    console.log('🏫 Inserting schools...')
-    const insertedSchools = await db.insert(schools).values(schoolData).returning()
+      // Step 1: Insert majors
+      console.log('📚 Inserting majors...')
+      const insertedMajors = await tx
+        .insert(majors)
+        .values(majorNames.map(name => ({ name })))
+        .returning()
 
-    // Step 3: Insert users
-    console.log('👥 Inserting users...')
-    const userData = generateUserData(75)
-    const insertedUsers = await db.insert(users).values(userData).returning()
+      // Step 2: Insert schools
+      console.log('🏫 Inserting schools...')
+      const insertedSchools = await tx.insert(schools).values(schoolData).returning()
 
-    // Step 4: Insert user profiles
-    console.log('📋 Inserting user profiles...')
-    const userProfileData = insertedUsers.map((user, index) => {
-      const schoolYear = getRandomElement(schoolYears)
-      const graduationYear = generateGraduationYear(schoolYear)
-      const bioIndex = index % userBios.length
+      // Step 3: Insert users
+      console.log('👥 Inserting users...')
+      const userData = generateUserData(75)
+      const insertedUsers = await tx.insert(users).values(userData).returning()
 
-      return {
+      // Step 4: Insert user profiles
+      console.log('📋 Inserting user profiles...')
+      const userProfileData = insertedUsers.map((user, index) => {
+        const schoolYear = getRandomElement(schoolYears)
+        const graduationYear = generateGraduationYear(schoolYear)
+        const bioIndex = index % userBios.length
+
+        // Generate unique edu_email by including index to prevent duplicates
+        const baseEmail = user.name?.toLowerCase().replace(/\s+/g, '.') ?? `user${index}`
+        const eduEmail = `${baseEmail}.${index + 1}@university.edu`
+
+        return {
+          userId: user.id,
+          bio: userBios[bioIndex],
+          schoolYear,
+          graduationYear,
+          eduEmail,
+          isEduVerified: Math.random() > 0.3, // 70% verified
+        }
+      })
+      await tx.insert(userProfiles).values(userProfileData)
+
+      // Step 5: Insert user majors (each user gets 1-2 majors)
+      console.log('🎓 Inserting user majors...')
+      const userMajorData = []
+      for (const user of insertedUsers) {
+        const numMajors = Math.random() > 0.7 ? 2 : 1 // 30% chance of double major
+        const selectedMajors = getRandomElements(insertedMajors, numMajors)
+
+        for (const major of selectedMajors) {
+          userMajorData.push({
+            userId: user.id,
+            majorId: major.id,
+          })
+        }
+      }
+      await tx.insert(userMajors).values(userMajorData)
+
+      // Step 6: Insert user schools (each user gets one school)
+      console.log('🏛️ Inserting user schools...')
+      const userSchoolData = insertedUsers.map(user => ({
         userId: user.id,
-        bio: userBios[bioIndex],
-        schoolYear,
-        graduationYear,
-        eduEmail: `${user.name?.toLowerCase().replace(/\s+/g, '.')}@university.edu`,
-        isEduVerified: Math.random() > 0.3, // 70% verified
+        schoolId: getRandomElement(insertedSchools).id,
+      }))
+      await tx.insert(userSchools).values(userSchoolData)
+
+      // Step 7: Insert posts (60% of users get posts)
+      console.log('📝 Inserting posts...')
+      const postingUsers = getRandomElements(insertedUsers, Math.floor(insertedUsers.length * 0.6))
+      const selectedTitles = getRandomElements(postTitles, postingUsers.length)
+      const selectedDescriptions = getRandomElements(postDescriptions, postingUsers.length)
+
+      const postData = postingUsers.map((user, index) => ({
+        name: selectedTitles[index],
+        description: selectedDescriptions[index],
+        createdById: user.id,
+      }))
+      await tx.insert(posts).values(postData)
+
+      // Step 8: Insert mentor reviews (generate reviews for 40% of users)
+      console.log('⭐ Inserting mentor reviews...')
+      const mentors = getRandomElements(insertedUsers, Math.floor(insertedUsers.length * 0.4))
+      const reviewData = []
+
+      for (const mentor of mentors) {
+        // Each mentor gets 2-8 reviews
+        const numReviews = Math.floor(Math.random() * 7) + 2
+        const reviewers = getRandomElements(
+          insertedUsers.filter(u => u.id !== mentor.id),
+          Math.min(numReviews, insertedUsers.length - 1)
+        )
+
+        for (const reviewer of reviewers) {
+          const rating =
+            Math.random() > 0.1
+              ? Math.random() > 0.3
+                ? 5
+                : 4 // 70% get 5 stars, 20% get 4 stars
+              : Math.floor(Math.random() * 3) + 3 // 10% get 3, 2, or 1 stars
+
+          reviewData.push({
+            mentorId: mentor.id,
+            userId: reviewer.id,
+            rating,
+            review: getRandomElement(mentorReviewComments),
+          })
+        }
+      }
+      await tx.insert(mentorReviews).values(reviewData)
+
+      // Step 9: Insert waitlist entries
+      console.log('📧 Inserting waitlist entries...')
+      const waitlistData = waitlistEmails.map(email => ({ email }))
+      await tx.insert(waitlist).values(waitlistData)
+
+      console.log('✅ Transaction completed successfully!')
+
+      // Return data for final summary
+      return {
+        insertedUsers,
+        postData,
+        reviewData,
+        waitlistData,
       }
     })
-    await db.insert(userProfiles).values(userProfileData)
-
-    // Step 5: Insert user majors (each user gets 1-2 majors)
-    console.log('🎓 Inserting user majors...')
-    const userMajorData = []
-    for (const user of insertedUsers) {
-      const numMajors = Math.random() > 0.7 ? 2 : 1 // 30% chance of double major
-      const selectedMajors = getRandomElements(insertedMajors, numMajors)
-
-      for (const major of selectedMajors) {
-        userMajorData.push({
-          userId: user.id,
-          majorId: major.id,
-        })
-      }
-    }
-    await db.insert(userMajors).values(userMajorData)
-
-    // Step 6: Insert user schools (each user gets one school)
-    console.log('🏛️ Inserting user schools...')
-    const userSchoolData = insertedUsers.map(user => ({
-      userId: user.id,
-      schoolId: getRandomElement(insertedSchools).id,
-    }))
-    await db.insert(userSchools).values(userSchoolData)
-
-    // Step 7: Insert posts (60% of users get posts)
-    console.log('📝 Inserting posts...')
-    const postingUsers = getRandomElements(insertedUsers, Math.floor(insertedUsers.length * 0.6))
-    const selectedTitles = getRandomElements(postTitles, postingUsers.length)
-    const selectedDescriptions = getRandomElements(postDescriptions, postingUsers.length)
-
-    const postData = postingUsers.map((user, index) => ({
-      name: selectedTitles[index],
-      description: selectedDescriptions[index],
-      createdById: user.id,
-    }))
-    await db.insert(posts).values(postData)
-
-    // Step 8: Insert mentor reviews (generate reviews for 40% of users)
-    console.log('⭐ Inserting mentor reviews...')
-    const mentors = getRandomElements(insertedUsers, Math.floor(insertedUsers.length * 0.4))
-    const reviewData = []
-
-    for (const mentor of mentors) {
-      // Each mentor gets 2-8 reviews
-      const numReviews = Math.floor(Math.random() * 7) + 2
-      const reviewers = getRandomElements(
-        insertedUsers.filter(u => u.id !== mentor.id),
-        Math.min(numReviews, insertedUsers.length - 1)
-      )
-
-      for (const reviewer of reviewers) {
-        const rating =
-          Math.random() > 0.1
-            ? Math.random() > 0.3
-              ? 5
-              : 4 // 70% get 5 stars, 20% get 4 stars
-            : Math.floor(Math.random() * 3) + 3 // 10% get 3, 2, or 1 stars
-
-        reviewData.push({
-          mentorId: mentor.id,
-          userId: reviewer.id,
-          rating,
-          review: getRandomElement(mentorReviewComments),
-        })
-      }
-    }
-    await db.insert(mentorReviews).values(reviewData)
-
-    // Step 9: Insert waitlist entries
-    console.log('📧 Inserting waitlist entries...')
-    const waitlistData = waitlistEmails.map(email => ({ email }))
-    await db.insert(waitlist).values(waitlistData)
 
     console.log('🎉 Database seeding completed successfully!')
     console.log('📊 Generated comprehensive realistic data including:')
-    console.log(`  - ${insertedUsers.length} users with detailed profiles`)
-    console.log(`  - ${postData.length} posts with engaging content`)
+    console.log(`  - 75 users with detailed profiles`)
+    console.log(`  - Posts with engaging content`)
     console.log(`  - ${majorNames.length} majors and ${schoolData.length} schools`)
-    console.log(`  - ${reviewData.length} mentor reviews with ratings`)
-    console.log(`  - ${waitlistData.length} waitlist entries`)
+    console.log(`  - Mentor reviews with ratings`)
+    console.log(`  - Waitlist entries`)
     console.log('  - Complete relationship mappings between all entities')
     console.log('  - Realistic graduation years based on school year')
     console.log('  - Diverse bio content and user backgrounds')
   } catch (error) {
     console.error(`❌ Seeding failed for ${targetEnv}:`, error)
+    console.error('🔄 Transaction automatically rolled back')
     throw error
   } finally {
     await client.end()

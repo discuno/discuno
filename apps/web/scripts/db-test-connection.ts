@@ -13,7 +13,6 @@
  */
 
 import { config } from 'dotenv'
-import 'dotenv/config'
 import { sql } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
@@ -31,9 +30,14 @@ const loadEnvironmentConfig = (environment: Environment) => {
   console.log(`📄 Loading environment config from: ${envFile}`)
 
   try {
-    config({ path: envFile })
+    // Load environment-specific file first with override
+    config({ path: envFile, override: true })
+
+    // Load default .env as fallback for any missing variables
+    config({ path: '.env' })
   } catch {
-    console.log(`⚠️  Could not load ${envFile}, using default environment variables`)
+    console.log(`⚠️  Could not load ${envFile}, trying .env as fallback`)
+    config({ path: '.env' })
   }
 }
 

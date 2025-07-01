@@ -15,7 +15,7 @@
  * Production reset is intentionally disabled for safety.
  */
 
-import 'dotenv/config'
+import { config } from 'dotenv'
 import { sql } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
@@ -23,11 +23,35 @@ import { seedDatabase } from '../src/lib/db/seed'
 
 type Environment = 'local' | 'preview'
 
-const createResetConnection = () => {
+const loadEnvironmentConfig = (environment: Environment) => {
+  const envFiles = {
+    local: '.env.local',
+    preview: '.env.preview',
+  }
+
+  const envFile = envFiles[environment]
+  console.log(`📄 Loading environment config from: ${envFile}`)
+
+  try {
+    // Load environment-specific file first with override
+    config({ path: envFile, override: true })
+
+    // Load default .env as fallback for any missing variables
+    config({ path: '.env' })
+  } catch {
+    console.log(`⚠️  Could not load ${envFile}, trying .env as fallback`)
+    config({ path: '.env' })
+  }
+}
+
+const createResetConnection = (environment: Environment) => {
+  // Load the appropriate environment configuration
+  loadEnvironmentConfig(environment)
+
   const databaseUrl = process.env.DATABASE_URL
 
   if (!databaseUrl) {
-    throw new Error('DATABASE_URL environment variable is not set')
+    throw new Error(`DATABASE_URL environment variable is not set for environment: ${environment}`)
   }
 
   const resetClient = postgres(databaseUrl, {
@@ -41,9 +65,12 @@ const createResetConnection = () => {
 const dropAllTables = async (environment: Environment) => {
   console.log(`🗑️  Dropping all tables in ${environment} database...`)
 
-  const { client, db } = createResetConnection()
+  const { client, db } = createResetConnection(environment)
 
   try {
+    // First, disable foreign key checks temporarily to avoid dependency issues
+    await db.execute(sql`SET session_replication_role = replica;`)
+
     // Get all tables with the discuno prefix
     const tables = await db.execute(sql`
       SELECT tablename
@@ -65,16 +92,42 @@ const dropAllTables = async (environment: Environment) => {
       console.log(`   - ${row.tablename}`)
     })
 
-    // Drop all tables with CASCADE to handle dependencies
-    for (const row of tableRows) {
-      const tableName = (row as any).tablename
-      console.log(`   Dropping table: ${tableName}`)
-      await db.execute(sql.raw(`DROP TABLE IF EXISTS "${tableName}" CASCADE;`))
-    }
+    // Use transaction for atomic drop operation
+    await db.transaction(async tx => {
+      // Drop all tables with CASCADE to handle dependencies
+      for (const row of tableRows) {
+        const tableName = (row as any).tablename
+        console.log(`   Dropping table: ${tableName}`)
+        await tx.execute(sql.raw(`DROP TABLE IF EXISTS "${tableName}" CASCADE;`))
+      }
 
-    console.log(`✅ Successfully dropped ${tableRows.length} tables`)
+      // Also drop any sequences that might be left behind
+      const sequences = await tx.execute(sql`
+        SELECT sequence_name
+        FROM information_schema.sequences
+        WHERE sequence_schema = 'public'
+        AND sequence_name LIKE 'discuno_%';
+      `)
+
+      for (const seqRow of sequences) {
+        const sequenceName = (seqRow as any).sequence_name
+        console.log(`   Dropping sequence: ${sequenceName}`)
+        await tx.execute(sql.raw(`DROP SEQUENCE IF EXISTS "${sequenceName}" CASCADE;`))
+      }
+    })
+
+    // Re-enable foreign key checks
+    await db.execute(sql`SET session_replication_role = DEFAULT;`)
+
+    console.log(`✅ Successfully dropped ${tableRows.length} tables and associated sequences`)
   } catch (error) {
     console.error(`❌ Failed to drop tables:`, error)
+    // Try to re-enable foreign key checks even if drop failed
+    try {
+      await db.execute(sql`SET session_replication_role = DEFAULT;`)
+    } catch {
+      // Ignore errors when trying to reset replication role
+    }
     throw error
   } finally {
     await client.end()
@@ -83,6 +136,9 @@ const dropAllTables = async (environment: Environment) => {
 
 const pushSchema = async (environment: Environment) => {
   console.log(`🚀 Pushing schema to ${environment} database...`)
+
+  // Load environment config to ensure DATABASE_URL is set for drizzle-kit
+  loadEnvironmentConfig(environment)
 
   try {
     const { spawn } = await import('child_process')
@@ -93,12 +149,16 @@ const pushSchema = async (environment: Environment) => {
 
     console.log(`📂 Using config file: ${configFile}`)
 
+    // Set environment variable for the child process
+    const env = { ...process.env, DATABASE_URL: process.env.DATABASE_URL }
+
     // Use spawn to run drizzle-kit push with proper stdio handling
     const result = await new Promise<{ code: number; stdout: string; stderr: string }>(
       (resolve, reject) => {
         const childProcess = spawn('pnpm', ['drizzle-kit', 'push', `--config=${configFile}`], {
           stdio: ['inherit', 'pipe', 'pipe'],
           cwd: process.cwd(),
+          env,
         })
 
         let stdout = ''
