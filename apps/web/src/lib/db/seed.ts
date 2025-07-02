@@ -520,7 +520,7 @@ const generateUserData = (count: number) => {
     const first = getRandomElement(firstName)
     const last = getRandomElement(lastName)
     const name = `${first} ${last}`
-    const email = `${first.toLowerCase()}.${last.toLowerCase()}${i + 1}@example.com`
+    const email = `${first.toLowerCase()}.${last.toLowerCase()}${i + 1}@university.edu`
 
     users.push({
       name,
@@ -591,17 +591,11 @@ export const seedDatabase = async (environment?: Environment) => {
         const graduationYear = generateGraduationYear(schoolYear)
         const bioIndex = index % userBios.length
 
-        // Generate unique edu_email by including index to prevent duplicates
-        const baseEmail = user.name?.toLowerCase().replace(/\s+/g, '.') ?? `user${index}`
-        const eduEmail = `${baseEmail}.${index + 1}@university.edu`
-
         return {
           userId: user.id,
           bio: userBios[bioIndex],
           schoolYear,
           graduationYear,
-          eduEmail,
-          isEduVerified: Math.random() > 0.3, // 70% verified
         }
       })
       await tx.insert(userProfiles).values(userProfileData)

@@ -1,7 +1,7 @@
+import { eq } from 'drizzle-orm'
 import 'server-only'
 import { db } from '~/server/db'
 import { waitlist } from '~/server/db/schema'
-import { eq } from 'drizzle-orm'
 
 export async function getWaitlistEntry(email: string): Promise<{
   isNewEntry: boolean

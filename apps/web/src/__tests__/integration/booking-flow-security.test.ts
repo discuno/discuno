@@ -56,13 +56,12 @@ describe('Booking Flow Security Integration Tests', () => {
       id: 'user123',
       email: 'student@college.edu',
       role: 'student',
-      isEduVerified: true,
       credits: 100,
     })
 
     mockDatabase.users.set('mentor456', {
       id: 'mentor456',
-      email: 'mentor@example.com',
+      email: 'mentor@example.edu',
       role: 'mentor',
       calcomUserId: 'cal_user_789',
     })
@@ -72,7 +71,6 @@ describe('Booking Flow Security Integration Tests', () => {
       id: 'other_user',
       email: 'other@college.edu',
       role: 'student',
-      isEduVerified: true,
     })
   })
 
@@ -102,10 +100,7 @@ describe('Booking Flow Security Integration Tests', () => {
           throw new Error('Insufficient permissions')
         }
 
-        // Verify user can book this event type
-        if (userRole === 'student' && !user.isEduVerified) {
-          throw new Error('Email verification required')
-        }
+        // All users who can sign in have .edu emails and are verified mentors/students
 
         // Check available slots
         const availableSlots = await mockCalApiClient.getAvailableSlots(eventTypeId)
@@ -138,18 +133,6 @@ describe('Booking Flow Security Integration Tests', () => {
       await expect(
         createBooking('invalid_user', 123, '2024-06-15T11:00:00Z', 'student')
       ).rejects.toThrow('Authentication required')
-
-      // Test unverified user
-      mockDatabase.users.set('unverified_user', {
-        id: 'unverified_user',
-        email: 'unverified@college.edu',
-        role: 'student',
-        isEduVerified: false,
-      })
-
-      await expect(
-        createBooking('unverified_user', 123, '2024-06-15T14:00:00Z', 'student')
-      ).rejects.toThrow('Email verification required')
 
       // Test invalid time slot
       await expect(

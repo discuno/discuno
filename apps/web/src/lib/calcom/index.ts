@@ -1,7 +1,7 @@
 import type { CreateCalcomUserInput, UpdateCalcomUserInput } from '~/app/types'
 import { env } from '~/env'
-import { ExternalApiError } from '~/lib/auth/auth-utils'
-import { storeCalcomTokens, updateEduEmail } from '~/server/queries'
+import { BadRequestError, ExternalApiError } from '~/lib/auth/auth-utils'
+import { storeCalcomTokens } from '~/server/queries'
 
 /**
  * Create Cal.com user (core implementation)
@@ -12,52 +12,63 @@ export const createCalcomUser = async (
   calcomUserId: number
   username: string
 }> => {
-  const { email, name, timeZone = 'America/New_York' } = data
+  try {
+    const { email, name, timeZone } = data
 
-  // Create managed user in Cal.com
-  const response = await fetch(
-    `${env.NEXT_PUBLIC_CALCOM_API_URL}/oauth-clients/${env.NEXT_PUBLIC_X_CAL_ID}/users`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-cal-secret-key': env.X_CAL_SECRET_KEY,
-      },
-      body: JSON.stringify({
-        email,
-        name,
-        timeZone,
-        timeFormat: 12,
-        weekStart: 'Sunday',
-      }),
+    // Create managed user in Cal.com
+    const response = await fetch(
+      `${env.NEXT_PUBLIC_CALCOM_API_URL}/oauth-clients/${env.NEXT_PUBLIC_X_CAL_ID}/users`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-cal-secret-key': env.X_CAL_SECRET_KEY,
+        },
+        body: JSON.stringify({
+          email,
+          name,
+          timeZone,
+          timeFormat: 12,
+          weekStart: 'Sunday',
+        }),
+      }
+    )
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('Cal.com user creation failed:', response.status, errorText)
+      throw new ExternalApiError(`Cal.com API error: ${response.status} - ${errorText}`)
     }
-  )
 
-  // Check HTTP response status first
-  if (!response.ok) {
-    const errorText = await response.text()
-    throw new ExternalApiError(`Cal.com API HTTP error: ${response.status}: ${errorText}`)
-  }
+    const responseData = await response.json()
 
-  const responseData = await response.json()
+    if (responseData.status !== 'success') {
+      console.error('Cal.com user creation response error:', responseData)
+      throw new ExternalApiError(`Cal.com user creation failed: ${JSON.stringify(responseData)}`)
+    }
 
-  if (responseData.status !== 'success') {
-    throw new ExternalApiError(`Cal.com API error: ${responseData.error}`)
-  }
+    const calcomUser = responseData.data
 
-  // Store tokens in database
-  await storeCalcomTokens({
-    calcomUserId: responseData.data.user.id,
-    calcomUsername: responseData.data.user.username,
-    accessToken: responseData.data.accessToken,
-    refreshToken: responseData.data.refreshToken,
-    accessTokenExpiresAt: responseData.data.accessTokenExpiresAt,
-    refreshTokenExpiresAt: responseData.data.refreshTokenExpiresAt,
-  })
+    // Store tokens in our database
+    await storeCalcomTokens({
+      calcomUserId: calcomUser.id,
+      calcomUsername: calcomUser.username,
+      accessToken: calcomUser.accessToken,
+      refreshToken: calcomUser.refreshToken,
+      accessTokenExpiresAt: calcomUser.accessTokenExpiresAt,
+      refreshTokenExpiresAt: calcomUser.refreshTokenExpiresAt,
+    })
 
-  return {
-    calcomUserId: responseData.data.user.id,
-    username: responseData.data.user.username,
+    return {
+      calcomUserId: calcomUser.id,
+      username: calcomUser.username,
+    }
+  } catch (error) {
+    console.error('Cal.com user creation error:', error)
+    if (error instanceof ExternalApiError) {
+      throw error
+    }
+    throw new BadRequestError('Failed to create Cal.com user')
   }
 }
 
@@ -85,8 +96,5 @@ export const updateCalcomUser = async (data: UpdateCalcomUserInput): Promise<voi
     throw new ExternalApiError(`Cal.com API error: ${responseData.error}`)
   }
 
-  // Update the user profile with the new email
-  if (email) {
-    await updateEduEmail(email)
-  }
+  // User's .edu email is already verified through the auth process
 }

@@ -87,6 +87,23 @@ export const authConfig = {
         id: user.id,
       },
     }),
+    async signIn({ user }) {
+      // Only allow .edu email addresses
+      if (!user.email?.endsWith('.edu')) {
+        console.log(`Sign-in rejected for non-.edu email: ${user.email}`)
+        return false
+      }
+
+      // Ensure the user has a valid .edu email format
+      const eduEmailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.edu$/
+      if (!eduEmailRegex.test(user.email)) {
+        console.log(`Sign-in rejected for invalid .edu email format: ${user.email}`)
+        return false
+      }
+
+      console.log(`Sign-in approved for .edu email: ${user.email}`)
+      return true
+    },
   },
   secret: env.NEXTAUTH_SECRET,
 } satisfies NextAuthConfig

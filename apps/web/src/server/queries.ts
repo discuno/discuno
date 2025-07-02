@@ -3,7 +3,7 @@ import { cache } from 'react'
 import 'server-only'
 import { z } from 'zod'
 import type { CalcomTokenWithId, Card, FullUserProfile, UserProfile } from '~/app/types'
-import { getAuthSession, requireAuth } from '~/lib/auth/auth-utils'
+import { requireAuth } from '~/lib/auth/auth-utils'
 import { BadRequestError, InternalServerError, NotFoundError } from '~/lib/errors'
 import { db } from '~/server/db'
 import {
@@ -51,10 +51,6 @@ const calcomUpdateTokensSchema = z.object({
   refreshToken: z.string().min(1),
   accessTokenExpiresAt: z.number().int().positive(),
   refreshTokenExpiresAt: z.number().int().positive(),
-})
-
-const eduEmailSchema = z.object({
-  eduEmail: z.string().email().endsWith('.edu'),
 })
 
 // Shared query builder for posts with all necessary joins
@@ -286,40 +282,23 @@ const getProfileWithImage = async (): Promise<{
   profilePic: string
   isMentor: boolean
 }> => {
-  const user = await getAuthSession()
+  const { id: userId } = await requireAuth()
 
-  // If not authenticated, return default values instead of throwing
-  if (!user) {
-    return {
-      profilePic: '',
-      isMentor: false,
-    }
-  }
-
-  const userId = user.id
-
-  const profile = await db.query.userProfiles.findFirst({
-    where: (model, { eq }) => eq(model.userId, userId),
-    with: {
-      user: {
-        columns: {
-          image: true,
-        },
-      },
-    },
+  // Get user data including image
+  const user = await db.query.users.findFirst({
+    where: eq(users.id, userId),
   })
 
-  if (!profile?.user) {
-    // Return defaults instead of throwing
-    return {
-      profilePic: '',
-      isMentor: false,
-    }
-  }
+  // Check if user has a profile to determine mentor status
+  const profile = await db.query.userProfiles.findFirst({
+    where: eq(userProfiles.userId, userId),
+  })
+
+  const isMentor = !!profile // Users with profiles are mentors (since only .edu users can sign in)
 
   return {
-    profilePic: profile.user.image ?? '',
-    isMentor: profile.isEduVerified,
+    profilePic: user?.image ?? '/images/placeholder.jpg',
+    isMentor,
   }
 }
 
@@ -551,70 +530,6 @@ export const getCalcomUserId = cache(async (): Promise<number | null> => {
   return token.calcomUserId
 })
 
-export const updateEduEmail = async (eduEmail: string): Promise<void> => {
-  const { id: userId } = await requireAuth()
-  const { eduEmail: validEduEmail } = eduEmailSchema.parse({ eduEmail })
-
-  // Use upsert pattern - create profile if it doesn't exist, update if it does
-  const res = await db
-    .insert(userProfiles)
-    .values({
-      userId,
-      eduEmail: validEduEmail,
-      isEduVerified: true,
-      // Default values for required fields when creating new profile
-      schoolYear: 'Freshman',
-      graduationYear: new Date().getFullYear() + 4, // Default to 4 years from now
-      bio: null,
-    })
-    .onConflictDoUpdate({
-      target: userProfiles.userId,
-      set: {
-        eduEmail: validEduEmail,
-        isEduVerified: true,
-        updatedAt: new Date(),
-      },
-    })
-    .returning({
-      userId: userProfiles.userId,
-    })
-
-  if (res.length === 0) {
-    throw new InternalServerError('Failed to create or update profile')
-  }
-}
-
-export const isEduEmailInUse = async (eduEmail: string): Promise<boolean> => {
-  const { eduEmail: validEduEmail } = eduEmailSchema.parse({ eduEmail })
-
-  const profile = await db.query.userProfiles.findFirst({
-    where: eq(userProfiles.eduEmail, validEduEmail),
-  })
-
-  return profile?.isEduVerified ?? false
-}
-
-export const getProfileByEduEmail = async (
-  eduEmail: string
-): Promise<{ profile: UserProfile; userId: string; userName: string }> => {
-  const { id: userId, name: userName } = await requireAuth()
-  const { eduEmail: validEduEmail } = eduEmailSchema.parse({ eduEmail })
-
-  if (!userName) {
-    throw new BadRequestError('User name is required')
-  }
-
-  const profile = await db.query.userProfiles.findFirst({
-    where: eq(userProfiles.eduEmail, validEduEmail),
-  })
-
-  if (!profile) {
-    throw new NotFoundError(`Profile with edu email ${validEduEmail} not found`)
-  }
-
-  return { profile, userId, userName }
-}
-
 export const getFullProfile = cache(async (): Promise<FullUserProfile | null> => {
   const { id: userId } = await requireAuth()
 
@@ -631,8 +546,6 @@ export const getFullProfile = cache(async (): Promise<FullUserProfile | null> =>
       bio: userProfiles.bio,
       schoolYear: userProfiles.schoolYear,
       graduationYear: userProfiles.graduationYear,
-      eduEmail: userProfiles.eduEmail,
-      isEduVerified: userProfiles.isEduVerified,
 
       // School and major info
       schoolName: schools.name,
@@ -668,8 +581,6 @@ export const getFullProfile = cache(async (): Promise<FullUserProfile | null> =>
     bio: userData.bio,
     schoolYear: userData.schoolYear ?? 'Freshman',
     graduationYear: userData.graduationYear ?? new Date().getFullYear(),
-    eduEmail: userData.eduEmail,
-    isEduVerified: userData.isEduVerified ?? false,
     image: userData.image,
     name: userData.name,
     school: userData.schoolName,
@@ -700,8 +611,6 @@ export const getFullProfileByUserId = cache(
         bio: userProfiles.bio,
         schoolYear: userProfiles.schoolYear,
         graduationYear: userProfiles.graduationYear,
-        eduEmail: userProfiles.eduEmail,
-        isEduVerified: userProfiles.isEduVerified,
 
         // School and major info
         schoolName: schools.name,
@@ -739,8 +648,6 @@ export const getFullProfileByUserId = cache(
       bio: userData.bio,
       schoolYear: userData.schoolYear ?? 'Freshman',
       graduationYear: userData.graduationYear ?? new Date().getFullYear(),
-      eduEmail: userData.eduEmail,
-      isEduVerified: userData.isEduVerified ?? false,
       image: userData.image,
       name: userData.name,
       school: userData.schoolName,
@@ -773,8 +680,6 @@ export const getProfileByUsername = cache(
         bio: userProfiles.bio,
         schoolYear: userProfiles.schoolYear,
         graduationYear: userProfiles.graduationYear,
-        eduEmail: userProfiles.eduEmail,
-        isEduVerified: userProfiles.isEduVerified,
 
         // School and major info
         schoolName: schools.name,
@@ -810,8 +715,6 @@ export const getProfileByUsername = cache(
       bio: userData.bio,
       schoolYear: userData.schoolYear ?? 'Freshman',
       graduationYear: userData.graduationYear ?? new Date().getFullYear(),
-      eduEmail: userData.eduEmail,
-      isEduVerified: userData.isEduVerified ?? false,
       image: userData.image,
       name: userData.name,
       school: userData.schoolName,
@@ -824,7 +727,6 @@ export const getProfileByUsername = cache(
   }
 )
 
-// Not used
 export const getProfileByCalcomUsername = cache(
   async (calcomUsername: string): Promise<FullUserProfile | null> => {
     if (!calcomUsername) {
@@ -844,8 +746,6 @@ export const getProfileByCalcomUsername = cache(
         bio: userProfiles.bio,
         schoolYear: userProfiles.schoolYear,
         graduationYear: userProfiles.graduationYear,
-        eduEmail: userProfiles.eduEmail,
-        isEduVerified: userProfiles.isEduVerified,
 
         // School and major info
         schoolName: schools.name,
@@ -857,13 +757,13 @@ export const getProfileByCalcomUsername = cache(
         accessToken: calcomTokens.accessToken,
         refreshToken: calcomTokens.refreshToken,
       })
-      .from(calcomTokens)
-      .innerJoin(users, eq(calcomTokens.userId, users.id))
+      .from(users)
       .leftJoin(userProfiles, eq(users.id, userProfiles.userId))
       .leftJoin(userSchools, eq(users.id, userSchools.userId))
       .leftJoin(schools, eq(userSchools.schoolId, schools.id))
       .leftJoin(userMajors, eq(users.id, userMajors.userId))
       .leftJoin(majors, eq(userMajors.majorId, majors.id))
+      .leftJoin(calcomTokens, eq(users.id, calcomTokens.userId))
       .where(eq(calcomTokens.calcomUsername, calcomUsername))
       .limit(1)
 
@@ -881,8 +781,6 @@ export const getProfileByCalcomUsername = cache(
       bio: userData.bio,
       schoolYear: userData.schoolYear ?? 'Freshman',
       graduationYear: userData.graduationYear ?? new Date().getFullYear(),
-      eduEmail: userData.eduEmail,
-      isEduVerified: userData.isEduVerified ?? false,
       image: userData.image,
       name: userData.name,
       school: userData.schoolName,

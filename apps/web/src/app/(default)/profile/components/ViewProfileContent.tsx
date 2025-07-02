@@ -1,8 +1,10 @@
+import { CheckCircle, GraduationCap, User } from 'lucide-react'
 import Link from 'next/link'
 import { AvatarIcon } from '~/components/shared/UserAvatar'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
+import { Label } from '~/components/ui/label'
 import { getFullProfile } from '~/server/queries'
 
 export const ViewProfileContent = async () => {
@@ -48,55 +50,77 @@ export const ViewProfileContent = async () => {
         </CardContent>
       </Card>
 
-      {/* Profile Details */}
-      <div className="grid gap-6 md:grid-cols-2">
+      {/* Main content grid */}
+      <div className="space-y-6">
+        {/* Personal Information */}
         <Card>
           <CardHeader>
-            <CardTitle>Contact Information</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <User className="h-5 w-5" />
+              Personal Information
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <label className="text-muted-foreground text-sm font-medium">Email</label>
-              <p className="text-foreground">{profile.email}</p>
-            </div>
-            {profile.eduEmail && (
+            {profile.bio && (
               <div>
-                <label className="text-muted-foreground text-sm font-medium">
-                  Educational Email
-                </label>
-                <div className="flex items-center gap-2">
-                  <p className="text-foreground">{profile.eduEmail}</p>
-                  {profile.isEduVerified && (
-                    <Badge variant="default" className="text-xs">
-                      Verified
-                    </Badge>
-                  )}
-                </div>
+                <Label className="text-muted-foreground text-sm font-medium">Biography</Label>
+                <p className="text-foreground">{profile.bio}</p>
               </div>
             )}
           </CardContent>
         </Card>
 
+        {/* Academic Information */}
         <Card>
           <CardHeader>
-            <CardTitle>Academic Information</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <GraduationCap className="h-5 w-5" />
+              Academic Information
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <label className="text-muted-foreground text-sm font-medium">School</label>
-              <p className="text-foreground">{profile.school ?? 'Not specified'}</p>
+            {profile.school && (
+              <div>
+                <Label className="text-muted-foreground text-sm font-medium">School</Label>
+                <p className="text-foreground">{profile.school}</p>
+              </div>
+            )}
+
+            {profile.major && (
+              <div>
+                <Label className="text-muted-foreground text-sm font-medium">Major</Label>
+                <p className="text-foreground">{profile.major}</p>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-muted-foreground text-sm font-medium">Academic Level</Label>
+                <p className="text-foreground">{profile.schoolYear}</p>
+              </div>
+              <div>
+                <Label className="text-muted-foreground text-sm font-medium">Graduation Year</Label>
+                <p className="text-foreground">{profile.graduationYear}</p>
+              </div>
             </div>
-            <div>
-              <label className="text-muted-foreground text-sm font-medium">Major</label>
-              <p className="text-foreground">{profile.major ?? 'Not specified'}</p>
-            </div>
-            <div>
-              <label className="text-muted-foreground text-sm font-medium">Academic Level</label>
-              <p className="text-foreground">{profile.schoolYear}</p>
-            </div>
-            <div>
-              <label className="text-muted-foreground text-sm font-medium">Graduation Year</label>
-              <p className="text-foreground">{profile.graduationYear}</p>
+          </CardContent>
+        </Card>
+
+        {/* Mentor Status */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5" />
+              Mentor Status
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="bg-green-100 text-green-800">
+                <CheckCircle className="mr-1 h-3 w-3" />
+                Verified Mentor
+              </Badge>
+              <span className="text-muted-foreground text-sm">Verified college student mentor</span>
             </div>
           </CardContent>
         </Card>
@@ -109,15 +133,6 @@ export const ViewProfileContent = async () => {
             <Button asChild>
               <Link href="/profile/edit">Edit Profile</Link>
             </Button>
-            {profile.isEduVerified ? (
-              <Button asChild variant="outline">
-                <Link href="/mentor/onboarding">Mentor Dashboard</Link>
-              </Button>
-            ) : (
-              <Button asChild variant="outline">
-                <Link href="/email-verification">Verify Email</Link>
-              </Button>
-            )}
           </div>
         </CardContent>
       </Card>

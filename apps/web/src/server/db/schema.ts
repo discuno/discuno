@@ -1,6 +1,5 @@
 import { relations, sql } from 'drizzle-orm'
 import {
-  boolean,
   check,
   index,
   integer,
@@ -150,8 +149,6 @@ export const userProfiles = createTable(
       .notNull(),
     graduationYear: integer('graduation_year') // E.g., 2027
       .notNull(),
-    eduEmail: varchar('edu_email', { length: 255 }).unique(),
-    isEduVerified: boolean('is_edu_verified').notNull().default(false),
     ...timestamps,
   },
   table => ({
@@ -171,7 +168,6 @@ export const userProfiles = createTable(
     partialGradYearIdx: index('user_profiles_grad_year_partial_idx')
       .on(table.graduationYear)
       .where(sql`deleted_at IS NULL`),
-    eduEmailUserIdIdx: index('edu_email_user_id_idx').on(table.eduEmail, table.userId),
   })
 )
 

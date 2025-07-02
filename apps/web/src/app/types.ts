@@ -29,8 +29,6 @@ export interface UserProfile {
   bio: string | null
   schoolYear: 'Freshman' | 'Sophomore' | 'Junior' | 'Senior' | 'Graduate'
   graduationYear: number
-  eduEmail: string | null
-  isEduVerified: boolean
 }
 
 export interface UserProfileWithImage extends UserProfile {
@@ -150,8 +148,6 @@ export interface FullUserProfile {
   bio: string | null
   schoolYear: 'Freshman' | 'Sophomore' | 'Junior' | 'Senior' | 'Graduate'
   graduationYear: number
-  eduEmail: string | null
-  isEduVerified: boolean
   image: string | null
   name: string | null
   school: string | null

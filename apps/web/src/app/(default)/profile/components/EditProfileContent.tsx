@@ -152,29 +152,6 @@ export const EditProfileContent = async ({ searchParams }: EditProfileContentPro
           </CardContent>
         </Card>
 
-        {/* Educational Email */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Educational Email</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="eduEmail">College Email (.edu)</Label>
-              <Input
-                id="eduEmail"
-                name="eduEmail"
-                type="email"
-                defaultValue={profile?.eduEmail ?? ''}
-                placeholder="your.email@university.edu"
-                pattern=".*\.edu$"
-              />
-              <p className="text-muted-foreground mt-1 text-sm">
-                Use your official college email address to verify your student status
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Actions */}
         <div className="flex gap-4">
           <Button type="submit" className="flex-1">
