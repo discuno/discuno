@@ -15,7 +15,7 @@ interface BookingInterfaceProps {
 }
 
 interface BookingData {
-  username: string
+  calcomUsername: string
   name: string
   image: string
   bio: string
@@ -37,7 +37,7 @@ export const BookingInterface = async ({
   }
 
   const bookingData: BookingData = {
-    username: profile.name?.split(' ')[0] ?? 'fake-username',
+    calcomUsername: profile.calcomUsername ?? 'fake-username',
     name: profile.name ?? 'Mentor',
     image: profile.image ?? '',
     bio: profile.bio ?? '',
@@ -46,7 +46,6 @@ export const BookingInterface = async ({
   }
 
   return (
-    // TODO: pass mentorAccessToken and mentorRefreshToken to CalProviderWrapper
     <CalProviderWrapper
       mentorAccessToken={profile.accessToken}
       mentorRefreshToken={profile.refreshToken}
@@ -89,7 +88,7 @@ const BookingInline = ({ bookingData }: { bookingData: BookingData }) => {
   return (
     <div className="w-full">
       <Suspense fallback={<BookingEmbedSkeleton />}>
-        <BookingEmbed username={bookingData.username} />
+        <BookingEmbed username={bookingData.calcomUsername} />
       </Suspense>
     </div>
   )

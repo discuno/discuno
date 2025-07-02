@@ -91,20 +91,26 @@ const buildPostsQuery = () => {
     .leftJoin(majors, eq(userMajors.majorId, majors.id))
 }
 
-// Transform raw query result to Card format
 const transformPostResult = (result: any[]): Card[] => {
-  return result.map(({ post, creator, profile, school, major }) => ({
-    id: post.id,
-    name: post.name,
-    description: post.description,
-    createdById: post.createdById,
-    createdAt: post.createdAt,
-    userImage: creator?.image ?? null,
-    graduationYear: profile?.graduationYear ?? null,
-    schoolYear: profile?.schoolYear ?? null,
-    school: school?.name ?? null,
-    major: major?.name ?? null,
-  }))
+  // Transform raw query result to Card format, deduplicating by post.id (e.g., multiple majors)
+  const postMap = new Map<number, Card>()
+  for (const { post, creator, profile, school, major } of result) {
+    if (!postMap.has(post.id)) {
+      postMap.set(post.id, {
+        id: post.id,
+        name: post.name,
+        description: post.description,
+        createdById: post.createdById,
+        createdAt: post.createdAt,
+        userImage: creator?.image ?? null,
+        graduationYear: profile?.graduationYear ?? null,
+        schoolYear: profile?.schoolYear ?? null,
+        school: school?.name ?? null,
+        major: major?.name ?? null,
+      })
+    }
+  }
+  return Array.from(postMap.values())
 }
 
 // Improved cursor-based pagination for better performance
@@ -125,6 +131,7 @@ export const getPostsCursor = async (
 
   const hasMore = result.length > validLimit
   const postsData = hasMore ? result.slice(0, -1) : result
+  console.log('postsData', postsData)
   const nextCursor = hasMore ? postsData[postsData.length - 1]?.post.id : undefined
 
   return {
@@ -229,8 +236,10 @@ export const getPostsByFilters = async (
 
   const result = await query
 
+  console.log('getPostsByFilters result', result)
   const hasMore = result.length > validLimit
   const postsData = hasMore ? result.slice(0, -1) : result
+  console.log('getPostsByFilters postsData', postsData)
   const nextCursor = hasMore ? postsData[postsData.length - 1]?.post.id : undefined
 
   return {
@@ -631,6 +640,7 @@ export const getFullProfile = cache(async (): Promise<FullUserProfile | null> =>
 
       // Cal.com integration
       calcomUserId: calcomTokens.calcomUserId,
+      calcomUsername: calcomTokens.calcomUsername,
       accessToken: calcomTokens.accessToken,
       refreshToken: calcomTokens.refreshToken,
     })
@@ -665,6 +675,7 @@ export const getFullProfile = cache(async (): Promise<FullUserProfile | null> =>
     school: userData.schoolName,
     major: userData.majorName,
     calcomUserId: userData.calcomUserId,
+    calcomUsername: userData.calcomUsername,
     accessToken: userData.accessToken,
     refreshToken: userData.refreshToken,
   }
@@ -698,6 +709,7 @@ export const getFullProfileByUserId = cache(
 
         // Cal.com integration
         calcomUserId: calcomTokens.calcomUserId,
+        calcomUsername: calcomTokens.calcomUsername,
         accessToken: calcomTokens.accessToken,
         refreshToken: calcomTokens.refreshToken,
       })
@@ -710,6 +722,8 @@ export const getFullProfileByUserId = cache(
       .leftJoin(calcomTokens, eq(users.id, calcomTokens.userId))
       .where(eq(users.id, userId))
       .limit(1)
+
+    console.log('res', res)
 
     const userData = res[0]
 
@@ -732,12 +746,14 @@ export const getFullProfileByUserId = cache(
       school: userData.schoolName,
       major: userData.majorName,
       calcomUserId: userData.calcomUserId,
+      calcomUsername: userData.calcomUsername,
       accessToken: userData.accessToken,
       refreshToken: userData.refreshToken,
     }
   }
 )
 
+// Not used
 export const getProfileByUsername = cache(
   async (username: string): Promise<FullUserProfile | null> => {
     if (!username) {
@@ -766,6 +782,7 @@ export const getProfileByUsername = cache(
 
         // Cal.com integration
         calcomUserId: calcomTokens.calcomUserId,
+        calcomUsername: calcomTokens.calcomUsername,
         accessToken: calcomTokens.accessToken,
         refreshToken: calcomTokens.refreshToken,
       })
@@ -800,12 +817,14 @@ export const getProfileByUsername = cache(
       school: userData.schoolName,
       major: userData.majorName,
       calcomUserId: userData.calcomUserId,
+      calcomUsername: userData.calcomUsername,
       accessToken: userData.accessToken,
       refreshToken: userData.refreshToken,
     }
   }
 )
 
+// Not used
 export const getProfileByCalcomUsername = cache(
   async (calcomUsername: string): Promise<FullUserProfile | null> => {
     if (!calcomUsername) {
@@ -834,6 +853,7 @@ export const getProfileByCalcomUsername = cache(
 
         // Cal.com integration
         calcomUserId: calcomTokens.calcomUserId,
+        calcomUsername: calcomTokens.calcomUsername,
         accessToken: calcomTokens.accessToken,
         refreshToken: calcomTokens.refreshToken,
       })
@@ -868,6 +888,7 @@ export const getProfileByCalcomUsername = cache(
       school: userData.schoolName,
       major: userData.majorName,
       calcomUserId: userData.calcomUserId,
+      calcomUsername: userData.calcomUsername,
       accessToken: userData.accessToken,
       refreshToken: userData.refreshToken,
     }

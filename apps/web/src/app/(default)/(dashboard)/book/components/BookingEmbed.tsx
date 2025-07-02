@@ -8,7 +8,7 @@ interface BookingEmbedProps {
   hideEventTypeDetails?: boolean
 }
 
-export const BookingEmbed = ({ username, eventSlug = '30min' }: BookingEmbedProps) => {
+export const BookingEmbed = ({ username, eventSlug = 'default-event-type' }: BookingEmbedProps) => {
   return (
     <div className="bg-background h-full min-h-[600px] w-full rounded-lg border">
       <Booker

@@ -8,7 +8,7 @@ import { Button } from '~/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '~/components/ui/dialog'
 
 interface BookingData {
-  username: string
+  calcomUsername: string
   name: string
   image: string
   bio: string
@@ -55,7 +55,7 @@ export const BookingButton = ({ bookingData, children, className }: BookingButto
 
           <div className="flex-1 overflow-hidden">
             <Suspense fallback={<BookingEmbedSkeleton />}>
-              <BookingEmbed username={bookingData.username} />
+              <BookingEmbed username={bookingData.calcomUsername} />
             </Suspense>
           </div>
         </DialogContent>

@@ -1,5 +1,5 @@
-import { BookingContent } from '../components/BookingContent'
-import { BookingShell } from '../components/BookingShell'
+import { BookingContent } from '~/app/(default)/(dashboard)/book/components/BookingContent'
+import { BookingShell } from '~/app/(default)/(dashboard)/book/components/BookingShell'
 
 interface BookingPageProps {
   params: Promise<{

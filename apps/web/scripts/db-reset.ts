@@ -68,6 +68,41 @@ const dropAllTables = async (environment: Environment) => {
   const { client, db } = createResetConnection(environment)
 
   try {
+    // Step 0: Delete Cal.com managed users for existing local tokens
+    console.log('🌐 Deleting Cal.com managed users...')
+    const calcomApiBase = process.env.NEXT_PUBLIC_CALCOM_API_URL
+    const calcomClientId = process.env.NEXT_PUBLIC_X_CAL_ID
+    const calcomSecretKey = process.env.X_CAL_SECRET_KEY
+    if (!calcomClientId || !calcomSecretKey) {
+      console.warn('⚠️ Missing Cal.com credentials. Skipping Cal.com user cleanup.')
+    } else {
+      const tokens = await db.execute(
+        sql`SELECT user_id AS "userId", calcom_user_id AS "calcomUserId" FROM discuno_calcom_token`
+      )
+      for (const row of tokens) {
+        try {
+          const res = await fetch(
+            `${calcomApiBase}/oauth-clients/${calcomClientId}/users/${row.calcomUserId}`,
+            {
+              method: 'DELETE',
+              headers: {
+                'x-cal-secret-key': calcomSecretKey,
+              },
+            }
+          )
+          if (!res.ok) {
+            const text = await res.text()
+            console.error(
+              `Failed to delete Cal.com user ${row.calcomUserId}: ${res.status} ${text}`
+            )
+          } else {
+            console.log(`Deleted Cal.com user ${row.calcomUserId}`)
+          }
+        } catch (error) {
+          console.error(`Error deleting Cal.com user ${row.calcomUserId}:`, error)
+        }
+      }
+    }
     // First, disable foreign key checks temporarily to avoid dependency issues
     await db.execute(sql`SET session_replication_role = replica;`)
 

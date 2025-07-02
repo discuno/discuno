@@ -110,7 +110,7 @@ export const BookingContent = async ({ username, eventType }: BookingContentProp
                 >
                   <BookingEmbed
                     username={mentorTokens.calcomUsername}
-                    eventSlug={eventType ?? '30min'}
+                    eventSlug={eventType ?? 'default-event-type'}
                   />
                 </CalProviderWrapper>
               ) : (

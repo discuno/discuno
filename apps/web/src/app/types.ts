@@ -157,6 +157,7 @@ export interface FullUserProfile {
   school: string | null
   major: string | null
   calcomUserId: number | null
+  calcomUsername: string | null
   accessToken: string | null
   refreshToken: string | null
 }

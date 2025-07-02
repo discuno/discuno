@@ -2,6 +2,7 @@ import { config } from 'dotenv'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 import {
+  calcomTokens,
   majors,
   mentorReviews,
   posts,
@@ -629,9 +630,9 @@ export const seedDatabase = async (environment?: Environment) => {
       }))
       await tx.insert(userSchools).values(userSchoolData)
 
-      // Step 7: Insert posts (60% of users get posts)
+      // Step 7: Insert posts (all users get exactly one post)
       console.log('📝 Inserting posts...')
-      const postingUsers = getRandomElements(insertedUsers, Math.floor(insertedUsers.length * 0.6))
+      const postingUsers = insertedUsers // All users get exactly one post
       const selectedTitles = getRandomElements(postTitles, postingUsers.length)
       const selectedDescriptions = getRandomElements(postDescriptions, postingUsers.length)
 
@@ -673,7 +674,125 @@ export const seedDatabase = async (environment?: Environment) => {
       }
       await tx.insert(mentorReviews).values(reviewData)
 
-      // Step 9: Insert waitlist entries
+      // Step 9: Create Cal.com managed users and tokens for mentors
+      console.log('🌐 Creating Cal.com managed users for mentors...')
+      const calcomApiBase = process.env.NEXT_PUBLIC_CALCOM_API_URL
+      const calcomClientId = process.env.NEXT_PUBLIC_X_CAL_ID
+      const calcomSecretKey = process.env.X_CAL_SECRET_KEY
+      if (!calcomClientId || !calcomSecretKey) {
+        throw new Error('Missing Cal.com credentials: CALCOM_CLIENT_ID and/or CALCOM_SECRET_KEY')
+      }
+      const calcomTokenData: Array<{
+        userId: string
+        calcomUserId: number
+        calcomUsername: string
+        accessToken: string
+        refreshToken: string
+        accessTokenExpiresAt: Date
+        refreshTokenExpiresAt: Date
+      }> = []
+      for (const mentor of mentors) {
+        try {
+          const response = await fetch(`${calcomApiBase}/oauth-clients/${calcomClientId}/users`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-cal-secret-key': calcomSecretKey,
+            },
+            body: JSON.stringify({
+              email: mentor.email,
+              name: mentor.name ?? '',
+              timeFormat: 12,
+              weekStart: 'Monday',
+              timeZone: 'UTC',
+              locale: 'en',
+              avatarUrl: mentor.image ?? undefined,
+              bio: '',
+              metadata: {},
+            }),
+          })
+          if (!response.ok) {
+            const errText = await response.text()
+            throw new Error(
+              `Failed to create Cal.com user for ${mentor.email}: ${response.status} ${errText}`
+            )
+          }
+          const json = await response.json()
+          const {
+            accessToken,
+            refreshToken,
+            accessTokenExpiresAt,
+            refreshTokenExpiresAt,
+            user: calUser,
+          } = json.data
+          calcomTokenData.push({
+            userId: mentor.id,
+            calcomUserId: calUser.id,
+            calcomUsername: calUser.username,
+            accessToken,
+            refreshToken,
+            accessTokenExpiresAt: new Date(accessTokenExpiresAt),
+            refreshTokenExpiresAt: new Date(refreshTokenExpiresAt),
+          })
+        } catch (error) {
+          console.error(error)
+        }
+      }
+      if (calcomTokenData.length > 0) {
+        console.log('📑 Inserting Cal.com tokens into DB...')
+        await tx.insert(calcomTokens).values(calcomTokenData)
+      }
+
+      // Step 10: Create Cal.com event types for mentors
+      console.log('📅 Creating Cal.com event types for mentors...')
+      for (const tokenRecord of calcomTokenData) {
+        const { accessToken, calcomUsername } = tokenRecord
+        const eventTypes = [
+          {
+            title: 'default-event-type',
+            slug: 'default-event-type',
+            lengthInMinutes: 60,
+            lengthInMinutesOptions: [15, 30, 60],
+          },
+          {
+            title: `extra-event-type-1-${calcomUsername}`,
+            slug: `extra-event-type-1-${calcomUsername}`,
+            lengthInMinutes: 30,
+            lengthInMinutesOptions: [15, 30],
+          },
+          {
+            title: `extra-event-type-2-${calcomUsername}`,
+            slug: `extra-event-type-2-${calcomUsername}`,
+            lengthInMinutes: 45,
+            lengthInMinutesOptions: [15, 45],
+          },
+        ]
+        for (const evt of eventTypes) {
+          try {
+            const res = await fetch(`${calcomApiBase}/event-types`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'cal-api-version': '2024-06-14',
+                Authorization: `Bearer ${accessToken}`,
+              },
+              body: JSON.stringify(evt),
+            })
+            if (!res.ok) {
+              const text = await res.text()
+              console.error(
+                `Failed to create event type ${evt.slug} for ${calcomUsername}: ${res.status} ${text}`
+              )
+            } else {
+              console.log(`Created event type ${evt.slug} for ${calcomUsername}`)
+            }
+          } catch (err) {
+            console.error(`Error creating event type ${evt.slug} for ${calcomUsername}:`, err)
+          }
+        }
+      }
+
+      // Step 11: Insert waitlist entries
       console.log('📧 Inserting waitlist entries...')
       const waitlistData = waitlistEmails.map(email => ({ email }))
       await tx.insert(waitlist).values(waitlistData)
