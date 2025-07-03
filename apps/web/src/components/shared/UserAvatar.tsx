@@ -16,11 +16,11 @@ import {
   DropdownMenuTrigger,
 } from '~/components/ui/dropdown-menu'
 
-const AvatarPic = ({ profilePic }: { profilePic: string }) => {
+const AvatarPic = ({ profilePic }: { profilePic: string | null }) => {
   return (
     <div className="h-10 w-10">
       <Avatar>
-        <AvatarImage src={profilePic || undefined} alt="Profile Picture" />
+        <AvatarImage src={profilePic ?? undefined} alt="Profile Picture" />
         <AvatarFallback>
           <User className="h-5 w-5" />
         </AvatarFallback>
@@ -30,11 +30,11 @@ const AvatarPic = ({ profilePic }: { profilePic: string }) => {
 }
 
 interface AvatarIconProps {
-  profilePic: string
+  profilePic: string | null
   isAuthenticated?: boolean
 }
 
-export const AvatarIcon = ({ profilePic, isAuthenticated = true }: AvatarIconProps) => {
+export const AvatarIcon = ({ profilePic, isAuthenticated = false }: AvatarIconProps) => {
   // Show login button for unauthenticated users
   if (!isAuthenticated || !profilePic) {
     return (

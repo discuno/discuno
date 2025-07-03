@@ -6,6 +6,7 @@ import MicrosoftEntraID from 'next-auth/providers/microsoft-entra-id'
 // import EmailProvider from "next-auth/providers/nodemailer";
 import { env } from '~/env'
 
+import { enforceCalcomIntegration } from '~/server/auth/dal'
 import { db } from '~/server/db'
 import { accounts, sessions, users, verificationTokens } from '~/server/db/schema'
 
@@ -41,10 +42,12 @@ export const authConfig = {
       clientId: env.AUTH_MICROSOFT_ENTRA_ID_ID,
       clientSecret: env.AUTH_MICROSOFT_ENTRA_ID_SECRET,
       issuer: env.AUTH_MICROSOFT_ENTRA_ID_ISSUER,
+      allowDangerousEmailAccountLinking: true, // Ok because trusted
     }),
     GoogleProvider({
       clientId: env.AUTH_GOOGLE_ID,
       clientSecret: env.AUTH_GOOGLE_SECRET,
+      allowDangerousEmailAccountLinking: true,
     }),
 
     // Email provider cannot run in edge runtime in middleware
@@ -79,6 +82,10 @@ export const authConfig = {
     sessionsTable: sessions,
     verificationTokensTable: verificationTokens,
   }),
+  pages: {
+    error: '/auth/error',
+    signIn: '/auth',
+  },
   callbacks: {
     session: ({ session, user }: { session: DefaultSession; user: { id: string } }) => ({
       ...session,
@@ -88,21 +95,52 @@ export const authConfig = {
       },
     }),
     async signIn({ user }) {
-      // Only allow .edu email addresses
-      if (!user.email?.endsWith('.edu')) {
-        console.log(`Sign-in rejected for non-.edu email: ${user.email}`)
-        return false
-      }
+      try {
+        // Only allow .edu email addresses
+        if (!user.email?.endsWith('.edu')) {
+          console.log(`Sign-in rejected for non-.edu email: ${user.email}`)
+          // Redirect to rejection page
+          return '/auth/rejected'
+        }
 
-      // Ensure the user has a valid .edu email format
-      const eduEmailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.edu$/
-      if (!eduEmailRegex.test(user.email)) {
-        console.log(`Sign-in rejected for invalid .edu email format: ${user.email}`)
-        return false
-      }
+        // Ensure the user has a valid .edu email format
+        const eduEmailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.edu$/
+        if (!eduEmailRegex.test(user.email)) {
+          console.log(`Sign-in rejected for invalid .edu email format: ${user.email}`)
+          return '/auth/rejected'
+        }
 
-      console.log(`Sign-in approved for .edu email: ${user.email}`)
-      return true
+        console.log(`Sign-in approved for .edu email: ${user.email}`)
+
+        return true
+      } catch (error) {
+        console.error('Error in signIn callback:', error)
+        return '/auth/error'
+      }
+    },
+  },
+  events: {
+    async signIn({ user, isNewUser }) {
+      // TODO: Handle database entry if calcom integration fails
+      // This event is called AFTER the user record is created in the database
+      if (user.id && user.email) {
+        console.log(
+          `Creating Cal.com integration for user: ${user.email} (isNewUser: ${isNewUser})`
+        )
+
+        const result = await enforceCalcomIntegration({
+          userId: user.id,
+          email: user.email,
+          name: user.name ?? null,
+          image: user.image ?? null,
+        })
+
+        if (result.success) {
+          console.log(`Cal.com integration created successfully for: ${user.email}`)
+        } else {
+          console.error(`Cal.com integration failed for: ${user.email} - ${result.error}`)
+        }
+      }
     },
   },
   secret: env.NEXTAUTH_SECRET,

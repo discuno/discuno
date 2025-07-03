@@ -3,7 +3,7 @@ import { cache } from 'react'
 import 'server-only'
 import { z } from 'zod'
 import type { CalcomTokenWithId, Card, FullUserProfile, UserProfile } from '~/app/types'
-import { requireAuth } from '~/lib/auth/auth-utils'
+import { getAuthSession, requireAuth } from '~/lib/auth/auth-utils'
 import { BadRequestError, InternalServerError, NotFoundError } from '~/lib/errors'
 import { db } from '~/server/db'
 import {
@@ -279,26 +279,21 @@ export const getProfile = cache(
 )
 
 const getProfileWithImage = async (): Promise<{
-  profilePic: string
-  isMentor: boolean
-}> => {
-  const { id: userId } = await requireAuth()
+  profilePic: string | null
+} | null> => {
+  const session = await getAuthSession()
+
+  if (!session?.id) {
+    return null
+  }
 
   // Get user data including image
   const user = await db.query.users.findFirst({
-    where: eq(users.id, userId),
+    where: eq(users.id, session.id),
   })
-
-  // Check if user has a profile to determine mentor status
-  const profile = await db.query.userProfiles.findFirst({
-    where: eq(userProfiles.userId, userId),
-  })
-
-  const isMentor = !!profile // Users with profiles are mentors (since only .edu users can sign in)
 
   return {
-    profilePic: user?.image ?? '/images/placeholder.jpg',
-    isMentor,
+    profilePic: user?.image ?? null,
   }
 }
 
@@ -321,6 +316,37 @@ export const storeCalcomTokens = async ({
 }): Promise<void> => {
   const { id: userId } = await requireAuth()
 
+  await storeCalcomTokensForUser({
+    userId,
+    calcomUserId,
+    calcomUsername,
+    accessToken,
+    refreshToken,
+    accessTokenExpiresAt,
+    refreshTokenExpiresAt,
+  })
+}
+
+/**
+ * Store Cal.com tokens for a specific user ID (used during authentication flow)
+ */
+export const storeCalcomTokensForUser = async ({
+  userId,
+  calcomUserId,
+  calcomUsername,
+  accessToken,
+  refreshToken,
+  accessTokenExpiresAt,
+  refreshTokenExpiresAt,
+}: {
+  userId: string
+  calcomUserId: number
+  calcomUsername: string
+  accessToken: string
+  refreshToken: string
+  accessTokenExpiresAt: number
+  refreshTokenExpiresAt: number
+}): Promise<void> => {
   const validData = calcomStoreTokensSchema.parse({
     calcomUserId,
     calcomUsername,

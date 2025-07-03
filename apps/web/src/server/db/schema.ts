@@ -72,7 +72,7 @@ export const accounts = createTable(
   {
     userId: varchar('user_id', { length: 255 })
       .notNull()
-      .references(() => users.id),
+      .references(() => users.id, { onDelete: 'cascade' }),
     type: varchar('type', { length: 255 }).$type<AdapterAccount['type']>().notNull(),
     provider: varchar('provider', { length: 255 }).notNull(),
     providerAccountId: varchar('provider_account_id', {
@@ -104,7 +104,7 @@ export const sessions = createTable(
     sessionToken: varchar('session_token', { length: 255 }).notNull().primaryKey(),
     userId: varchar('user_id', { length: 255 })
       .notNull()
-      .references(() => users.id),
+      .references(() => users.id, { onDelete: 'cascade' }),
     expires: timestamp('expires', {
       mode: 'date',
       withTimezone: true,
@@ -141,7 +141,7 @@ export const userProfiles = createTable(
     userId: varchar('user_id', { length: 255 })
       .notNull()
       .unique()
-      .references(() => users.id),
+      .references(() => users.id, { onDelete: 'cascade' }),
     bio: varchar('bio', { length: 1000 }),
     schoolYear: varchar('school_year', { length: 255 })
       .notNull()
@@ -181,7 +181,7 @@ export const userMajors = createTable(
     id: integer('id').primaryKey().generatedByDefaultAsIdentity(),
     userId: varchar('user_id', { length: 255 })
       .notNull()
-      .references(() => users.id),
+      .references(() => users.id, { onDelete: 'cascade' }),
     majorId: integer('major_id')
       .notNull()
       .references(() => majors.id),
@@ -198,7 +198,7 @@ export const userSchools = createTable(
     id: integer('id').primaryKey().generatedByDefaultAsIdentity(),
     userId: varchar('user_id', { length: 255 })
       .notNull()
-      .references(() => users.id),
+      .references(() => users.id, { onDelete: 'cascade' }),
     schoolId: integer('school_id')
       .notNull()
       .references(() => schools.id),
@@ -230,10 +230,10 @@ export const mentorReviews = createTable(
     id: integer('id').primaryKey().generatedByDefaultAsIdentity(),
     mentorId: varchar('mentor_id', { length: 255 })
       .notNull()
-      .references(() => users.id),
+      .references(() => users.id, { onDelete: 'cascade' }),
     userId: varchar('user_id', { length: 255 })
       .notNull()
-      .references(() => users.id),
+      .references(() => users.id, { onDelete: 'cascade' }),
     rating: integer('rating').notNull(),
     review: varchar('review', { length: 1000 }),
     ...timestamps,
@@ -250,7 +250,7 @@ export const calcomTokens = createTable(
     userId: varchar('user_id', { length: 255 })
       .notNull()
       .unique()
-      .references(() => users.id),
+      .references(() => users.id, { onDelete: 'cascade' }),
     calcomUserId: integer('calcom_user_id').notNull(), // Cal.com managed user ID
     calcomUsername: varchar('calcom_username', { length: 255 }).notNull(), // Cal.com generated username
     accessToken: text('access_token').notNull(),

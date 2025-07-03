@@ -1,19 +1,19 @@
 import type { CreateCalcomUserInput, UpdateCalcomUserInput } from '~/app/types'
 import { env } from '~/env'
 import { BadRequestError, ExternalApiError } from '~/lib/auth/auth-utils'
-import { storeCalcomTokens } from '~/server/queries'
+import { storeCalcomTokens, storeCalcomTokensForUser } from '~/server/queries'
 
 /**
  * Create Cal.com user (core implementation)
  */
 export const createCalcomUser = async (
-  data: CreateCalcomUserInput
+  data: CreateCalcomUserInput & { userId?: string }
 ): Promise<{
   calcomUserId: number
   username: string
 }> => {
   try {
-    const { email, name, timeZone } = data
+    const { email, name, timeZone, userId } = data
 
     // Create managed user in Cal.com
     const response = await fetch(
@@ -50,18 +50,32 @@ export const createCalcomUser = async (
     const calcomUser = responseData.data
 
     // Store tokens in our database
-    await storeCalcomTokens({
-      calcomUserId: calcomUser.id,
-      calcomUsername: calcomUser.username,
-      accessToken: calcomUser.accessToken,
-      refreshToken: calcomUser.refreshToken,
-      accessTokenExpiresAt: calcomUser.accessTokenExpiresAt,
-      refreshTokenExpiresAt: calcomUser.refreshTokenExpiresAt,
-    })
+    // Use the version that accepts userId directly if provided (during auth flow)
+    // Otherwise use the session-based version (for authenticated users)
+    if (userId) {
+      await storeCalcomTokensForUser({
+        userId,
+        calcomUserId: calcomUser.user.id,
+        calcomUsername: calcomUser.user.username,
+        accessToken: calcomUser.accessToken,
+        refreshToken: calcomUser.refreshToken,
+        accessTokenExpiresAt: calcomUser.accessTokenExpiresAt,
+        refreshTokenExpiresAt: calcomUser.refreshTokenExpiresAt,
+      })
+    } else {
+      await storeCalcomTokens({
+        calcomUserId: calcomUser.user.id,
+        calcomUsername: calcomUser.user.username,
+        accessToken: calcomUser.accessToken,
+        refreshToken: calcomUser.refreshToken,
+        accessTokenExpiresAt: calcomUser.accessTokenExpiresAt,
+        refreshTokenExpiresAt: calcomUser.refreshTokenExpiresAt,
+      })
+    }
 
     return {
-      calcomUserId: calcomUser.id,
-      username: calcomUser.username,
+      calcomUserId: calcomUser.user.id,
+      username: calcomUser.user.username,
     }
   } catch (error) {
     console.error('Cal.com user creation error:', error)

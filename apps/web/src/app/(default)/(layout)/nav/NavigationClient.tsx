@@ -15,9 +15,7 @@ import { Skeleton } from '~/components/ui/skeleton'
 import { cn } from '~/lib/utils/tailwind'
 
 interface NavBarBaseProps {
-  profilePic: string
-  isMentor: boolean
-  userName?: string | null
+  profilePic: string | null
 }
 
 /**
@@ -31,10 +29,8 @@ interface NavBarBaseProps {
  * - Loading skeleton support
  *
  * @param profilePic - User's profile picture URL
- * @param isMentor - Whether the user is a verified mentor
- * @param userName - User's name for generating booking links
  */
-export function NavBarBase({ profilePic, isMentor, userName }: NavBarBaseProps) {
+export function NavBarBase({ profilePic }: NavBarBaseProps) {
   return (
     <div className="border/40 bg-background/80 text-foreground backdrop-blur-xs fixed left-0 right-0 top-0 z-20 flex items-center justify-between border-b p-4 transition-colors duration-300">
       <NavigationMenu>
@@ -93,34 +89,6 @@ export function NavBarBase({ profilePic, isMentor, userName }: NavBarBaseProps) 
             </NavigationMenuContent>
           </NavigationMenuItem>
 
-          {/* Mentor-specific Menu */}
-          {isMentor && (
-            <NavigationMenuItem>
-              <NavigationMenuTrigger>Mentor Tools</NavigationMenuTrigger>
-              <NavigationMenuContent>
-                <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2">
-                  <ListItem href="/mentor/onboarding" title="Mentor Onboarding">
-                    Complete your mentor profile setup
-                  </ListItem>
-                  <ListItem href="/mentor/event-types" title="Event Types">
-                    Manage your mentoring session types
-                  </ListItem>
-                  <ListItem href="/mentor/scheduling" title="Scheduling">
-                    Set your availability and calendar
-                  </ListItem>
-                  <ListItem href="/mentor/payments" title="Payments">
-                    Manage your earnings and payment settings
-                  </ListItem>
-                  {userName && (
-                    <ListItem href={`/book/${userName}`} title="Your Booking Page">
-                      View your public booking page
-                    </ListItem>
-                  )}
-                </ul>
-              </NavigationMenuContent>
-            </NavigationMenuItem>
-          )}
-
           {/* My Account Menu */}
           <NavigationMenuItem>
             <NavigationMenuTrigger>My Account</NavigationMenuTrigger>
@@ -138,19 +106,15 @@ export function NavBarBase({ profilePic, isMentor, userName }: NavBarBaseProps) 
                 <ListItem href="/profile/view" title="View Profile">
                   See how others view your profile
                 </ListItem>
-                {isMentor && (
-                  <ListItem href="/availability" title="Availability">
-                    Set your available times for mentoring sessions
-                  </ListItem>
-                )}
+                <ListItem href="/availability" title="Availability">
+                  Set your available times for mentoring sessions
+                </ListItem>
                 <ListItem href="/settings" title="Settings">
                   Adjust your account preferences
                 </ListItem>
-                {!isMentor && (
-                  <ListItem href="/email-verification" title="Become a Mentor">
-                    Join as a mentor and help other students
-                  </ListItem>
-                )}
+                <ListItem href="/email-verification" title="Become a Mentor">
+                  Join as a mentor and help other students
+                </ListItem>
               </ul>
             </NavigationMenuContent>
           </NavigationMenuItem>
