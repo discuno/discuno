@@ -1,6 +1,6 @@
 import { CheckCircle, GraduationCap, User } from 'lucide-react'
 import Link from 'next/link'
-import { AvatarIcon } from '~/components/shared/UserAvatar'
+import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
@@ -9,7 +9,6 @@ import { getFullProfile } from '~/server/queries'
 
 export const ViewProfileContent = async () => {
   const profile = await getFullProfile()
-  console.log(profile)
 
   if (!profile) {
     return (
@@ -33,7 +32,18 @@ export const ViewProfileContent = async () => {
       <Card>
         <CardContent className="p-8">
           <div className="flex flex-col items-start gap-6 md:flex-row">
-            <AvatarIcon profilePic={profile.image ?? ''} />
+            {/* Large Profile Avatar */}
+            <div className="flex-shrink-0">
+              <Avatar className="h-32 w-32">
+                <AvatarImage
+                  src={profile.image ?? undefined}
+                  alt={profile.name ?? 'Profile Picture'}
+                />
+                <AvatarFallback className="text-2xl">
+                  <User className="h-16 w-16" />
+                </AvatarFallback>
+              </Avatar>
+            </div>
             <div className="flex-1">
               <h2 className="mb-2 text-2xl font-bold">{profile.name}</h2>
               <div className="mb-4 flex flex-wrap gap-2">

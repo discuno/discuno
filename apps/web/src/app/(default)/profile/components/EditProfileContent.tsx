@@ -1,4 +1,5 @@
-import { redirect } from 'next/navigation'
+import { updateUserProfile } from '~/app/(default)/profile/actions'
+import { ProfileImageUpload } from '~/app/(default)/profile/components/ProfileImageUpload'
 import { StatusToast } from '~/components/shared/StatusToast'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
@@ -33,19 +34,11 @@ export const EditProfileContent = async ({ searchParams }: EditProfileContentPro
   const currentYear = new Date().getFullYear()
   const graduationYears = Array.from({ length: 6 }, (_, i) => currentYear + i)
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleUpdateProfile = async (formData: FormData) => {
-    'use server'
-
-    // Handle form submission logic here
-    // This would typically update the user profile in the database
-    // For now, redirect with success status
-    redirect('/profile/edit?status=success')
-  }
-
   return (
     <>
-      <form action={handleUpdateProfile} className="space-y-8">
+      <ProfileImageUpload currentImageUrl={profile?.image} userName={profile?.name} />
+
+      <form action={updateUserProfile} className="mt-4 space-y-8">
         {/* Basic Information */}
         <Card>
           <CardHeader>

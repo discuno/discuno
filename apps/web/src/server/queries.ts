@@ -53,6 +53,21 @@ const calcomUpdateTokensSchema = z.object({
   refreshTokenExpiresAt: z.number().int().positive(),
 })
 
+const updateProfileImageSchema = z.object({
+  userId: z.string().min(1),
+  imageUrl: z.string().url(),
+})
+
+const updateCompleteProfileSchema = z.object({
+  userId: z.string().min(1),
+  name: z.string().min(1).max(255).optional(),
+  bio: z.string().max(1000).nullable().optional(),
+  schoolYear: z.enum(['Freshman', 'Sophomore', 'Junior', 'Senior', 'Graduate']).optional(),
+  graduationYear: z.number().int().min(1900).max(2100).optional(),
+  school: z.string().max(255).optional(),
+  major: z.string().max(255).optional(),
+})
+
 // Shared query builder for posts with all necessary joins
 const buildPostsQuery = () => {
   return db
@@ -542,6 +557,11 @@ export const getUserName = cache(async (): Promise<string | null> => {
   return user.name
 })
 
+export const getUserId = async (): Promise<string> => {
+  const { id: userId } = await requireAuth()
+  return userId
+}
+
 export const getCalcomUserId = cache(async (): Promise<number | null> => {
   const { id: userId } = await requireAuth()
 
@@ -818,3 +838,238 @@ export const getProfileByCalcomUsername = cache(
     }
   }
 )
+
+/**
+ * Get current user's profile image URL for checking existing images
+ */
+export const getCurrentUserImage = async (): Promise<string | null> => {
+  const { id: userId } = await requireAuth()
+
+  const [user] = await db
+    .select({ image: users.image })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1)
+
+  return user?.image ?? null
+}
+
+/**
+ * Update user's profile image URL in database
+ */
+export const updateUserImage = async (imageUrl: string): Promise<void> => {
+  const { id: userId } = await requireAuth()
+
+  const validData = updateProfileImageSchema.parse({ userId, imageUrl })
+
+  const result = await db
+    .update(users)
+    .set({ image: validData.imageUrl })
+    .where(eq(users.id, validData.userId))
+    .returning({ id: users.id })
+
+  if (result.length === 0) {
+    throw new NotFoundError('User not found')
+  }
+}
+
+/**
+ * Remove user's profile image from database
+ */
+export const removeUserImage = async (): Promise<void> => {
+  const { id: userId } = await requireAuth()
+
+  const result = await db
+    .update(users)
+    .set({ image: null })
+    .where(eq(users.id, userId))
+    .returning({ id: users.id })
+
+  if (result.length === 0) {
+    throw new NotFoundError('User not found')
+  }
+}
+
+/**
+ * Find or create a school by name (within a transaction)
+ */
+const findOrCreateSchool = async (tx: any, schoolName: string): Promise<number> => {
+  // First try to find existing school
+  const existingSchool = await tx
+    .select({ id: schools.id })
+    .from(schools)
+    .where(eq(schools.name, schoolName))
+    .limit(1)
+
+  if (existingSchool.length > 0) {
+    return existingSchool[0].id
+  }
+
+  // Create new school if not found
+  const [newSchool] = await tx
+    .insert(schools)
+    .values({
+      name: schoolName,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+    .returning({ id: schools.id })
+
+  if (!newSchool) {
+    throw new InternalServerError('Failed to create school')
+  }
+
+  return newSchool.id
+}
+
+/**
+ * Find or create a major by name (within a transaction)
+ */
+const findOrCreateMajor = async (tx: any, majorName: string): Promise<number> => {
+  // First try to find existing major
+  const existingMajor = await tx
+    .select({ id: majors.id })
+    .from(majors)
+    .where(eq(majors.name, majorName))
+    .limit(1)
+
+  if (existingMajor.length > 0) {
+    return existingMajor[0].id
+  }
+
+  // Create new major if not found
+  const [newMajor] = await tx
+    .insert(majors)
+    .values({
+      name: majorName,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+    .returning({ id: majors.id })
+
+  if (!newMajor) {
+    throw new InternalServerError('Failed to create major')
+  }
+
+  return newMajor.id
+}
+
+/**
+ * Complete profile update with all related tables
+ * Handles users, userProfiles, userSchools, and userMajors tables
+ */
+export const updateCompleteUserProfile = async ({
+  name,
+  bio,
+  schoolYear,
+  graduationYear,
+  school,
+  major,
+}: {
+  name?: string
+  bio?: string | null
+  schoolYear?: 'Freshman' | 'Sophomore' | 'Junior' | 'Senior' | 'Graduate'
+  graduationYear?: number
+  school?: string
+  major?: string
+}): Promise<void> => {
+  const { id: userId } = await requireAuth()
+
+  const validData = updateCompleteProfileSchema.parse({
+    userId,
+    name,
+    bio,
+    schoolYear,
+    graduationYear,
+    school,
+    major,
+  })
+
+  try {
+    // Use a transaction to ensure data consistency
+    await db.transaction(async tx => {
+      // 1. Update basic user info if name is provided
+      if (validData.name) {
+        const userResult = await tx
+          .update(users)
+          .set({ name: validData.name })
+          .where(eq(users.id, validData.userId))
+          .returning({ id: users.id })
+
+        if (userResult.length === 0) {
+          throw new NotFoundError('User not found')
+        }
+      }
+
+      // 2. Handle user profile (bio, schoolYear, graduationYear)
+      if (validData.bio !== undefined || validData.schoolYear || validData.graduationYear) {
+        // Check if profile exists
+        const existingProfile = await tx
+          .select({ id: userProfiles.id })
+          .from(userProfiles)
+          .where(eq(userProfiles.userId, validData.userId))
+          .limit(1)
+
+        const profileData = {
+          ...(validData.bio !== undefined && { bio: validData.bio ?? null }),
+          ...(validData.schoolYear && { schoolYear: validData.schoolYear }),
+          ...(validData.graduationYear && { graduationYear: validData.graduationYear }),
+          updatedAt: new Date(),
+        }
+
+        if (existingProfile.length > 0) {
+          // Update existing profile
+          await tx
+            .update(userProfiles)
+            .set(profileData)
+            .where(eq(userProfiles.userId, validData.userId))
+        } else {
+          // Create new profile
+          await tx.insert(userProfiles).values({
+            userId: validData.userId,
+            ...profileData,
+            // Set required fields with defaults if not provided
+            schoolYear: validData.schoolYear ?? 'Freshman',
+            graduationYear: validData.graduationYear ?? new Date().getFullYear(),
+            createdAt: new Date(),
+          })
+        }
+      }
+
+      // 3. Handle school relationship
+      if (validData.school) {
+        const schoolId = await findOrCreateSchool(tx, validData.school)
+
+        // Remove existing school associations
+        await tx.delete(userSchools).where(eq(userSchools.userId, validData.userId))
+
+        // Add new school association
+        await tx.insert(userSchools).values({
+          userId: validData.userId,
+          schoolId,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        })
+      }
+
+      // 4. Handle major relationship
+      if (validData.major) {
+        const majorId = await findOrCreateMajor(tx, validData.major)
+
+        // Remove existing major associations
+        await tx.delete(userMajors).where(eq(userMajors.userId, validData.userId))
+
+        // Add new major association
+        await tx.insert(userMajors).values({
+          userId: validData.userId,
+          majorId,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        })
+      }
+    })
+  } catch (error) {
+    console.error('Error updating complete user profile:', error)
+    throw new InternalServerError('Failed to update user profile')
+  }
+}
