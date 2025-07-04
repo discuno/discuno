@@ -105,7 +105,7 @@
     "@commitlint/cli": "19.8.1",
     "@commitlint/config-conventional": "19.8.1",
     "@eslint/js": "9.28.0",
-    "@next/eslint-plugin-next": "15.3.3",
+    "@next/eslint-plugin-next": "15.3.5",
     "@svgr/webpack": "8.1.0",
     "@tailwindcss/postcss": "^4.1.10",
     "@testing-library/jest-dom": "6.6.3",
