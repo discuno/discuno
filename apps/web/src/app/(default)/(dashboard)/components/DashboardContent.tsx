@@ -1,13 +1,9 @@
 import { Filter } from 'lucide-react'
-import {
-  fetchPostsAction,
-  fetchPostsByFilterAction,
-} from '~/app/(default)/(dashboard)/(post)/actions'
 import { PostGrid } from '~/app/(default)/(dashboard)/(post)/PostGrid'
 import { FilterButton } from '~/app/(default)/(dashboard)/FilterButton'
 import { Button } from '~/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '~/components/ui/popover'
-import { getMajors, getSchools } from '~/server/queries'
+import { getMajors, getPostsByFilters, getPostsCursor, getSchools } from '~/server/queries'
 
 interface DashboardContentProps {
   searchParams: { school?: string; major?: string; gradYear?: string }
@@ -41,8 +37,8 @@ export const DashboardContent = async ({ searchParams }: DashboardContentProps) 
 
   const initialPostsResponse =
     schoolId || majorId || graduationYear
-      ? await fetchPostsByFilterAction(schoolId, majorId, graduationYear)
-      : await fetchPostsAction()
+      ? await getPostsByFilters(schoolId, majorId, graduationYear)
+      : await getPostsCursor()
 
   return (
     <>

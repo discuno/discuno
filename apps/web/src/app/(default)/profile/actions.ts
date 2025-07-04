@@ -88,7 +88,7 @@ export const updateUserProfile = async (formData: FormData) => {
   // Prepare the update data, filtering out empty strings
   const updateData = {
     ...(name && name.trim() && { name: name.trim() }),
-    ...(bio && { bio: bio.trim() || null }), // Allow clearing bio by setting to null
+    bio: bio.trim() || null, // Allow clearing bio by setting to null
     ...(schoolYear &&
       schoolYear !== 'default' && {
         schoolYear: schoolYear as 'Freshman' | 'Sophomore' | 'Junior' | 'Senior' | 'Graduate',
