@@ -6,6 +6,8 @@ import MicrosoftEntraID from 'next-auth/providers/microsoft-entra-id'
 // import EmailProvider from "next-auth/providers/nodemailer";
 import { env } from '~/env'
 
+import { eq } from 'drizzle-orm'
+import { downloadAndUploadProfileImage } from '~/lib/blob'
 import { enforceCalcomIntegration } from '~/server/auth/dal'
 import { db } from '~/server/db'
 import { accounts, sessions, users, verificationTokens } from '~/server/db/schema'
@@ -121,7 +123,20 @@ export const authConfig = {
   },
   events: {
     async signIn({ user, isNewUser }) {
-      // TODO: Handle database entry if calcom integration fails
+      if (isNewUser && user.id && user.email && user.image) {
+        console.log(`New user signed in, processing profile image: ${user.email}`)
+
+        // Download the image and upload it to Vercel Blob
+        const newImageUrl = await downloadAndUploadProfileImage(user.image, user.id)
+
+        if (newImageUrl !== user.image) {
+          console.log(`Updating user image in database for: ${user.email}`)
+          // Update the user's image URL in the database
+          await db.update(users).set({ image: newImageUrl }).where(eq(users.id, user.id))
+          user.image = newImageUrl // Update the user object for the next step
+        }
+      }
+
       // This event is called AFTER the user record is created in the database
       if (user.id && user.email) {
         console.log(

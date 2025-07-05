@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { deleteProfileImage, uploadProfileImage } from '~/lib/blob'
+import { deleteProfileImage, extractPathnameFromBlobUrl, uploadProfileImage } from '~/lib/blob'
 import {
   getCurrentUserImage,
   getUserId,
@@ -33,10 +33,13 @@ export const uploadUserProfileImage = async (formData: FormData) => {
 
   // Delete old image if it exists and is a blob URL
   if (currentImageUrl?.includes('blob.vercel-storage.com')) {
-    // Run deletion in background - don't block user experience
-    deleteProfileImage(currentImageUrl).catch(error => {
-      console.error('Failed to delete old profile image:', error)
-    })
+    const pathname = extractPathnameFromBlobUrl(currentImageUrl)
+    if (pathname) {
+      // Run deletion in background - don't block user experience
+      deleteProfileImage(pathname).catch(error => {
+        console.error('Failed to delete old profile image:', error)
+      })
+    }
   }
 
   // Revalidate profile pages to show new image
@@ -59,10 +62,13 @@ export const removeUserProfileImage = async () => {
 
   // Delete image from blob storage if it's a blob URL
   if (currentImageUrl?.includes('blob.vercel-storage.com')) {
-    // Run deletion in background
-    deleteProfileImage(currentImageUrl).catch(error => {
-      console.error('Failed to delete profile image from blob storage:', error)
-    })
+    const pathname = extractPathnameFromBlobUrl(currentImageUrl)
+    if (pathname) {
+      // Run deletion in background
+      deleteProfileImage(pathname).catch(error => {
+        console.error('Failed to delete profile image from blob storage:', error)
+      })
+    }
   }
 
   // Revalidate profile pages
