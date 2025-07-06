@@ -16,6 +16,7 @@ import { cn } from '~/lib/utils/tailwind'
 
 interface NavBarBaseProps {
   profilePic: string | null
+  isAuthenticated: boolean
 }
 
 /**
@@ -30,7 +31,7 @@ interface NavBarBaseProps {
  *
  * @param profilePic - User's profile picture URL
  */
-export function NavBarBase({ profilePic }: NavBarBaseProps) {
+export function NavBarBase({ profilePic, isAuthenticated }: NavBarBaseProps) {
   return (
     <div className="border/40 bg-background/80 text-foreground backdrop-blur-xs fixed left-0 right-0 top-0 z-20 flex items-center justify-between border-b p-4 transition-colors duration-300">
       <NavigationMenu>
@@ -120,7 +121,7 @@ export function NavBarBase({ profilePic }: NavBarBaseProps) {
           </NavigationMenuItem>
         </NavigationMenuList>
       </NavigationMenu>
-      <AvatarIcon profilePic={profilePic} isAuthenticated={!!profilePic} />
+      <AvatarIcon profilePic={profilePic} isAuthenticated={isAuthenticated} />
     </div>
   )
 }

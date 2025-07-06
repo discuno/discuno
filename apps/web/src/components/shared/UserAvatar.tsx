@@ -36,7 +36,7 @@ interface AvatarIconProps {
 
 export const AvatarIcon = ({ profilePic, isAuthenticated = false }: AvatarIconProps) => {
   // Show login button for unauthenticated users
-  if (!isAuthenticated || !profilePic) {
+  if (!isAuthenticated) {
     return (
       <div className="flex flex-row items-center justify-end space-x-4">
         <ModeToggle />

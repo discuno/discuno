@@ -38,12 +38,11 @@ describe('UserAvatar Component', () => {
       expect(signInButton).toHaveAttribute('href', '/auth')
     })
 
-    it('renders sign in button when profilePic is empty', () => {
+    it('renders avatar menu when authenticated without profile picture', () => {
       renderWithProviders(<AvatarIcon profilePic="" isAuthenticated={true} />)
 
-      const signInButton = screen.getByRole('link', { name: /sign in/i })
-      expect(signInButton).toBeInTheDocument()
-      expect(signInButton).toHaveAttribute('href', '/auth')
+      const avatarButton = screen.getByRole('button', { name: 'User menu' })
+      expect(avatarButton).toBeInTheDocument()
     })
 
     it('renders avatar menu when authenticated with profile picture', () => {
@@ -78,8 +77,9 @@ describe('UserAvatar Component', () => {
     it('shows fallback icon when profile picture fails to load', () => {
       renderWithProviders(<AvatarIcon profilePic="" isAuthenticated={true} />)
 
-      // Component should render sign in button when no profile pic
-      expect(screen.getByRole('link', { name: /sign in/i })).toBeInTheDocument()
+      // Component should render avatar menu when no profile pic but authenticated
+      const avatarButton = screen.getByRole('button', { name: 'User menu' })
+      expect(avatarButton).toBeInTheDocument()
     })
   })
 

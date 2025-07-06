@@ -219,6 +219,7 @@ export const majors = createTable('major', {
 export const schools = createTable('school', {
   id: integer('id').primaryKey().generatedByDefaultAsIdentity(),
   name: varchar('name', { length: 255 }).unique(),
+  domain: varchar('domain', { length: 255 }).unique(),
   location: varchar('location', { length: 255 }),
   image: varchar('image', { length: 255 }),
   ...timestamps,
