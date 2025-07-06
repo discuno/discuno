@@ -258,8 +258,8 @@ describe('UserAvatar Component', () => {
     it('handles missing profile picture gracefully', () => {
       renderWithProviders(<AvatarIcon profilePic="" isAuthenticated={true} />)
 
-      // Should show sign in button when no profile pic
-      expect(screen.getByRole('link', { name: /sign in/i })).toBeInTheDocument()
+      // Should show avatar menu button when authenticated but no profile pic
+      expect(screen.getByRole('button', { name: 'User menu' })).toBeInTheDocument()
     })
 
     it('handles unauthenticated state gracefully', () => {
