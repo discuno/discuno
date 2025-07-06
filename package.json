@@ -33,11 +33,10 @@
   "packageManager": "pnpm@10.12.1",
   "scripts": {
     "build": "turbo build",
+    "preview": "pnpm --filter @discuno/web preview",
     "dev": "turbo dev --parallel",
     "dev:web": "pnpm --filter @discuno/web dev",
-    "dev:atoms": "pnpm --filter @discuno/atoms dev",
     "build:web": "pnpm --filter @discuno/web build",
-    "build:atoms": "pnpm --filter @discuno/atoms build",
     "lint": "turbo lint",
     "lint:fix": "turbo lint:fix",
     "test": "turbo test",

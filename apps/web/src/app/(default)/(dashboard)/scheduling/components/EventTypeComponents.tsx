@@ -78,6 +78,7 @@ export const EventTypeSettingsComponent = ({
         setEditId(null)
       }}
       disableToasts={true}
+      tabs={['setup', 'payments']}
     />
   )
 }
