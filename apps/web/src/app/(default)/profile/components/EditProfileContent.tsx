@@ -76,7 +76,7 @@ export const EditProfileContent = async ({ searchParams }: EditProfileContentPro
           <CardContent className="space-y-4">
             <div>
               <Label htmlFor="school">School</Label>
-              <Select name="school" defaultValue={profile?.school ?? ''}>
+              <Select name="school" disabled defaultValue={profile?.school ?? ''}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select your school" />
                 </SelectTrigger>
