@@ -18,6 +18,7 @@ import {
   userSchools,
   verificationTokens,
 } from '~/server/db/schema'
+import { getAllowedDomains } from './domain-cache'
 
 /**
  * Module augmentation for `next-auth` types. Allows us to add custom properties to the `session`
@@ -105,35 +106,17 @@ export const authConfig = {
     }),
     async signIn({ user }) {
       try {
-        // Only allow .edu email addresses
-        if (!user.email?.endsWith('.edu')) {
-          console.log(`Sign-in rejected for non-.edu email: ${user.email ?? 'unknown'}`)
-          // Redirect to rejection page
-          return '/auth/rejected'
-        }
-
         // Ensure the user has a valid .edu email format
         const eduEmailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.edu$/
-        if (!eduEmailRegex.test(user.email)) {
+        if (!eduEmailRegex.test(user.email ?? '')) {
           console.log(`Sign-in rejected for invalid .edu email format: ${user.email ?? 'unknown'}`)
           return '/auth/rejected'
         }
 
-        // Extract and validate email domain
-        const email = user.email || ''
-        const parts = email.split('@')
-        if (parts.length < 2) {
-          console.log(`Sign-in rejected for invalid email: ${email}`)
-          return '/auth/rejected'
-        }
-        const emailDomain = parts[1]?.toLowerCase() ?? ''
-        const school = await db.query.schools.findFirst({
-          where: eq(schools.domain, emailDomain),
-        })
-        if (!school) {
-          console.log(`Sign-in rejected for unrecognized school domain: ${emailDomain}`)
-          return '/auth/rejected'
-        }
+        // Check if email domain matches a known school domain (in-memory check)
+        const emailDomain = user.email?.split('@')[1]?.toLowerCase()
+        const allowedDomains = await getAllowedDomains()
+        if (!emailDomain || !allowedDomains.has(emailDomain)) return '/auth/rejected'
         console.log(`Sign-in approved for recognized school domain: ${emailDomain}`)
         return true
       } catch (error) {
@@ -182,13 +165,8 @@ export const authConfig = {
 
       // Assign user to school based on email domain if new user
       if (isNewUser && user.id && user.email) {
-        // Extract and validate email domain
-        const email = user.email || ''
-        const parts = email.split('@')
-        if (parts.length < 2) {
-          console.error(`Cannot assign school: invalid email ${email}`)
-        } else {
-          const emailDomain = parts[1]?.toLowerCase() ?? ''
+        const emailDomain = user.email.split('@')[1]?.toLowerCase()
+        if (emailDomain) {
           const school = await db.query.schools.findFirst({
             where: eq(schools.domain, emailDomain),
           })
@@ -198,6 +176,8 @@ export const authConfig = {
           } else {
             console.error(`No school found for domain: ${emailDomain}. User not assigned.`)
           }
+        } else {
+          console.error(`Cannot assign school: invalid email ${user.email}`)
         }
       }
     },
