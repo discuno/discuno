@@ -16,6 +16,7 @@ const getCalcomAccessToken = async (): Promise<{
   success: boolean
   accessToken?: string
   refreshToken?: string
+  username?: string
   error?: string
 }> => {
   try {
@@ -36,6 +37,7 @@ const getCalcomAccessToken = async (): Promise<{
       success: true,
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
+      username: tokens.calcomUsername,
     }
   } catch (error) {
     console.error('Get Cal.com token error:', error)

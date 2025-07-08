@@ -1,6 +1,7 @@
 'use client'
 
 import { CreateEventType, EventTypeSettings } from '@calcom/atoms'
+import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 
 interface CreateEventTypeComponentProps {
@@ -58,6 +59,7 @@ export const EventTypeSettingsComponent = ({
   eventTypeId: number
   setEditId: (id: number | null) => void
 }) => {
+  const router = useRouter()
   return (
     <EventTypeSettings
       id={eventTypeId}
@@ -65,6 +67,7 @@ export const EventTypeSettingsComponent = ({
       onSuccess={eventType => {
         console.log('EventType settings updated successfully', eventType)
         toast.success('Event type updated successfully!')
+        router.refresh()
       }}
       onError={error => {
         console.error('Failed to update event type:', error)
@@ -76,9 +79,11 @@ export const EventTypeSettingsComponent = ({
       }}
       onDeleteSuccess={() => {
         setEditId(null)
+        router.refresh()
       }}
       disableToasts={true}
       tabs={['setup', 'payments']}
+      isDryRun={true}
     />
   )
 }

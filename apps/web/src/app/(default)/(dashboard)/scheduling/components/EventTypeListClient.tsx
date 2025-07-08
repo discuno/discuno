@@ -1,6 +1,7 @@
 'use client'
 
 import { Edit3 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { Suspense, useState } from 'react'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
@@ -41,11 +42,13 @@ function LoadingSkeleton() {
 export const EventTypeListClient = ({ eventTypes }: EventTypeListClientProps) => {
   const [editId, setEditId] = useState<number | null>(null)
   const [showCreate, setShowCreate] = useState(false)
+  const router = useRouter()
 
   // Handle the create→edit flow
   const handleEventTypeCreated = (eventTypeId: number) => {
     // Close create modal and open edit modal for the newly created event type
     setShowCreate(false)
+    router.refresh()
     setEditId(eventTypeId)
   }
 
