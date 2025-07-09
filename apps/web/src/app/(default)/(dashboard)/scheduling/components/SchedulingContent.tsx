@@ -1,9 +1,9 @@
 import { Calendar, Settings } from 'lucide-react'
 import { Suspense } from 'react'
+import { EventTypesSection } from '~/app/(default)/(dashboard)/scheduling/components/EventTypesSection'
 import { AvailabilitySettingsClient } from '~/components/calcom/AvailabilitySettingsClient'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs'
 import { CalProviderWrapper } from '~/lib/providers/CalProviderWrapper'
-import { EventTypeListClient } from './EventTypeListClient'
 
 function LoadingSkeleton() {
   return (
@@ -23,17 +23,7 @@ function LoadingSkeleton() {
   )
 }
 
-interface SchedulingContentProps {
-  eventTypes: Array<{
-    id: number
-    title?: string
-    lengthInMinutes?: number
-    price?: number
-    hidden?: boolean
-  }>
-}
-
-export const SchedulingContent = ({ eventTypes }: SchedulingContentProps) => {
+export const SchedulingContent = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -89,26 +79,10 @@ export const SchedulingContent = ({ eventTypes }: SchedulingContentProps) => {
                 Create and manage your bookable services. Each event type uses your availability
                 schedules.
               </p>
-              {eventTypes.length === 0 && (
-                <div className="mt-4 rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-900/20">
-                  <p className="text-sm text-green-800 dark:text-green-200">
-                    🚀 <strong>Getting started:</strong> Create your first event type to start
-                    accepting bookings!
-                  </p>
-                </div>
-              )}
-              {eventTypes.length > 0 && (
-                <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20">
-                  <p className="text-sm text-blue-800 dark:text-blue-200">
-                    ✨ <strong>Tip:</strong> Click &quot;New Event Type&quot; to create more
-                    services, or click edit to configure existing ones.
-                  </p>
-                </div>
-              )}
             </div>
             <CalProviderWrapper useCurrentUserTokens={true}>
               <Suspense fallback={<LoadingSkeleton />}>
-                <EventTypeListClient eventTypes={eventTypes} />
+                <EventTypesSection />
               </Suspense>
             </CalProviderWrapper>
           </div>

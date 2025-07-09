@@ -9,7 +9,7 @@ import { Card, CardContent } from '~/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '~/components/ui/dialog'
 import { CreateEventTypeComponent, EventTypeSettingsComponent } from './EventTypeComponents'
 
-interface EventType {
+export interface EventType {
   id: number
   title?: string
   lengthInMinutes?: number

@@ -371,6 +371,30 @@ const getAvailabilitySettings = async (): Promise<{
   }
 }
 
+export const fetchEventTypes = async () => {
+  const tokenResult = await getCalcomAccessToken()
+  if (!tokenResult.success || !tokenResult.accessToken || !tokenResult.username) {
+    throw new Error('No valid Cal.com access token available')
+  }
+
+  const response = await fetch(
+    `${env.NEXT_PUBLIC_CALCOM_API_URL}/event-types?username=${encodeURIComponent(tokenResult.username)}`,
+    {
+      headers: {
+        Authorization: `Bearer ${env.X_CAL_SECRET_KEY}`,
+        'cal-api-version': '2024-06-14',
+      },
+    }
+  )
+
+  if (!response.ok) {
+    throw new ExternalApiError('Failed to fetch event types')
+  }
+
+  const payload = await response.json()
+  return Array.isArray(payload.data) ? payload.data : []
+}
+
 export {
   createCalcomUser,
   forceRefreshCalcomToken,
