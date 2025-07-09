@@ -395,6 +395,59 @@ export const fetchEventTypes = async () => {
   return Array.isArray(payload.data) ? payload.data : []
 }
 
+/**
+ * Get a valid Cal.com access token
+ * Automatically refreshes if expired
+ */
+export const getValidCalcomToken = async (): Promise<{
+  success: boolean
+  accessToken?: string
+  error?: string
+}> => {
+  try {
+    // First, get current tokens from database
+    const tokens = await getUserCalcomTokens()
+    if (!tokens) {
+      return {
+        success: false,
+        error: 'No Cal.com tokens found',
+      }
+    }
+
+    // Check if access token is expired
+    const now = new Date()
+    if (tokens.accessTokenExpiresAt > now) {
+      // Token is still valid
+      return {
+        success: true,
+        accessToken: tokens.accessToken,
+      }
+    }
+
+    // Token is expired, refresh it
+    console.log('🔄 Access token expired, refreshing...')
+    const refreshResult = await refreshCalcomToken()
+
+    if (refreshResult.success) {
+      return {
+        success: true,
+        accessToken: refreshResult.accessToken,
+      }
+    }
+
+    return {
+      success: false,
+      error: refreshResult.error,
+    }
+  } catch (error) {
+    console.error('Get valid Cal.com token error:', error)
+    return {
+      success: false,
+      error: 'Failed to get valid token',
+    }
+  }
+}
+
 export {
   createCalcomUser,
   forceRefreshCalcomToken,

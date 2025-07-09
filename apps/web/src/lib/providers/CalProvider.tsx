@@ -1,8 +1,22 @@
 'use client'
 
-import { CalProvider } from '@calcom/atoms'
-import '@calcom/atoms/globals.min.css'
-import { env } from '~/env'
+import { useQuery } from '@tanstack/react-query'
+import React, { createContext, useContext } from 'react'
+import { getValidCalcomToken } from '~/app/(default)/(dashboard)/scheduling/actions'
+
+interface CalcomContextType {
+  accessToken: string | null
+  isLoading: boolean
+  error: Error | null
+}
+
+const CalcomContext = createContext<CalcomContextType>({
+  accessToken: null,
+  isLoading: false,
+  error: null,
+})
+
+export const useCalcom = () => useContext(CalcomContext)
 
 interface CalcomProviderProps {
   children: React.ReactNode
@@ -10,17 +24,20 @@ interface CalcomProviderProps {
   refreshToken?: string | null
 }
 
-export const CalcomProvider = ({ children, accessToken }: CalcomProviderProps) => {
+export const CalcomProvider = ({ children }: CalcomProviderProps) => {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['calcom-valid-token'],
+    queryFn: getValidCalcomToken,
+    staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
+  })
+
+  const accessToken = data?.success ? (data.accessToken ?? null) : null
+
   return (
-    <CalProvider
-      clientId={env.NEXT_PUBLIC_X_CAL_ID}
-      options={{
-        apiUrl: env.NEXT_PUBLIC_CALCOM_API_URL,
-        refreshUrl: `${env.NEXT_PUBLIC_BASE_URL}/api/auth/calcom/refresh`,
-      }}
-      accessToken={accessToken ?? undefined}
-    >
+    <CalcomContext.Provider value={{ accessToken, isLoading, error }}>
       {children}
-    </CalProvider>
+    </CalcomContext.Provider>
   )
 }
