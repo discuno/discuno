@@ -1,24 +1,14 @@
-import { type NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { refreshCalcomToken } from '~/app/(default)/(dashboard)/scheduling/actions'
 
 /**
  * Cal.com refresh token endpoint
  * Handles token refresh for Cal.com atoms integration
  */
-export const GET = async (req: NextRequest): Promise<NextResponse> => {
+export const GET = async (): Promise<NextResponse> => {
   try {
-    // Extract access token from Authorization header
-    const authHeader = req.headers.get('Authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { error: 'Missing or invalid Authorization header' },
-        { status: 401 }
-      )
-    }
-
-    const accessToken = authHeader.substring(7) // Remove "Bearer " prefix
-
-    const res = await refreshCalcomToken(accessToken)
+    // Refresh Cal.com token for authenticated user
+    const res = await refreshCalcomToken()
 
     if (res.success) {
       return NextResponse.json({

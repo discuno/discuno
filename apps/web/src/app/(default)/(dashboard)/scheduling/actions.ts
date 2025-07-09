@@ -7,7 +7,7 @@ import {
   createCalcomUser as createCalcomUserCore,
   updateCalcomUser as updateCalcomUserCore,
 } from '~/lib/calcom'
-import { getCalcomToken, getUserCalcomTokens, updateCalcomTokensByUserId } from '~/server/queries'
+import { getUserCalcomTokens, updateCalcomTokensByUserId } from '~/server/queries'
 
 /**
  * Get user's current Cal.com access token
@@ -51,17 +51,13 @@ const getCalcomAccessToken = async (): Promise<{
 /**
  * Refresh Cal.com access token
  */
-const refreshCalcomToken = async (
-  accessToken: string
-): Promise<{
+const refreshCalcomToken = async (): Promise<{
   success: boolean
   accessToken: string
   error?: string
 }> => {
   try {
-    console.log('refreshCalcomToken')
-    const tokenRecord = await getCalcomToken(accessToken)
-    console.log('tokenRecord', tokenRecord)
+    const tokenRecord = await getUserCalcomTokens()
     if (!tokenRecord) {
       return {
         success: false,
@@ -72,7 +68,7 @@ const refreshCalcomToken = async (
 
     // Check if refresh token is expired
     const now = new Date()
-    if (tokenRecord.refreshTokenExpiresAt < now) {
+    if (tokenRecord.accessTokenExpiresAt < now) {
       // Try force refresh if refresh token is expired
       return await forceRefreshCalcomToken(tokenRecord.calcomUserId, tokenRecord.userId)
     }
@@ -333,7 +329,7 @@ const getAvailabilitySettings = async (): Promise<{
     const now = new Date()
     if (tokens.accessTokenExpiresAt < now) {
       console.log('🔄 Access token expired, refreshing...')
-      const refreshResult = await refreshCalcomToken(tokens.accessToken)
+      const refreshResult = await refreshCalcomToken()
 
       if (!refreshResult.success) {
         return {
