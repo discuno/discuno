@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
-import { CalProviderWrapper } from '~/lib/providers/CalProviderWrapper'
+import { CalcomProvider } from '~/lib/providers/CalProvider'
 import { getMentorCalcomTokensByUsername, getProfileByCalcomUsername } from '~/server/queries'
 
 interface BookingContentProps {
@@ -104,15 +104,9 @@ export const BookingContent = async ({ username, eventType }: BookingContentProp
             </CardHeader>
             <CardContent>
               {mentorTokens ? (
-                <CalProviderWrapper
-                  mentorAccessToken={mentorTokens.accessToken}
-                  mentorRefreshToken={mentorTokens.refreshToken}
-                >
-                  <BookingEmbed
-                    username={mentorTokens.calcomUsername}
-                    eventSlug={eventType ?? 'default-event-type'}
-                  />
-                </CalProviderWrapper>
+                <CalcomProvider>
+                  <BookingEmbed username={mentorTokens.calcomUsername} />
+                </CalcomProvider>
               ) : (
                 <div className="py-8 text-center">
                   <p className="text-muted-foreground">

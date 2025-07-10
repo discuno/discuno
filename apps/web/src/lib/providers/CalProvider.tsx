@@ -8,20 +8,20 @@ interface CalcomContextType {
   accessToken: string | null
   isLoading: boolean
   error: Error | null
+  timeZone: string
 }
 
 const CalcomContext = createContext<CalcomContextType>({
   accessToken: null,
   isLoading: false,
   error: null,
+  timeZone: '',
 })
 
 export const useCalcom = () => useContext(CalcomContext)
 
 interface CalcomProviderProps {
   children: React.ReactNode
-  accessToken: string | null
-  refreshToken?: string | null
 }
 
 export const CalcomProvider = ({ children }: CalcomProviderProps) => {
@@ -35,8 +35,10 @@ export const CalcomProvider = ({ children }: CalcomProviderProps) => {
 
   const accessToken = data?.success ? (data.accessToken ?? null) : null
 
+  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
+
   return (
-    <CalcomContext.Provider value={{ accessToken, isLoading, error }}>
+    <CalcomContext.Provider value={{ accessToken, isLoading, error, timeZone }}>
       {children}
     </CalcomContext.Provider>
   )

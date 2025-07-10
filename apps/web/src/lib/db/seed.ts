@@ -19,16 +19,17 @@ import {
  * Only runs for development and preview environments for safety
  *
  * This seeder creates comprehensive, realistic data including:
- * - 75 users with detailed profiles and diverse backgrounds
+ * - 30 mentor users with detailed profiles and diverse backgrounds (all with Cal.com accounts)
  * - 40+ majors across STEM, liberal arts, business, and other fields
  * - 15 prestigious schools with locations and images
  * - User-school and user-major relationships (30% double majors)
- * - 60% of users create posts with engaging titles and descriptions
- * - 40% of users become mentors with realistic reviews (2-8 reviews each)
+ * - All users create posts with engaging titles and descriptions
+ * - All users are mentors with realistic reviews (2-8 reviews each)
  * - Realistic mentor review ratings (70% 5-star, 20% 4-star, 10% lower)
  * - 30 waitlist entries with varied email domains
  * - Smart graduation year calculation based on current school year
  * - Diverse, realistic user bios covering different academic paths
+ * - Cal.com managed user accounts and tokens for all users
  */
 
 type Environment = 'local' | 'preview' | 'production'
@@ -594,9 +595,9 @@ export const seedDatabase = async (environment?: Environment) => {
       console.log('🏫 Inserting schools...')
       const insertedSchools = await tx.insert(schools).values(schoolData).returning()
 
-      // Step 3: Insert users
-      console.log('👥 Inserting users...')
-      const userData = generateUserData(75)
+      // Step 3: Insert mentor users only (all users will have Cal.com accounts)
+      console.log('👥 Inserting mentor users...')
+      const userData = generateUserData(30) // Only create mentors
       const insertedUsers = await tx.insert(users).values(userData).returning()
 
       // Step 4: Insert user profiles
@@ -652,13 +653,13 @@ export const seedDatabase = async (environment?: Environment) => {
       }))
       await tx.insert(posts).values(postData)
 
-      // Step 8: Insert mentor reviews (generate reviews for 40% of users)
+      // Step 8: Insert mentor reviews (all users are mentors, so they all get reviews)
       console.log('⭐ Inserting mentor reviews...')
-      const mentors = getRandomElements(insertedUsers, Math.floor(insertedUsers.length * 0.4))
+      const mentors = insertedUsers // All users are mentors
       const reviewData = []
 
       for (const mentor of mentors) {
-        // Each mentor gets 2-8 reviews
+        // Each mentor gets 2-8 reviews from other mentors
         const numReviews = Math.floor(Math.random() * 7) + 2
         const reviewers = getRandomElements(
           insertedUsers.filter(u => u.id !== mentor.id),
@@ -683,8 +684,8 @@ export const seedDatabase = async (environment?: Environment) => {
       }
       await tx.insert(mentorReviews).values(reviewData)
 
-      // Step 9: Create Cal.com managed users and tokens for mentors
-      console.log('🌐 Creating Cal.com managed users for mentors...')
+      // Step 9: Create Cal.com managed users and tokens for all mentors
+      console.log('🌐 Creating Cal.com managed users for all mentors...')
       const calcomApiBase = process.env.NEXT_PUBLIC_CALCOM_API_URL
       const calcomClientId = process.env.NEXT_PUBLIC_X_CAL_ID
       const calcomSecretKey = process.env.X_CAL_SECRET_KEY
@@ -752,8 +753,8 @@ export const seedDatabase = async (environment?: Environment) => {
         await tx.insert(calcomTokens).values(calcomTokenData)
       }
 
-      // Step 10: Create Cal.com event types for mentors
-      console.log('📅 Creating Cal.com event types for mentors...')
+      // Step 10: Create Cal.com event types for all mentors
+      console.log('📅 Creating Cal.com event types for all mentors...')
       for (const tokenRecord of calcomTokenData) {
         const { accessToken, calcomUsername } = tokenRecord
         const eventTypes = [
@@ -819,14 +820,15 @@ export const seedDatabase = async (environment?: Environment) => {
 
     console.log('🎉 Database seeding completed successfully!')
     console.log('📊 Generated comprehensive realistic data including:')
-    console.log(`  - 75 users with detailed profiles`)
-    console.log(`  - Posts with engaging content`)
+    console.log(`  - 30 mentor users with detailed profiles (all with Cal.com accounts)`)
+    console.log(`  - Posts with engaging content for all users`)
     console.log(`  - ${majorNames.length} majors and ${schoolData.length} schools`)
-    console.log(`  - Mentor reviews with ratings`)
+    console.log(`  - Mentor reviews with ratings for all users`)
     console.log(`  - Waitlist entries`)
     console.log('  - Complete relationship mappings between all entities')
     console.log('  - Realistic graduation years based on school year')
     console.log('  - Diverse bio content and user backgrounds')
+    console.log('  - Cal.com managed user accounts and event types for all users')
   } catch (error) {
     console.error(`❌ Seeding failed for ${targetEnv}:`, error)
     console.error('🔄 Transaction automatically rolled back')

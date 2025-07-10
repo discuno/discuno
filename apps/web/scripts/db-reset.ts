@@ -278,6 +278,9 @@ const main = async () => {
     console.log('─'.repeat(60))
     console.log(`🎉 Database reset completed successfully for ${environment}`)
     console.log('📊 Your database has been reset and seeded with fresh sample data')
+    console.log('   - 30 mentor users with Cal.com accounts and detailed profiles')
+    console.log('   - Posts, reviews, and complete relationship mappings')
+    console.log('   - Schools, majors, and waitlist entries')
   } catch (error) {
     console.log('─'.repeat(60))
     console.error(`💥 Database reset failed for ${environment}:`, error)

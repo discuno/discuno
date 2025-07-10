@@ -4,7 +4,7 @@ import { BookingButton } from '~/app/(default)/(dashboard)/book/components/Booki
 import { BookingEmbed } from '~/app/(default)/(dashboard)/book/components/BookingEmbed'
 import { BookingEmbedSkeleton } from '~/app/(default)/(dashboard)/book/components/BookingEmbedSkeleton'
 import { BookingModal } from '~/app/(default)/(dashboard)/book/components/BookingModal'
-import { CalProviderWrapper } from '~/lib/providers/CalProviderWrapper'
+import { CalcomProvider } from '~/lib/providers/CalProvider'
 import { getFullProfileByUserId } from '~/server/queries'
 
 interface BookingInterfaceProps {
@@ -46,10 +46,7 @@ export const BookingInterface = async ({
   }
 
   return (
-    <CalProviderWrapper
-      mentorAccessToken={profile.accessToken}
-      mentorRefreshToken={profile.refreshToken}
-    >
+    <CalcomProvider>
       <Suspense fallback={<BookingEmbedSkeleton />}>
         {variant === 'button' && (
           <BookingButton bookingData={bookingData} className={className}>
@@ -79,7 +76,7 @@ export const BookingInterface = async ({
           </div>
         )}
       </Suspense>
-    </CalProviderWrapper>
+    </CalcomProvider>
   )
 }
 

@@ -72,7 +72,6 @@
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.9.1",
-    "@calcom/atoms": "^1.0.114",
     "@neondatabase/serverless": "^1.0.1",
     "@radix-ui/react-avatar": "^1.1.10",
     "@radix-ui/react-dialog": "^1.1.14",
@@ -112,7 +111,7 @@
     "nodemailer": "^7.0.3",
     "postgres": "^3.4.7",
     "react": "^19.1.0",
-    "react-day-picker": "^9.7.0",
+    "react-day-picker": "^9.8.0",
     "react-dom": "^19.1.0",
     "react-image-crop": "^11.0.10",
     "server-only": "^0.0.1",

@@ -3,7 +3,7 @@ import { Suspense } from 'react'
 import { EventTypesSection } from '~/app/(default)/(dashboard)/scheduling/components/EventTypesSection'
 import { AvailabilitySettingsClient } from '~/components/calcom/AvailabilitySettingsClient'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs'
-import { CalProviderWrapper } from '~/lib/providers/CalProviderWrapper'
+import { CalcomProvider } from '~/lib/providers/CalProvider'
 
 function LoadingSkeleton() {
   return (
@@ -63,11 +63,11 @@ export const SchedulingContent = () => {
                 </p>
               </div>
             </div>
-            <CalProviderWrapper useCurrentUserTokens={true}>
+            <CalcomProvider>
               <Suspense fallback={<LoadingSkeleton />}>
                 <AvailabilitySettingsClient />
               </Suspense>
-            </CalProviderWrapper>
+            </CalcomProvider>
           </div>
         </TabsContent>
 
@@ -80,11 +80,11 @@ export const SchedulingContent = () => {
                 schedules.
               </p>
             </div>
-            <CalProviderWrapper useCurrentUserTokens={true}>
+            <CalcomProvider>
               <Suspense fallback={<LoadingSkeleton />}>
                 <EventTypesSection />
               </Suspense>
-            </CalProviderWrapper>
+            </CalcomProvider>
           </div>
         </TabsContent>
       </Tabs>
