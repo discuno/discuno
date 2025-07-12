@@ -83,6 +83,11 @@ export const fetchEventTypes = async (username: string): Promise<EventType[]> =>
   }
 }
 
+type FetchSlotsResult = {
+  success: boolean
+  slots?: TimeSlot[]
+  error?: string
+}
 /**
  * Fetch available slots for a given date and username
  */
@@ -91,7 +96,7 @@ export const fetchAvailableSlots = async (
   eventSlug: string,
   date: Date,
   timeZone?: string
-): Promise<TimeSlot[]> => {
+): Promise<FetchSlotsResult> => {
   try {
     // Format date for Cal.com API
     const startTime = new Date(date)
@@ -119,7 +124,10 @@ export const fetchAvailableSlots = async (
     if (!response.ok) {
       const errorText = await response.text()
       console.error('Failed to fetch slots:', response.status, errorText)
-      return []
+      return {
+        success: false,
+        error: errorText,
+      }
     }
 
     const data: AvailableSlotsResponse = await response.json()
@@ -146,10 +154,16 @@ export const fetchAvailableSlots = async (
       }
     }
 
-    return slots
+    return {
+      success: true,
+      slots,
+    }
   } catch (error) {
     console.error('Error fetching slots:', error)
-    return []
+    return {
+      success: false,
+      error: 'Failed to fetch slots',
+    }
   }
 }
 

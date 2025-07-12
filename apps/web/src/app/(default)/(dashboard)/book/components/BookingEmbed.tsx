@@ -1,6 +1,6 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { Calendar as CalendarIcon, ChevronLeft, Clock, DollarSign, Timer } from 'lucide-react'
 import { useState } from 'react'
@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from '~/components/ui/select'
 import { Skeleton } from '~/components/ui/skeleton'
+import { BadRequestError, ExternalApiError } from '~/lib/errors'
 import { useCalcom } from '~/lib/providers/CalProvider'
 
 interface BookingEmbedProps {
@@ -40,7 +41,6 @@ interface BookingFormData {
 
 export const BookingEmbed = ({
   username,
-  eventSlug,
   onCreateBookingSuccess,
   onCreateBookingError,
 }: BookingEmbedProps) => {
@@ -49,7 +49,6 @@ export const BookingEmbed = ({
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string | null>(null)
   const [currentStep, setCurrentStep] = useState<'calendar' | 'booking'>('calendar')
-  const [isBooking, setIsBooking] = useState(false)
   const [formData, setFormData] = useState<BookingFormData>({
     name: '',
     email: '',
@@ -67,42 +66,35 @@ export const BookingEmbed = ({
   })
 
   // Use the provided eventSlug or the selected event type
-  const currentEventSlug = selectedEventType?.slug ?? eventSlug ?? null
+  const currentEventSlug = selectedEventType?.slug
 
   const {
-    data: availableSlots = [],
-    isPending,
+    data: availableSlots = { success: false, slots: [] },
     isFetching,
     error,
   } = useQuery({
     queryKey: ['available-slots', username, currentEventSlug, selectedDate],
-    queryFn: () => fetchSlotsAction(username, currentEventSlug!, selectedDate, timeZone),
-    staleTime: 0,
+    queryFn: () => {
+      if (!currentEventSlug) throw new BadRequestError('No event type selected')
+      return fetchSlotsAction(username, currentEventSlug, selectedDate, timeZone)
+    },
+    staleTime: 1000 * 30,
     enabled: currentStep === 'calendar' && !!currentEventSlug,
   })
 
-  const handleBooking = async () => {
-    if (!selectedTimeSlot) return
-
-    setIsBooking(true)
-    try {
-      // Combine selected date and time into ISO string
-      const timeSlot = selectedTimeSlot
-      const [hours, minutes] = timeSlot.split(':')
-      const startTime = new Date(selectedDate)
-      startTime.setHours(parseInt(hours ?? '0'), parseInt(minutes ?? '0'), 0, 0)
-
-      const result = await createBookingAction({
-        username,
-        eventSlug: currentEventSlug!,
-        startTime: startTime.toISOString(),
-        attendee: {
-          name: formData.name,
-          email: formData.email,
-          timeZone: timeZone,
-        },
-      })
-
+  // Create booking mutation
+  const createBookingMutation = useMutation({
+    mutationFn: (bookingData: {
+      username: string
+      eventSlug: string
+      startTime: string
+      attendee: {
+        name: string
+        email: string
+        timeZone: string
+      }
+    }) => createBookingAction(bookingData),
+    onSuccess: result => {
       if (result.success) {
         const booking = {
           id: result.bookingUid,
@@ -123,13 +115,37 @@ export const BookingEmbed = ({
       } else {
         throw new Error(result.error ?? 'Booking failed')
       }
-    } catch (error) {
+    },
+    onError: error => {
       console.error('Booking failed:', error)
       toast.error('Failed to create booking')
       onCreateBookingError?.(error)
-    } finally {
-      setIsBooking(false)
-    }
+    },
+  })
+
+  if (error) {
+    throw new ExternalApiError(error.message)
+  }
+
+  const handleBooking = async () => {
+    if (!selectedTimeSlot || !currentEventSlug) return
+
+    // Combine selected date and time into ISO string
+    const timeSlot = selectedTimeSlot
+    const [hours, minutes] = timeSlot.split(':')
+    const startTime = new Date(selectedDate)
+    startTime.setHours(parseInt(hours ?? '0'), parseInt(minutes ?? '0'), 0, 0)
+
+    createBookingMutation.mutate({
+      username,
+      eventSlug: currentEventSlug,
+      startTime: startTime.toISOString(),
+      attendee: {
+        name: formData.name,
+        email: formData.email,
+        timeZone: timeZone,
+      },
+    })
   }
 
   if (eventTypesLoading) {
@@ -231,7 +247,9 @@ export const BookingEmbed = ({
                   </div>
                 ) : (
                   <div className="grid max-h-96 grid-cols-2 gap-2 overflow-y-auto">
-                    {availableSlots.length === 0 ? (
+                    {!availableSlots.success ||
+                    !availableSlots.slots ||
+                    availableSlots.slots.length === 0 ? (
                       <div className="col-span-2 py-8 text-center">
                         <Clock className="text-muted-foreground mx-auto mb-2 h-8 w-8" />
                         <p className="text-muted-foreground text-sm">
@@ -239,7 +257,7 @@ export const BookingEmbed = ({
                         </p>
                       </div>
                     ) : (
-                      availableSlots.map(slot => (
+                      availableSlots.slots.map(slot => (
                         <Button
                           key={slot.time}
                           variant={selectedTimeSlot === slot.time ? 'default' : 'outline'}
@@ -330,9 +348,9 @@ export const BookingEmbed = ({
               className="w-full"
               size="lg"
               onClick={handleBooking}
-              disabled={!formData.name || !formData.email || isBooking}
+              disabled={!formData.name || !formData.email || createBookingMutation.isPending}
             >
-              {isBooking ? 'Confirming...' : 'Confirm Booking'}
+              {createBookingMutation.isPending ? 'Confirming...' : 'Confirm Booking'}
             </Button>
           </div>
         </div>
