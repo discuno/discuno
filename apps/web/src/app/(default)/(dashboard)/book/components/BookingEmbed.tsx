@@ -13,7 +13,6 @@ import {
 } from '~/app/(default)/(dashboard)/book/actions'
 import { Button } from '~/components/ui/button'
 import { Calendar } from '~/components/ui/calendar'
-import { Card, CardContent } from '~/components/ui/card'
 import { Input } from '~/components/ui/input'
 import { Label } from '~/components/ui/label'
 import {
@@ -154,20 +153,20 @@ export const BookingEmbed = ({
 
   if (eventTypesError) {
     return (
-      <Card className="flex min-h-[600px] items-center justify-center">
-        <CardContent className="text-center">
+      <div className="flex min-h-[600px] items-center justify-center">
+        <div className="text-center">
           <CalendarIcon className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
           <h3 className="mb-2 text-lg font-semibold">Booking Unavailable</h3>
           <p className="text-muted-foreground">
             Failed to load booking calendar. Please try again later.
           </p>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     )
   }
 
   return (
-    <div className="bg-background h-full min-h-[600px] w-full rounded-lg border">
+    <div className="bg-background h-full min-h-[600px] w-full">
       {currentStep === 'calendar' ? (
         <div className="p-6">
           <div className="mb-6">
@@ -275,20 +274,18 @@ export const BookingEmbed = ({
 
                 {selectedTimeSlot && (
                   <div className="mt-6">
-                    <Card className="border-primary/20 bg-primary/5">
-                      <CardContent className="p-4">
-                        <div className="mb-2 flex items-center gap-2">
-                          <CalendarIcon className="text-primary h-4 w-4" />
-                          <span className="font-medium">Selected Time</span>
-                        </div>
-                        <p className="text-muted-foreground text-sm">
-                          {format(selectedDate, 'EEEE, MMMM d, yyyy')} at {selectedTimeSlot}
-                        </p>
-                        <Button className="mt-4 w-full" onClick={() => setCurrentStep('booking')}>
-                          Continue to Booking Details
-                        </Button>
-                      </CardContent>
-                    </Card>
+                    <div className="border-primary/20 bg-primary/5 rounded-lg border p-4">
+                      <div className="mb-2 flex items-center gap-2">
+                        <CalendarIcon className="text-primary h-4 w-4" />
+                        <span className="font-medium">Selected Time</span>
+                      </div>
+                      <p className="text-muted-foreground text-sm">
+                        {format(selectedDate, 'EEEE, MMMM d, yyyy')} at {selectedTimeSlot}
+                      </p>
+                      <Button className="mt-4 w-full" onClick={() => setCurrentStep('booking')}>
+                        Continue to Booking Details
+                      </Button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -308,16 +305,14 @@ export const BookingEmbed = ({
               Back to Calendar
             </Button>
             <h2 className="mb-2 text-xl font-semibold">Booking Details</h2>
-            <Card className="border-primary/20 bg-primary/5">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2">
-                  <CalendarIcon className="text-primary h-4 w-4" />
-                  <span className="font-medium">
-                    {format(selectedDate, 'EEEE, MMMM d, yyyy')} at {selectedTimeSlot}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
+            <div className="border-primary/20 bg-primary/5 rounded-lg border p-4">
+              <div className="flex items-center gap-2">
+                <CalendarIcon className="text-primary h-4 w-4" />
+                <span className="font-medium">
+                  {format(selectedDate, 'EEEE, MMMM d, yyyy')} at {selectedTimeSlot}
+                </span>
+              </div>
+            </div>
           </div>
 
           <div className="max-w-md space-y-4">

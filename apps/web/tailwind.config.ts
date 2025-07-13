@@ -6,8 +6,6 @@ const config: Config = {
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
     './src/lib/**/*.{js,ts,jsx,tsx,mdx}',
-    // Include the atoms package components
-    './node_modules/@calcom/atoms/**/*.{js,ts,jsx,tsx}',
   ],
   plugins: [],
 }

@@ -33,8 +33,8 @@ export const BookingButton = ({ bookingData, children, className }: BookingButto
       </Button>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="max-h-[90vh] max-w-4xl overflow-hidden p-0">
-          <DialogHeader className="p-6 pb-0">
+        <DialogContent className="flex max-h-[90vh] max-w-4xl flex-col p-0">
+          <DialogHeader className="flex-shrink-0 p-6 pb-0">
             <DialogTitle className="text-xl font-semibold">
               Schedule with {bookingData.name}
             </DialogTitle>
@@ -54,7 +54,7 @@ export const BookingButton = ({ bookingData, children, className }: BookingButto
             </div>
           </DialogHeader>
 
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 overflow-y-auto">
             <Suspense fallback={<BookingEmbedSkeleton />}>
               <CalcomProvider>
                 <BookingEmbed username={bookingData.calcomUsername} />
