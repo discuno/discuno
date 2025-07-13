@@ -68,39 +68,108 @@ const dropAllTables = async (environment: Environment) => {
   const { client, db } = createResetConnection(environment)
 
   try {
-    // Step 0: Delete Cal.com managed users for existing local tokens
-    console.log('🌐 Deleting Cal.com managed users...')
+    // Step 0: Clean up Cal.com team memberships for existing local tokens
+    console.log('🌐 Cleaning up Cal.com team memberships...')
     const calcomApiBase = process.env.NEXT_PUBLIC_CALCOM_API_URL
     const calcomClientId = process.env.NEXT_PUBLIC_X_CAL_ID
     const calcomSecretKey = process.env.X_CAL_SECRET_KEY
-    if (!calcomClientId || !calcomSecretKey) {
-      console.warn('⚠️ Missing Cal.com credentials. Skipping Cal.com user cleanup.')
+    const calcomOrgId = process.env.CALCOM_ORG_ID
+    const collegeMentorTeamId = process.env.COLLEGE_MENTOR_TEAM_ID
+    if (!calcomClientId || !calcomSecretKey || !calcomOrgId || !collegeMentorTeamId) {
+      console.warn('⚠️ Missing Cal.com credentials. Skipping Cal.com cleanup.')
     } else {
-      const tokens = await db.execute(
-        sql`SELECT user_id AS "userId", calcom_user_id AS "calcomUserId" FROM discuno_calcom_token`
-      )
-      for (const row of tokens) {
-        try {
-          const res = await fetch(
-            `${calcomApiBase}/oauth-clients/${calcomClientId}/users/${row.calcomUserId}`,
-            {
-              method: 'DELETE',
-              headers: {
-                'x-cal-secret-key': calcomSecretKey,
-              },
-            }
-          )
-          if (!res.ok) {
-            const text = await res.text()
-            console.error(
-              `Failed to delete Cal.com user ${row.calcomUserId}: ${res.status} ${text}`
-            )
-          } else {
-            console.log(`Deleted Cal.com user ${row.calcomUserId}`)
+      try {
+        // Step 0a: Fetch all team memberships to get membership IDs
+        console.log('📋 Fetching team memberships...')
+        const membershipsResponse = await fetch(
+          `${calcomApiBase}/organizations/${calcomOrgId}/teams/${collegeMentorTeamId}/memberships`,
+          {
+            method: 'GET',
+            headers: {
+              'x-cal-secret-key': calcomSecretKey,
+              'x-cal-client-id': calcomClientId,
+            },
           }
-        } catch (error) {
-          console.error(`Error deleting Cal.com user ${row.calcomUserId}:`, error)
+        )
+
+        if (!membershipsResponse.ok) {
+          const errorText = await membershipsResponse.text()
+          console.error(
+            `Failed to fetch team memberships: ${membershipsResponse.status} ${errorText}`
+          )
+        } else {
+          const membershipsData = await membershipsResponse.json()
+
+          if (membershipsData.status === 'success' && Array.isArray(membershipsData.data)) {
+            const memberships = membershipsData.data
+            console.log(`Found ${memberships.length} team memberships to clean up`)
+
+            // Step 0b: Delete each membership (except OWNER role to avoid breaking the team)
+            for (const membership of memberships) {
+              try {
+                // Skip OWNER memberships to avoid breaking the team
+                if (membership.role === 'OWNER') {
+                  console.log(`Skipping OWNER membership for user ${membership.user.email}`)
+                  continue
+                }
+
+                console.log(
+                  `Removing membership ${membership.id} for user ${membership.user.email}`
+                )
+
+                const deleteMembershipResponse = await fetch(
+                  `${calcomApiBase}/organizations/${calcomOrgId}/teams/${collegeMentorTeamId}/memberships/${membership.id}`,
+                  {
+                    method: 'DELETE',
+                    headers: {
+                      'x-cal-secret-key': calcomSecretKey,
+                      'x-cal-client-id': calcomClientId,
+                    },
+                  }
+                )
+
+                if (!deleteMembershipResponse.ok) {
+                  const deleteErrorText = await deleteMembershipResponse.text()
+                  console.error(
+                    `Failed to delete membership ${membership.id}: ${deleteMembershipResponse.status} ${deleteErrorText}`
+                  )
+                } else {
+                  console.log(`Successfully deleted membership ${membership.id}`)
+                }
+
+                // Step 0c: Also delete the Cal.com user if possible
+                try {
+                  const userResponse = await fetch(
+                    `${calcomApiBase}/oauth-clients/${calcomClientId}/users/${membership.userId}`,
+                    {
+                      method: 'DELETE',
+                      headers: {
+                        'x-cal-secret-key': calcomSecretKey,
+                      },
+                    }
+                  )
+
+                  if (!userResponse.ok) {
+                    const userErrorText = await userResponse.text()
+                    console.error(
+                      `Failed to delete Cal.com user ${membership.userId}: ${userResponse.status} ${userErrorText}`
+                    )
+                  } else {
+                    console.log(`Successfully deleted Cal.com user ${membership.userId}`)
+                  }
+                } catch (userError) {
+                  console.error(`Error deleting Cal.com user ${membership.userId}:`, userError)
+                }
+              } catch (membershipError) {
+                console.error(`Error processing membership ${membership.id}:`, membershipError)
+              }
+            }
+          } else {
+            console.warn('Unexpected memberships response format:', membershipsData)
+          }
         }
+      } catch (error) {
+        console.error('Error during Cal.com cleanup:', error)
       }
     }
     // First, disable foreign key checks temporarily to avoid dependency issues
@@ -278,9 +347,10 @@ const main = async () => {
     console.log('─'.repeat(60))
     console.log(`🎉 Database reset completed successfully for ${environment}`)
     console.log('📊 Your database has been reset and seeded with fresh sample data')
-    console.log('   - 30 mentor users with Cal.com accounts and detailed profiles')
+    console.log('   - 30 mentor users added to college-mentors team')
     console.log('   - Posts, reviews, and complete relationship mappings')
     console.log('   - Schools, majors, and waitlist entries')
+    console.log('   - Event types managed at team level (not per-user)')
   } catch (error) {
     console.log('─'.repeat(60))
     console.error(`💥 Database reset failed for ${environment}:`, error)

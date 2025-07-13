@@ -51,9 +51,10 @@ const main = async () => {
     console.log('─'.repeat(50))
     console.log(`🎉 Seeding completed successfully for ${environment}`)
     console.log('📊 Your database now contains sample data for development/testing')
-    console.log('   - 30 mentor users with Cal.com accounts and detailed profiles')
+    console.log('   - 30 mentor users added to college-mentors team')
     console.log('   - Posts, reviews, and complete relationship mappings')
     console.log('   - Schools, majors, and waitlist entries')
+    console.log('   - Event types managed at team level (not per-user)')
   } catch (error) {
     console.log('─'.repeat(50))
     console.error(`💥 Seeding failed for ${environment}:`, error)

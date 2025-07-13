@@ -1,10 +1,10 @@
 import type { CreateCalcomUserInput, UpdateCalcomUserInput } from '~/app/types'
 import { env } from '~/env'
-import { BadRequestError, ExternalApiError } from '~/lib/auth/auth-utils'
-import { storeCalcomTokens, storeCalcomTokensForUser } from '~/server/queries'
+import { ExternalApiError } from '~/lib/auth/auth-utils'
+import { storeCalcomTokensForUser } from '~/server/queries'
 
 /**
- * Create Cal.com user (core implementation)
+ * Add user to college-mentors team (core implementation)
  */
 export const createCalcomUser = async (
   data: CreateCalcomUserInput & { userId?: string }
@@ -15,8 +15,8 @@ export const createCalcomUser = async (
   try {
     const { email, name, timeZone, userId } = data
 
-    // Create managed user in Cal.com
-    const response = await fetch(
+    // Step 1: Create managed user in Cal.com
+    const userResponse = await fetch(
       `${env.NEXT_PUBLIC_CALCOM_API_URL}/oauth-clients/${env.NEXT_PUBLIC_X_CAL_ID}/users`,
       {
         method: 'POST',
@@ -34,24 +34,59 @@ export const createCalcomUser = async (
       }
     )
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('Cal.com user creation failed:', response.status, errorText)
-      throw new ExternalApiError(`Cal.com API error: ${response.status} - ${errorText}`)
+    if (!userResponse.ok) {
+      const errorText = await userResponse.text()
+      console.error('Cal.com user creation failed:', userResponse.status, errorText)
+      throw new ExternalApiError(`Cal.com API error: ${userResponse.status} - ${errorText}`)
     }
 
-    const responseData = await response.json()
+    const userResponseData = await userResponse.json()
 
-    if (responseData.status !== 'success') {
-      console.error('Cal.com user creation response error:', responseData)
-      throw new ExternalApiError(`Cal.com user creation failed: ${JSON.stringify(responseData)}`)
+    if (userResponseData.status !== 'success') {
+      console.error('Cal.com user creation response error:', userResponseData)
+      throw new ExternalApiError(
+        `Cal.com user creation failed: ${JSON.stringify(userResponseData)}`
+      )
     }
 
-    const calcomUser = responseData.data
+    const calcomUser = userResponseData.data
 
-    // Store tokens in our database
-    // Use the version that accepts userId directly if provided (during auth flow)
-    // Otherwise use the session-based version (for authenticated users)
+    // Step 2: Add user to college-mentors team
+    console.log(`Adding user ${calcomUser.user.id} to college-mentors team...`)
+    const membershipResponse = await fetch(
+      `${env.NEXT_PUBLIC_CALCOM_API_URL}/organizations/${env.CALCOM_ORG_ID}/teams/${env.COLLEGE_MENTOR_TEAM_ID}/memberships`,
+      {
+        method: 'POST',
+        headers: {
+          'x-cal-secret-key': env.X_CAL_SECRET_KEY,
+          'x-cal-client-id': env.NEXT_PUBLIC_X_CAL_ID,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          role: 'MEMBER',
+          accepted: true,
+          disableImpersonation: false,
+          userId: calcomUser.user.id,
+        }),
+      }
+    )
+
+    if (!membershipResponse.ok) {
+      const errorText = await membershipResponse.text()
+      console.error(
+        `Failed to add user ${calcomUser.user.id} to college-mentors team: ${membershipResponse.status} ${errorText}`
+      )
+
+      throw new ExternalApiError(
+        `Cal.com team membership creation failed: ${membershipResponse.status} - ${errorText}`
+      )
+    } else {
+      const membershipData = await membershipResponse.json()
+      console.log(`Successfully added user ${calcomUser.user.id} to college-mentors team`)
+      console.log('Membership data:', membershipData)
+    }
+
+    // Step 3: Store Cal.com tokens if userId is provided
     if (userId) {
       await storeCalcomTokensForUser({
         userId,
@@ -62,15 +97,8 @@ export const createCalcomUser = async (
         accessTokenExpiresAt: calcomUser.accessTokenExpiresAt,
         refreshTokenExpiresAt: calcomUser.refreshTokenExpiresAt,
       })
-    } else {
-      await storeCalcomTokens({
-        calcomUserId: calcomUser.user.id,
-        calcomUsername: calcomUser.user.username,
-        accessToken: calcomUser.accessToken,
-        refreshToken: calcomUser.refreshToken,
-        accessTokenExpiresAt: calcomUser.accessTokenExpiresAt,
-        refreshTokenExpiresAt: calcomUser.refreshTokenExpiresAt,
-      })
+
+      console.log(`Stored Cal.com tokens for user ${userId}`)
     }
 
     return {
@@ -78,11 +106,8 @@ export const createCalcomUser = async (
       username: calcomUser.user.username,
     }
   } catch (error) {
-    console.error('Cal.com user creation error:', error)
-    if (error instanceof ExternalApiError) {
-      throw error
-    }
-    throw new BadRequestError('Failed to create Cal.com user')
+    console.error('Error in createCalcomUser:', error)
+    throw error
   }
 }
 

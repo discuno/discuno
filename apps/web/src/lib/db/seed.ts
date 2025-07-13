@@ -684,13 +684,17 @@ export const seedDatabase = async (environment?: Environment) => {
       }
       await tx.insert(mentorReviews).values(reviewData)
 
-      // Step 9: Create Cal.com managed users and tokens for all mentors
-      console.log('🌐 Creating Cal.com managed users for all mentors...')
+      // Step 9: Create Cal.com managed users and add them to college-mentors team
+      console.log('🌐 Creating Cal.com managed users and adding to college-mentors team...')
       const calcomApiBase = process.env.NEXT_PUBLIC_CALCOM_API_URL
       const calcomClientId = process.env.NEXT_PUBLIC_X_CAL_ID
       const calcomSecretKey = process.env.X_CAL_SECRET_KEY
-      if (!calcomClientId || !calcomSecretKey) {
-        throw new Error('Missing Cal.com credentials: CALCOM_CLIENT_ID and/or CALCOM_SECRET_KEY')
+      const calcomOrgId = process.env.CALCOM_ORG_ID
+      const collegeMentorTeamId = process.env.COLLEGE_MENTOR_TEAM_ID
+      if (!calcomClientId || !calcomSecretKey || !calcomOrgId || !collegeMentorTeamId) {
+        throw new Error(
+          'Missing Cal.com credentials: NEXT_PUBLIC_X_CAL_ID, X_CAL_SECRET_KEY, CALCOM_ORG_ID, and/or COLLEGE_MENTOR_TEAM_ID'
+        )
       }
       const calcomTokenData: Array<{
         userId: string
@@ -701,40 +705,79 @@ export const seedDatabase = async (environment?: Environment) => {
         accessTokenExpiresAt: Date
         refreshTokenExpiresAt: Date
       }> = []
+
       for (const mentor of mentors) {
         try {
-          const response = await fetch(`${calcomApiBase}/oauth-clients/${calcomClientId}/users`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-cal-secret-key': calcomSecretKey,
-            },
-            body: JSON.stringify({
-              email: mentor.email,
-              name: mentor.name ?? '',
-              timeFormat: 12,
-              weekStart: 'Monday',
-              timeZone: 'UTC',
-              locale: 'en',
-              avatarUrl: mentor.image ?? undefined,
-              bio: '',
-              metadata: {},
-            }),
-          })
-          if (!response.ok) {
-            const errText = await response.text()
+          // Step 9a: Create Cal.com managed user
+          const userResponse = await fetch(
+            `${calcomApiBase}/oauth-clients/${calcomClientId}/users`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'x-cal-secret-key': calcomSecretKey,
+              },
+              body: JSON.stringify({
+                email: mentor.email,
+                name: mentor.name ?? '',
+                timeFormat: 12,
+                weekStart: 'Monday',
+                timeZone: 'UTC',
+                locale: 'en',
+                avatarUrl: mentor.image ?? undefined,
+                bio: '',
+                metadata: {},
+              }),
+            }
+          )
+
+          if (!userResponse.ok) {
+            const errText = await userResponse.text()
             throw new Error(
-              `Failed to create Cal.com user for ${mentor.email}: ${response.status} ${errText}`
+              `Failed to create Cal.com user for ${mentor.email}: ${userResponse.status} ${errText}`
             )
           }
-          const json = await response.json()
+
+          const userJson = await userResponse.json()
           const {
             accessToken,
             refreshToken,
             accessTokenExpiresAt,
             refreshTokenExpiresAt,
             user: calUser,
-          } = json.data
+          } = userJson.data
+
+          // Step 9b: Add user to college-mentors team
+          const membershipResponse = await fetch(
+            `${calcomApiBase}/organizations/${calcomOrgId}/teams/${collegeMentorTeamId}/memberships`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'x-cal-secret-key': calcomSecretKey,
+                'x-cal-client-id': calcomClientId,
+              },
+              body: JSON.stringify({
+                role: 'MEMBER',
+                accepted: true,
+                disableImpersonation: false,
+                userId: calUser.id,
+              }),
+            }
+          )
+
+          if (!membershipResponse.ok) {
+            const membershipErrorText = await membershipResponse.text()
+            console.error(
+              `Failed to add user ${calUser.id} to college-mentors team: ${membershipResponse.status} ${membershipErrorText}`
+            )
+            // Continue anyway - user is created even if team membership fails
+          } else {
+            const membershipData = await membershipResponse.json()
+            console.log(`Successfully added user ${calUser.id} to college-mentors team`)
+            console.log('Team membership data:', membershipData)
+          }
+
           calcomTokenData.push({
             userId: mentor.id,
             calcomUserId: calUser.id,
@@ -745,62 +788,18 @@ export const seedDatabase = async (environment?: Environment) => {
             refreshTokenExpiresAt: new Date(refreshTokenExpiresAt),
           })
         } catch (error) {
-          console.error(error)
+          console.error(`Error processing mentor ${mentor.email}:`, error)
         }
       }
+
       if (calcomTokenData.length > 0) {
         console.log('📑 Inserting Cal.com tokens into DB...')
         await tx.insert(calcomTokens).values(calcomTokenData)
       }
 
-      // Step 10: Create Cal.com event types for all mentors
-      console.log('📅 Creating Cal.com event types for all mentors...')
-      for (const tokenRecord of calcomTokenData) {
-        const { accessToken, calcomUsername } = tokenRecord
-        const eventTypes = [
-          {
-            title: 'default-event-type',
-            slug: 'default-event-type',
-            lengthInMinutes: 60,
-            lengthInMinutesOptions: [15, 30, 60],
-          },
-          {
-            title: `extra-event-type-1-${calcomUsername}`,
-            slug: `extra-event-type-1-${calcomUsername}`,
-            lengthInMinutes: 30,
-            lengthInMinutesOptions: [15, 30],
-          },
-          {
-            title: `extra-event-type-2-${calcomUsername}`,
-            slug: `extra-event-type-2-${calcomUsername}`,
-            lengthInMinutes: 45,
-            lengthInMinutesOptions: [15, 45],
-          },
-        ]
-        for (const evt of eventTypes) {
-          try {
-            const res = await fetch(`${calcomApiBase}/event-types`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'cal-api-version': '2024-06-14',
-                Authorization: `Bearer ${accessToken}`,
-              },
-              body: JSON.stringify(evt),
-            })
-            if (!res.ok) {
-              const text = await res.text()
-              console.error(
-                `Failed to create event type ${evt.slug} for ${calcomUsername}: ${res.status} ${text}`
-              )
-            } else {
-              console.log(`Created event type ${evt.slug} for ${calcomUsername}`)
-            }
-          } catch (err) {
-            console.error(`Error creating event type ${evt.slug} for ${calcomUsername}:`, err)
-          }
-        }
-      }
+      // Note: Event types are now managed at the team level instead of per-user
+      console.log('✅ Cal.com users created and added to college-mentors team')
+      console.log('   Event types will be managed at the team level, not per-user')
 
       // Step 11: Insert waitlist entries
       console.log('📧 Inserting waitlist entries...')
@@ -820,7 +819,7 @@ export const seedDatabase = async (environment?: Environment) => {
 
     console.log('🎉 Database seeding completed successfully!')
     console.log('📊 Generated comprehensive realistic data including:')
-    console.log(`  - 30 mentor users with detailed profiles (all with Cal.com accounts)`)
+    console.log(`  - 30 mentor users with detailed profiles (all added to college-mentors team)`)
     console.log(`  - Posts with engaging content for all users`)
     console.log(`  - ${majorNames.length} majors and ${schoolData.length} schools`)
     console.log(`  - Mentor reviews with ratings for all users`)
@@ -828,7 +827,8 @@ export const seedDatabase = async (environment?: Environment) => {
     console.log('  - Complete relationship mappings between all entities')
     console.log('  - Realistic graduation years based on school year')
     console.log('  - Diverse bio content and user backgrounds')
-    console.log('  - Cal.com managed user accounts and event types for all users')
+    console.log('  - Cal.com managed users added to college-mentors team')
+    console.log('  - Event types managed at team level (not per-user)')
   } catch (error) {
     console.error(`❌ Seeding failed for ${targetEnv}:`, error)
     console.error('🔄 Transaction automatically rolled back')
