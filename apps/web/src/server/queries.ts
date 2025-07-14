@@ -9,6 +9,8 @@ import { db } from '~/server/db'
 import {
   calcomTokens,
   majors,
+  mentorEventTypes,
+  mentorStripeAccounts,
   posts,
   schools,
   userMajors,
@@ -893,7 +895,7 @@ export const removeUserImage = async (): Promise<void> => {
 /**
  * Find or create a school by name (within a transaction)
  */
-const findOrCreateSchool = async (tx: any, schoolName: string): Promise<number> => {
+const findOrCreateSchoolInternal = async (tx: any, schoolName: string): Promise<number> => {
   // First try to find existing school
   const existingSchool = await tx
     .select({ id: schools.id })
@@ -910,6 +912,9 @@ const findOrCreateSchool = async (tx: any, schoolName: string): Promise<number> 
     .insert(schools)
     .values({
       name: schoolName,
+      domain: schoolName.toLowerCase().replace(/\s+/g, '') + '.edu',
+      location: 'Unknown',
+      image: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     })
@@ -920,6 +925,15 @@ const findOrCreateSchool = async (tx: any, schoolName: string): Promise<number> 
   }
 
   return newSchool.id
+}
+
+/**
+ * Find or create a school by name (within a transaction)
+ */
+export const findOrCreateSchool = async (schoolName: string): Promise<number> => {
+  return await db.transaction(async tx => {
+    return await findOrCreateSchoolInternal(tx, schoolName)
+  })
 }
 
 /**
@@ -955,121 +969,320 @@ const findOrCreateMajor = async (tx: any, majorName: string): Promise<number> =>
 }
 
 /**
- * Complete profile update with all related tables
- * Handles users, userProfiles, userSchools, and userMajors tables
+ * Update a complete user profile with all fields
  */
-export const updateCompleteUserProfile = async ({
-  name,
-  bio,
-  schoolYear,
-  graduationYear,
-  school,
-  major,
-}: {
-  name?: string
-  bio?: string | null
-  schoolYear?: 'Freshman' | 'Sophomore' | 'Junior' | 'Senior' | 'Graduate'
-  graduationYear?: number
-  school?: string
-  major?: string
-}): Promise<void> => {
-  const { id: userId } = await requireAuth()
-
+export const updateCompleteProfile = async (
+  userId: string,
+  data: {
+    name?: string
+    bio?: string | null
+    schoolYear?: 'Freshman' | 'Sophomore' | 'Junior' | 'Senior' | 'Graduate'
+    graduationYear?: number
+    school?: string
+    major?: string
+  }
+): Promise<void> => {
   const validData = updateCompleteProfileSchema.parse({
     userId,
-    name,
-    bio,
-    schoolYear,
-    graduationYear,
-    school,
-    major,
+    ...data,
   })
 
-  try {
-    // Use a transaction to ensure data consistency
-    await db.transaction(async tx => {
-      // 1. Update basic user info if name is provided
-      if (validData.name) {
-        const userResult = await tx
-          .update(users)
-          .set({ name: validData.name })
-          .where(eq(users.id, validData.userId))
-          .returning({ id: users.id })
+  await db.transaction(async tx => {
+    // 1. Update user basic info
+    if (validData.name) {
+      await tx
+        .update(users)
+        .set({
+          name: validData.name,
+        })
+        .where(eq(users.id, validData.userId))
+    }
 
-        if (userResult.length === 0) {
-          throw new NotFoundError('User not found')
-        }
-      }
-
-      // 2. Handle user profile (bio, schoolYear, graduationYear)
-      if (validData.bio !== undefined || validData.schoolYear || validData.graduationYear) {
-        // Check if profile exists
-        const existingProfile = await tx
-          .select({ id: userProfiles.id })
-          .from(userProfiles)
-          .where(eq(userProfiles.userId, validData.userId))
-          .limit(1)
-
-        const profileData = {
-          ...(validData.bio !== undefined && { bio: validData.bio ?? null }),
-          ...(validData.schoolYear && { schoolYear: validData.schoolYear }),
-          ...(validData.graduationYear && { graduationYear: validData.graduationYear }),
+    // 2. Update user profile
+    if (validData.bio !== undefined || validData.schoolYear || validData.graduationYear) {
+      await tx
+        .insert(userProfiles)
+        .values({
+          userId: validData.userId,
+          bio: validData.bio,
+          schoolYear: validData.schoolYear ?? 'Freshman',
+          graduationYear: validData.graduationYear ?? new Date().getFullYear(),
+          createdAt: new Date(),
           updatedAt: new Date(),
-        }
-
-        if (existingProfile.length > 0) {
-          // Update existing profile
-          await tx
-            .update(userProfiles)
-            .set(profileData)
-            .where(eq(userProfiles.userId, validData.userId))
-        } else {
-          // Create new profile
-          await tx.insert(userProfiles).values({
-            userId: validData.userId,
-            ...profileData,
-            // Set required fields with defaults if not provided
+        })
+        .onConflictDoUpdate({
+          target: userProfiles.userId,
+          set: {
+            bio: validData.bio,
             schoolYear: validData.schoolYear ?? 'Freshman',
             graduationYear: validData.graduationYear ?? new Date().getFullYear(),
-            createdAt: new Date(),
-          })
-        }
-      }
-
-      // 3. Handle school relationship
-      if (validData.school) {
-        const schoolId = await findOrCreateSchool(tx, validData.school)
-
-        // Remove existing school associations
-        await tx.delete(userSchools).where(eq(userSchools.userId, validData.userId))
-
-        // Add new school association
-        await tx.insert(userSchools).values({
-          userId: validData.userId,
-          schoolId,
-          createdAt: new Date(),
-          updatedAt: new Date(),
+            updatedAt: new Date(),
+          },
         })
-      }
+    }
 
-      // 4. Handle major relationship
-      if (validData.major) {
-        const majorId = await findOrCreateMajor(tx, validData.major)
+    // 3. Handle school relationship
+    if (validData.school) {
+      const schoolId = await findOrCreateSchoolInternal(tx, validData.school)
 
-        // Remove existing major associations
-        await tx.delete(userMajors).where(eq(userMajors.userId, validData.userId))
+      // Remove existing school associations
+      await tx.delete(userSchools).where(eq(userSchools.userId, validData.userId))
 
-        // Add new major association
-        await tx.insert(userMajors).values({
-          userId: validData.userId,
-          majorId,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        })
-      }
-    })
-  } catch (error) {
-    console.error('Error updating complete user profile:', error)
-    throw new InternalServerError('Failed to update user profile')
-  }
+      // Add new school association
+      await tx.insert(userSchools).values({
+        userId: validData.userId,
+        schoolId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+    }
+
+    // 4. Handle major relationship
+    if (validData.major) {
+      const majorId = await findOrCreateMajor(tx, validData.major)
+
+      // Remove existing major associations
+      await tx.delete(userMajors).where(eq(userMajors.userId, validData.userId))
+
+      // Add new major association
+      await tx.insert(userMajors).values({
+        userId: validData.userId,
+        majorId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+    }
+  })
 }
+
+// Mentor Event Types Queries
+
+const mentorEventTypeSchema = z.object({
+  userId: z.string().min(1),
+  calcomEventTypeId: z.number().int().positive(),
+  calcomEventTypeSlug: z.string().min(1),
+  isEnabled: z.boolean(),
+  customPrice: z.number().int().positive().optional(),
+  currency: z.string().length(3).default('USD'),
+  requiresPayment: z.boolean().default(false),
+})
+
+const mentorStripeAccountSchema = z.object({
+  userId: z.string().min(1),
+  stripeAccountId: z.string().min(1),
+  stripeAccountStatus: z.enum(['pending', 'active', 'restricted', 'inactive']),
+  onboardingCompleted: z.date().optional(),
+  payoutsEnabled: z.boolean().default(false),
+  chargesEnabled: z.boolean().default(false),
+})
+
+/**
+ * Get mentor's event type preferences
+ */
+export const getMentorEventTypes = cache(
+  async (
+    userId?: string
+  ): Promise<
+    Array<{
+      id: number
+      calcomEventTypeId: number
+      calcomEventTypeSlug: string
+      isEnabled: boolean
+      customPrice: number | null
+      currency: string
+      requiresPayment: boolean
+      createdAt: Date
+      updatedAt: Date | null
+    }>
+  > => {
+    const { id: currentUserId } = userId ? { id: userId } : await requireAuth()
+
+    const result = await db
+      .select({
+        id: mentorEventTypes.id,
+        calcomEventTypeId: mentorEventTypes.calcomEventTypeId,
+        calcomEventTypeSlug: mentorEventTypes.calcomEventTypeSlug,
+        isEnabled: mentorEventTypes.isEnabled,
+        customPrice: mentorEventTypes.customPrice,
+        currency: mentorEventTypes.currency,
+        requiresPayment: mentorEventTypes.requiresPayment,
+        createdAt: mentorEventTypes.createdAt,
+        updatedAt: mentorEventTypes.updatedAt,
+      })
+      .from(mentorEventTypes)
+      .where(eq(mentorEventTypes.userId, currentUserId))
+
+    return result.map(item => ({
+      ...item,
+      isEnabled: item.isEnabled === 'true',
+      requiresPayment: item.requiresPayment === 'true',
+    }))
+  }
+)
+
+/**
+ * Upsert mentor event type preference
+ */
+export const upsertMentorEventType = async (data: {
+  userId: string
+  calcomEventTypeId: number
+  calcomEventTypeSlug: string
+  isEnabled: boolean
+  customPrice?: number
+  currency?: string
+  requiresPayment?: boolean
+}): Promise<void> => {
+  const validData = mentorEventTypeSchema.parse(data)
+
+  await db
+    .insert(mentorEventTypes)
+    .values({
+      userId: validData.userId,
+      calcomEventTypeId: validData.calcomEventTypeId,
+      calcomEventTypeSlug: validData.calcomEventTypeSlug,
+      isEnabled: validData.isEnabled ? 'true' : 'false',
+      customPrice: validData.customPrice,
+      currency: validData.currency,
+      requiresPayment: validData.requiresPayment ? 'true' : 'false',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+    .onConflictDoUpdate({
+      target: [mentorEventTypes.userId, mentorEventTypes.calcomEventTypeId],
+      set: {
+        isEnabled: validData.isEnabled ? 'true' : 'false',
+        customPrice: validData.customPrice,
+        currency: validData.currency,
+        requiresPayment: validData.requiresPayment ? 'true' : 'false',
+        updatedAt: new Date(),
+      },
+    })
+}
+
+/**
+ * Get mentor's enabled event types for booking page
+ */
+export const getMentorEnabledEventTypes = cache(
+  async (
+    userId: string
+  ): Promise<
+    Array<{
+      calcomEventTypeId: number
+      calcomEventTypeSlug: string
+      customPrice: number | null
+      currency: string
+      requiresPayment: boolean
+    }>
+  > => {
+    const result = await db
+      .select({
+        calcomEventTypeId: mentorEventTypes.calcomEventTypeId,
+        calcomEventTypeSlug: mentorEventTypes.calcomEventTypeSlug,
+        customPrice: mentorEventTypes.customPrice,
+        currency: mentorEventTypes.currency,
+        requiresPayment: mentorEventTypes.requiresPayment,
+      })
+      .from(mentorEventTypes)
+      .where(and(eq(mentorEventTypes.userId, userId), eq(mentorEventTypes.isEnabled, 'true')))
+
+    return result.map(item => ({
+      ...item,
+      requiresPayment: item.requiresPayment === 'true',
+    }))
+  }
+)
+
+// Mentor Stripe Account Queries
+
+/**
+ * Get mentor's Stripe account information
+ */
+export const getMentorStripeAccount = cache(
+  async (
+    userId?: string
+  ): Promise<{
+    id: number
+    stripeAccountId: string
+    stripeAccountStatus: 'pending' | 'active' | 'restricted' | 'inactive'
+    onboardingCompleted: Date | null
+    payoutsEnabled: boolean
+    chargesEnabled: boolean
+    createdAt: Date
+    updatedAt: Date | null
+  } | null> => {
+    const { id: currentUserId } = userId ? { id: userId } : await requireAuth()
+
+    const result = await db
+      .select({
+        id: mentorStripeAccounts.id,
+        stripeAccountId: mentorStripeAccounts.stripeAccountId,
+        stripeAccountStatus: mentorStripeAccounts.stripeAccountStatus,
+        onboardingCompleted: mentorStripeAccounts.onboardingCompleted,
+        payoutsEnabled: mentorStripeAccounts.payoutsEnabled,
+        chargesEnabled: mentorStripeAccounts.chargesEnabled,
+        createdAt: mentorStripeAccounts.createdAt,
+        updatedAt: mentorStripeAccounts.updatedAt,
+      })
+      .from(mentorStripeAccounts)
+      .where(eq(mentorStripeAccounts.userId, currentUserId))
+      .limit(1)
+
+    const account = result[0]
+    if (!account) return null
+
+    return {
+      ...account,
+      payoutsEnabled: account.payoutsEnabled === 'true',
+      chargesEnabled: account.chargesEnabled === 'true',
+    }
+  }
+)
+
+/**
+ * Upsert mentor Stripe account
+ */
+export const upsertMentorStripeAccount = async (data: {
+  userId: string
+  stripeAccountId: string
+  stripeAccountStatus: 'pending' | 'active' | 'restricted' | 'inactive'
+  onboardingCompleted?: Date
+  payoutsEnabled?: boolean
+  chargesEnabled?: boolean
+}): Promise<void> => {
+  const validData = mentorStripeAccountSchema.parse(data)
+
+  await db
+    .insert(mentorStripeAccounts)
+    .values({
+      userId: validData.userId,
+      stripeAccountId: validData.stripeAccountId,
+      stripeAccountStatus: validData.stripeAccountStatus,
+      onboardingCompleted: validData.onboardingCompleted,
+      payoutsEnabled: validData.payoutsEnabled ? 'true' : 'false',
+      chargesEnabled: validData.chargesEnabled ? 'true' : 'false',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+    .onConflictDoUpdate({
+      target: mentorStripeAccounts.userId,
+      set: {
+        stripeAccountStatus: validData.stripeAccountStatus,
+        onboardingCompleted: validData.onboardingCompleted,
+        payoutsEnabled: validData.payoutsEnabled ? 'true' : 'false',
+        chargesEnabled: validData.chargesEnabled ? 'true' : 'false',
+        updatedAt: new Date(),
+      },
+    })
+}
+
+/**
+ * Check if mentor has Stripe connected and ready for payments
+ */
+export const isMentorStripeReady = cache(async (userId?: string): Promise<boolean> => {
+  const stripeAccount = await getMentorStripeAccount(userId)
+  return (
+    stripeAccount?.stripeAccountStatus === 'active' &&
+    stripeAccount?.payoutsEnabled &&
+    stripeAccount?.chargesEnabled
+  )
+})

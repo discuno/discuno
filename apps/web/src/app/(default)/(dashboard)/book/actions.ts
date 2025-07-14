@@ -1,6 +1,7 @@
 'use server'
 
 import { env } from '~/env'
+import { getMentorCalcomTokensByUsername, getMentorEnabledEventTypes } from '~/server/queries'
 
 interface TimeSlot {
   time: string
@@ -40,10 +41,30 @@ type AvailableSlotsResponse = {
 }
 
 /**
- * Fetch available event types for a given username
+ * Fetch available event types for a given username (filtered by mentor's preferences)
  */
 export const fetchEventTypes = async (username: string): Promise<EventType[]> => {
   try {
+    // First get the mentor's Cal.com tokens to get their user ID
+    const mentorTokens = await getMentorCalcomTokensByUsername(username)
+
+    if (!mentorTokens) {
+      console.warn('Mentor tokens not found for username:', username)
+      return []
+    }
+
+    // Get the user ID from the tokens table
+    const userId = mentorTokens.userId ?? ''
+
+    // Get the mentor's enabled event types from our database
+    const mentorEnabledEventTypes = await getMentorEnabledEventTypes(userId)
+
+    if (mentorEnabledEventTypes.length === 0) {
+      // If mentor hasn't enabled any event types, return empty array
+      return []
+    }
+
+    // Get the full event types from Cal.com API
     const url = new URL(`${env.NEXT_PUBLIC_CALCOM_API_URL}/event-types`)
     url.searchParams.append('username', username)
 
@@ -64,15 +85,32 @@ export const fetchEventTypes = async (username: string): Promise<EventType[]> =>
     console.log('Event types response:', data)
 
     if (data.status === 'success' && data.data && Array.isArray(data.data)) {
-      return data.data.map((eventType: any) => ({
-        id: eventType.id,
-        title: eventType.title,
-        slug: eventType.slug,
-        length: eventType.lengthInMinutes ?? eventType.length,
-        description: eventType.description,
-        price: eventType.price ?? null,
-        currency: eventType.currency ?? 'USD',
-      }))
+      // Filter and map event types based on mentor's preferences
+      const enabledEventTypeIds = new Set(mentorEnabledEventTypes.map(met => met.calcomEventTypeId))
+      const mentorPreferencesMap = new Map(
+        mentorEnabledEventTypes.map(met => [met.calcomEventTypeId, met])
+      )
+
+      const filteredEventTypes = data.data
+        .filter((eventType: any) => enabledEventTypeIds.has(eventType.id))
+        .map((eventType: any) => {
+          const mentorPreference = mentorPreferencesMap.get(eventType.id)
+
+          return {
+            id: eventType.id,
+            title: eventType.title,
+            slug: eventType.slug,
+            length: eventType.lengthInMinutes ?? eventType.length,
+            description: eventType.description,
+            // Use mentor's custom price if set, otherwise use default price
+            price: mentorPreference?.customPrice
+              ? mentorPreference.customPrice / 100 // Convert cents to dollars
+              : (eventType.price ?? null),
+            currency: mentorPreference?.currency ?? 'USD',
+          }
+        })
+
+      return filteredEventTypes
     }
 
     console.warn('Unexpected event types response structure:', data)

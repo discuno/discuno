@@ -63,8 +63,11 @@ export const postsRelations = relations(posts, ({ one }) => ({
   creator: one(users, { fields: [posts.createdById], references: [users.id] }), // Link 'createdById' with 'users.id'
 }))
 
-export const usersRelations = relations(users, ({ many }) => ({
+export const usersRelations = relations(users, ({ many, one }) => ({
   accounts: many(accounts),
+  calcomTokens: one(calcomTokens),
+  stripeAccount: one(mentorStripeAccounts),
+  mentorEventTypes: many(mentorEventTypes),
 }))
 
 export const accounts = createTable(
@@ -282,3 +285,86 @@ export const waitlist = createTable('waitlist', {
   email: varchar('email', { length: 255 }).notNull(),
   ...timestamps,
 })
+
+// Mentor Stripe account information
+export const mentorStripeAccounts = createTable(
+  'mentor_stripe_account',
+  {
+    id: integer('id').primaryKey().generatedByDefaultAsIdentity(),
+    userId: varchar('user_id', { length: 255 })
+      .notNull()
+      .unique()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    stripeAccountId: varchar('stripe_account_id', { length: 255 }).notNull().unique(),
+    stripeAccountStatus: varchar('stripe_account_status', { length: 50 })
+      .notNull()
+      .default('pending')
+      .$type<'pending' | 'active' | 'restricted' | 'inactive'>(),
+    onboardingCompleted: timestamp('onboarding_completed', {
+      mode: 'date',
+      withTimezone: true,
+    }),
+    payoutsEnabled: varchar('payouts_enabled', { length: 10 })
+      .notNull()
+      .default('false')
+      .$type<'true' | 'false'>(),
+    chargesEnabled: varchar('charges_enabled', { length: 10 })
+      .notNull()
+      .default('false')
+      .$type<'true' | 'false'>(),
+    ...timestamps,
+  },
+  table => ({
+    userIdIdx: index('mentor_stripe_accounts_user_id_idx').on(table.userId),
+    stripeAccountIdIdx: index('mentor_stripe_accounts_stripe_account_id_idx').on(
+      table.stripeAccountId
+    ),
+  })
+)
+
+export const mentorStripeAccountsRelations = relations(mentorStripeAccounts, ({ one }) => ({
+  user: one(users, { fields: [mentorStripeAccounts.userId], references: [users.id] }),
+}))
+
+// Mentor event type preferences and pricing
+export const mentorEventTypes = createTable(
+  'mentor_event_type',
+  {
+    id: integer('id').primaryKey().generatedByDefaultAsIdentity(),
+    userId: varchar('user_id', { length: 255 })
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    calcomEventTypeId: integer('calcom_event_type_id').notNull(), // Cal.com event type ID from team
+    calcomEventTypeSlug: varchar('calcom_event_type_slug', { length: 255 }).notNull(), // Cal.com event type slug
+    isEnabled: varchar('is_enabled', { length: 10 })
+      .notNull()
+      .default('false')
+      .$type<'true' | 'false'>(), // Whether this mentor has enabled this event type
+    customPrice: integer('custom_price'), // Price in cents (e.g., 2500 = $25.00)
+    currency: varchar('currency', { length: 3 }).notNull().default('USD'),
+    requiresPayment: varchar('requires_payment', { length: 10 })
+      .notNull()
+      .default('false')
+      .$type<'true' | 'false'>(), // Whether this mentor requires payment for this event type
+    ...timestamps,
+  },
+  table => ({
+    userEventTypeIdx: index('mentor_event_types_user_event_type_idx').on(
+      table.userId,
+      table.calcomEventTypeId
+    ),
+    userIdIdx: index('mentor_event_types_user_id_idx').on(table.userId),
+    calcomEventTypeIdIdx: index('mentor_event_types_calcom_event_type_id_idx').on(
+      table.calcomEventTypeId
+    ),
+    // Ensure one record per user per event type
+    userEventTypeUnique: index('mentor_event_types_user_event_type_unique').on(
+      table.userId,
+      table.calcomEventTypeId
+    ),
+  })
+)
+
+export const mentorEventTypesRelations = relations(mentorEventTypes, ({ one }) => ({
+  user: one(users, { fields: [mentorEventTypes.userId], references: [users.id] }),
+}))

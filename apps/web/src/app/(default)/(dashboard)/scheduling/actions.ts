@@ -1,13 +1,22 @@
 'use server'
 
+import Stripe from 'stripe'
 import type { CalcomToken, CreateCalcomUserInput, UpdateCalcomUserInput } from '~/app/types'
 import { env } from '~/env'
-import { BadRequestError, ExternalApiError } from '~/lib/auth/auth-utils'
+import { BadRequestError, ExternalApiError, requireAuth } from '~/lib/auth/auth-utils'
 import {
   createCalcomUser as createCalcomUserCore,
   updateCalcomUser as updateCalcomUserCore,
 } from '~/lib/calcom'
-import { getUserCalcomTokens, updateCalcomTokensByUserId } from '~/server/queries'
+import {
+  getFullProfile,
+  getMentorEventTypes,
+  getMentorStripeAccount,
+  getUserCalcomTokens,
+  updateCalcomTokensByUserId,
+  upsertMentorEventType,
+  upsertMentorStripeAccount,
+} from '~/server/queries'
 
 /**
  * Get user's current Cal.com access token
@@ -297,80 +306,6 @@ const updateCalcomUser = async (data: UpdateCalcomUserInput): Promise<void> => {
   }
 }
 
-/**
- * Get availability settings for the current user
- * This can be used with Cal.com's AvailabilitySettings component
- */
-const getAvailabilitySettings = async (): Promise<{
-  success: boolean
-  data?: any
-  error?: string
-}> => {
-  try {
-    const tokenResult = await getCalcomAccessToken()
-
-    if (!tokenResult.success || !tokenResult.accessToken) {
-      return {
-        success: false,
-        error: 'No valid access token available',
-      }
-    }
-
-    // Check if token is expired and refresh if needed
-    const tokens = await getUserCalcomTokens()
-    if (!tokens) {
-      return {
-        success: false,
-        error: 'No Cal.com tokens found',
-      }
-    }
-
-    // Check if access token is expired
-    const now = new Date()
-    if (tokens.accessTokenExpiresAt < now) {
-      console.log('🔄 Access token expired, refreshing...')
-      const refreshResult = await refreshCalcomToken()
-
-      if (!refreshResult.success) {
-        return {
-          success: false,
-          error: 'Failed to refresh token',
-        }
-      }
-    }
-
-    // Fetch user's schedules from Cal.com API
-    const response = await fetch(`${env.NEXT_PUBLIC_CALCOM_API_URL}/schedules`, {
-      headers: {
-        Authorization: `Bearer ${tokenResult.accessToken}`,
-        'Content-Type': 'application/json',
-      },
-    })
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('Failed to fetch availability settings:', response.status, errorText)
-      return {
-        success: false,
-        error: `Failed to fetch availability: ${response.status}`,
-      }
-    }
-
-    const data = await response.json()
-
-    return {
-      success: true,
-      data,
-    }
-  } catch (error) {
-    console.error('Get availability settings error:', error)
-    return {
-      success: false,
-      error: 'Failed to get availability settings',
-    }
-  }
-}
-
 export const fetchEventTypes = async () => {
   const tokenResult = await getCalcomAccessToken()
   if (!tokenResult.success || !tokenResult.accessToken || !tokenResult.username) {
@@ -393,6 +328,314 @@ export const fetchEventTypes = async () => {
 
   const payload = await response.json()
   return Array.isArray(payload.data) ? payload.data : []
+}
+
+/**
+ * Fetch team event types from Cal.com
+ */
+export const fetchTeamEventTypes = async (): Promise<
+  Array<{
+    id: number
+    title: string
+    slug: string
+    length: number
+    description?: string
+    price?: number
+    currency?: string
+  }>
+> => {
+  try {
+    const teamId = env.COLLEGE_MENTOR_TEAM_ID
+    const orgId = env.CALCOM_ORG_ID
+
+    if (!teamId || !orgId) {
+      throw new Error('Missing team or organization ID')
+    }
+
+    const response = await fetch(
+      `${env.NEXT_PUBLIC_CALCOM_API_URL}/organizations/${orgId}/teams/${teamId}/event-types`,
+      {
+        headers: {
+          Authorization: `Bearer ${env.X_CAL_SECRET_KEY}`,
+          'cal-api-version': '2024-06-14',
+        },
+      }
+    )
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('Failed to fetch team event types:', response.status, errorText)
+      throw new ExternalApiError('Failed to fetch team event types')
+    }
+
+    const data = await response.json()
+    console.log('Team event types response:', data)
+
+    if (data.status === 'success' && data.data && Array.isArray(data.data)) {
+      return data.data.map((eventType: any) => ({
+        id: eventType.id,
+        title: eventType.title,
+        slug: eventType.slug,
+        length: eventType.lengthInMinutes ?? eventType.length,
+        description: eventType.description,
+        price: eventType.price ?? null,
+        currency: eventType.currency ?? 'USD',
+      }))
+    }
+
+    console.warn('Unexpected team event types response structure:', data)
+    return []
+  } catch (error) {
+    console.error('Error fetching team event types:', error)
+    throw error
+  }
+}
+
+/**
+ * Get mentor's event type preferences with team event types
+ */
+export const getMentorEventTypePreferences = async (): Promise<{
+  success: boolean
+  data?: Array<{
+    id: number
+    title: string
+    slug: string
+    length: number
+    description?: string
+    isEnabled: boolean
+    customPrice: number | null
+    currency: string
+  }>
+  error?: string
+}> => {
+  try {
+    const { id: userId } = await requireAuth()
+
+    // Fetch team event types from Cal.com
+    const teamEventTypes = await fetchTeamEventTypes()
+
+    // Fetch mentor's preferences
+    const mentorPreferences = await getMentorEventTypes(userId)
+
+    // Create a map of mentor preferences by event type ID
+    const preferencesMap = new Map(mentorPreferences.map(pref => [pref.calcomEventTypeId, pref]))
+
+    // Combine team event types with mentor preferences
+    const combined = teamEventTypes.map(eventType => {
+      const preference = preferencesMap.get(eventType.id)
+      return {
+        id: eventType.id,
+        title: eventType.title,
+        slug: eventType.slug,
+        length: eventType.length,
+        description: eventType.description,
+        isEnabled: preference?.isEnabled ?? false,
+        customPrice: preference?.customPrice ?? null,
+        currency: preference?.currency ?? 'USD',
+      }
+    })
+
+    return {
+      success: true,
+      data: combined,
+    }
+  } catch (error) {
+    console.error('Error getting mentor event type preferences:', error)
+    return {
+      success: false,
+      error: 'Failed to get event type preferences',
+    }
+  }
+}
+
+/**
+ * Update mentor's event type preferences
+ */
+export const updateMentorEventTypePreferences = async (data: {
+  calcomEventTypeId: number
+  calcomEventTypeSlug: string
+  isEnabled: boolean
+  customPrice?: number
+  currency?: string
+}): Promise<{
+  success: boolean
+  error?: string
+}> => {
+  try {
+    const { id: userId } = await requireAuth()
+
+    await upsertMentorEventType({
+      userId,
+      calcomEventTypeId: data.calcomEventTypeId,
+      calcomEventTypeSlug: data.calcomEventTypeSlug,
+      isEnabled: data.isEnabled,
+      customPrice: data.customPrice,
+      currency: data.currency ?? 'USD',
+      requiresPayment: !!data.customPrice && data.customPrice > 0, // Auto-set based on price
+    })
+
+    return {
+      success: true,
+    }
+  } catch (error) {
+    console.error('Error updating mentor event type preferences:', error)
+    return {
+      success: false,
+      error: 'Failed to update event type preferences',
+    }
+  }
+}
+
+/**
+ * Create Stripe Connect account for mentor or resume onboarding
+ */
+export const createStripeConnectAccount = async (): Promise<{
+  success: boolean
+  accountId?: string
+  onboardingUrl?: string
+  error?: string
+}> => {
+  try {
+    const { id: userId } = await requireAuth()
+    const profile = await getFullProfile()
+
+    if (!profile?.email) {
+      return {
+        success: false,
+        error: 'Email is required for Stripe account creation',
+      }
+    }
+
+    // Check if user already has a Stripe account
+    const existingAccount = await getMentorStripeAccount(userId)
+
+    const stripe = new Stripe(env.STRIPE_SECRET_KEY)
+
+    if (existingAccount) {
+      // If account exists but is not active, create a new onboarding link
+      if (existingAccount.stripeAccountStatus !== 'active') {
+        try {
+          const accountLink = await stripe.accountLinks.create({
+            account: existingAccount.stripeAccountId,
+            refresh_url: `${env.NEXT_PUBLIC_BASE_URL}/scheduling?refresh=true`,
+            return_url: `${env.NEXT_PUBLIC_BASE_URL}/scheduling?success=true`,
+            type: 'account_onboarding',
+          })
+
+          return {
+            success: true,
+            accountId: existingAccount.stripeAccountId,
+            onboardingUrl: accountLink.url,
+          }
+        } catch (stripeError) {
+          console.error('Error creating onboarding link for existing account:', stripeError)
+          // If the account link creation fails, we might need to create a new account
+          // This can happen if the account was deleted from Stripe but still exists in our DB
+        }
+      } else {
+        return {
+          success: false,
+          error: 'Stripe account is already active',
+        }
+      }
+    }
+
+    // Create new Stripe Connect account
+    const account = await stripe.accounts.create({
+      type: 'express',
+      email: profile.email,
+      country: 'US',
+      business_type: 'individual',
+      capabilities: {
+        card_payments: { requested: true },
+        transfers: { requested: true },
+      },
+      business_profile: {
+        mcc: '8299',
+        url: 'https://discuno.com',
+        product_description: 'Provides college advice and guidance via the Discuno platform',
+      },
+    })
+
+    // Store account info in database
+    await upsertMentorStripeAccount({
+      userId,
+      stripeAccountId: account.id,
+      stripeAccountStatus: 'pending',
+      payoutsEnabled: false,
+      chargesEnabled: false,
+    })
+
+    // Create onboarding link
+    const accountLink = await stripe.accountLinks.create({
+      account: account.id,
+      refresh_url: `${env.NEXT_PUBLIC_BASE_URL}/scheduling?refresh=true`,
+      return_url: `${env.NEXT_PUBLIC_BASE_URL}/scheduling?success=true`,
+      type: 'account_onboarding',
+    })
+
+    return {
+      success: true,
+      accountId: account.id,
+      onboardingUrl: accountLink.url,
+    }
+  } catch (error) {
+    console.error('Error creating Stripe Connect account:', error)
+    return {
+      success: false,
+      error: 'Failed to create Stripe account',
+    }
+  }
+}
+
+/**
+ * Get mentor's Stripe account status
+ */
+export const getMentorStripeStatus = async (): Promise<{
+  success: boolean
+  data?: {
+    hasAccount: boolean
+    isActive: boolean
+    onboardingCompleted: boolean
+    payoutsEnabled: boolean
+    chargesEnabled: boolean
+  }
+  error?: string
+}> => {
+  try {
+    const { id: userId } = await requireAuth()
+    const stripeAccount = await getMentorStripeAccount(userId)
+
+    if (!stripeAccount) {
+      return {
+        success: true,
+        data: {
+          hasAccount: false,
+          isActive: false,
+          onboardingCompleted: false,
+          payoutsEnabled: false,
+          chargesEnabled: false,
+        },
+      }
+    }
+
+    return {
+      success: true,
+      data: {
+        hasAccount: true,
+        isActive: stripeAccount.stripeAccountStatus === 'active',
+        onboardingCompleted: !!stripeAccount.onboardingCompleted,
+        payoutsEnabled: stripeAccount.payoutsEnabled,
+        chargesEnabled: stripeAccount.chargesEnabled,
+      },
+    }
+  } catch (error) {
+    console.error('Error getting mentor Stripe status:', error)
+    return {
+      success: false,
+      error: 'Failed to get Stripe status',
+    }
+  }
 }
 
 /**
@@ -451,7 +694,6 @@ export const getValidCalcomToken = async (): Promise<{
 export {
   createCalcomUser,
   forceRefreshCalcomToken,
-  getAvailabilitySettings,
   getCalcomAccessToken,
   getUserCalcomToken,
   hasCalcomIntegration,

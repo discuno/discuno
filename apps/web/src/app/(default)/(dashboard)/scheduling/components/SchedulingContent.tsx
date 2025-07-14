@@ -1,52 +1,47 @@
-import { Calendar, Settings } from 'lucide-react'
 import { Suspense } from 'react'
-import { EventTypesSection } from '~/app/(default)/(dashboard)/scheduling/components/EventTypesSection'
-import { AvailabilitySettingsClient } from '~/components/calcom/AvailabilitySettingsClient'
+import { LoadingSpinner } from '~/components/shared/LoadingSpinner'
+import { Button } from '~/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs'
 import { CalcomProvider } from '~/lib/providers/CalProvider'
+import { EventTypeToggleSection } from './EventTypeToggleSection'
 
-function LoadingSkeleton() {
-  return (
-    <div className="mx-auto max-w-4xl p-6">
-      <div className="animate-pulse">
-        <div className="bg-muted mb-4 h-8 w-1/3 rounded"></div>
-        <div className="bg-muted mb-8 h-4 w-2/3 rounded"></div>
-        <div className="bg-card rounded-lg border p-6">
-          <div className="space-y-4">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="bg-muted h-16 rounded"></div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
+const LoadingSkeleton = () => (
+  <div className="flex items-center justify-center py-16">
+    <LoadingSpinner />
+  </div>
+)
 
 export const SchedulingContent = () => {
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="text-center">
-        <h1 className="text-foreground text-3xl font-bold tracking-tight">Scheduling Center</h1>
-        <p className="text-muted-foreground mx-auto mt-2 max-w-2xl">
-          Set your availability, create bookable services, and manage your calendar integration
+    <div className="mx-auto max-w-6xl">
+      <div className="mb-8 text-center">
+        <h1 className="text-foreground mb-4 text-3xl font-bold">Scheduling & Availability</h1>
+        <p className="text-muted-foreground text-lg">
+          Manage your calendars, event types, and booking preferences
         </p>
       </div>
 
-      <Tabs defaultValue="manage" className="w-full">
-        <TabsList className="grid h-auto w-full grid-cols-2 p-1">
-          <TabsTrigger value="availability" className="flex flex-col items-center gap-1 py-3">
-            <Calendar className="h-4 w-4" />
-            <span className="text-sm font-medium">Availability</span>
-            <span className="text-muted-foreground hidden text-xs sm:block">Set your schedule</span>
-          </TabsTrigger>
-          <TabsTrigger value="manage" className="flex flex-col items-center gap-1 py-3">
-            <Settings className="h-4 w-4" />
-            <span className="text-sm font-medium">Event Types</span>
-            <span className="text-muted-foreground hidden text-xs sm:block">Create & manage</span>
-          </TabsTrigger>
+      <Tabs defaultValue="preferences" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="preferences">Event Preferences</TabsTrigger>
+          <TabsTrigger value="availability">Availability</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="preferences" className="mt-6">
+          <div className="mx-auto max-w-4xl">
+            <div className="mb-6 text-center">
+              <h2 className="text-foreground mb-2 text-xl font-semibold">Event Type Preferences</h2>
+              <p className="text-muted-foreground text-sm">
+                Choose which event types you want to offer and set your pricing
+              </p>
+            </div>
+            <CalcomProvider>
+              <Suspense fallback={<LoadingSkeleton />}>
+                <EventTypeToggleSection />
+              </Suspense>
+            </CalcomProvider>
+          </div>
+        </TabsContent>
 
         <TabsContent value="availability" className="mt-6">
           <div className="mx-auto max-w-4xl">
@@ -63,28 +58,15 @@ export const SchedulingContent = () => {
                 </p>
               </div>
             </div>
-            <CalcomProvider>
-              <Suspense fallback={<LoadingSkeleton />}>
-                <AvailabilitySettingsClient />
-              </Suspense>
-            </CalcomProvider>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="manage" className="mt-6">
-          <div className="mx-auto max-w-4xl">
-            <div className="mb-6 text-center">
-              <h2 className="text-foreground mb-2 text-xl font-semibold">Event Types</h2>
-              <p className="text-muted-foreground text-sm">
-                Create and manage your bookable services. Each event type uses your availability
-                schedules.
+            <div className="p-8 text-center">
+              <h4 className="mb-4 text-lg font-semibold">Cal.com Integration Required</h4>
+              <p className="text-muted-foreground mb-4">
+                To manage your availability schedule, please use the Cal.com dashboard.
               </p>
+              <Button onClick={() => window.open('https://cal.com/availability', '_blank')}>
+                Open Cal.com Availability Settings
+              </Button>
             </div>
-            <CalcomProvider>
-              <Suspense fallback={<LoadingSkeleton />}>
-                <EventTypesSection />
-              </Suspense>
-            </CalcomProvider>
           </div>
         </TabsContent>
       </Tabs>
