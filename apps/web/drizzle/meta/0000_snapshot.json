@@ -1,5 +1,5 @@
 {
-  "id": "b4defde2-17d4-4c36-8855-0806323c77f1",
+  "id": "b1c3c66e-4e98-47b7-96d7-643cd743c0b1",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -103,7 +103,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
@@ -151,6 +151,12 @@
         "calcom_user_id": {
           "name": "calcom_user_id",
           "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "calcom_username": {
+          "name": "calcom_username",
+          "type": "varchar(255)",
           "primaryKey": false,
           "notNull": true
         },
@@ -228,6 +234,21 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        },
+        "calcom_tokens_username_idx": {
+          "name": "calcom_tokens_username_idx",
+          "columns": [
+            {
+              "expression": "calcom_username",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -241,14 +262,14 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "discuno_calcom_token_user_id_unique": {
-          "name": "discuno_calcom_token_user_id_unique",
+        "discuno_calcom_token_userId_unique": {
+          "name": "discuno_calcom_token_userId_unique",
           "nullsNotDistinct": false,
           "columns": [
             "user_id"
@@ -315,6 +336,175 @@
           "nullsNotDistinct": false,
           "columns": [
             "name"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.discuno_mentor_event_type": {
+      "name": "discuno_mentor_event_type",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "identity": {
+            "type": "byDefault",
+            "name": "discuno_mentor_event_type_id_seq",
+            "schema": "public",
+            "increment": "1",
+            "startWith": "1",
+            "minValue": "1",
+            "maxValue": "2147483647",
+            "cache": "1",
+            "cycle": false
+          }
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "calcom_event_type_id": {
+          "name": "calcom_event_type_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "calcom_event_type_slug": {
+          "name": "calcom_event_type_slug",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "is_enabled": {
+          "name": "is_enabled",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "custom_price": {
+          "name": "custom_price",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "currency": {
+          "name": "currency",
+          "type": "varchar(3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'USD'"
+        },
+        "requires_payment": {
+          "name": "requires_payment",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "mentor_event_types_user_event_type_idx": {
+          "name": "mentor_event_types_user_event_type_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "calcom_event_type_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "mentor_event_types_user_id_idx": {
+          "name": "mentor_event_types_user_id_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "mentor_event_types_calcom_event_type_id_idx": {
+          "name": "mentor_event_types_calcom_event_type_id_idx",
+          "columns": [
+            {
+              "expression": "calcom_event_type_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "discuno_mentor_event_type_user_id_discuno_user_id_fk": {
+          "name": "discuno_mentor_event_type_user_id_discuno_user_id_fk",
+          "tableFrom": "discuno_mentor_event_type",
+          "tableTo": "discuno_user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "mentor_event_types_user_event_type_unique": {
+          "name": "mentor_event_types_user_event_type_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "user_id",
+            "calcom_event_type_id"
           ]
         }
       },
@@ -399,7 +589,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         },
         "discuno_mentor_review_user_id_discuno_user_id_fk": {
@@ -412,7 +602,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
@@ -425,6 +615,168 @@
           "value": "\"discuno_mentor_review\".\"rating\" >= 1 AND \"discuno_mentor_review\".\"rating\" <= 5"
         }
       },
+      "isRLSEnabled": false
+    },
+    "public.discuno_mentor_stripe_account": {
+      "name": "discuno_mentor_stripe_account",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "identity": {
+            "type": "byDefault",
+            "name": "discuno_mentor_stripe_account_id_seq",
+            "schema": "public",
+            "increment": "1",
+            "startWith": "1",
+            "minValue": "1",
+            "maxValue": "2147483647",
+            "cache": "1",
+            "cycle": false
+          }
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "stripe_account_id": {
+          "name": "stripe_account_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "stripe_account_status": {
+          "name": "stripe_account_status",
+          "type": "stripe_account_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "onboarding_completed": {
+          "name": "onboarding_completed",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "payouts_enabled": {
+          "name": "payouts_enabled",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "charges_enabled": {
+          "name": "charges_enabled",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "details_submitted": {
+          "name": "details_submitted",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "requirements": {
+          "name": "requirements",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'{}'"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "mentor_stripe_accounts_user_id_idx": {
+          "name": "mentor_stripe_accounts_user_id_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "mentor_stripe_accounts_stripe_account_id_idx": {
+          "name": "mentor_stripe_accounts_stripe_account_id_idx",
+          "columns": [
+            {
+              "expression": "stripe_account_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "discuno_mentor_stripe_account_user_id_discuno_user_id_fk": {
+          "name": "discuno_mentor_stripe_account_user_id_discuno_user_id_fk",
+          "tableFrom": "discuno_mentor_stripe_account",
+          "tableTo": "discuno_user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "discuno_mentor_stripe_account_userId_unique": {
+          "name": "discuno_mentor_stripe_account_userId_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "user_id"
+          ]
+        },
+        "discuno_mentor_stripe_account_stripeAccountId_unique": {
+          "name": "discuno_mentor_stripe_account_stripeAccountId_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "stripe_account_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
       "isRLSEnabled": false
     },
     "public.discuno_post": {
@@ -460,8 +812,8 @@
           "primaryKey": false,
           "notNull": false
         },
-        "created_by": {
-          "name": "created_by",
+        "created_by_id": {
+          "name": "created_by_id",
           "type": "varchar(255)",
           "primaryKey": false,
           "notNull": true
@@ -491,7 +843,7 @@
           "name": "created_by_idx",
           "columns": [
             {
-              "expression": "created_by",
+              "expression": "created_by_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -527,7 +879,7 @@
               "nulls": "last"
             },
             {
-              "expression": "created_by",
+              "expression": "created_by_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -556,12 +908,12 @@
         }
       },
       "foreignKeys": {
-        "discuno_post_created_by_discuno_user_id_fk": {
-          "name": "discuno_post_created_by_discuno_user_id_fk",
+        "discuno_post_created_by_id_discuno_user_id_fk": {
+          "name": "discuno_post_created_by_id_discuno_user_id_fk",
           "tableFrom": "discuno_post",
           "tableTo": "discuno_user",
           "columnsFrom": [
-            "created_by"
+            "created_by_id"
           ],
           "columnsTo": [
             "id"
@@ -572,11 +924,11 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "discuno_post_created_by_unique": {
-          "name": "discuno_post_created_by_unique",
+        "discuno_post_createdById_unique": {
+          "name": "discuno_post_createdById_unique",
           "nullsNotDistinct": false,
           "columns": [
-            "created_by"
+            "created_by_id"
           ]
         }
       },
@@ -607,6 +959,12 @@
         },
         "name": {
           "name": "name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "domain": {
+          "name": "domain",
           "type": "varchar(255)",
           "primaryKey": false,
           "notNull": false
@@ -652,6 +1010,13 @@
           "nullsNotDistinct": false,
           "columns": [
             "name"
+          ]
+        },
+        "discuno_school_domain_unique": {
+          "name": "discuno_school_domain_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "domain"
           ]
         }
       },
@@ -710,7 +1075,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
@@ -807,7 +1172,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         },
         "discuno_user_major_major_id_discuno_major_id_fk": {
@@ -865,7 +1230,8 @@
         },
         "school_year": {
           "name": "school_year",
-          "type": "varchar(255)",
+          "type": "school_year",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
         },
@@ -874,19 +1240,6 @@
           "type": "integer",
           "primaryKey": false,
           "notNull": true
-        },
-        "edu_email": {
-          "name": "edu_email",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "is_edu_verified": {
-          "name": "is_edu_verified",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
         },
         "updated_at": {
           "name": "updated_at",
@@ -972,27 +1325,6 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
-        },
-        "edu_email_user_id_idx": {
-          "name": "edu_email_user_id_idx",
-          "columns": [
-            {
-              "expression": "edu_email",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "user_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
         }
       },
       "foreignKeys": {
@@ -1006,24 +1338,17 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "discuno_user_profile_user_id_unique": {
-          "name": "discuno_user_profile_user_id_unique",
+        "discuno_user_profile_userId_unique": {
+          "name": "discuno_user_profile_userId_unique",
           "nullsNotDistinct": false,
           "columns": [
             "user_id"
-          ]
-        },
-        "discuno_user_profile_edu_email_unique": {
-          "name": "discuno_user_profile_edu_email_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "edu_email"
           ]
         }
       },
@@ -1144,7 +1469,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         },
         "discuno_user_school_school_id_discuno_school_id_fk": {
@@ -1199,6 +1524,25 @@
         "image": {
           "name": "image",
           "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
         }
@@ -1314,7 +1658,29 @@
       "isRLSEnabled": false
     }
   },
-  "enums": {},
+  "enums": {
+    "public.school_year": {
+      "name": "school_year",
+      "schema": "public",
+      "values": [
+        "Freshman",
+        "Sophomore",
+        "Junior",
+        "Senior",
+        "Graduate"
+      ]
+    },
+    "public.stripe_account_status": {
+      "name": "stripe_account_status",
+      "schema": "public",
+      "values": [
+        "pending",
+        "active",
+        "restricted",
+        "inactive"
+      ]
+    }
+  },
   "schemas": {},
   "sequences": {},
   "roles": {},

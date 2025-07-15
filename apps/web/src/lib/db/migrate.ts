@@ -65,7 +65,6 @@ const createMigrationConnection = (environment?: Environment) => {
   // Create connection with migration-specific settings
   const migrationClient = postgres(connectionString, {
     max: 1, // Single connection for migrations
-    transform: postgres.camel, // Convert snake_case to camelCase
   })
 
   return { client: migrationClient, db: drizzle(migrationClient) }

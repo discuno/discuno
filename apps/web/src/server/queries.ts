@@ -1228,6 +1228,7 @@ export const getMentorStripeAccount = cache(
 
     return {
       ...account,
+      stripeAccountStatus: account.stripeAccountStatus ?? 'pending',
       payoutsEnabled: account.payoutsEnabled,
       chargesEnabled: account.chargesEnabled,
       detailsSubmitted: account.detailsSubmitted,

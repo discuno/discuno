@@ -9,6 +9,7 @@ export default {
   dbCredentials: {
     url: env.DATABASE_URL,
   },
+  casing: 'snake_case',
   tablesFilter: ['discuno_*'],
   verbose: true,
   strict: true,

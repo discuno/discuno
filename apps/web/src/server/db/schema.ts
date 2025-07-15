@@ -5,7 +5,8 @@ import {
   index,
   integer,
   jsonb,
-  pgTableCreator,
+  pgEnum,
+  pgTable,
   primaryKey,
   text,
   timestamp,
@@ -21,45 +22,42 @@ import { timestamps } from '~/server/db/columns.helpers'
  *
  * @see https://orm.drizzle.team/docs/goodies#multi-project-schema
  */
-export const createTable = pgTableCreator(name => `discuno_${name}`)
 
-export const users = createTable('user', {
-  id: varchar('id', { length: 255 })
+export const users = pgTable('discuno_user', {
+  id: varchar({ length: 255 })
     .notNull()
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
-  name: varchar('name', { length: 255 }),
-  email: varchar('email', { length: 255 }).unique(),
-  emailVerified: timestamp('email_verified', {
+  name: varchar({ length: 255 }),
+  email: varchar({ length: 255 }).unique(),
+  emailVerified: timestamp({
     mode: 'date',
     withTimezone: true,
   }).default(sql`CURRENT_TIMESTAMP`),
-  image: varchar('image', { length: 255 }),
+  image: varchar({ length: 255 }),
+  ...timestamps,
 })
 
-export const posts = createTable(
-  'post',
+export const posts = pgTable(
+  'discuno_post',
   {
-    id: integer('id').primaryKey().generatedByDefaultAsIdentity(),
-    name: varchar('name', { length: 256 }),
-    description: text('description'),
-    createdById: varchar('created_by', { length: 255 })
+    id: integer().primaryKey().generatedByDefaultAsIdentity(),
+    name: varchar({ length: 256 }),
+    description: text(),
+    createdById: varchar({ length: 255 })
       .notNull()
       .unique()
       .references(() => users.id),
     ...timestamps,
   },
-  example => ({
-    createdByIdIdx: index('created_by_idx').on(example.createdById),
-    nameIndex: index('name_idx').on(example.name),
-    createdAtCreatedByIdx: index('created_at_created_by_idx').on(
-      example.createdAt,
-      example.createdById
-    ),
-    partialCreatedAtIdx: index('posts_created_at_partial_idx')
+  example => [
+    index('created_by_idx').on(example.createdById),
+    index('name_idx').on(example.name),
+    index('created_at_created_by_idx').on(example.createdAt, example.createdById),
+    index('posts_created_at_partial_idx')
       .on(example.createdAt)
       .where(sql`deleted_at IS NULL`),
-  })
+  ]
 )
 
 export const postsRelations = relations(posts, ({ one }) => ({
@@ -73,88 +71,88 @@ export const usersRelations = relations(users, ({ many, one }) => ({
   mentorEventTypes: many(mentorEventTypes),
 }))
 
-export const accounts = createTable(
-  'account',
+export const accounts = pgTable(
+  'discuno_account',
   {
-    userId: varchar('user_id', { length: 255 })
+    userId: varchar({ length: 255 })
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
-    type: varchar('type', { length: 255 }).$type<AdapterAccount['type']>().notNull(),
-    provider: varchar('provider', { length: 255 }).notNull(),
-    providerAccountId: varchar('provider_account_id', {
-      length: 255,
-    }).notNull(),
-    refresh_token: text('refresh_token'),
-    access_token: text('access_token'),
-    expires_at: integer('expires_at'),
-    token_type: varchar('token_type', { length: 255 }),
-    scope: varchar('scope', { length: 255 }),
-    id_token: text('id_token'),
-    session_state: varchar('session_state', { length: 255 }),
+    type: varchar({ length: 255 }).$type<AdapterAccount['type']>().notNull(),
+    provider: varchar({ length: 255 }).notNull(),
+    // NextAuth requires snake case for these fields
+    providerAccountId: varchar({ length: 255 }).notNull(),
+    // NextAuth requires snake case for these fields
+    refresh_token: text(''),
+    access_token: text(''),
+    expires_at: integer(),
+    token_type: varchar({ length: 255 }),
+    scope: varchar({ length: 255 }),
+    id_token: text(),
+    session_state: varchar({ length: 255 }),
   },
-  account => ({
-    compoundKey: primaryKey({
+  account => [
+    primaryKey({
       columns: [account.provider, account.providerAccountId],
     }),
-    userIdIdx: index('account_user_id_idx').on(account.userId),
-  })
+    index('account_user_id_idx').on(account.userId),
+  ]
 )
 
 export const accountsRelations = relations(accounts, ({ one }) => ({
   user: one(users, { fields: [accounts.userId], references: [users.id] }),
 }))
 
-export const sessions = createTable(
-  'session',
+export const sessions = pgTable(
+  'discuno_session',
   {
-    sessionToken: varchar('session_token', { length: 255 }).notNull().primaryKey(),
-    userId: varchar('user_id', { length: 255 })
+    sessionToken: varchar({ length: 255 }).notNull().primaryKey(),
+    userId: varchar({ length: 255 })
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
-    expires: timestamp('expires', {
+    expires: timestamp({
       mode: 'date',
       withTimezone: true,
     }).notNull(),
   },
-  session => ({
-    userIdIdx: index('session_user_id_idx').on(session.userId),
-  })
+  session => [index('session_user_id_idx').on(session.userId)]
 )
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({
   user: one(users, { fields: [sessions.userId], references: [users.id] }),
 }))
 
-export const verificationTokens = createTable(
-  'verification_token',
+export const verificationTokens = pgTable(
+  'discuno_verification_token',
   {
-    identifier: varchar('identifier', { length: 255 }).notNull(),
-    token: varchar('token', { length: 255 }).notNull(),
-    expires: timestamp('expires', {
+    identifier: varchar({ length: 255 }).notNull(),
+    token: varchar({ length: 255 }).notNull(),
+    expires: timestamp({
       mode: 'date',
       withTimezone: true,
     }).notNull(),
   },
-  vt => ({
-    compoundKey: primaryKey({ columns: [vt.identifier, vt.token] }),
-  })
+  vt => [primaryKey({ columns: [vt.identifier, vt.token] })]
 )
 
-export const userProfiles = createTable(
-  'user_profile',
+export const schoolYearEnum = pgEnum('school_year', [
+  'Freshman',
+  'Sophomore',
+  'Junior',
+  'Senior',
+  'Graduate',
+] as const)
+
+export const userProfiles = pgTable(
+  'discuno_user_profile',
   {
-    id: integer('id').primaryKey().generatedByDefaultAsIdentity(),
-    userId: varchar('user_id', { length: 255 })
+    id: integer().primaryKey().generatedByDefaultAsIdentity(),
+    userId: varchar({ length: 255 })
       .notNull()
       .unique()
       .references(() => users.id, { onDelete: 'cascade' }),
-    bio: varchar('bio', { length: 1000 }),
-    schoolYear: varchar('school_year', { length: 255 })
-      .notNull()
-      .$type<'Freshman' | 'Sophomore' | 'Junior' | 'Senior' | 'Graduate'>()
-      .notNull(),
-    graduationYear: integer('graduation_year') // E.g., 2027
-      .notNull(),
+    bio: varchar({ length: 1000 }),
+    schoolYear: schoolYearEnum().notNull(),
+    graduationYear: integer().notNull(), // E.g., 2027
     ...timestamps,
   },
   table => ({
@@ -181,144 +179,142 @@ export const userProfilesRelations = relations(userProfiles, ({ one }) => ({
   user: one(users, { fields: [userProfiles.userId], references: [users.id] }),
 }))
 
-export const userMajors = createTable(
-  'user_major',
+export const userMajors = pgTable(
+  'discuno_user_major',
   {
-    id: integer('id').primaryKey().generatedByDefaultAsIdentity(),
-    userId: varchar('user_id', { length: 255 })
+    id: integer().primaryKey().generatedByDefaultAsIdentity(),
+    userId: varchar({ length: 255 })
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
-    majorId: integer('major_id')
+    majorId: integer()
       .notNull()
       .references(() => majors.id),
     ...timestamps,
   },
-  table => ({
-    majorUserCompoundIdx: index('major_user_compound_idx').on(table.majorId, table.userId),
-  })
+  table => [index('major_user_compound_idx').on(table.majorId, table.userId)]
 )
 
-export const userSchools = createTable(
-  'user_school',
+export const userSchools = pgTable(
+  'discuno_user_school',
   {
-    id: integer('id').primaryKey().generatedByDefaultAsIdentity(),
-    userId: varchar('user_id', { length: 255 })
+    id: integer().primaryKey().generatedByDefaultAsIdentity(),
+    userId: varchar({ length: 255 })
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
-    schoolId: integer('school_id')
+    schoolId: integer()
       .notNull()
       .references(() => schools.id),
     ...timestamps,
   },
-  table => ({
-    userSchoolIdx: index('user_school_idx').on(table.userId, table.schoolId),
-    schoolUserCompoundIdx: index('school_user_compound_idx').on(table.schoolId, table.userId),
-  })
+  table => [
+    index('user_school_idx').on(table.userId, table.schoolId),
+    index('school_user_compound_idx').on(table.schoolId, table.userId),
+  ]
 )
 
-export const majors = createTable('major', {
-  id: integer('id').primaryKey().generatedByDefaultAsIdentity(),
-  name: varchar('name', { length: 255 }).unique(),
+export const majors = pgTable('discuno_major', {
+  id: integer().primaryKey().generatedByDefaultAsIdentity(),
+  name: varchar({ length: 255 }).unique(),
   ...timestamps,
 })
 
-export const schools = createTable('school', {
-  id: integer('id').primaryKey().generatedByDefaultAsIdentity(),
-  name: varchar('name', { length: 255 }).unique(),
-  domain: varchar('domain', { length: 255 }).unique(),
-  location: varchar('location', { length: 255 }),
-  image: varchar('image', { length: 255 }),
+export const schools = pgTable('discuno_school', {
+  id: integer().primaryKey().generatedByDefaultAsIdentity(),
+  name: varchar({ length: 255 }).unique(),
+  domain: varchar({ length: 255 }).unique(),
+  location: varchar({ length: 255 }),
+  image: varchar({ length: 255 }),
   ...timestamps,
 })
 
-export const mentorReviews = createTable(
-  'mentor_review',
+export const mentorReviews = pgTable(
+  'discuno_mentor_review',
   {
-    id: integer('id').primaryKey().generatedByDefaultAsIdentity(),
-    mentorId: varchar('mentor_id', { length: 255 })
+    id: integer().primaryKey().generatedByDefaultAsIdentity(),
+    mentorId: varchar({ length: 255 })
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
-    userId: varchar('user_id', { length: 255 })
+    userId: varchar({ length: 255 })
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
-    rating: integer('rating').notNull(),
-    review: varchar('review', { length: 1000 }),
+    rating: integer().notNull(),
+    review: varchar({ length: 1000 }),
     ...timestamps,
   },
-  table => ({
-    checkConstraint: check('rating_check', sql`${table.rating} >= 1 AND ${table.rating} <= 5`),
-  })
+  table => [check('rating_check', sql`${table.rating} >= 1 AND ${table.rating} <= 5`)]
 )
 
-export const calcomTokens = createTable(
-  'calcom_token',
+export const calcomTokens = pgTable(
+  'discuno_calcom_token',
   {
-    id: integer('id').primaryKey().generatedByDefaultAsIdentity(),
-    userId: varchar('user_id', { length: 255 })
+    id: integer().primaryKey().generatedByDefaultAsIdentity(),
+    userId: varchar({ length: 255 })
       .notNull()
       .unique()
       .references(() => users.id, { onDelete: 'cascade' }),
-    calcomUserId: integer('calcom_user_id').notNull(), // Cal.com managed user ID
-    calcomUsername: varchar('calcom_username', { length: 255 }).notNull(), // Cal.com generated username
-    accessToken: text('access_token').notNull(),
-    refreshToken: text('refresh_token').notNull(),
-    accessTokenExpiresAt: timestamp('access_token_expires_at', {
+    calcomUserId: integer().notNull(), // Cal.com managed user ID
+    calcomUsername: varchar({ length: 255 }).notNull(), // Cal.com generated username
+    accessToken: text().notNull(),
+    refreshToken: text().notNull(),
+    accessTokenExpiresAt: timestamp({
       mode: 'date',
       withTimezone: true,
     }).notNull(),
-    refreshTokenExpiresAt: timestamp('refresh_token_expires_at', {
+    refreshTokenExpiresAt: timestamp({
       mode: 'date',
       withTimezone: true,
     }).notNull(),
     ...timestamps,
   },
-  table => ({
-    userIdIdx: index('calcom_tokens_user_id_idx').on(table.userId),
-    accessTokenIdx: index('calcom_tokens_access_token_idx').on(table.accessToken),
-    calcomUsernameIdx: index('calcom_tokens_username_idx').on(table.calcomUsername),
-  })
+  table => [
+    index('calcom_tokens_user_id_idx').on(table.userId),
+    index('calcom_tokens_access_token_idx').on(table.accessToken),
+    index('calcom_tokens_username_idx').on(table.calcomUsername),
+  ]
 )
 
 export const calcomTokensRelations = relations(calcomTokens, ({ one }) => ({
   user: one(users, { fields: [calcomTokens.userId], references: [users.id] }),
 }))
 
-export const waitlist = createTable('waitlist', {
+export const waitlist = pgTable('discuno_waitlist', {
   id: integer('id').primaryKey().generatedByDefaultAsIdentity(),
   email: varchar('email', { length: 255 }).notNull(),
   ...timestamps,
 })
 
 // Mentor Stripe account information
-export const mentorStripeAccounts = createTable(
-  'mentor_stripe_account',
+export const stripeAccountStatusEnum = pgEnum('stripe_account_status', [
+  'pending',
+  'active',
+  'restricted',
+  'inactive',
+] as const)
+
+export const mentorStripeAccounts = pgTable(
+  'discuno_mentor_stripe_account',
   {
-    id: integer('id').primaryKey().generatedByDefaultAsIdentity(),
-    userId: varchar('user_id', { length: 255 })
+    id: integer().primaryKey().generatedByDefaultAsIdentity(),
+    userId: varchar({ length: 255 })
       .notNull()
       .unique()
       .references(() => users.id, { onDelete: 'cascade' }),
-    stripeAccountId: varchar('stripe_account_id', { length: 255 }).notNull().unique(),
-    stripeAccountStatus: varchar('stripe_account_status', { length: 50 })
-      .notNull()
-      .default('pending')
-      .$type<'pending' | 'active' | 'restricted' | 'inactive'>(),
-    onboardingCompleted: timestamp('onboarding_completed', {
+    stripeAccountId: varchar({ length: 255 }).notNull().unique(),
+    stripeAccountStatus: stripeAccountStatusEnum(),
+    onboardingCompleted: timestamp({
       mode: 'date',
       withTimezone: true,
     }),
-    payoutsEnabled: boolean('payouts_enabled').notNull().default(false),
-    chargesEnabled: boolean('charges_enabled').notNull().default(false),
-    detailsSubmitted: boolean('details_submitted').notNull().default(false),
-    requirements: jsonb('requirements').default('{}'),
+    payoutsEnabled: boolean().notNull().default(false),
+    chargesEnabled: boolean().notNull().default(false),
+    detailsSubmitted: boolean().notNull().default(false),
+    requirements: jsonb().default('{}'),
     ...timestamps,
   },
-  table => ({
-    userIdIdx: index('mentor_stripe_accounts_user_id_idx').on(table.userId),
-    stripeAccountIdIdx: index('mentor_stripe_accounts_stripe_account_id_idx').on(
-      table.stripeAccountId
-    ),
-  })
+  table => [
+    index('mentor_stripe_accounts_user_id_idx').on(table.userId),
+    index('mentor_stripe_accounts_stripe_account_id_idx').on(table.stripeAccountId),
+  ]
 )
 
 export const mentorStripeAccountsRelations = relations(mentorStripeAccounts, ({ one }) => ({
@@ -326,36 +322,28 @@ export const mentorStripeAccountsRelations = relations(mentorStripeAccounts, ({ 
 }))
 
 // Mentor event type preferences and pricing
-export const mentorEventTypes = createTable(
-  'mentor_event_type',
+export const mentorEventTypes = pgTable(
+  'discuno_mentor_event_type',
   {
-    id: integer('id').primaryKey().generatedByDefaultAsIdentity(),
-    userId: varchar('user_id', { length: 255 })
+    id: integer().primaryKey().generatedByDefaultAsIdentity(),
+    userId: varchar({ length: 255 })
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
-    calcomEventTypeId: integer('calcom_event_type_id').notNull(), // Cal.com event type ID from team
-    calcomEventTypeSlug: varchar('calcom_event_type_slug', { length: 255 }).notNull(), // Cal.com event type slug
-    isEnabled: boolean('is_enabled').notNull().default(false), // Whether this mentor has enabled this event type
-    customPrice: integer('custom_price'), // Price in cents (e.g., 2500 = $25.00)
-    currency: varchar('currency', { length: 3 }).notNull().default('USD'),
-    requiresPayment: boolean('requires_payment').notNull().default(false), // Whether this mentor requires payment for this event type
+    calcomEventTypeId: integer().notNull(), // Cal.com event type ID from team
+    calcomEventTypeSlug: varchar({ length: 255 }).notNull(), // Cal.com event type slug
+    isEnabled: boolean().notNull().default(false), // Whether this mentor has enabled this event type
+    customPrice: integer(), // Price in cents (e.g., 2500 = $25.00)
+    currency: varchar({ length: 3 }).notNull().default('USD'),
+    requiresPayment: boolean().notNull().default(false), // Whether this mentor requires payment for this event type
     ...timestamps,
   },
-  table => ({
-    userEventTypeIdx: index('mentor_event_types_user_event_type_idx').on(
-      table.userId,
-      table.calcomEventTypeId
-    ),
-    userIdIdx: index('mentor_event_types_user_id_idx').on(table.userId),
-    calcomEventTypeIdIdx: index('mentor_event_types_calcom_event_type_id_idx').on(
-      table.calcomEventTypeId
-    ),
+  table => [
+    index('mentor_event_types_user_event_type_idx').on(table.userId, table.calcomEventTypeId),
+    index('mentor_event_types_user_id_idx').on(table.userId),
+    index('mentor_event_types_calcom_event_type_id_idx').on(table.calcomEventTypeId),
     // Ensure one record per user per event type
-    userEventTypeUnique: unique('mentor_event_types_user_event_type_unique').on(
-      table.userId,
-      table.calcomEventTypeId
-    ),
-  })
+    unique('mentor_event_types_user_event_type_unique').on(table.userId, table.calcomEventTypeId),
+  ]
 )
 
 export const mentorEventTypesRelations = relations(mentorEventTypes, ({ one }) => ({

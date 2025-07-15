@@ -11,6 +11,7 @@ export default {
   dbCredentials: {
     url: process.env.DATABASE_URL!,
   },
+  casing: 'snake_case',
   tablesFilter: ['discuno_*'],
   verbose: true,
   strict: true,

@@ -17,9 +17,9 @@
 
 import { config } from 'dotenv'
 import { sql } from 'drizzle-orm'
-import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
-import { seedDatabase } from '../src/lib/db/seed'
+import { seedDatabase } from '~/lib/db/seed'
+import { db as sharedDb } from '~/server/db/index'
 
 type Environment = 'local' | 'preview'
 
@@ -54,12 +54,12 @@ const createResetConnection = (environment: Environment) => {
     throw new Error(`DATABASE_URL environment variable is not set for environment: ${environment}`)
   }
 
+  // Only create a new client for raw SQL if needed
   const resetClient = postgres(databaseUrl, {
     max: 1,
-    transform: postgres.camel,
   })
 
-  return { client: resetClient, db: drizzle(resetClient) }
+  return { client: resetClient, db: sharedDb }
 }
 
 const dropAllTables = async (environment: Environment) => {
@@ -218,6 +218,10 @@ const dropAllTables = async (environment: Environment) => {
         console.log(`   Dropping sequence: ${sequenceName}`)
         await tx.execute(sql.raw(`DROP SEQUENCE IF EXISTS "${sequenceName}" CASCADE;`))
       }
+      // Drop enum types to match updated schema
+      console.log('   Dropping enum types: stripe_account_status, school_year')
+      await tx.execute(sql.raw(`DROP TYPE IF EXISTS public."stripe_account_status" CASCADE;`))
+      await tx.execute(sql.raw(`DROP TYPE IF EXISTS public."school_year" CASCADE;`))
     })
 
     // Re-enable foreign key checks

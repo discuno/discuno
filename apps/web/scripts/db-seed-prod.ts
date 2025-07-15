@@ -6,8 +6,7 @@
 
 import { config } from 'dotenv'
 import { sql } from 'drizzle-orm'
-import { drizzle } from 'drizzle-orm/postgres-js'
-import postgres from 'postgres'
+import { db } from '~/server/db/index'
 
 // Load production environment variables and override any already set
 config({ path: '.env.production', override: true })
@@ -19,9 +18,6 @@ if (!databaseUrl) {
 }
 
 async function main() {
-  const client = postgres(databaseUrl ?? '', { max: 1, transform: postgres.camel })
-  const db = drizzle(client)
-
   // Schools to seed
   const schoolsData = [
     {
@@ -574,7 +570,6 @@ async function main() {
   })
 
   console.log('✅ Production seed complete.')
-  await client.end()
 }
 
 main().catch(err => {

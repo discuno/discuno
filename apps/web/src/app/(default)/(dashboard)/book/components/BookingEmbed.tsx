@@ -68,7 +68,7 @@ export const BookingEmbed = ({
   const currentEventSlug = selectedEventType?.slug
 
   const {
-    data: availableSlots = { success: false, slots: [] },
+    data: availableSlots = [],
     isFetching,
     error,
   } = useQuery({
@@ -93,27 +93,22 @@ export const BookingEmbed = ({
         timeZone: string
       }
     }) => createBookingAction(bookingData),
-    onSuccess: result => {
-      if (result.success) {
-        const booking = {
-          id: result.bookingUid,
-          date: selectedDate,
-          time: selectedTimeSlot,
-          attendee: formData,
-          eventType: selectedEventType,
-        }
-
-        toast.success('Booking confirmed!')
-        onCreateBookingSuccess?.(booking)
-
-        // Reset form
-        setCurrentStep('calendar')
-        setSelectedEventType(null)
-        setSelectedTimeSlot(null)
-        setFormData({ name: '', email: '' })
-      } else {
-        throw new Error(result.error ?? 'Booking failed')
+    onSuccess: bookingUid => {
+      const booking = {
+        id: bookingUid,
+        date: selectedDate,
+        time: selectedTimeSlot,
+        attendee: formData,
+        eventType: selectedEventType,
       }
+      toast.success('Booking confirmed!')
+      onCreateBookingSuccess?.(booking)
+
+      // Reset form
+      setCurrentStep('calendar')
+      setSelectedEventType(null)
+      setSelectedTimeSlot(null)
+      setFormData({ name: '', email: '' })
     },
     onError: error => {
       console.error('Booking failed:', error)
@@ -246,9 +241,7 @@ export const BookingEmbed = ({
                   </div>
                 ) : (
                   <div className="grid max-h-96 grid-cols-2 gap-2 overflow-y-auto">
-                    {!availableSlots.success ||
-                    !availableSlots.slots ||
-                    availableSlots.slots.length === 0 ? (
+                    {availableSlots.length === 0 ? (
                       <div className="col-span-2 py-8 text-center">
                         <Clock className="text-muted-foreground mx-auto mb-2 h-8 w-8" />
                         <p className="text-muted-foreground text-sm">
@@ -256,7 +249,7 @@ export const BookingEmbed = ({
                         </p>
                       </div>
                     ) : (
-                      availableSlots.slots.map(slot => (
+                      availableSlots.map(slot => (
                         <Button
                           key={slot.time}
                           variant={selectedTimeSlot === slot.time ? 'default' : 'outline'}

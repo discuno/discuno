@@ -74,10 +74,10 @@ const createSeedConnection = (environment?: Environment) => {
 
   const seedClient = postgres(databaseUrl, {
     max: 1,
-    transform: postgres.camel,
   })
-
-  return { client: seedClient, db: drizzle(seedClient) }
+  const db = drizzle(seedClient, { casing: 'snake_case' })
+  console.log('Drizzle instance created:', db)
+  return { client: seedClient, db }
 }
 
 // Enhanced sample data arrays

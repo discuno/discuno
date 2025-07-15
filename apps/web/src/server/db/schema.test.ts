@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 // Mock server-only
 vi.mock('server-only', () => ({}))
@@ -19,6 +19,7 @@ vi.mock('drizzle-orm/pg-core', () => ({
     unique: vi.fn().mockReturnThis(),
     references: vi.fn().mockReturnThis(),
     $type: vi.fn().mockReturnThis(),
+    default: vi.fn().mockReturnThis(),
   })),
   timestamp: vi.fn(() => ({
     defaultNow: vi.fn().mockReturnThis(),
@@ -47,6 +48,14 @@ vi.mock('drizzle-orm/pg-core', () => ({
   })),
   primaryKey: vi.fn(() => ({})),
   unique: vi.fn(() => ({})),
+  pgEnum: vi.fn(() =>
+    vi.fn(() => ({
+      notNull: vi.fn().mockReturnThis(),
+    }))
+  ),
+  jsonb: vi.fn(() => ({
+    default: vi.fn().mockReturnThis(),
+  })),
 }))
 
 vi.mock('drizzle-orm', () => ({
@@ -116,6 +125,14 @@ describe('Database Schema', () => {
     it('exports sessions relations', () => {
       expect(schema.sessionsRelations).toBeDefined()
     })
+
+    it('exports mentorStripeAccounts relations', () => {
+      expect(schema.mentorStripeAccountsRelations).toBeDefined()
+    })
+
+    it('exports mentorEventTypes relations', () => {
+      expect(schema.mentorEventTypesRelations).toBeDefined()
+    })
   })
 
   describe('Additional Tables', () => {
@@ -138,12 +155,13 @@ describe('Database Schema', () => {
     it('exports waitlist table', () => {
       expect(schema.waitlist).toBeDefined()
     })
-  })
 
-  describe('Table Creation Helper', () => {
-    it('exports createTable helper function', () => {
-      expect(schema.createTable).toBeDefined()
-      expect(typeof schema.createTable).toBe('function')
+    it('exports mentorStripeAccounts table', () => {
+      expect(schema.mentorStripeAccounts).toBeDefined()
+    })
+
+    it('exports mentorEventTypes table', () => {
+      expect(schema.mentorEventTypes).toBeDefined()
     })
   })
 
@@ -184,6 +202,8 @@ describe('Database Schema', () => {
       expect(schema.mentorReviews).toBeDefined()
       expect(schema.calcomTokens).toBeDefined()
       expect(schema.waitlist).toBeDefined()
+      expect(schema.mentorStripeAccounts).toBeDefined()
+      expect(schema.mentorEventTypes).toBeDefined()
     })
   })
 
@@ -202,9 +222,6 @@ describe('Database Schema', () => {
       // Relations should end with 'Relations'
       const relationExports = exports.filter(name => name.endsWith('Relations'))
       expect(relationExports.length).toBeGreaterThan(3)
-
-      // Should have createTable helper
-      expect(exports).toContain('createTable')
     })
   })
 })

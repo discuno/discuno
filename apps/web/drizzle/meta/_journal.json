@@ -5,22 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1750009784304,
-      "tag": "0000_abnormal_black_panther",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1751760975544,
-      "tag": "0001_handy_ares",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1752584792846,
-      "tag": "0002_hot_edwin_jarvis",
+      "when": 1752619068658,
+      "tag": "0000_init",
       "breakpoints": true
     }
   ]
