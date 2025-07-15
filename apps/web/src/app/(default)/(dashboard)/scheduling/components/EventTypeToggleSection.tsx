@@ -49,11 +49,7 @@ export const EventTypeToggleSection = () => {
   })
 
   // Fetch mentor's Stripe status
-  const {
-    data: stripeStatusData,
-    isLoading: stripeStatusLoading,
-    refetch: refetchStripeStatus,
-  } = useQuery({
+  const { data: stripeStatusData, isLoading: stripeStatusLoading } = useQuery({
     queryKey: ['mentor-stripe-status'],
     queryFn: getMentorStripeStatus,
     staleTime: 5 * 60 * 1000,
@@ -64,7 +60,7 @@ export const EventTypeToggleSection = () => {
     mutationFn: updateMentorEventTypePreferences,
     onSuccess: () => {
       toast.success('Event type preferences updated!')
-      refetchEventTypes()
+      void refetchEventTypes()
     },
     onError: error => {
       console.error('Failed to update event type preferences:', error)
@@ -79,7 +75,7 @@ export const EventTypeToggleSection = () => {
       if (result.success && result.onboardingUrl) {
         window.location.href = result.onboardingUrl
       } else {
-        toast.error(result.error || 'Failed to create Stripe account')
+        toast.error(result.error ?? 'Failed to create Stripe account')
       }
     },
     onError: error => {

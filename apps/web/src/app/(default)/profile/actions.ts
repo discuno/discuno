@@ -7,7 +7,7 @@ import {
   getCurrentUserImage,
   getUserId,
   removeUserImage,
-  updateCompleteUserProfile,
+  updateCompleteProfile,
   updateUserImage,
 } from '~/server/queries'
 
@@ -78,7 +78,6 @@ export const removeUserProfileImage = async () => {
 
   return { success: true }
 }
-
 /**
  * Update user profile information with complete data handling
  */
@@ -108,7 +107,7 @@ export const updateUserProfile = async (formData: FormData) => {
   }
 
   // Update complete user profile using the query function
-  await updateCompleteUserProfile(updateData)
+  await updateCompleteProfile(updateData)
 
   // Revalidate profile pages
   revalidatePath('/profile')

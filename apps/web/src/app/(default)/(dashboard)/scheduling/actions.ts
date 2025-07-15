@@ -409,13 +409,11 @@ export const getMentorEventTypePreferences = async (): Promise<{
   error?: string
 }> => {
   try {
-    const { id: userId } = await requireAuth()
-
     // Fetch team event types from Cal.com
     const teamEventTypes = await fetchTeamEventTypes()
 
     // Fetch mentor's preferences
-    const mentorPreferences = await getMentorEventTypes(userId)
+    const mentorPreferences = await getMentorEventTypes()
 
     // Create a map of mentor preferences by event type ID
     const preferencesMap = new Map(mentorPreferences.map(pref => [pref.calcomEventTypeId, pref]))
@@ -507,7 +505,7 @@ export const createStripeConnectAccount = async (): Promise<{
     }
 
     // Check if user already has a Stripe account
-    const existingAccount = await getMentorStripeAccount(userId)
+    const existingAccount = await getMentorStripeAccount()
 
     const stripe = new Stripe(env.STRIPE_SECRET_KEY)
 
@@ -546,6 +544,9 @@ export const createStripeConnectAccount = async (): Promise<{
       email: profile.email,
       country: 'US',
       business_type: 'individual',
+      metadata: {
+        userId,
+      },
       capabilities: {
         card_payments: { requested: true },
         transfers: { requested: true },
@@ -603,8 +604,7 @@ export const getMentorStripeStatus = async (): Promise<{
   error?: string
 }> => {
   try {
-    const { id: userId } = await requireAuth()
-    const stripeAccount = await getMentorStripeAccount(userId)
+    const stripeAccount = await getMentorStripeAccount()
 
     if (!stripeAccount) {
       return {

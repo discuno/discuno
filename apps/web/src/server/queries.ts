@@ -61,7 +61,6 @@ const updateProfileImageSchema = z.object({
 })
 
 const updateCompleteProfileSchema = z.object({
-  userId: z.string().min(1),
   name: z.string().min(1).max(255).optional(),
   bio: z.string().max(1000).nullable().optional(),
   schoolYear: z.enum(['Freshman', 'Sophomore', 'Junior', 'Senior', 'Graduate']).optional(),
@@ -971,21 +970,17 @@ const findOrCreateMajor = async (tx: any, majorName: string): Promise<number> =>
 /**
  * Update a complete user profile with all fields
  */
-export const updateCompleteProfile = async (
-  userId: string,
-  data: {
-    name?: string
-    bio?: string | null
-    schoolYear?: 'Freshman' | 'Sophomore' | 'Junior' | 'Senior' | 'Graduate'
-    graduationYear?: number
-    school?: string
-    major?: string
-  }
-): Promise<void> => {
-  const validData = updateCompleteProfileSchema.parse({
-    userId,
-    ...data,
-  })
+export const updateCompleteProfile = async (data: {
+  name?: string
+  bio?: string | null
+  schoolYear?: 'Freshman' | 'Sophomore' | 'Junior' | 'Senior' | 'Graduate'
+  graduationYear?: number
+  school?: string
+  major?: string
+}): Promise<void> => {
+  const validData = updateCompleteProfileSchema.parse(data)
+
+  const { id: userId } = await requireAuth()
 
   await db.transaction(async tx => {
     // 1. Update user basic info
@@ -995,7 +990,7 @@ export const updateCompleteProfile = async (
         .set({
           name: validData.name,
         })
-        .where(eq(users.id, validData.userId))
+        .where(eq(users.id, userId))
     }
 
     // 2. Update user profile
@@ -1003,7 +998,7 @@ export const updateCompleteProfile = async (
       await tx
         .insert(userProfiles)
         .values({
-          userId: validData.userId,
+          userId,
           bio: validData.bio,
           schoolYear: validData.schoolYear ?? 'Freshman',
           graduationYear: validData.graduationYear ?? new Date().getFullYear(),
@@ -1026,11 +1021,11 @@ export const updateCompleteProfile = async (
       const schoolId = await findOrCreateSchoolInternal(tx, validData.school)
 
       // Remove existing school associations
-      await tx.delete(userSchools).where(eq(userSchools.userId, validData.userId))
+      await tx.delete(userSchools).where(eq(userSchools.userId, userId))
 
       // Add new school association
       await tx.insert(userSchools).values({
-        userId: validData.userId,
+        userId: userId,
         schoolId,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -1042,11 +1037,11 @@ export const updateCompleteProfile = async (
       const majorId = await findOrCreateMajor(tx, validData.major)
 
       // Remove existing major associations
-      await tx.delete(userMajors).where(eq(userMajors.userId, validData.userId))
+      await tx.delete(userMajors).where(eq(userMajors.userId, userId))
 
       // Add new major association
       await tx.insert(userMajors).values({
-        userId: validData.userId,
+        userId,
         majorId,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -1074,15 +1069,15 @@ const mentorStripeAccountSchema = z.object({
   onboardingCompleted: z.date().optional(),
   payoutsEnabled: z.boolean().default(false),
   chargesEnabled: z.boolean().default(false),
+  detailsSubmitted: z.boolean().optional(),
+  requirements: z.any().optional(),
 })
 
 /**
  * Get mentor's event type preferences
  */
 export const getMentorEventTypes = cache(
-  async (
-    userId?: string
-  ): Promise<
+  async (): Promise<
     Array<{
       id: number
       calcomEventTypeId: number
@@ -1095,7 +1090,7 @@ export const getMentorEventTypes = cache(
       updatedAt: Date | null
     }>
   > => {
-    const { id: currentUserId } = userId ? { id: userId } : await requireAuth()
+    const { id: currentUserId } = await requireAuth()
 
     const result = await db
       .select({
@@ -1114,8 +1109,8 @@ export const getMentorEventTypes = cache(
 
     return result.map(item => ({
       ...item,
-      isEnabled: item.isEnabled === 'true',
-      requiresPayment: item.requiresPayment === 'true',
+      isEnabled: item.isEnabled,
+      requiresPayment: item.requiresPayment,
     }))
   }
 )
@@ -1140,20 +1135,20 @@ export const upsertMentorEventType = async (data: {
       userId: validData.userId,
       calcomEventTypeId: validData.calcomEventTypeId,
       calcomEventTypeSlug: validData.calcomEventTypeSlug,
-      isEnabled: validData.isEnabled ? 'true' : 'false',
+      isEnabled: validData.isEnabled,
       customPrice: validData.customPrice,
       currency: validData.currency,
-      requiresPayment: validData.requiresPayment ? 'true' : 'false',
+      requiresPayment: validData.requiresPayment,
       createdAt: new Date(),
       updatedAt: new Date(),
     })
     .onConflictDoUpdate({
       target: [mentorEventTypes.userId, mentorEventTypes.calcomEventTypeId],
       set: {
-        isEnabled: validData.isEnabled ? 'true' : 'false',
+        isEnabled: validData.isEnabled,
         customPrice: validData.customPrice,
         currency: validData.currency,
-        requiresPayment: validData.requiresPayment ? 'true' : 'false',
+        requiresPayment: validData.requiresPayment,
         updatedAt: new Date(),
       },
     })
@@ -1163,9 +1158,7 @@ export const upsertMentorEventType = async (data: {
  * Get mentor's enabled event types for booking page
  */
 export const getMentorEnabledEventTypes = cache(
-  async (
-    userId: string
-  ): Promise<
+  async (): Promise<
     Array<{
       calcomEventTypeId: number
       calcomEventTypeSlug: string
@@ -1174,6 +1167,7 @@ export const getMentorEnabledEventTypes = cache(
       requiresPayment: boolean
     }>
   > => {
+    const { id: userId } = await requireAuth()
     const result = await db
       .select({
         calcomEventTypeId: mentorEventTypes.calcomEventTypeId,
@@ -1183,11 +1177,11 @@ export const getMentorEnabledEventTypes = cache(
         requiresPayment: mentorEventTypes.requiresPayment,
       })
       .from(mentorEventTypes)
-      .where(and(eq(mentorEventTypes.userId, userId), eq(mentorEventTypes.isEnabled, 'true')))
+      .where(and(eq(mentorEventTypes.userId, userId), eq(mentorEventTypes.isEnabled, true)))
 
     return result.map(item => ({
       ...item,
-      requiresPayment: item.requiresPayment === 'true',
+      requiresPayment: item.requiresPayment,
     }))
   }
 )
@@ -1198,19 +1192,19 @@ export const getMentorEnabledEventTypes = cache(
  * Get mentor's Stripe account information
  */
 export const getMentorStripeAccount = cache(
-  async (
-    userId?: string
-  ): Promise<{
+  async (): Promise<{
     id: number
     stripeAccountId: string
     stripeAccountStatus: 'pending' | 'active' | 'restricted' | 'inactive'
     onboardingCompleted: Date | null
     payoutsEnabled: boolean
     chargesEnabled: boolean
+    detailsSubmitted: boolean
+    requirements: object
     createdAt: Date
     updatedAt: Date | null
   } | null> => {
-    const { id: currentUserId } = userId ? { id: userId } : await requireAuth()
+    const { id: currentUserId } = await requireAuth()
 
     const result = await db
       .select({
@@ -1220,6 +1214,8 @@ export const getMentorStripeAccount = cache(
         onboardingCompleted: mentorStripeAccounts.onboardingCompleted,
         payoutsEnabled: mentorStripeAccounts.payoutsEnabled,
         chargesEnabled: mentorStripeAccounts.chargesEnabled,
+        detailsSubmitted: mentorStripeAccounts.detailsSubmitted,
+        requirements: mentorStripeAccounts.requirements,
         createdAt: mentorStripeAccounts.createdAt,
         updatedAt: mentorStripeAccounts.updatedAt,
       })
@@ -1232,11 +1228,31 @@ export const getMentorStripeAccount = cache(
 
     return {
       ...account,
-      payoutsEnabled: account.payoutsEnabled === 'true',
-      chargesEnabled: account.chargesEnabled === 'true',
+      payoutsEnabled: account.payoutsEnabled,
+      chargesEnabled: account.chargesEnabled,
+      detailsSubmitted: account.detailsSubmitted,
+      requirements: (account.requirements ?? {}) as object,
     }
   }
 )
+
+export const getMentorStripeAccountByStripeId = async (stripeAccountId: string) => {
+  const account = await db.query.mentorStripeAccounts.findFirst({
+    where: eq(mentorStripeAccounts.stripeAccountId, stripeAccountId),
+  })
+
+  if (!account) {
+    return null
+  }
+
+  return {
+    ...account,
+    payoutsEnabled: account.payoutsEnabled,
+    chargesEnabled: account.chargesEnabled,
+    detailsSubmitted: account.detailsSubmitted,
+    requirements: (account.requirements ?? {}) as object,
+  }
+}
 
 /**
  * Upsert mentor Stripe account
@@ -1248,6 +1264,8 @@ export const upsertMentorStripeAccount = async (data: {
   onboardingCompleted?: Date
   payoutsEnabled?: boolean
   chargesEnabled?: boolean
+  detailsSubmitted?: boolean
+  requirements?: any
 }): Promise<void> => {
   const validData = mentorStripeAccountSchema.parse(data)
 
@@ -1258,8 +1276,10 @@ export const upsertMentorStripeAccount = async (data: {
       stripeAccountId: validData.stripeAccountId,
       stripeAccountStatus: validData.stripeAccountStatus,
       onboardingCompleted: validData.onboardingCompleted,
-      payoutsEnabled: validData.payoutsEnabled ? 'true' : 'false',
-      chargesEnabled: validData.chargesEnabled ? 'true' : 'false',
+      payoutsEnabled: validData.payoutsEnabled,
+      chargesEnabled: validData.chargesEnabled,
+      detailsSubmitted: validData.detailsSubmitted,
+      requirements: validData.requirements,
       createdAt: new Date(),
       updatedAt: new Date(),
     })
@@ -1268,8 +1288,10 @@ export const upsertMentorStripeAccount = async (data: {
       set: {
         stripeAccountStatus: validData.stripeAccountStatus,
         onboardingCompleted: validData.onboardingCompleted,
-        payoutsEnabled: validData.payoutsEnabled ? 'true' : 'false',
-        chargesEnabled: validData.chargesEnabled ? 'true' : 'false',
+        payoutsEnabled: validData.payoutsEnabled,
+        chargesEnabled: validData.chargesEnabled,
+        detailsSubmitted: validData.detailsSubmitted,
+        requirements: validData.requirements,
         updatedAt: new Date(),
       },
     })
@@ -1278,11 +1300,11 @@ export const upsertMentorStripeAccount = async (data: {
 /**
  * Check if mentor has Stripe connected and ready for payments
  */
-export const isMentorStripeReady = cache(async (userId?: string): Promise<boolean> => {
-  const stripeAccount = await getMentorStripeAccount(userId)
+export const isMentorStripeReady = cache(async (): Promise<boolean> => {
+  const stripeAccount = await getMentorStripeAccount()
   return (
     stripeAccount?.stripeAccountStatus === 'active' &&
-    stripeAccount?.payoutsEnabled &&
-    stripeAccount?.chargesEnabled
+    stripeAccount.payoutsEnabled &&
+    stripeAccount.chargesEnabled
   )
 })

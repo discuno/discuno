@@ -1,12 +1,15 @@
 import { relations, sql } from 'drizzle-orm'
 import {
+  boolean,
   check,
   index,
   integer,
+  jsonb,
   pgTableCreator,
   primaryKey,
   text,
   timestamp,
+  unique,
   varchar,
 } from 'drizzle-orm/pg-core'
 import { type AdapterAccount } from 'next-auth/adapters'
@@ -304,14 +307,10 @@ export const mentorStripeAccounts = createTable(
       mode: 'date',
       withTimezone: true,
     }),
-    payoutsEnabled: varchar('payouts_enabled', { length: 10 })
-      .notNull()
-      .default('false')
-      .$type<'true' | 'false'>(),
-    chargesEnabled: varchar('charges_enabled', { length: 10 })
-      .notNull()
-      .default('false')
-      .$type<'true' | 'false'>(),
+    payoutsEnabled: boolean('payouts_enabled').notNull().default(false),
+    chargesEnabled: boolean('charges_enabled').notNull().default(false),
+    detailsSubmitted: boolean('details_submitted').notNull().default(false),
+    requirements: jsonb('requirements').default('{}'),
     ...timestamps,
   },
   table => ({
@@ -336,16 +335,10 @@ export const mentorEventTypes = createTable(
       .references(() => users.id, { onDelete: 'cascade' }),
     calcomEventTypeId: integer('calcom_event_type_id').notNull(), // Cal.com event type ID from team
     calcomEventTypeSlug: varchar('calcom_event_type_slug', { length: 255 }).notNull(), // Cal.com event type slug
-    isEnabled: varchar('is_enabled', { length: 10 })
-      .notNull()
-      .default('false')
-      .$type<'true' | 'false'>(), // Whether this mentor has enabled this event type
+    isEnabled: boolean('is_enabled').notNull().default(false), // Whether this mentor has enabled this event type
     customPrice: integer('custom_price'), // Price in cents (e.g., 2500 = $25.00)
     currency: varchar('currency', { length: 3 }).notNull().default('USD'),
-    requiresPayment: varchar('requires_payment', { length: 10 })
-      .notNull()
-      .default('false')
-      .$type<'true' | 'false'>(), // Whether this mentor requires payment for this event type
+    requiresPayment: boolean('requires_payment').notNull().default(false), // Whether this mentor requires payment for this event type
     ...timestamps,
   },
   table => ({
@@ -358,7 +351,7 @@ export const mentorEventTypes = createTable(
       table.calcomEventTypeId
     ),
     // Ensure one record per user per event type
-    userEventTypeUnique: index('mentor_event_types_user_event_type_unique').on(
+    userEventTypeUnique: unique('mentor_event_types_user_event_type_unique').on(
       table.userId,
       table.calcomEventTypeId
     ),
