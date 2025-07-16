@@ -17,9 +17,9 @@
 
 import { config } from 'dotenv'
 import { sql } from 'drizzle-orm'
+import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 import { seedDatabase } from '~/lib/db/seed'
-import { db as sharedDb } from '~/server/db/index'
 
 type Environment = 'local' | 'preview'
 
@@ -54,12 +54,14 @@ const createResetConnection = (environment: Environment) => {
     throw new Error(`DATABASE_URL environment variable is not set for environment: ${environment}`)
   }
 
-  // Only create a new client for raw SQL if needed
+  // Create a new client and drizzle instance for this environment
   const resetClient = postgres(databaseUrl, {
     max: 1,
   })
 
-  return { client: resetClient, db: sharedDb }
+  const db = drizzle(resetClient, { casing: 'snake_case' })
+
+  return { client: resetClient, db }
 }
 
 const dropAllTables = async (environment: Environment) => {
@@ -214,7 +216,7 @@ const dropAllTables = async (environment: Environment) => {
       `)
 
       for (const seqRow of sequences) {
-        const sequenceName = (seqRow as any).sequence_name
+        const sequenceName = seqRow.sequence_name
         console.log(`   Dropping sequence: ${sequenceName}`)
         await tx.execute(sql.raw(`DROP SEQUENCE IF EXISTS "${sequenceName}" CASCADE;`))
       }
@@ -346,6 +348,8 @@ const main = async () => {
 
     // Step 3: Seed database
     console.log('🌱 Seeding database...')
+    // Ensure environment is loaded again before seeding
+    loadEnvironmentConfig(environment)
     await seedDatabase(environment)
 
     console.log('─'.repeat(60))
