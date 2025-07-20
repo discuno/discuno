@@ -1,7 +1,9 @@
 'use server'
 
+import { revalidatePath } from 'next/cache'
 import Stripe from 'stripe'
 import type { CalcomToken, CreateCalcomUserInput, UpdateCalcomUserInput } from '~/app/types'
+import type { Availability, DateOverride, WeeklySchedule } from '~/app/types/availability'
 import { env } from '~/env'
 import { BadRequestError, ExternalApiError, requireAuth } from '~/lib/auth/auth-utils'
 import {
@@ -303,6 +305,230 @@ const updateCalcomUser = async (data: UpdateCalcomUserInput): Promise<void> => {
       throw error
     }
     throw new BadRequestError('Failed to update Cal.com user')
+  }
+}
+
+/**
+ * Fetches the user's availability schedule from Cal.com.
+ * @see https://cal.com/docs/enterprise/api-reference/v2/openapi#/paths/~1schedules/get
+ */
+export async function getSchedule(): Promise<Availability | null> {
+  try {
+    const tokenResult = await getValidCalcomToken()
+
+    if (!tokenResult.success || !tokenResult.accessToken) {
+      throw new ExternalApiError('Failed to get valid Cal.com token.')
+    }
+
+    const response = await fetch(`${env.NEXT_PUBLIC_CALCOM_API_URL}/schedules/default`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${tokenResult.accessToken}`,
+      },
+    })
+
+    console.log('getSchedule response status:', response.status)
+
+    if (!response.ok) {
+      const errorBody = await response.text()
+      throw new ExternalApiError(`Failed to fetch schedule: ${errorBody}`)
+    }
+
+    const data = await response.json()
+
+    console.log('getSchedule response data:', data)
+    console.log('getSchedule availability:', data.data?.availability)
+    console.log('getSchedule dateOverrides:', data.data?.dateOverrides[0].ranges)
+
+    if (!data.data) {
+      return null
+    }
+
+    // The /schedules/default endpoint returns a single schedule object
+    const calcomSchedule = data.data
+
+    // Map Cal.com v2 availability (array of per-day interval arrays) into our WeeklySchedule format
+    const weeklySchedule: WeeklySchedule = {
+      sunday: [],
+      monday: [],
+      tuesday: [],
+      wednesday: [],
+      thursday: [],
+      friday: [],
+      saturday: [],
+    }
+    const dayNames: (keyof WeeklySchedule)[] = [
+      'sunday',
+      'monday',
+      'tuesday',
+      'wednesday',
+      'thursday',
+      'friday',
+      'saturday',
+    ]
+    dayNames.forEach((dayKey, idx) => {
+      const dayIntervals = calcomSchedule.availability?.[idx]
+      if (Array.isArray(dayIntervals)) {
+        for (const interval of dayIntervals) {
+          const list = weeklySchedule[dayKey]
+          if (list) {
+            // Convert ISO datetime to HH:mm for time inputs
+            const startRaw: string = interval.start
+            const endRaw: string = interval.end
+            const start = startRaw.length >= 16 ? startRaw.substring(11, 16) : startRaw
+            const end = endRaw.length >= 16 ? endRaw.substring(11, 16) : endRaw
+            list.push({ start, end })
+          }
+        }
+      }
+    })
+
+    // Map Cal.com dateOverrides into our DateOverride[]
+    const dateOverrides: DateOverride[] = (calcomSchedule.dateOverrides ?? []).map((o: any) => ({
+      date: o.date,
+      intervals: Array.isArray(o.availability)
+        ? o.availability.map((i: any) => {
+            // Convert ISO datetime to HH:mm
+            const sRaw: string = i.start
+            const eRaw: string = i.end
+            const start = sRaw.length >= 16 ? sRaw.substring(11, 16) : sRaw
+            const end = eRaw.length >= 16 ? eRaw.substring(11, 16) : eRaw
+            return { start, end }
+          })
+        : [],
+    }))
+
+    return {
+      id: calcomSchedule.id.toString(),
+      weeklySchedule,
+      dateOverrides,
+    }
+  } catch (error) {
+    console.error('Error fetching schedule:', error)
+    if (error instanceof ExternalApiError) throw error
+    throw new Error('An unexpected error occurred while fetching the schedule.')
+  }
+}
+
+/**
+ * Creates a new availability schedule in Cal.com.
+ * @see https://cal.com/docs/enterprise/api-reference/v2/openapi#/paths/~1schedules/post
+ */
+export async function createSchedule(
+  scheduleData: Omit<Availability, 'id' | 'userId'>
+): Promise<Availability> {
+  try {
+    const { id: userId } = await requireAuth()
+    const tokenResult = await getValidCalcomToken()
+
+    if (!tokenResult.success || !tokenResult.accessToken) {
+      throw new ExternalApiError('Failed to get valid Cal.com token.')
+    }
+
+    const payload = {
+      name: `Schedule for ${userId}`, // Or a more descriptive name
+      availability: scheduleData.weeklySchedule,
+      overrides: scheduleData.dateOverrides.flatMap(o =>
+        o.intervals.map(i => ({
+          date: o.date,
+          startTime: i.start,
+          endTime: i.end,
+        }))
+      ),
+      timeZone: 'America/New_York', // Or user's timezone
+    }
+
+    const response = await fetch(`${env.NEXT_PUBLIC_CALCOM_API_URL}/schedules`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${tokenResult.accessToken}`,
+      },
+      body: JSON.stringify(payload),
+    })
+
+    if (!response.ok) {
+      const errorBody = await response.text()
+      throw new ExternalApiError(`Failed to create schedule: ${errorBody}`)
+    }
+
+    const data = await response.json()
+    const newCalcomSchedule = data.data
+
+    revalidatePath('/(default)/(dashboard)/scheduling')
+
+    return {
+      id: newCalcomSchedule.id.toString(),
+      weeklySchedule: newCalcomSchedule.availability,
+      dateOverrides: newCalcomSchedule.dateOverrides.map((o: any) => ({
+        date: o.date,
+        intervals: o.availability,
+      })),
+    }
+  } catch (error) {
+    console.error('Error creating schedule:', error)
+    if (error instanceof ExternalApiError) throw error
+    throw new Error('An unexpected error occurred while creating the schedule.')
+  }
+}
+
+/**
+ * Updates an existing availability schedule in Cal.com.
+ * @see https://cal.com/docs/enterprise/api-reference/v2/openapi#/paths/~1schedules~1{schedule_id}/patch
+ */
+export async function updateSchedule(schedule: Availability): Promise<Availability> {
+  console.log('updateSchedule called with:', schedule)
+  try {
+    const tokenResult = await getValidCalcomToken()
+
+    if (!tokenResult.success || !tokenResult.accessToken) {
+      throw new ExternalApiError('Failed to get valid Cal.com token.')
+    }
+
+    const payload = {
+      // Cal.com v2 expects an array of slots with days array
+      availability: Object.entries(schedule.weeklySchedule).flatMap(([day, intervals]) =>
+        intervals.map(interval => ({
+          days: [day.charAt(0).toUpperCase() + day.slice(1)],
+          startTime: interval.start,
+          endTime: interval.end,
+        }))
+      ),
+      overrides: schedule.dateOverrides.flatMap(o =>
+        o.intervals.map(i => ({
+          date: o.date,
+          startTime: i.start,
+          endTime: i.end,
+        }))
+      ),
+    }
+
+    const response = await fetch(`${env.NEXT_PUBLIC_CALCOM_API_URL}/schedules/${schedule.id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${tokenResult.accessToken}`,
+        'cal-api-version': '2024-06-14',
+      },
+      body: JSON.stringify(payload),
+    })
+
+    console.log('updateSchedule response status:', response.status)
+    console.log('response json:', await response.json())
+
+    if (!response.ok) {
+      const errorBody = await response.text()
+      throw new ExternalApiError(`Failed to update schedule: ${errorBody}`)
+    }
+
+    revalidatePath('/scheduling')
+
+    return schedule
+  } catch (error) {
+    console.error('Error updating schedule:', error)
+    if (error instanceof ExternalApiError) throw error
+    throw new Error('An unexpected error occurred while updating the schedule.')
   }
 }
 
