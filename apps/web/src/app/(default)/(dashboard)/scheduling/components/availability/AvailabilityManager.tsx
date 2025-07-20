@@ -1,12 +1,12 @@
 'use client'
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import type { Availability } from '~/app/types/availability'
+import type { Availability, DateOverride } from '~/app/types/availability'
 import { Button } from '~/components/ui/button'
-import { getSchedule, updateSchedule } from '../../actions'
-import { DateOverrides } from './DateOverrides'
+import { updateSchedule } from '../../actions'
+import { DateOverridesManager } from './DateOverridesManager'
 import { WeeklyScheduler } from './WeeklyScheduler'
 
 const defaultAvailability: Availability = {
@@ -23,18 +23,13 @@ const defaultAvailability: Availability = {
   dateOverrides: [],
 }
 
-export function AvailabilityManager() {
+interface AvailabilityManagerProps {
+  initialAvailability: Availability | null
+}
+
+export function AvailabilityManager({ initialAvailability }: AvailabilityManagerProps) {
   const queryClient = useQueryClient()
   const [availability, setAvailability] = useState<Availability | null>(null)
-
-  const {
-    data: initialAvailability,
-    isLoading,
-    error,
-  } = useQuery<Availability | null>({
-    queryKey: ['schedule'],
-    queryFn: getSchedule,
-  })
 
   const { mutate: saveSchedule, isPending } = useMutation({
     mutationFn: async (scheduleData: Availability) => {
@@ -57,10 +52,10 @@ export function AvailabilityManager() {
   useEffect(() => {
     if (initialAvailability) {
       setAvailability(initialAvailability)
-    } else if (!isLoading && !error) {
+    } else {
       setAvailability(defaultAvailability)
     }
-  }, [initialAvailability, isLoading, error])
+  }, [initialAvailability])
 
   const handleSave = () => {
     if (!availability) return
@@ -71,12 +66,8 @@ export function AvailabilityManager() {
     setAvailability(initialAvailability ?? defaultAvailability)
   }
 
-  if (isLoading) {
-    return <div>Loading schedule...</div>
-  }
-
-  if (error) {
-    return <div className="text-red-500">Failed to load schedule. Please try again.</div>
+  const handleOverridesChange = (newOverrides: DateOverride[]) => {
+    setAvailability(prev => (prev ? { ...prev, dateOverrides: newOverrides } : null))
   }
 
   if (!availability) {
@@ -94,11 +85,9 @@ export function AvailabilityManager() {
           setAvailability(prev => (prev ? { ...prev, weeklySchedule: newSchedule } : null))
         }}
       />
-      <DateOverrides
+      <DateOverridesManager
         overrides={availability.dateOverrides}
-        onOverridesChange={newOverrides => {
-          setAvailability(prev => (prev ? { ...prev, dateOverrides: newOverrides } : null))
-        }}
+        onOverridesChange={handleOverridesChange}
       />
       <div className="flex justify-end space-x-4">
         <Button variant="outline" onClick={handleCancel} disabled={!isDirty || isPending}>

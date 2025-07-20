@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import Stripe from 'stripe'
 import type { CalcomToken, CreateCalcomUserInput, UpdateCalcomUserInput } from '~/app/types'
 import type { Availability, DateOverride, WeeklySchedule } from '~/app/types/availability'
-import { availabilitySchema } from '~/app/types/availability'
+import { availabilitySchema, dateOverrideSchema } from '~/app/types/availability'
 import { env } from '~/env'
 import { BadRequestError, ExternalApiError, requireAuth } from '~/lib/auth/auth-utils'
 
@@ -387,9 +387,10 @@ export async function getSchedule(): Promise<Availability | null> {
     // Map Cal.com v2 overrides into our DateOverride[]
     const dateOverrides: DateOverride[] = []
     for (const ov of calcomSchedule.dateOverrides ?? []) {
-      const date = ov.date
       // Each override can include multiple ranges per date
       for (const range of ov.ranges ?? []) {
+        // Derive date: use ov.date or fallback to range start date (YYYY-MM-DD)
+        const date = ov.date ?? (range.start.split('T')[0] as string)
         const startRaw: string = range.start
         const endRaw: string = range.end
         const start = startRaw.length >= 16 ? startRaw.substring(11, 16) : startRaw
@@ -477,6 +478,65 @@ export async function updateSchedule(schedule: Availability): Promise<Availabili
     if (error instanceof ExternalApiError) throw error
     throw new Error('An unexpected error occurred while updating the schedule.')
   }
+}
+
+/**
+ * Adds a new date-specific override to the user's schedule.
+ */
+export async function createDateOverride(override: DateOverride): Promise<DateOverride[]> {
+  dateOverrideSchema.parse(override)
+  const schedule = await getSchedule()
+  if (!schedule) {
+    throw new Error('Could not find schedule to update.')
+  }
+
+  const newOverrides = [...schedule.dateOverrides, override]
+  const newSchedule: Availability = {
+    ...schedule,
+    dateOverrides: newOverrides,
+  }
+
+  await updateSchedule(newSchedule)
+  return newOverrides
+}
+
+/**
+ * Updates an existing date-specific override in the user's schedule.
+ */
+export async function updateDateOverride(override: DateOverride): Promise<DateOverride[]> {
+  dateOverrideSchema.parse(override)
+  const schedule = await getSchedule()
+  if (!schedule) {
+    throw new Error('Could not find schedule to update.')
+  }
+
+  const newOverrides = schedule.dateOverrides.map(o => (o.date === override.date ? override : o))
+  const newSchedule: Availability = {
+    ...schedule,
+    dateOverrides: newOverrides,
+  }
+
+  await updateSchedule(newSchedule)
+  return newOverrides
+}
+
+/**
+ * Deletes a date-specific override from the user's schedule.
+ */
+export async function deleteDateOverride(date: string): Promise<DateOverride[]> {
+  const schedule = await getSchedule()
+  if (!schedule) {
+    throw new Error('Could not find schedule to update.')
+  }
+
+  const newOverrides = schedule.dateOverrides.filter(o => o.date !== date)
+  const newSchedule: Availability = {
+    ...schedule,
+    dateOverrides: newOverrides,
+  }
+
+  await updateSchedule(newSchedule)
+  return newOverrides
 }
 
 export const fetchEventTypes = async () => {
