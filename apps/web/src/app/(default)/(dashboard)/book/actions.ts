@@ -51,7 +51,7 @@ export const fetchEventTypes = async (username: string): Promise<EventType[]> =>
     throw new ExternalApiError(`No Cal.com tokens found for user: ${username}`)
   }
 
-  const mentorPrefs = await getMentorEnabledEventTypes()
+  const mentorPrefs = await getMentorEnabledEventTypes(mentorTokens.userId)
 
   if (!mentorPrefs.length) {
     return []

@@ -881,27 +881,32 @@ export const getValidCalcomToken = async (): Promise<{
   error?: string
 }> => {
   try {
-    // First, get current tokens from database
-    const tokens = await getUserCalcomTokens()
-    if (!tokens) {
+    let tokens
+    try {
+      // Attempt to get user-specific tokens
+      tokens = await getUserCalcomTokens()
+      if (!tokens) {
+        throw new Error('No Cal.com tokens found for user')
+      }
+    } catch (_err) {
+      // Not authenticated or no user tokens: use app-level secret
       return {
-        success: false,
-        error: 'No Cal.com tokens found',
+        success: true,
+        accessToken: env.X_CAL_SECRET_KEY,
       }
     }
 
-    // Check if access token is expired
+    // Check if user access token is still valid
     const now = new Date()
     if (tokens.accessTokenExpiresAt > now) {
-      // Token is still valid
       return {
         success: true,
         accessToken: tokens.accessToken,
       }
     }
 
-    // Token is expired, refresh it
-    console.log('🔄 Access token expired, refreshing...')
+    // User token expired, attempt refresh
+    console.log('🔄 User access token expired, refreshing...')
     const refreshResult = await refreshCalcomToken()
 
     if (refreshResult.success) {

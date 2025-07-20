@@ -1158,7 +1158,7 @@ export const upsertMentorEventType = async (data: {
  * Get mentor's enabled event types for booking page
  */
 export const getMentorEnabledEventTypes = cache(
-  async (): Promise<
+  async (userId: string): Promise<
     Array<{
       calcomEventTypeId: number
       calcomEventTypeSlug: string
@@ -1167,7 +1167,6 @@ export const getMentorEnabledEventTypes = cache(
       requiresPayment: boolean
     }>
   > => {
-    const { id: userId } = await requireAuth()
     const result = await db
       .select({
         calcomEventTypeId: mentorEventTypes.calcomEventTypeId,
