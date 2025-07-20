@@ -22,10 +22,10 @@ const daysOfWeek = [
 
 export function WeeklyScheduler({ schedule, onScheduleChange }: WeeklySchedulerProps) {
   const handleDayToggle = useCallback(
-    (day: string, isEnabled: boolean) => {
+    (day: (typeof daysOfWeek)[number], isEnabled: boolean) => {
       const updated = { ...schedule }
       updated[day] = isEnabled
-        ? updated[day] && updated[day].length > 0
+        ? updated[day].length > 0
           ? updated[day]
           : [{ start: '09:00', end: '17:00' }]
         : []
@@ -39,8 +39,8 @@ export function WeeklyScheduler({ schedule, onScheduleChange }: WeeklySchedulerP
       <DaySchedule
         key={day}
         day={day}
-        intervals={schedule[day] ?? []}
-        isEnabled={!!schedule[day]?.length}
+        intervals={schedule[day]}
+        isEnabled={!!schedule[day].length}
         onIntervalsChange={newIntervals => {
           onScheduleChange({ ...schedule, [day]: newIntervals })
         }}
