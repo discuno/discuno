@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query'
 import React, { createContext, useContext } from 'react'
-import { getValidCalcomToken } from '~/app/(default)/(dashboard)/scheduling/actions'
+import { getValidCalcomToken } from '~/app/(app)/(mentor)/settings/scheduling/actions'
 
 interface CalcomContextType {
   accessToken: string | null
