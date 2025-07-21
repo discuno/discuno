@@ -1,3 +1,4 @@
+import { TimeZoneDetector } from '~/app/(app)/(mentor)/profile/view/TimeZoneDetector'
 import { ProfileShell } from '../components/ProfileShell'
 import { ViewProfileContent } from '../components/ViewProfileContent'
 
@@ -5,6 +6,7 @@ const ViewProfilePage = async () => {
   return (
     <ProfileShell title="My Profile" description="View and manage your profile information">
       <ViewProfileContent />
+      <TimeZoneDetector />
     </ProfileShell>
   )
 }

@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { deleteProfileImage, extractPathnameFromBlobUrl, uploadProfileImage } from '~/lib/blob'
 import {
   getCurrentUserImage,
+  getOrCreateUserTimezone,
   getUserId,
   removeUserImage,
   updateCompleteProfile,
@@ -115,4 +116,8 @@ export const updateUserProfile = async (formData: FormData) => {
   revalidatePath('/profile/edit')
 
   redirect('/profile/edit?status=success')
+}
+
+export const getOrCreateUserTimezoneAction = async (timezone: string) => {
+  await getOrCreateUserTimezone(timezone)
 }

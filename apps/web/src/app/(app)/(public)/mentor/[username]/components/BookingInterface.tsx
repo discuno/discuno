@@ -4,7 +4,6 @@ import { BookingButton } from '~/app/(app)/(public)/mentor/[username]/components
 import { BookingEmbed } from '~/app/(app)/(public)/mentor/[username]/components/BookingEmbed'
 import { BookingEmbedSkeleton } from '~/app/(app)/(public)/mentor/[username]/components/BookingEmbedSkeleton'
 import { BookingModal } from '~/app/(app)/(public)/mentor/[username]/components/BookingModal'
-import { CalcomProvider } from '~/lib/providers/CalProvider'
 import { getFullProfileByUserId } from '~/server/queries'
 
 interface BookingInterfaceProps {
@@ -46,37 +45,35 @@ export const BookingInterface = async ({
   }
 
   return (
-    <CalcomProvider>
-      <Suspense fallback={<BookingEmbedSkeleton />}>
-        {variant === 'button' && (
-          <BookingButton bookingData={bookingData} className={className}>
-            {children ?? (
-              <>
-                <Calendar className="mr-2 h-4 w-4" />
-                Schedule Meeting
-              </>
-            )}
-          </BookingButton>
-        )}
+    <Suspense fallback={<BookingEmbedSkeleton />}>
+      {variant === 'button' && (
+        <BookingButton bookingData={bookingData} className={className}>
+          {children ?? (
+            <>
+              <Calendar className="mr-2 h-4 w-4" />
+              Schedule Meeting
+            </>
+          )}
+        </BookingButton>
+      )}
 
-        {variant === 'modal' && (
-          <BookingModal bookingData={bookingData} className={className}>
-            {children ?? (
-              <>
-                <Calendar className="mr-2 h-4 w-4" />
-                Schedule Meeting
-              </>
-            )}
-          </BookingModal>
-        )}
+      {variant === 'modal' && (
+        <BookingModal bookingData={bookingData} className={className}>
+          {children ?? (
+            <>
+              <Calendar className="mr-2 h-4 w-4" />
+              Schedule Meeting
+            </>
+          )}
+        </BookingModal>
+      )}
 
-        {variant === 'inline' && (
-          <div className={className}>
-            <BookingInline bookingData={bookingData} />
-          </div>
-        )}
-      </Suspense>
-    </CalcomProvider>
+      {variant === 'inline' && (
+        <div className={className}>
+          <BookingInline bookingData={bookingData} />
+        </div>
+      )}
+    </Suspense>
   )
 }
 

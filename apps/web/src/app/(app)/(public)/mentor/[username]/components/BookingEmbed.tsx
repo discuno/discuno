@@ -24,7 +24,6 @@ import {
 } from '~/components/ui/select'
 import { Skeleton } from '~/components/ui/skeleton'
 import { BadRequestError, ExternalApiError } from '~/lib/errors'
-import { useCalcom } from '~/lib/providers/CalProvider'
 
 interface BookingEmbedProps {
   username: string
@@ -43,7 +42,6 @@ export const BookingEmbed = ({
   onCreateBookingSuccess,
   onCreateBookingError,
 }: BookingEmbedProps) => {
-  const { timeZone } = useCalcom()
   const [selectedEventType, setSelectedEventType] = useState<EventType | null>(null)
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string | null>(null)

@@ -6,7 +6,6 @@ import { BookingEmbed } from '~/app/(app)/(public)/mentor/[username]/components/
 import { BookingEmbedSkeleton } from '~/app/(app)/(public)/mentor/[username]/components/BookingEmbedSkeleton'
 import { Button } from '~/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '~/components/ui/dialog'
-import { CalcomProvider } from '~/lib/providers/CalProvider'
 
 interface BookingData {
   calcomUsername: string
@@ -56,9 +55,7 @@ export const BookingButton = ({ bookingData, children, className }: BookingButto
 
           <div className="flex-1 overflow-y-auto">
             <Suspense fallback={<BookingEmbedSkeleton />}>
-              <CalcomProvider>
-                <BookingEmbed username={bookingData.calcomUsername} />
-              </CalcomProvider>
+              <BookingEmbed username={bookingData.calcomUsername} />
             </Suspense>
           </div>
         </DialogContent>

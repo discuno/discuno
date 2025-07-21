@@ -153,6 +153,7 @@ export const userProfiles = pgTable(
     bio: varchar({ length: 1000 }),
     schoolYear: schoolYearEnum().notNull(),
     graduationYear: integer().notNull(), // E.g., 2027
+    timezone: varchar({ length: 255 }).notNull().default('UTC'),
     ...timestamps,
   },
   table => ({

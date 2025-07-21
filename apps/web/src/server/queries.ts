@@ -1158,7 +1158,9 @@ export const upsertMentorEventType = async (data: {
  * Get mentor's enabled event types for booking page
  */
 export const getMentorEnabledEventTypes = cache(
-  async (userId: string): Promise<
+  async (
+    userId: string
+  ): Promise<
     Array<{
       calcomEventTypeId: number
       calcomEventTypeSlug: string
@@ -1308,3 +1310,29 @@ export const isMentorStripeReady = cache(async (): Promise<boolean> => {
     stripeAccount.chargesEnabled
   )
 })
+
+const timezoneSchema = z
+  .string()
+  .min(1, 'Timezone must be a non-empty string')
+  .max(100, 'Timezone must be less than 100 characters')
+
+export const getOrCreateUserTimezone = async (timezone: string): Promise<void> => {
+  const parsedTimezone = timezoneSchema.parse(timezone)
+
+  const { id: userId } = await requireAuth()
+
+  const current = await db
+    .select({ timezone: userProfiles.timezone })
+    .from(userProfiles)
+    .where(eq(userProfiles.userId, userId))
+    .limit(1)
+    .then(rows => rows[0])
+
+  if (current?.timezone !== parsedTimezone && current?.timezone === 'UTC') {
+    await db
+      .update(userProfiles)
+      .set({ timezone: parsedTimezone })
+      .where(eq(userProfiles.userId, userId))
+      .execute()
+  }
+}
