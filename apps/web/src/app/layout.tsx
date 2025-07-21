@@ -22,7 +22,12 @@ export const metadata: Metadata = {
 
 const RootLayout = async ({ children }: Readonly<{ children: React.ReactNode }>) => {
   return (
-    <html lang="en" dir="ltr" className={`${GeistSans.variable}`} suppressHydrationWarning>
+    <html
+      lang="en"
+      dir="ltr"
+      className={`${GeistSans.variable} theme-vercel-esque`}
+      suppressHydrationWarning
+    >
       <body className="bg-background text-foreground min-h-screen font-sans antialiased transition-colors duration-300">
         <ThemeProvider
           attribute="class"
