@@ -1,4 +1,4 @@
-import { Footer } from '~/app/(app)/(public)/(layout)/Footer'
+import { Footer } from '~/app/(app)/(layout)/Footer'
 import { MentorPage } from '~/app/(app)/(public)/mentor/MentorPage'
 
 export default async function MentorRoute() {

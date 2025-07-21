@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { Button } from '~/components/ui/button'
 
-import { ModeToggle } from '~/app/(app)/(public)/(layout)/nav/ThemeToggle'
+import { ModeToggle } from '~/app/(app)/(layout)/nav/ThemeToggle'
 import {
   DropdownMenu,
   DropdownMenuContent,

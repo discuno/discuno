@@ -16,7 +16,7 @@ import {
 import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { BookingInterface } from '~/app/(app)/(public)/mentor/[username]/components/BookingInterface'
+import { BookingInterface } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingInterface'
 import type { Card } from '~/app/types'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { Badge } from '~/components/ui/badge'

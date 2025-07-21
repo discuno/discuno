@@ -1,7 +1,7 @@
 import { ArrowLeft, Calendar, Clock, Star, User } from 'lucide-react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { BookingEmbed } from '~/app/(app)/(public)/mentor/[username]/components/BookingEmbed'
+import { BookingEmbed } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingEmbed'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'

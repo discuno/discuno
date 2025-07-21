@@ -1,4 +1,4 @@
-import { NavBarBase } from '~/app/(app)/(public)/(layout)/nav/NavigationClient'
+import { NavBarBase } from '~/app/(app)/(layout)/nav/NavigationClient'
 import { getProfileWithImageCached } from '~/server/queries'
 
 export const NavBar = async () => {

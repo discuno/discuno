@@ -1,9 +1,9 @@
 import { Calendar } from 'lucide-react'
 import { Suspense } from 'react'
-import { BookingButton } from '~/app/(app)/(public)/mentor/[username]/components/BookingButton'
-import { BookingEmbed } from '~/app/(app)/(public)/mentor/[username]/components/BookingEmbed'
-import { BookingEmbedSkeleton } from '~/app/(app)/(public)/mentor/[username]/components/BookingEmbedSkeleton'
-import { BookingModal } from '~/app/(app)/(public)/mentor/[username]/components/BookingModal'
+import { BookingButton } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingButton'
+import { BookingEmbed } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingEmbed'
+import { BookingEmbedSkeleton } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingEmbedSkeleton'
+import { BookingModal } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingModal'
 import { getFullProfileByUserId } from '~/server/queries'
 
 interface BookingInterfaceProps {

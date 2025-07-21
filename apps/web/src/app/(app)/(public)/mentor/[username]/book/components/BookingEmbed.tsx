@@ -10,7 +10,7 @@ import {
   fetchEventTypes as fetchEventTypesAction,
   fetchAvailableSlots as fetchSlotsAction,
   type EventType,
-} from '~/app/(app)/(public)/mentor/[username]/actions'
+} from '~/app/(app)/(public)/mentor/[username]/book/actions'
 import { Button } from '~/components/ui/button'
 import { Calendar } from '~/components/ui/calendar'
 import { Input } from '~/components/ui/input'
@@ -42,6 +42,8 @@ export const BookingEmbed = ({
   onCreateBookingSuccess,
   onCreateBookingError,
 }: BookingEmbedProps) => {
+  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
+
   const [selectedEventType, setSelectedEventType] = useState<EventType | null>(null)
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string | null>(null)
@@ -58,8 +60,13 @@ export const BookingEmbed = ({
     error: eventTypesError,
   } = useQuery({
     queryKey: ['event-types', username],
-    queryFn: () => fetchEventTypesAction(username),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    queryFn: () =>
+      // TODO: return to norm
+      fetchEventTypesAction(username).then(data => {
+        console.log('Fetched event types:', data)
+        return data
+      }),
+    staleTime: 0,
   })
 
   // Use the provided eventSlug or the selected event type

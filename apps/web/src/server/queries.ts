@@ -679,8 +679,6 @@ export const getFullProfileByUserId = cache(
       .where(eq(users.id, userId))
       .limit(1)
 
-    console.log('res', res)
-
     const userData = res[0]
 
     if (!userData) {
@@ -1180,6 +1178,7 @@ export const getMentorEnabledEventTypes = cache(
       .from(mentorEventTypes)
       .where(and(eq(mentorEventTypes.userId, userId), eq(mentorEventTypes.isEnabled, true)))
 
+    console.log('getMentorEnabledEventTypes result', result)
     return result.map(item => ({
       ...item,
       requiresPayment: item.requiresPayment,

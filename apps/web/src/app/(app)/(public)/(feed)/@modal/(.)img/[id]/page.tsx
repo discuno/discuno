@@ -2,7 +2,7 @@ import { Calendar, Clock, ExternalLink, GraduationCap, School, User } from 'luci
 import Image from 'next/image'
 import Link from 'next/link'
 import { Modal } from '~/app/(app)/(public)/(feed)/@modal/(.)img/[id]/modal'
-import { BookingInterface } from '~/app/(app)/(public)/mentor/[username]/components/BookingInterface'
+import { BookingInterface } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingInterface'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'

@@ -2,8 +2,8 @@
 
 import Image from 'next/image'
 import { Suspense, useState } from 'react'
-import { BookingEmbed } from '~/app/(app)/(public)/mentor/[username]/components/BookingEmbed'
-import { BookingEmbedSkeleton } from '~/app/(app)/(public)/mentor/[username]/components/BookingEmbedSkeleton'
+import { BookingEmbed } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingEmbed'
+import { BookingEmbedSkeleton } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingEmbedSkeleton'
 import { Button } from '~/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '~/components/ui/dialog'
 

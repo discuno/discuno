@@ -46,12 +46,15 @@ type AvailableSlotsResponse = {
  */
 export const fetchEventTypes = async (username: string): Promise<EventType[]> => {
   const mentorTokens = await getMentorCalcomTokensByUsername(username)
+  console.log('Fetched mentor tokens:', mentorTokens)
 
   if (!mentorTokens) {
     throw new ExternalApiError(`No Cal.com tokens found for user: ${username}`)
   }
 
   const mentorPrefs = await getMentorEnabledEventTypes(mentorTokens.userId)
+
+  console.log('Fetched mentor preferences:', mentorPrefs)
 
   if (!mentorPrefs.length) {
     return []
