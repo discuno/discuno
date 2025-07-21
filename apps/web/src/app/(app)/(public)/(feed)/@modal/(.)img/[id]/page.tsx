@@ -1,7 +1,7 @@
 import { Calendar, Clock, ExternalLink, GraduationCap, School, User } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Modal } from '~/app/(app)/(public)/@modal/(.)img/[id]/modal'
+import { Modal } from '~/app/(app)/(public)/(feed)/@modal/(.)img/[id]/modal'
 import { BookingInterface } from '~/app/(app)/(public)/mentor/[username]/components/BookingInterface'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { Badge } from '~/components/ui/badge'
