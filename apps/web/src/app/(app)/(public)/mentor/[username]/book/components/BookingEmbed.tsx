@@ -60,13 +60,8 @@ export const BookingEmbed = ({
     error: eventTypesError,
   } = useQuery({
     queryKey: ['event-types', username],
-    queryFn: () =>
-      // TODO: return to norm
-      fetchEventTypesAction(username).then(data => {
-        console.log('Fetched event types:', data)
-        return data
-      }),
-    staleTime: 0,
+    queryFn: () => fetchEventTypesAction(username),
+    staleTime: 1000 * 60 * 5, // 5 minutes
   })
 
   // Use the provided eventSlug or the selected event type
