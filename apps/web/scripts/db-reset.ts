@@ -19,8 +19,8 @@ import { config } from 'dotenv'
 import { sql } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
+import Stripe from 'stripe'
 import { seedDatabase } from '~/lib/db/seed'
-
 type Environment = 'local' | 'preview'
 
 const loadEnvironmentConfig = (environment: Environment) => {
@@ -173,6 +173,31 @@ const dropAllTables = async (environment: Environment) => {
       } catch (error) {
         console.error('Error during Cal.com cleanup:', error)
       }
+    }
+    // Step 0a: Cleanup Stripe Connect test accounts
+    const stripeSecretKey = process.env.STRIPE_SECRET_KEY
+    if (!stripeSecretKey) {
+      throw new Error('STRIPE_SECRET_KEY environment variable is not set')
+    }
+    const stripe = new Stripe(stripeSecretKey)
+    console.log('💳 Cleaning up Stripe Connect test accounts...')
+    try {
+      // Fetch Stripe account IDs from DB
+      const accounts = await db.execute(
+        sql`SELECT stripe_account_id FROM discuno_mentor_stripe_account`
+      )
+      for (const row of accounts) {
+        const acctId = (row as any).stripe_account_id
+        try {
+          console.log(`Deleting Stripe account ${acctId}`)
+          await stripe.accounts.del(acctId)
+          console.log(`Deleted Stripe account ${acctId}`)
+        } catch (err) {
+          console.error(`Error deleting Stripe account ${acctId}:`, err)
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching Stripe Connect accounts for cleanup:', err)
     }
     // First, disable foreign key checks temporarily to avoid dependency issues
     await db.execute(sql`SET session_replication_role = replica;`)

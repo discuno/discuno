@@ -1,10 +1,13 @@
 import { config } from 'dotenv'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
+import Stripe from 'stripe'
 import {
   calcomTokens,
   majors,
+  mentorEventTypes,
   mentorReviews,
+  mentorStripeAccounts,
   posts,
   schools,
   userMajors,
@@ -580,244 +583,393 @@ export const seedDatabase = async (environment?: Environment) => {
   const { client, db } = createSeedConnection(environment)
 
   try {
-    // Use transaction for atomic seeding - rollback everything if any step fails
-    await db.transaction(async tx => {
-      console.log('🔄 Starting database transaction...')
+    console.log('🔄 Starting database seeding process...')
+    
+    // Keep track of successful seeds for summary
+    const seedResults = {
+      majors: false,
+      schools: false,
+      users: false,
+      userProfiles: false,
+      userMajors: false,
+      userSchools: false,
+      posts: false,
+      mentorReviews: false,
+      calcomTokens: false,
+      stripeAccounts: false,
+      mentorEventTypes: false,
+      waitlist: false,
+    }
 
-      // Step 1: Insert majors
+    let insertedMajors: any[] = []
+    let insertedSchools: any[] = []
+    let insertedUsers: any[] = []
+
+    // Step 1: Insert majors
+    try {
       console.log('📚 Inserting majors...')
-      const insertedMajors = await tx
+      insertedMajors = await db
         .insert(majors)
         .values(majorNames.map(name => ({ name })))
         .returning()
+      seedResults.majors = true
+      console.log('✅ Majors seeded successfully')
+    } catch (error) {
+      console.error('❌ Failed to seed majors:', error)
+    }
 
-      // Step 2: Insert schools
+    // Step 2: Insert schools
+    try {
       console.log('🏫 Inserting schools...')
-      const insertedSchools = await tx.insert(schools).values(schoolData).returning()
+      insertedSchools = await db.insert(schools).values(schoolData).returning()
+      seedResults.schools = true
+      console.log('✅ Schools seeded successfully')
+    } catch (error) {
+      console.error('❌ Failed to seed schools:', error)
+    }
 
-      // Step 3: Insert mentor users only (all users will have Cal.com accounts)
+    // Step 3: Insert mentor users only (all users will have Cal.com accounts)
+    try {
       console.log('👥 Inserting mentor users...')
       const userData = generateUserData(30) // Only create mentors
-      const insertedUsers = await tx.insert(users).values(userData).returning()
+      insertedUsers = await db.insert(users).values(userData).returning()
+      seedResults.users = true
+      console.log('✅ Users seeded successfully')
+    } catch (error) {
+      console.error('❌ Failed to seed users:', error)
+    }
 
-      // Step 4: Insert user profiles
-      console.log('📋 Inserting user profiles...')
-      const userProfileData = insertedUsers.map((user, index) => {
-        const schoolYear = getRandomElement(schoolYears)
-        const graduationYear = generateGraduationYear(schoolYear)
-        const bioIndex = index % userBios.length
+    // Step 4: Insert user profiles
+    if (insertedUsers.length > 0) {
+      try {
+        console.log('📋 Inserting user profiles...')
+        const userProfileData = insertedUsers.map((user, index) => {
+          const schoolYear = getRandomElement(schoolYears)
+          const graduationYear = generateGraduationYear(schoolYear)
+          const bioIndex = index % userBios.length
 
-        return {
-          userId: user.id,
-          bio: userBios[bioIndex],
-          schoolYear,
-          graduationYear,
-        }
-      })
-      await tx.insert(userProfiles).values(userProfileData)
-
-      // Step 5: Insert user majors (each user gets 1-2 majors)
-      console.log('🎓 Inserting user majors...')
-      const userMajorData = []
-      for (const user of insertedUsers) {
-        const numMajors = Math.random() > 0.7 ? 2 : 1 // 30% chance of double major
-        const selectedMajors = getRandomElements(insertedMajors, numMajors)
-
-        for (const major of selectedMajors) {
-          userMajorData.push({
+          return {
             userId: user.id,
-            majorId: major.id,
-          })
+            bio: userBios[bioIndex],
+            schoolYear,
+            graduationYear,
+          }
+        })
+        await db.insert(userProfiles).values(userProfileData)
+        seedResults.userProfiles = true
+        console.log('✅ User profiles seeded successfully')
+      } catch (error) {
+        console.error('❌ Failed to seed user profiles:', error)
+      }
+    }
+
+    // Step 5: Insert user majors (each user gets 1-2 majors)
+    if (insertedUsers.length > 0 && insertedMajors.length > 0) {
+      try {
+        console.log('🎓 Inserting user majors...')
+        const userMajorData = []
+        for (const user of insertedUsers) {
+          const numMajors = Math.random() > 0.7 ? 2 : 1 // 30% chance of double major
+          const selectedMajors = getRandomElements(insertedMajors, numMajors)
+
+          for (const major of selectedMajors) {
+            userMajorData.push({
+              userId: user.id,
+              majorId: major.id,
+            })
+          }
         }
+        await db.insert(userMajors).values(userMajorData)
+        seedResults.userMajors = true
+        console.log('✅ User majors seeded successfully')
+      } catch (error) {
+        console.error('❌ Failed to seed user majors:', error)
       }
-      await tx.insert(userMajors).values(userMajorData)
+    }
 
-      // Step 6: Insert user schools (each user gets one school)
-      console.log('🏛️ Inserting user schools...')
-      const userSchoolData = insertedUsers.map(user => ({
-        userId: user.id,
-        schoolId: getRandomElement(insertedSchools).id,
-      }))
-      await tx.insert(userSchools).values(userSchoolData)
-
-      // Step 7: Insert posts (all users get exactly one post)
-      console.log('📝 Inserting posts...')
-      const postingUsers = insertedUsers // All users get exactly one post
-      const selectedTitles = getRandomElements(postTitles, postingUsers.length)
-      const selectedDescriptions = getRandomElements(postDescriptions, postingUsers.length)
-
-      const postData = postingUsers.map((user, index) => ({
-        name: selectedTitles[index],
-        description: selectedDescriptions[index],
-        createdById: user.id,
-      }))
-      await tx.insert(posts).values(postData)
-
-      // Step 8: Insert mentor reviews (all users are mentors, so they all get reviews)
-      console.log('⭐ Inserting mentor reviews...')
-      const mentors = insertedUsers // All users are mentors
-      const reviewData = []
-
-      for (const mentor of mentors) {
-        // Each mentor gets 2-8 reviews from other mentors
-        const numReviews = Math.floor(Math.random() * 7) + 2
-        const reviewers = getRandomElements(
-          insertedUsers.filter(u => u.id !== mentor.id),
-          Math.min(numReviews, insertedUsers.length - 1)
-        )
-
-        for (const reviewer of reviewers) {
-          const rating =
-            Math.random() > 0.1
-              ? Math.random() > 0.3
-                ? 5
-                : 4 // 70% get 5 stars, 20% get 4 stars
-              : Math.floor(Math.random() * 3) + 3 // 10% get 3, 2, or 1 stars
-
-          reviewData.push({
-            mentorId: mentor.id,
-            userId: reviewer.id,
-            rating,
-            review: getRandomElement(mentorReviewComments),
-          })
-        }
+    // Step 6: Insert user schools (each user gets one school)
+    if (insertedUsers.length > 0 && insertedSchools.length > 0) {
+      try {
+        console.log('🏛️ Inserting user schools...')
+        const userSchoolData = insertedUsers.map(user => ({
+          userId: user.id,
+          schoolId: getRandomElement(insertedSchools).id,
+        }))
+        await db.insert(userSchools).values(userSchoolData)
+        seedResults.userSchools = true
+        console.log('✅ User schools seeded successfully')
+      } catch (error) {
+        console.error('❌ Failed to seed user schools:', error)
       }
-      await tx.insert(mentorReviews).values(reviewData)
+    }
 
-      // Step 9: Create Cal.com managed users and add them to college-mentors team
-      console.log('🌐 Creating Cal.com managed users and adding to college-mentors team...')
-      const calcomApiBase = process.env.NEXT_PUBLIC_CALCOM_API_URL
-      const calcomClientId = process.env.NEXT_PUBLIC_X_CAL_ID
-      const calcomSecretKey = process.env.X_CAL_SECRET_KEY
-      const calcomOrgId = process.env.CALCOM_ORG_ID
-      const collegeMentorTeamId = process.env.COLLEGE_MENTOR_TEAM_ID
-      if (!calcomClientId || !calcomSecretKey || !calcomOrgId || !collegeMentorTeamId) {
-        throw new Error(
-          'Missing Cal.com credentials: NEXT_PUBLIC_X_CAL_ID, X_CAL_SECRET_KEY, CALCOM_ORG_ID, and/or COLLEGE_MENTOR_TEAM_ID'
-        )
+    // Step 7: Insert posts (all users get exactly one post)
+    if (insertedUsers.length > 0) {
+      try {
+        console.log('📝 Inserting posts...')
+        const postingUsers = insertedUsers // All users get exactly one post
+        const selectedTitles = getRandomElements(postTitles, postingUsers.length)
+        const selectedDescriptions = getRandomElements(postDescriptions, postingUsers.length)
+
+        const postData = postingUsers.map((user, index) => ({
+          name: selectedTitles[index],
+          description: selectedDescriptions[index],
+          createdById: user.id,
+        }))
+        await db.insert(posts).values(postData)
+        seedResults.posts = true
+        console.log('✅ Posts seeded successfully')
+      } catch (error) {
+        console.error('❌ Failed to seed posts:', error)
       }
-      const calcomTokenData: Array<{
-        userId: string
-        calcomUserId: number
-        calcomUsername: string
-        accessToken: string
-        refreshToken: string
-        accessTokenExpiresAt: Date
-        refreshTokenExpiresAt: Date
-      }> = []
+    }
 
-      for (const mentor of mentors) {
-        try {
-          // Step 9a: Create Cal.com managed user
-          const userResponse = await fetch(
-            `${calcomApiBase}/oauth-clients/${calcomClientId}/users`,
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'x-cal-secret-key': calcomSecretKey,
-              },
-              body: JSON.stringify({
-                email: mentor.email,
-                name: mentor.name ?? '',
-                timeFormat: 12,
-                weekStart: 'Monday',
-                timeZone: 'UTC',
-                locale: 'en',
-                avatarUrl: mentor.image ?? undefined,
-                bio: '',
-                metadata: {},
-              }),
-            }
+    // Step 8: Insert mentor reviews (all users are mentors, so they all get reviews)
+    if (insertedUsers.length > 0) {
+      try {
+        console.log('⭐ Inserting mentor reviews...')
+        const mentors = insertedUsers // All users are mentors
+        const reviewData = []
+
+        for (const mentor of mentors) {
+          // Each mentor gets 2-8 reviews from other mentors
+          const numReviews = Math.floor(Math.random() * 7) + 2
+          const reviewers = getRandomElements(
+            insertedUsers.filter(u => u.id !== mentor.id),
+            Math.min(numReviews, insertedUsers.length - 1)
           )
 
-          if (!userResponse.ok) {
-            const errText = await userResponse.text()
-            throw new Error(
-              `Failed to create Cal.com user for ${mentor.email}: ${userResponse.status} ${errText}`
-            )
+          for (const reviewer of reviewers) {
+            const rating =
+              Math.random() > 0.1
+                ? Math.random() > 0.3
+                  ? 5
+                  : 4 // 70% get 5 stars, 20% get 4 stars
+                : Math.floor(Math.random() * 3) + 3 // 10% get 3, 2, or 1 stars
+
+            reviewData.push({
+              mentorId: mentor.id,
+              userId: reviewer.id,
+              rating,
+              review: getRandomElement(mentorReviewComments),
+            })
           }
-
-          const userJson = await userResponse.json()
-          const {
-            accessToken,
-            refreshToken,
-            accessTokenExpiresAt,
-            refreshTokenExpiresAt,
-            user: calUser,
-          } = userJson.data
-
-          // Step 9b: Add user to college-mentors team
-          const membershipResponse = await fetch(
-            `${calcomApiBase}/organizations/${calcomOrgId}/teams/${collegeMentorTeamId}/memberships`,
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'x-cal-secret-key': calcomSecretKey,
-                'x-cal-client-id': calcomClientId,
-              },
-              body: JSON.stringify({
-                role: 'MEMBER',
-                accepted: true,
-                disableImpersonation: false,
-                userId: calUser.id,
-              }),
-            }
-          )
-
-          if (!membershipResponse.ok) {
-            const membershipErrorText = await membershipResponse.text()
-            console.error(
-              `Failed to add user ${calUser.id} to college-mentors team: ${membershipResponse.status} ${membershipErrorText}`
-            )
-            // Continue anyway - user is created even if team membership fails
-          } else {
-            const membershipData = await membershipResponse.json()
-            console.log(`Successfully added user ${calUser.id} to college-mentors team`)
-            console.log('Team membership data:', membershipData)
-          }
-
-          calcomTokenData.push({
-            userId: mentor.id,
-            calcomUserId: calUser.id,
-            calcomUsername: calUser.username,
-            accessToken,
-            refreshToken,
-            accessTokenExpiresAt: new Date(accessTokenExpiresAt),
-            refreshTokenExpiresAt: new Date(refreshTokenExpiresAt),
-          })
-        } catch (error) {
-          console.error(`Error processing mentor ${mentor.email}:`, error)
         }
+        await db.insert(mentorReviews).values(reviewData)
+        seedResults.mentorReviews = true
+        console.log('✅ Mentor reviews seeded successfully')
+      } catch (error) {
+        console.error('❌ Failed to seed mentor reviews:', error)
       }
+    }
 
-      if (calcomTokenData.length > 0) {
-        console.log('📑 Inserting Cal.com tokens into DB...')
-        await tx.insert(calcomTokens).values(calcomTokenData)
+    // Step 9: Create Cal.com managed users and add them to college-mentors team
+    if (insertedUsers.length > 0) {
+      try {
+        console.log('🌐 Creating Cal.com managed users and adding to college-mentors team...')
+        const calcomApiBase = process.env.NEXT_PUBLIC_CALCOM_API_URL
+        const calcomClientId = process.env.NEXT_PUBLIC_X_CAL_ID
+        const calcomSecretKey = process.env.X_CAL_SECRET_KEY
+        const calcomOrgId = process.env.CALCOM_ORG_ID
+        const collegeMentorTeamId = process.env.COLLEGE_MENTOR_TEAM_ID
+        if (!calcomClientId || !calcomSecretKey || !calcomOrgId || !collegeMentorTeamId) {
+          throw new Error(
+            'Missing Cal.com credentials: NEXT_PUBLIC_X_CAL_ID, X_CAL_SECRET_KEY, CALCOM_ORG_ID, and/or COLLEGE_MENTOR_TEAM_ID'
+          )
+        }
+        const calcomTokenData: Array<{
+          userId: string
+          calcomUserId: number
+          calcomUsername: string
+          accessToken: string
+          refreshToken: string
+          accessTokenExpiresAt: Date
+          refreshTokenExpiresAt: Date
+        }> = []
+
+        const mentors = insertedUsers // All users are mentors
+        for (const mentor of mentors) {
+          try {
+            // Step 9a: Create Cal.com managed user
+            const userResponse = await fetch(
+              `${calcomApiBase}/oauth-clients/${calcomClientId}/users`,
+              {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'x-cal-secret-key': calcomSecretKey,
+                },
+                body: JSON.stringify({
+                  email: mentor.email,
+                  name: mentor.name ?? '',
+                  timeFormat: 12,
+                  weekStart: 'Monday',
+                  timeZone: 'UTC',
+                  locale: 'en',
+                  avatarUrl: mentor.image ?? undefined,
+                  bio: '',
+                  metadata: {},
+                }),
+              }
+            )
+
+            if (!userResponse.ok) {
+              const errText = await userResponse.text()
+              throw new Error(
+                `Failed to create Cal.com user for ${mentor.email}: ${userResponse.status} ${errText}`
+              )
+            }
+
+            const userJson = await userResponse.json()
+            const {
+              accessToken,
+              refreshToken,
+              accessTokenExpiresAt,
+              refreshTokenExpiresAt,
+              user: calUser,
+            } = userJson.data
+
+            // Step 9b: Add user to college-mentors team
+            const membershipResponse = await fetch(
+              `${calcomApiBase}/organizations/${calcomOrgId}/teams/${collegeMentorTeamId}/memberships`,
+              {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'x-cal-secret-key': calcomSecretKey,
+                  'x-cal-client-id': calcomClientId,
+                },
+                body: JSON.stringify({
+                  role: 'MEMBER',
+                  accepted: true,
+                  disableImpersonation: false,
+                  userId: calUser.id,
+                }),
+              }
+            )
+
+            if (!membershipResponse.ok) {
+              const membershipErrorText = await membershipResponse.text()
+              console.error(
+                `Failed to add user ${calUser.id} to college-mentors team: ${membershipResponse.status} ${membershipErrorText}`
+              )
+              // Continue anyway - user is created even if team membership fails
+            } else {
+              const membershipData = await membershipResponse.json()
+              console.log(`Successfully added user ${calUser.id} to college-mentors team`)
+              console.log('Team membership data:', membershipData)
+            }
+
+            calcomTokenData.push({
+              userId: mentor.id,
+              calcomUserId: calUser.id,
+              calcomUsername: calUser.username,
+              accessToken,
+              refreshToken,
+              accessTokenExpiresAt: new Date(accessTokenExpiresAt),
+              refreshTokenExpiresAt: new Date(refreshTokenExpiresAt),
+            })
+          } catch (error) {
+            console.error(`Error processing mentor ${mentor.email}:`, error)
+          }
+        }
+
+        if (calcomTokenData.length > 0) {
+          console.log('📑 Inserting Cal.com tokens into DB...')
+          await db.insert(calcomTokens).values(calcomTokenData)
+        }
+        seedResults.calcomTokens = true
+        console.log('✅ Cal.com tokens seeded successfully')
+      } catch (error) {
+        console.error('❌ Failed to seed Cal.com tokens:', error)
       }
+    }
 
-      // Note: Event types are now managed at the team level instead of per-user
-      console.log('✅ Cal.com users created and added to college-mentors team')
-      console.log('   Event types will be managed at the team level, not per-user')
+    // Step 10: Seed Stripe Connect accounts for mentors
+    if (insertedUsers.length > 0) {
+      try {
+        console.log('💳 Creating Stripe Connect test accounts for mentors...')
+        const stripeAccountData: any[] = []
 
-      // Step 11: Insert waitlist entries
+        const stripeSecretKey = process.env.STRIPE_SECRET_KEY
+        if (!stripeSecretKey) {
+          throw new Error('STRIPE_SECRET_KEY environment variable is not set')
+        }
+        const stripe = new Stripe(stripeSecretKey)
+
+        for (const user of insertedUsers) {
+          try {
+            const acct = await stripe.accounts.create({
+              type: 'express',
+              country: 'US',
+              email: user.email ?? undefined,
+              metadata: { userId: user.id },
+            })
+            stripeAccountData.push({
+              userId: user.id,
+              stripeAccountId: acct.id,
+              stripeAccountStatus:
+                acct.charges_enabled && acct.payouts_enabled ? 'active' : 'pending',
+              onboardingCompleted: acct.created ? new Date(acct.created * 1000) : undefined,
+              payoutsEnabled: acct.payouts_enabled,
+              chargesEnabled: acct.charges_enabled,
+              detailsSubmitted: acct.details_submitted,
+              requirements: acct.requirements ?? {},
+            })
+          } catch (err) {
+            console.error(`Failed to create Stripe account for user ${user.id}:`, err)
+          }
+        }
+
+        if (stripeAccountData.length > 0) {
+          console.log('📑 Inserting Stripe Connect accounts into DB...')
+          await db.insert(mentorStripeAccounts).values(stripeAccountData)
+        }
+        seedResults.stripeAccounts = true
+        console.log('✅ Stripe Connect accounts seeded successfully')
+      } catch (error) {
+        console.error('❌ Failed to seed Stripe accounts:', error)
+      }
+    }
+
+    // Step 11: Seed mentor event types
+    if (insertedUsers.length > 0) {
+      try {
+        console.log('🎫 Seeding mentor event types...')
+        const eventTypesData = insertedUsers.map((user, i) => ({
+          userId: user.id,
+          calcomEventTypeId: i + 1,
+          calcomEventTypeSlug: `test-event-${i + 1}`,
+          isEnabled: true,
+          customPrice: Math.floor(Math.random() * 100),
+          currency: 'USD',
+          requiresPayment: false,
+        }))
+        await db.insert(mentorEventTypes).values(eventTypesData)
+        seedResults.mentorEventTypes = true
+        console.log('✅ Mentor event types seeded successfully')
+        // Note: Event types now seeded per-user for local testing
+      } catch (error) {
+        console.error('❌ Failed to seed mentor event types:', error)
+      }
+    }
+
+          // Step 12: Insert waitlist entries
+    try {
       console.log('📧 Inserting waitlist entries...')
       const waitlistData = waitlistEmails.map(email => ({ email }))
-      await tx.insert(waitlist).values(waitlistData)
+      await db.insert(waitlist).values(waitlistData)
+      seedResults.waitlist = true
+      console.log('✅ Waitlist entries seeded successfully')
+    } catch (error) {
+      console.error('❌ Failed to seed waitlist:', error)
+    }
 
-      console.log('✅ Transaction completed successfully!')
-
-      // Return data for final summary
-      return {
-        insertedUsers,
-        postData,
-        reviewData,
-        waitlistData,
-      }
+    console.log('🎉 Database seeding completed!')
+    console.log('📊 Seeding Results:')
+    Object.entries(seedResults).forEach(([key, success]) => {
+      console.log(`  ${success ? '✅' : '❌'} ${key}`)
     })
-
-    console.log('🎉 Database seeding completed successfully!')
     console.log('📊 Generated comprehensive realistic data including:')
     console.log(`  - 30 mentor users with detailed profiles (all added to college-mentors team)`)
     console.log(`  - Posts with engaging content for all users`)
@@ -828,10 +980,9 @@ export const seedDatabase = async (environment?: Environment) => {
     console.log('  - Realistic graduation years based on school year')
     console.log('  - Diverse bio content and user backgrounds')
     console.log('  - Cal.com managed users added to college-mentors team')
-    console.log('  - Event types managed at team level (not per-user)')
+    console.log('  - Stripe Connect test accounts created for all mentors')
   } catch (error) {
     console.error(`❌ Seeding failed for ${targetEnv}:`, error)
-    console.error('🔄 Transaction automatically rolled back')
     throw error
   } finally {
     await client.end()
