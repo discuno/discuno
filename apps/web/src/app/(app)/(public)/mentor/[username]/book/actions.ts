@@ -46,7 +46,6 @@ type AvailableSlotsResponse = {
  */
 export const fetchEventTypes = async (username: string): Promise<EventType[]> => {
   const mentorTokens = await getMentorCalcomTokensByUsername(username)
-  console.log('Fetched mentor tokens:', mentorTokens)
 
   if (!mentorTokens) {
     throw new ExternalApiError(`No Cal.com tokens found for user: ${username}`)
@@ -54,14 +53,15 @@ export const fetchEventTypes = async (username: string): Promise<EventType[]> =>
 
   const mentorPrefs = await getMentorEnabledEventTypes(mentorTokens.userId)
 
-  console.log('Fetched mentor preferences:', mentorPrefs)
-
   if (!mentorPrefs.length) {
+    console.log(`No enabled event types found for user: ${username}`)
     return []
   }
 
   const url = new URL(`${env.NEXT_PUBLIC_CALCOM_API_URL}/event-types`)
   url.searchParams.append('username', username)
+
+  console.log('Fetching event types for:', username)
 
   const res = await fetch(url.toString(), {
     headers: {
@@ -76,6 +76,8 @@ export const fetchEventTypes = async (username: string): Promise<EventType[]> =>
   }
 
   const data = await res.json()
+
+  console.log('Fetched event types:', data)
 
   if (data.status !== 'success' || !Array.isArray(data.data)) {
     throw new ExternalApiError('Invalid event types response')

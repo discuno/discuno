@@ -115,6 +115,7 @@ export const BookingContent = async ({ username }: BookingContentProps) => {
           </Card>
 
           {/* Session Types */}
+          {/* TODO: Example session types - replace with dynamic data */}
           <Card className="mt-6">
             <CardHeader>
               <CardTitle>Available Session Types</CardTitle>

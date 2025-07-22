@@ -330,18 +330,12 @@ export async function getSchedule(): Promise<Availability | null> {
       },
     })
 
-    console.log('getSchedule response status:', response.status)
-
     if (!response.ok) {
       const errorBody = await response.text()
       throw new ExternalApiError(`Failed to fetch schedule: ${errorBody}`)
     }
 
     const data = await response.json()
-
-    console.log('getSchedule response data:', data)
-    console.log('getSchedule availability:', data.data?.availability)
-    console.log('getSchedule dateOverrides:', data.data?.dateOverrides)
 
     if (!data.data) {
       return null
