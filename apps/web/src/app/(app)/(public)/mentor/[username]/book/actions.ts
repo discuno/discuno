@@ -42,7 +42,7 @@ type AvailableSlotsResponse = {
 }
 
 /**
- * Fetch available event types for a given username (filtered by mentor's preferences)
+ * Fetch available event types for a given username (using database with joins)
  */
 export const fetchEventTypes = async (username: string): Promise<EventType[]> => {
   const mentorTokens = await getMentorCalcomTokensByUsername(username)
@@ -58,51 +58,15 @@ export const fetchEventTypes = async (username: string): Promise<EventType[]> =>
     return []
   }
 
-  const url = new URL(`${env.NEXT_PUBLIC_CALCOM_API_URL}/event-types`)
-  url.searchParams.append('username', username)
-
-  console.log('Fetching event types for:', username)
-
-  const res = await fetch(url.toString(), {
-    headers: {
-      Authorization: `Bearer ${env.X_CAL_SECRET_KEY}`,
-      'cal-api-version': '2024-06-14',
-    },
-  })
-
-  if (!res.ok) {
-    const err = await res.text()
-    throw new ExternalApiError(`Failed to fetch event types: ${res.status} ${err}`)
-  }
-
-  const data = await res.json()
-
-  console.log('Fetched event types:', data)
-
-  if (data.status !== 'success' || !Array.isArray(data.data)) {
-    throw new ExternalApiError('Invalid event types response')
-  }
-
-  const enabledIds = new Set(mentorPrefs.map(p => p.calcomEventTypeId))
-  const prefMap = new Map(mentorPrefs.map(p => [p.calcomEventTypeId, p]))
-
-  return data.data
-    .filter((et: any) => enabledIds.has(et.id))
-    .map((et: any) => {
-      const pref = prefMap.get(et.id)
-      if (!pref) {
-        throw new ExternalApiError(`Missing preference for event type ${et.id}`)
-      }
-      return {
-        id: et.id,
-        title: et.title,
-        slug: et.slug,
-        length: et.lengthInMinutes ?? et.length,
-        description: et.description,
-        price: pref.customPrice ? pref.customPrice / 100 : (et.price ?? null),
-        currency: pref.currency,
-      }
-    })
+  return mentorPrefs.map(pref => ({
+    id: pref.calcomEventTypeId,
+    title: pref.title,
+    slug: pref.calcomEventTypeSlug,
+    length: pref.duration,
+    description: pref.description ?? undefined,
+    price: pref.customPrice ? pref.customPrice / 100 : undefined,
+    currency: pref.currency,
+  }))
 }
 
 /**

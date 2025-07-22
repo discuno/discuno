@@ -8,6 +8,7 @@ import { BadRequestError, InternalServerError, NotFoundError } from '~/lib/error
 import { db } from '~/server/db'
 import {
   calcomTokens,
+  eventTypes,
   majors,
   mentorEventTypes,
   mentorStripeAccounts,
@@ -1057,7 +1058,6 @@ const mentorEventTypeSchema = z.object({
   isEnabled: z.boolean(),
   customPrice: z.number().int().positive().optional(),
   currency: z.string().length(3).default('USD'),
-  requiresPayment: z.boolean().default(false),
 })
 
 const mentorStripeAccountSchema = z.object({
@@ -1072,7 +1072,7 @@ const mentorStripeAccountSchema = z.object({
 })
 
 /**
- * Get mentor's event type preferences
+ * Get mentor's event type preferences with details (using joins)
  */
 export const getMentorEventTypes = cache(
   async (): Promise<
@@ -1080,10 +1080,12 @@ export const getMentorEventTypes = cache(
       id: number
       calcomEventTypeId: number
       calcomEventTypeSlug: string
+      title: string
+      description: string | null
+      duration: number
       isEnabled: boolean
       customPrice: number | null
       currency: string
-      requiresPayment: boolean
       createdAt: Date
       updatedAt: Date | null
     }>
@@ -1093,22 +1095,24 @@ export const getMentorEventTypes = cache(
     const result = await db
       .select({
         id: mentorEventTypes.id,
-        calcomEventTypeId: mentorEventTypes.calcomEventTypeId,
-        calcomEventTypeSlug: mentorEventTypes.calcomEventTypeSlug,
+        calcomEventTypeId: eventTypes.calcomEventTypeId,
+        calcomEventTypeSlug: eventTypes.calcomEventTypeSlug,
+        title: eventTypes.title,
+        description: eventTypes.description,
+        duration: eventTypes.duration,
         isEnabled: mentorEventTypes.isEnabled,
         customPrice: mentorEventTypes.customPrice,
         currency: mentorEventTypes.currency,
-        requiresPayment: mentorEventTypes.requiresPayment,
         createdAt: mentorEventTypes.createdAt,
         updatedAt: mentorEventTypes.updatedAt,
       })
       .from(mentorEventTypes)
+      .innerJoin(eventTypes, eq(mentorEventTypes.eventTypeId, eventTypes.id))
       .where(eq(mentorEventTypes.userId, currentUserId))
 
     return result.map(item => ({
       ...item,
       isEnabled: item.isEnabled,
-      requiresPayment: item.requiresPayment,
     }))
   }
 )
@@ -1123,37 +1127,47 @@ export const upsertMentorEventType = async (data: {
   isEnabled: boolean
   customPrice?: number
   currency?: string
-  requiresPayment?: boolean
 }): Promise<void> => {
   const validData = mentorEventTypeSchema.parse(data)
+
+  // First, find the eventType by calcomEventTypeId
+  const eventType = await db
+    .select({ id: eventTypes.id })
+    .from(eventTypes)
+    .where(eq(eventTypes.calcomEventTypeId, validData.calcomEventTypeId))
+    .limit(1)
+
+  if (eventType.length === 0) {
+    throw new NotFoundError(`Event type with Cal.com ID ${validData.calcomEventTypeId} not found`)
+  }
+
+  const eventTypeId = eventType[0]?.id
+  if (!eventTypeId) {
+    throw new NotFoundError(`Event type with Cal.com ID ${validData.calcomEventTypeId} not found`)
+  }
 
   await db
     .insert(mentorEventTypes)
     .values({
       userId: validData.userId,
-      calcomEventTypeId: validData.calcomEventTypeId,
-      calcomEventTypeSlug: validData.calcomEventTypeSlug,
+      eventTypeId,
       isEnabled: validData.isEnabled,
       customPrice: validData.customPrice,
       currency: validData.currency,
-      requiresPayment: validData.requiresPayment,
-      createdAt: new Date(),
-      updatedAt: new Date(),
     })
     .onConflictDoUpdate({
-      target: [mentorEventTypes.userId, mentorEventTypes.calcomEventTypeId],
+      target: [mentorEventTypes.userId, mentorEventTypes.eventTypeId],
       set: {
         isEnabled: validData.isEnabled,
         customPrice: validData.customPrice,
         currency: validData.currency,
-        requiresPayment: validData.requiresPayment,
         updatedAt: new Date(),
       },
     })
 }
 
 /**
- * Get mentor's enabled event types for booking page
+ * Get mentor's enabled event types for booking page (with joins)
  */
 export const getMentorEnabledEventTypes = cache(
   async (
@@ -1162,26 +1176,30 @@ export const getMentorEnabledEventTypes = cache(
     Array<{
       calcomEventTypeId: number
       calcomEventTypeSlug: string
+      title: string
+      description: string | null
+      duration: number
       customPrice: number | null
       currency: string
-      requiresPayment: boolean
     }>
   > => {
     const result = await db
       .select({
-        calcomEventTypeId: mentorEventTypes.calcomEventTypeId,
-        calcomEventTypeSlug: mentorEventTypes.calcomEventTypeSlug,
+        calcomEventTypeId: eventTypes.calcomEventTypeId,
+        calcomEventTypeSlug: eventTypes.calcomEventTypeSlug,
+        title: eventTypes.title,
+        description: eventTypes.description,
+        duration: eventTypes.duration,
         customPrice: mentorEventTypes.customPrice,
         currency: mentorEventTypes.currency,
-        requiresPayment: mentorEventTypes.requiresPayment,
       })
       .from(mentorEventTypes)
+      .innerJoin(eventTypes, eq(mentorEventTypes.eventTypeId, eventTypes.id))
       .where(and(eq(mentorEventTypes.userId, userId), eq(mentorEventTypes.isEnabled, true)))
 
     console.log('getMentorEnabledEventTypes result', result)
     return result.map(item => ({
       ...item,
-      requiresPayment: item.requiresPayment,
     }))
   }
 )

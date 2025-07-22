@@ -4,6 +4,7 @@ import postgres from 'postgres'
 import Stripe from 'stripe'
 import {
   calcomTokens,
+  eventTypes,
   majors,
   mentorEventTypes,
   mentorReviews,
@@ -584,7 +585,7 @@ export const seedDatabase = async (environment?: Environment) => {
 
   try {
     console.log('🔄 Starting database seeding process...')
-    
+
     // Keep track of successful seeds for summary
     const seedResults = {
       majors: false,
@@ -597,6 +598,7 @@ export const seedDatabase = async (environment?: Environment) => {
       mentorReviews: false,
       calcomTokens: false,
       stripeAccounts: false,
+      eventTypes: false,
       mentorEventTypes: false,
       waitlist: false,
     }
@@ -904,6 +906,39 @@ export const seedDatabase = async (environment?: Environment) => {
               country: 'US',
               email: user.email ?? undefined,
               metadata: { userId: user.id },
+              business_type: 'individual',
+              individual: {
+                first_name: user.name?.split(' ')[0] ?? 'Test',
+                last_name: user.name?.split(' ')[1] ?? 'User',
+                email: user.email ?? undefined,
+                address: {
+                  line1: '123 Test Street',
+                  city: 'San Francisco',
+                  state: 'CA',
+                  postal_code: '94102',
+                  country: 'US',
+                },
+                dob: {
+                  day: 15,
+                  month: 6,
+                  year: 1995,
+                },
+                phone: '+14155551234',
+                ssn_last_4: '0000',
+              },
+              business_profile: {
+                mcc: '8299', // Educational services
+                url: 'https://discuno.com',
+                product_description: 'Educational mentoring services',
+              },
+              external_account: {
+                object: 'bank_account',
+                country: 'US',
+                currency: 'usd',
+                routing_number: '110000000', // Test routing number
+                account_number: '000123456789', // Test account number
+                account_holder_type: 'individual',
+              },
             })
             stripeAccountData.push({
               userId: user.id,
@@ -933,28 +968,80 @@ export const seedDatabase = async (environment?: Environment) => {
     }
 
     // Step 11: Seed mentor event types
-    if (insertedUsers.length > 0) {
+    // Step 11: Insert master event types first
+    let insertedEventTypes: any[] = []
+    try {
+      console.log('� Seeding master event types...')
+
+      // Define the 3 specific event types from Cal.com
+      const masterEventTypes = [
+        {
+          calcomEventTypeId: 2862768,
+          calcomEventTypeSlug: 'deep-dive',
+          title: 'Deep Dive',
+          description:
+            'An in-depth mentoring session to explore complex topics and provide detailed guidance.',
+          duration: 60,
+        },
+        {
+          calcomEventTypeId: 2853579,
+          calcomEventTypeSlug: 'standard-session',
+          title: 'Standard Session',
+          description: 'A comprehensive mentoring session covering your questions and goals.',
+          duration: 30,
+        },
+        {
+          calcomEventTypeId: 2839802,
+          calcomEventTypeSlug: 'quick-chat',
+          title: 'Quick Chat',
+          description: 'A brief consultation to answer quick questions or provide guidance.',
+          duration: 15,
+        },
+      ]
+
+      insertedEventTypes = await db.insert(eventTypes).values(masterEventTypes).returning()
+      seedResults.eventTypes = true
+      console.log('✅ Master event types seeded successfully')
+      console.log(`   Created ${insertedEventTypes.length} master event types`)
+    } catch (error) {
+      console.error('❌ Failed to seed master event types:', error)
+    }
+
+    // Step 12: Insert mentor event type preferences
+    if (insertedUsers.length > 0 && insertedEventTypes.length > 0) {
       try {
-        console.log('🎫 Seeding mentor event types...')
-        const eventTypesData = insertedUsers.map((user, i) => ({
-          userId: user.id,
-          calcomEventTypeId: i + 1,
-          calcomEventTypeSlug: `test-event-${i + 1}`,
-          isEnabled: true,
-          customPrice: Math.floor(Math.random() * 100),
-          currency: 'USD',
-          requiresPayment: false,
-        }))
-        await db.insert(mentorEventTypes).values(eventTypesData)
+        console.log('🎫 Seeding mentor event type preferences...')
+
+        const mentorEventTypesData = []
+
+        for (const user of insertedUsers) {
+          // Each user gets 1-3 of these event types randomly
+          const numEventTypes = Math.floor(Math.random() * 3) + 1 // 1-3 event types
+          const selectedEventTypes = getRandomElements(insertedEventTypes, numEventTypes)
+
+          for (const eventType of selectedEventTypes) {
+            mentorEventTypesData.push({
+              userId: user.id,
+              eventTypeId: eventType.id, // Reference to eventTypes.id
+              isEnabled: Math.random() > 0.2, // 80% chance of being enabled
+              customPrice: Math.floor(Math.random() * 20000) + 2500, // $25-$225 in cents
+              currency: 'USD',
+            })
+          }
+        }
+
+        await db.insert(mentorEventTypes).values(mentorEventTypesData)
         seedResults.mentorEventTypes = true
-        console.log('✅ Mentor event types seeded successfully')
-        // Note: Event types now seeded per-user for local testing
+        console.log('✅ Mentor event type preferences seeded successfully')
+        console.log(
+          `   Created ${mentorEventTypesData.length} event type preferences across ${insertedUsers.length} users`
+        )
       } catch (error) {
-        console.error('❌ Failed to seed mentor event types:', error)
+        console.error('❌ Failed to seed mentor event type preferences:', error)
       }
     }
 
-          // Step 12: Insert waitlist entries
+    // Step 13: Insert waitlist entries
     try {
       console.log('📧 Inserting waitlist entries...')
       const waitlistData = waitlistEmails.map(email => ({ email }))

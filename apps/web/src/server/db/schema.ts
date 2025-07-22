@@ -322,7 +322,25 @@ export const mentorStripeAccountsRelations = relations(mentorStripeAccounts, ({ 
   user: one(users, { fields: [mentorStripeAccounts.userId], references: [users.id] }),
 }))
 
-// Mentor event type preferences and pricing
+// Master event types table (the 3 Cal.com event types we support)
+export const eventTypes = pgTable(
+  'discuno_event_type',
+  {
+    id: integer().primaryKey().generatedByDefaultAsIdentity(),
+    calcomEventTypeId: integer().notNull().unique(), // Cal.com event type ID from team
+    calcomEventTypeSlug: varchar({ length: 255 }).notNull().unique(), // Cal.com event type slug
+    title: varchar({ length: 255 }).notNull(), // Event type display name
+    description: text(), // Event type description
+    duration: integer().notNull(), // Duration in minutes
+    ...timestamps,
+  },
+  table => [
+    index('event_types_calcom_event_type_id_idx').on(table.calcomEventTypeId),
+    index('event_types_slug_idx').on(table.calcomEventTypeSlug),
+  ]
+)
+
+// Mentor event type preferences and pricing (junction table)
 export const mentorEventTypes = pgTable(
   'discuno_mentor_event_type',
   {
@@ -330,23 +348,31 @@ export const mentorEventTypes = pgTable(
     userId: varchar({ length: 255 })
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
-    calcomEventTypeId: integer().notNull(), // Cal.com event type ID from team
-    calcomEventTypeSlug: varchar({ length: 255 }).notNull(), // Cal.com event type slug
+    eventTypeId: integer()
+      .notNull()
+      .references(() => eventTypes.id, { onDelete: 'cascade' }),
     isEnabled: boolean().notNull().default(false), // Whether this mentor has enabled this event type
     customPrice: integer(), // Price in cents (e.g., 2500 = $25.00)
     currency: varchar({ length: 3 }).notNull().default('USD'),
-    requiresPayment: boolean().notNull().default(false), // Whether this mentor requires payment for this event type
     ...timestamps,
   },
   table => [
-    index('mentor_event_types_user_event_type_idx').on(table.userId, table.calcomEventTypeId),
+    index('mentor_event_types_user_event_type_idx').on(table.userId, table.eventTypeId),
     index('mentor_event_types_user_id_idx').on(table.userId),
-    index('mentor_event_types_calcom_event_type_id_idx').on(table.calcomEventTypeId),
+    index('mentor_event_types_event_type_id_idx').on(table.eventTypeId),
     // Ensure one record per user per event type
-    unique('mentor_event_types_user_event_type_unique').on(table.userId, table.calcomEventTypeId),
+    unique('mentor_event_types_user_event_type_unique').on(table.userId, table.eventTypeId),
   ]
 )
 
+export const eventTypesRelations = relations(eventTypes, ({ many }) => ({
+  mentorEventTypes: many(mentorEventTypes),
+}))
+
 export const mentorEventTypesRelations = relations(mentorEventTypes, ({ one }) => ({
   user: one(users, { fields: [mentorEventTypes.userId], references: [users.id] }),
+  eventType: one(eventTypes, {
+    fields: [mentorEventTypes.eventTypeId],
+    references: [eventTypes.id],
+  }),
 }))

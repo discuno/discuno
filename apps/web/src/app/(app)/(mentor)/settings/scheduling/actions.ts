@@ -636,29 +636,20 @@ export const getMentorEventTypePreferences = async (): Promise<{
   error?: string
 }> => {
   try {
-    // Fetch team event types from Cal.com
-    const teamEventTypes = await fetchTeamEventTypes()
-
-    // Fetch mentor's preferences
+    // Fetch mentor's preferences directly from database (includes event type details via joins)
     const mentorPreferences = await getMentorEventTypes()
 
-    // Create a map of mentor preferences by event type ID
-    const preferencesMap = new Map(mentorPreferences.map(pref => [pref.calcomEventTypeId, pref]))
-
-    // Combine team event types with mentor preferences
-    const combined = teamEventTypes.map(eventType => {
-      const preference = preferencesMap.get(eventType.id)
-      return {
-        id: eventType.id,
-        title: eventType.title,
-        slug: eventType.slug,
-        length: eventType.length,
-        description: eventType.description,
-        isEnabled: preference?.isEnabled ?? false,
-        customPrice: preference?.customPrice ?? null,
-        currency: preference?.currency ?? 'USD',
-      }
-    })
+    // Transform the data to match the expected format
+    const combined = mentorPreferences.map(pref => ({
+      id: pref.calcomEventTypeId,
+      title: pref.title,
+      slug: pref.calcomEventTypeSlug,
+      length: pref.duration,
+      description: pref.description ?? undefined,
+      isEnabled: pref.isEnabled,
+      customPrice: pref.customPrice,
+      currency: pref.currency,
+    }))
 
     return {
       success: true,
@@ -696,7 +687,6 @@ export const updateMentorEventTypePreferences = async (data: {
       isEnabled: data.isEnabled,
       customPrice: data.customPrice,
       currency: data.currency ?? 'USD',
-      requiresPayment: !!data.customPrice && data.customPrice > 0, // Auto-set based on price
     })
 
     return {
