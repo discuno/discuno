@@ -157,3 +157,70 @@ export interface FullUserProfile {
   accessToken: string | null
   refreshToken: string | null
 }
+
+// Booking related types
+export type BookingStatus =
+  | 'confirmed'
+  | 'pending'
+  | 'cancelled'
+  | 'completed'
+  | 'no_show'
+  | 'rescheduled'
+
+export interface Booking {
+  id: number
+  calcomBookingId: number
+  calcomUid: string
+  calcomEventTypeId: number
+  mentorId: string
+  mentorCalcomUserId: number
+  attendeeName: string
+  attendeeEmail: string
+  attendeeTimeZone: string
+  title: string
+  description: string | null
+  additionalNotes: string | null
+  startTime: Date
+  endTime: Date
+  duration: number
+  price: number | null
+  currency: string
+  status: BookingStatus
+  requiresConfirmation: boolean
+  customResponses: Record<string, any>
+  confirmedAt: Date | null
+  completedAt: Date | null
+  cancelledAt: Date | null
+  cancellationReason: string | null
+  createdAt: Date
+  updatedAt: Date | null
+  deletedAt: Date | null
+}
+
+export interface BookingWithMentor extends Booking {
+  mentor: {
+    id: string
+    name: string | null
+    email: string | null
+    image: string | null
+  }
+  eventType: {
+    id: number
+    calcomEventTypeId: number
+    calcomEventTypeSlug: string
+    title: string
+    description: string | null
+    duration: number
+  }
+}
+
+export interface BookingWithEventType extends Booking {
+  eventType: {
+    id: number
+    calcomEventTypeId: number
+    calcomEventTypeSlug: string
+    title: string
+    description: string | null
+    duration: number
+  }
+}

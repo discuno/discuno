@@ -7,6 +7,7 @@ import { getAuthSession, requireAuth } from '~/lib/auth/auth-utils'
 import { BadRequestError, InternalServerError, NotFoundError } from '~/lib/errors'
 import { db } from '~/server/db'
 import {
+  bookings,
   calcomTokens,
   eventTypes,
   majors,
@@ -1197,7 +1198,6 @@ export const getMentorEnabledEventTypes = cache(
       .innerJoin(eventTypes, eq(mentorEventTypes.eventTypeId, eventTypes.id))
       .where(and(eq(mentorEventTypes.userId, userId), eq(mentorEventTypes.isEnabled, true)))
 
-    console.log('getMentorEnabledEventTypes result', result)
     return result.map(item => ({
       ...item,
     }))
@@ -1352,4 +1352,81 @@ export const getOrCreateUserTimezone = async (timezone: string): Promise<void> =
       .where(eq(userProfiles.userId, userId))
       .execute()
   }
+}
+
+// Booking Queries
+
+/**
+ * Get all bookings for a mentor
+ */
+export const getMentorBookings = cache(async (mentorId: string) => {
+  const result = await db
+    .select({
+      id: bookings.id,
+      calcomBookingId: bookings.calcomBookingId,
+      calcomUid: bookings.calcomUid,
+      title: bookings.title,
+      startTime: bookings.startTime,
+      endTime: bookings.endTime,
+      status: bookings.status,
+      attendeeName: bookings.attendeeName,
+      attendeeEmail: bookings.attendeeEmail,
+      attendeeTimeZone: bookings.attendeeTimeZone,
+      price: bookings.price,
+      currency: bookings.currency,
+      createdAt: bookings.createdAt,
+    })
+    .from(bookings)
+    .where(eq(bookings.organizerId, mentorId))
+    .orderBy(desc(bookings.startTime))
+
+  return result
+})
+
+/**
+ * Get a specific booking by Cal.com UID
+ */
+export const getBookingByCalcomUid = async (uid: string) => {
+  const result = await db.select().from(bookings).where(eq(bookings.calcomUid, uid)).limit(1)
+
+  return result[0] ?? null
+}
+
+/**
+ * Get bookings for a specific attendee email
+ */
+export const getBookingsForAttendee = cache(async (attendeeEmail: string) => {
+  const result = await db
+    .select({
+      id: bookings.id,
+      calcomBookingId: bookings.calcomBookingId,
+      calcomUid: bookings.calcomUid,
+      title: bookings.title,
+      startTime: bookings.startTime,
+      endTime: bookings.endTime,
+      status: bookings.status,
+      organizerName: bookings.organizerName,
+      organizerEmail: bookings.organizerEmail,
+      price: bookings.price,
+      currency: bookings.currency,
+      createdAt: bookings.createdAt,
+    })
+    .from(bookings)
+    .where(eq(bookings.attendeeEmail, attendeeEmail))
+    .orderBy(desc(bookings.startTime))
+
+  return result
+})
+
+/**
+ * Update booking status
+ */
+export const updateBookingStatus = async (
+  calcomUid: string,
+  status: 'ACCEPTED' | 'PENDING' | 'CANCELLED' | 'REJECTED'
+) => {
+  await db
+    .update(bookings)
+    .set({ status, updatedAt: new Date() })
+    .where(eq(bookings.calcomUid, calcomUid))
 }

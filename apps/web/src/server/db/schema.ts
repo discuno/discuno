@@ -369,10 +369,86 @@ export const eventTypesRelations = relations(eventTypes, ({ many }) => ({
   mentorEventTypes: many(mentorEventTypes),
 }))
 
-export const mentorEventTypesRelations = relations(mentorEventTypes, ({ one }) => ({
+export const mentorEventTypesRelations = relations(mentorEventTypes, ({ one, many }) => ({
   user: one(users, { fields: [mentorEventTypes.userId], references: [users.id] }),
   eventType: one(eventTypes, {
     fields: [mentorEventTypes.eventTypeId],
     references: [eventTypes.id],
+  }),
+  bookings: many(bookings),
+}))
+
+// Booking status enum
+export const bookingStatusEnum = pgEnum('booking_status', [
+  'ACCEPTED',
+  'PENDING',
+  'CANCELLED',
+  'REJECTED',
+] as const)
+
+// Bookings table to store Cal.com booking data
+export const bookings = pgTable(
+  'discuno_booking',
+  {
+    id: integer().primaryKey().generatedByDefaultAsIdentity(),
+    // Cal.com booking identifiers
+    calcomBookingId: integer().notNull().unique(), // Cal.com booking ID
+    calcomUid: varchar({ length: 255 }).notNull().unique(), // Cal.com UID
+
+    // Booking details snapshot
+    title: varchar({ length: 500 }).notNull(),
+    startTime: timestamp({
+      mode: 'date',
+      withTimezone: true,
+    }).notNull(),
+    endTime: timestamp({
+      mode: 'date',
+      withTimezone: true,
+    }).notNull(),
+    status: bookingStatusEnum().notNull().default('PENDING'),
+
+    // Organizer (mentor) info snapshot
+    organizerId: varchar({ length: 255 })
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    organizerName: varchar({ length: 255 }).notNull(),
+    organizerEmail: varchar({ length: 255 }).notNull(),
+    organizerUsername: varchar({ length: 255 }).notNull(),
+
+    // Attendee info snapshot
+    attendeeName: varchar({ length: 255 }).notNull(),
+    attendeeEmail: varchar({ length: 255 }).notNull(),
+    attendeeTimeZone: varchar({ length: 100 }),
+
+    // Pricing snapshot (from our database at time of booking)
+    price: integer(), // Price in cents
+    currency: varchar({ length: 3 }).default('USD'),
+
+    // Event type reference
+    mentorEventTypeId: integer().references(() => mentorEventTypes.id, { onDelete: 'set null' }),
+
+    // Response data (name, email, location, notes, etc.)
+    responses: jsonb().default('{}'),
+
+    // Full webhook payload for auditing and future-proofing
+    webhookPayload: jsonb().notNull(),
+
+    ...timestamps,
+  },
+  table => [
+    index('bookings_calcom_booking_id_idx').on(table.calcomBookingId),
+    index('bookings_calcom_uid_idx').on(table.calcomUid),
+    index('bookings_organizer_id_idx').on(table.organizerId),
+    index('bookings_start_time_idx').on(table.startTime),
+    index('bookings_status_idx').on(table.status),
+    index('bookings_mentor_event_type_id_idx').on(table.mentorEventTypeId),
+  ]
+)
+
+export const bookingsRelations = relations(bookings, ({ one }) => ({
+  organizer: one(users, { fields: [bookings.organizerId], references: [users.id] }),
+  mentorEventType: one(mentorEventTypes, {
+    fields: [bookings.mentorEventTypeId],
+    references: [mentorEventTypes.id],
   }),
 }))

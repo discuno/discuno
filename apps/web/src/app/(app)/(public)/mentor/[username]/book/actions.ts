@@ -129,9 +129,23 @@ export const fetchAvailableSlots = async (
 }
 
 /**
- * Create a booking via Cal.com API
+ * Create a booking via Cal.com API and store it locally
  */
 export const createBooking = async (input: CreateBookingInput): Promise<string> => {
+  // Transform input to match Cal.com v2 API format
+  const calcomPayload = {
+    start: input.startTime, // ISO string in UTC
+    attendee: {
+      name: input.attendee.name,
+      email: input.attendee.email,
+      timeZone: input.attendee.timeZone ?? 'America/New_York',
+      language: 'en', // Default language
+    },
+    eventTypeSlug: input.eventSlug,
+    username: input.username,
+  }
+
+  // First, create the booking via Cal.com API
   const response = await fetch(`${env.NEXT_PUBLIC_CALCOM_API_URL}/bookings`, {
     method: 'POST',
     headers: {
@@ -139,7 +153,7 @@ export const createBooking = async (input: CreateBookingInput): Promise<string> 
       'Content-Type': 'application/json',
       'cal-api-version': '2024-08-13',
     },
-    body: JSON.stringify(input),
+    body: JSON.stringify(calcomPayload),
   })
 
   if (!response.ok) {
@@ -150,6 +164,8 @@ export const createBooking = async (input: CreateBookingInput): Promise<string> 
   const data = await response.json()
 
   if (data.status === 'success' && data.data?.uid) {
+    // Booking successfully created in Cal.com
+    // The webhook will handle storing the booking in our database
     return data.data.uid
   }
 
