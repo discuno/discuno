@@ -145,7 +145,6 @@ export const getPostsCursor = async (
 
   const hasMore = result.length > validLimit
   const postsData = hasMore ? result.slice(0, -1) : result
-  console.log('postsData', postsData)
   const nextCursor = hasMore ? postsData[postsData.length - 1]?.post.id : undefined
 
   return {
@@ -253,7 +252,6 @@ export const getPostsByFilters = async (
   console.log('getPostsByFilters result', result)
   const hasMore = result.length > validLimit
   const postsData = hasMore ? result.slice(0, -1) : result
-  console.log('getPostsByFilters postsData', postsData)
   const nextCursor = hasMore ? postsData[postsData.length - 1]?.post.id : undefined
 
   return {
@@ -650,6 +648,7 @@ export const getFullProfileByUserId = cache(
     const res = await db
       .select({
         // User basic info
+        id: users.id,
         name: users.name,
         email: users.email,
         emailVerified: users.emailVerified,
@@ -688,7 +687,7 @@ export const getFullProfileByUserId = cache(
     }
 
     return {
-      id: userData.userProfileId ?? 0,
+      id: userData.id ?? 0,
       userProfileId: userData.userProfileId ?? 0,
       email: userData.email,
       emailVerified: !!userData.emailVerified,
@@ -1429,4 +1428,119 @@ export const updateBookingStatus = async (
     .update(bookings)
     .set({ status, updatedAt: new Date() })
     .where(eq(bookings.calcomUid, calcomUid))
+}
+
+/**
+ * Helper function to get mentor and validate access
+ */
+export const getMentorByUsername = async (username: string) => {
+  const mentor = await db
+    .select({
+      id: users.id,
+      name: users.name,
+      email: users.email,
+      username: calcomTokens.calcomUsername,
+    })
+    .from(users)
+    .innerJoin(calcomTokens, eq(users.id, calcomTokens.userId))
+    .where(eq(calcomTokens.calcomUsername, username))
+    .limit(1)
+
+  if (!mentor.length || !mentor[0]) {
+    throw new NotFoundError(`Mentor not found: ${username}`)
+  }
+
+  return mentor[0]
+}
+
+/**
+ * Helper function to get event type with pricing by event type slug
+ * We use slug instead of the parent event type ID to avoid the managed event type issue
+ */
+export const getEventTypeWithPricingBySlug = async (
+  eventTypeSlug: string,
+  mentorUserId: string
+) => {
+  const eventType = await db
+    .select({
+      id: mentorEventTypes.id,
+      customPrice: mentorEventTypes.customPrice,
+      currency: mentorEventTypes.currency,
+      title: eventTypes.title,
+      duration: eventTypes.duration,
+      calcomEventTypeId: eventTypes.calcomEventTypeId,
+      calcomEventTypeSlug: eventTypes.calcomEventTypeSlug,
+    })
+    .from(mentorEventTypes)
+    .innerJoin(eventTypes, eq(mentorEventTypes.eventTypeId, eventTypes.id))
+    .where(
+      and(
+        eq(eventTypes.calcomEventTypeSlug, eventTypeSlug),
+        eq(mentorEventTypes.userId, mentorUserId),
+        eq(mentorEventTypes.isEnabled, true)
+      )
+    )
+    .limit(1)
+
+  if (!eventType.length || !eventType[0]) {
+    throw new NotFoundError(`Event type not found or not enabled: ${eventTypeSlug}`)
+  }
+
+  return eventType[0]
+}
+
+/**
+ * Helper function to create local booking record
+ */
+export const createLocalBooking = async (input: {
+  calcomBookingId: number
+  calcomUid: string
+  title: string
+  startTime: Date
+  duration: number
+  organizerId: string
+  organizerName: string
+  organizerEmail: string
+  organizerUsername: string
+  attendeeName: string
+  attendeeEmail: string
+  attendeeTimeZone: string
+  price: number
+  currency: string
+  mentorEventTypeId: number
+  paymentId?: number
+  requiresPayment: boolean
+}) => {
+  const endTime = new Date(input.startTime.getTime() + input.duration * 60000)
+
+  const booking = await db
+    .insert(bookings)
+    .values({
+      calcomBookingId: input.calcomBookingId,
+      calcomUid: input.calcomUid,
+      title: input.title,
+      startTime: input.startTime,
+      endTime,
+      status: 'ACCEPTED',
+      organizerId: input.organizerId,
+      organizerName: input.organizerName,
+      organizerEmail: input.organizerEmail,
+      organizerUsername: input.organizerUsername,
+      attendeeName: input.attendeeName,
+      attendeeEmail: input.attendeeEmail,
+      attendeeTimeZone: input.attendeeTimeZone,
+      price: input.price,
+      currency: input.currency,
+      mentorEventTypeId: input.mentorEventTypeId,
+      paymentId: input.paymentId,
+      requiresPayment: input.requiresPayment,
+      webhookPayload: {},
+    })
+    .returning()
+
+  if (!booking[0]) {
+    throw new Error('Failed to create booking record')
+  }
+
+  return booking[0]
 }

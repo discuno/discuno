@@ -1,18 +1,16 @@
 'use client'
 
+import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { format } from 'date-fns'
-import { Calendar as CalendarIcon, ChevronLeft, Clock, DollarSign, Timer } from 'lucide-react'
+import { ArrowLeft, CalendarIcon, Clock, CreditCard } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
-import {
-  createBooking as createBookingAction,
-  fetchEventTypes as fetchEventTypesAction,
-  fetchAvailableSlots as fetchSlotsAction,
-  type EventType,
-} from '~/app/(app)/(public)/mentor/[username]/book/actions'
+import type { BookingData } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingModal'
+import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { Calendar } from '~/components/ui/calendar'
+import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
 import { Input } from '~/components/ui/input'
 import { Label } from '~/components/ui/label'
 import {
@@ -24,34 +22,34 @@ import {
 } from '~/components/ui/select'
 import { Skeleton } from '~/components/ui/skeleton'
 import { BadRequestError, ExternalApiError } from '~/lib/errors'
-
-interface BookingEmbedProps {
-  username: string
-  eventSlug?: string
-  onCreateBookingSuccess?: (booking: any) => void
-  onCreateBookingError?: (error: any) => void
-}
+import { stripePromise } from '~/lib/stripe/client'
+import type { BookingFormInput } from '../actions'
+import {
+  createStripePaymentIntent,
+  fetchEventTypes as fetchEventTypesAction,
+  fetchAvailableSlots as fetchSlotsAction,
+  type EventType,
+} from '../actions'
 
 interface BookingFormData {
   name: string
   email: string
 }
 
-export const BookingEmbed = ({
-  username,
-  onCreateBookingSuccess,
-  onCreateBookingError,
-}: BookingEmbedProps) => {
+export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
+  const { calcomUsername } = bookingData
+
   const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
 
   const [selectedEventType, setSelectedEventType] = useState<EventType | null>(null)
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string | null>(null)
-  const [currentStep, setCurrentStep] = useState<'calendar' | 'booking'>('calendar')
+  const [currentStep, setCurrentStep] = useState<'calendar' | 'booking' | 'payment'>('calendar')
   const [formData, setFormData] = useState<BookingFormData>({
     name: '',
     email: '',
   })
+  const [clientSecret, setClientSecret] = useState<string | null>(null)
 
   // Fetch event types
   const {
@@ -59,12 +57,12 @@ export const BookingEmbed = ({
     isPending: eventTypesLoading,
     error: eventTypesError,
   } = useQuery({
-    queryKey: ['event-types', username],
-    queryFn: () => fetchEventTypesAction(username),
+    queryKey: ['event-types', calcomUsername],
+    queryFn: () => fetchEventTypesAction(calcomUsername),
     staleTime: 1000 * 60 * 5, // 5 minutes
   })
 
-  // Use the provided eventSlug or the selected event type
+  // Use the selected event type
   const currentEventSlug = selectedEventType?.slug
 
   const {
@@ -72,74 +70,70 @@ export const BookingEmbed = ({
     isFetching,
     error,
   } = useQuery({
-    queryKey: ['available-slots', username, currentEventSlug, selectedDate],
+    queryKey: ['available-slots', calcomUsername, currentEventSlug, selectedDate],
     queryFn: () => {
       if (!currentEventSlug) throw new BadRequestError('No event type selected')
-      return fetchSlotsAction(username, currentEventSlug, selectedDate, timeZone)
+      return fetchSlotsAction(calcomUsername, currentEventSlug, selectedDate, timeZone)
     },
     staleTime: 1000 * 30,
     enabled: currentStep === 'calendar' && !!currentEventSlug,
   })
 
-  // Create booking mutation
+  // Create booking mutation (unified for both free and paid)
   const createBookingMutation = useMutation({
-    mutationFn: (bookingData: {
-      username: string
-      eventSlug: string
-      startTime: string
-      attendee: {
-        name: string
-        email: string
-        timeZone: string
+    mutationFn: async () => {
+      if (!selectedTimeSlot || !selectedEventType) {
+        throw new Error('Missing required booking data')
       }
-    }) => createBookingAction(bookingData),
-    onSuccess: bookingUid => {
-      const booking = {
-        id: bookingUid,
-        date: selectedDate,
-        time: selectedTimeSlot,
-        attendee: formData,
-        eventType: selectedEventType,
-      }
-      toast.success('Booking confirmed!')
-      onCreateBookingSuccess?.(booking)
 
-      // Reset form
-      setCurrentStep('calendar')
-      setSelectedEventType(null)
-      setSelectedTimeSlot(null)
-      setFormData({ name: '', email: '' })
-    },
-    onError: error => {
-      console.error('Booking failed:', error)
-      toast.error('Failed to create booking')
-      onCreateBookingError?.(error)
+      // Combine selected date and time into ISO string
+      const [hours, minutes] = selectedTimeSlot.split(':')
+      const startTime = new Date(selectedDate)
+      startTime.setHours(parseInt(hours ?? '0'), parseInt(minutes ?? '0'), 0, 0)
+
+      // Handle paid booking
+      // Replace this with an actual API call that creates the booking and returns the expected response
+      const bookingPayload: BookingFormInput = {
+        eventTypeId: selectedEventType.id,
+        eventTypeSlug: selectedEventType.slug,
+        startTimeIso: startTime.toISOString(),
+        attendeeName: formData.name,
+        attendeeEmail: formData.email,
+        mentorUsername: calcomUsername,
+        mentorUserId: bookingData.userId,
+        price: selectedEventType.price ?? 0,
+        currency: selectedEventType.currency ?? 'USD',
+        timeZone: timeZone,
+      }
+
+      const response = await createStripePaymentIntent(bookingPayload)
+
+      if (response.success && response.clientSecret) {
+        setCurrentStep('payment')
+        // You may want to store clientSecret in state if needed
+        return response
+      } else {
+        throw new Error(response.error ?? 'Failed to create booking')
+      }
     },
   })
 
-  if (error) {
-    throw new ExternalApiError(error.message)
+  const onPaymentConfirmed = () => {
+    toast.success('Payment successful! Your booking will be confirmed via email shortly.')
+
+    // Reset form
+    setCurrentStep('calendar')
+    setSelectedEventType(null)
+    setSelectedTimeSlot(null)
+    setFormData({ name: '', email: '' })
   }
 
-  const handleBooking = async () => {
-    if (!selectedTimeSlot || !currentEventSlug) return
+  const handlePaymentError = (error: string) => {
+    toast.error(error)
+  }
 
-    // Combine selected date and time into ISO string
-    const timeSlot = selectedTimeSlot
-    const [hours, minutes] = timeSlot.split(':')
-    const startTime = new Date(selectedDate)
-    startTime.setHours(parseInt(hours ?? '0'), parseInt(minutes ?? '0'), 0, 0)
-
-    createBookingMutation.mutate({
-      username,
-      eventSlug: currentEventSlug,
-      startTime: startTime.toISOString(),
-      attendee: {
-        name: formData.name,
-        email: formData.email,
-        timeZone: timeZone,
-      },
-    })
+  if (error) {
+    throw new ExternalApiError(error.message)
   }
 
   if (eventTypesLoading) {
@@ -179,27 +173,28 @@ export const BookingEmbed = ({
               onValueChange={value => {
                 const eventType = eventTypes.find(et => et.id.toString() === value)
                 setSelectedEventType(eventType ?? null)
-                setSelectedTimeSlot(null) // Reset time selection when event type changes
+                setSelectedTimeSlot(null) // Reset time slot when changing event type
               }}
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger>
                 <SelectValue placeholder="Select a session type" />
               </SelectTrigger>
               <SelectContent>
                 {eventTypes.map(eventType => (
                   <SelectItem key={eventType.id} value={eventType.id.toString()}>
                     <div className="flex w-full items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Timer className="h-4 w-4" />
-                        <span>{eventType.length} min</span>
+                      <div className="flex flex-col items-start">
+                        <span className="font-medium">{eventType.title}</span>
+                        <span className="text-muted-foreground text-xs">
+                          {eventType.length} minutes
+                        </span>
                       </div>
-                      {eventType.price && (
-                        <div className="ml-4 flex items-center gap-1">
-                          <DollarSign className="h-4 w-4" />
-                          <span className="font-medium text-green-600">
-                            {eventType.price} {eventType.currency ?? 'USD'}
-                          </span>
-                        </div>
+                      {eventType.price && eventType.price > 0 ? (
+                        <Badge variant="secondary">
+                          ${(eventType.price / 100).toFixed(2)} {eventType.currency}
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline">Free</Badge>
                       )}
                     </div>
                   </SelectItem>
@@ -212,14 +207,14 @@ export const BookingEmbed = ({
             <div className="grid gap-6 md:grid-cols-2">
               {/* Calendar */}
               <div>
-                <h3 className="mb-4 text-lg font-medium">Select Date</h3>
+                <Label className="mb-2 block text-sm font-medium">Select Date</Label>
                 <Calendar
                   mode="single"
                   selected={selectedDate}
                   onSelect={date => {
                     if (date) {
                       setSelectedDate(date)
-                      setSelectedTimeSlot(null)
+                      setSelectedTimeSlot(null) // Reset time slot when changing date
                     }
                   }}
                   disabled={date => date < new Date()}
@@ -229,121 +224,289 @@ export const BookingEmbed = ({
 
               {/* Time Slots */}
               <div>
-                <h3 className="mb-4 text-lg font-medium">
-                  Available Times - {format(selectedDate, 'EEEE, MMMM d')}
-                </h3>
-
+                <Label className="mb-2 block text-sm font-medium">Available Times</Label>
                 {isFetching ? (
-                  <div className="grid grid-cols-2 gap-2">
-                    {Array.from({ length: 8 }).map((_, i) => (
+                  <div className="space-y-2">
+                    {Array.from({ length: 6 }).map((_, i) => (
                       <Skeleton key={i} className="h-10 w-full" />
                     ))}
                   </div>
-                ) : (
-                  <div className="grid max-h-96 grid-cols-2 gap-2 overflow-y-auto">
-                    {availableSlots.length === 0 ? (
-                      <div className="col-span-2 py-8 text-center">
-                        <Clock className="text-muted-foreground mx-auto mb-2 h-8 w-8" />
-                        <p className="text-muted-foreground text-sm">
-                          No available times for this date
-                        </p>
-                      </div>
-                    ) : (
-                      availableSlots.map(slot => (
-                        <Button
-                          key={slot.time}
-                          variant={selectedTimeSlot === slot.time ? 'default' : 'outline'}
-                          size="sm"
-                          disabled={!slot.available}
-                          onClick={() => setSelectedTimeSlot(slot.time)}
-                          className="justify-start"
-                        >
-                          {slot.time}
-                        </Button>
-                      ))
-                    )}
-                  </div>
-                )}
-
-                {selectedTimeSlot && (
-                  <div className="mt-6">
-                    <div className="border-primary/20 bg-primary/5 rounded-lg border p-4">
-                      <div className="mb-2 flex items-center gap-2">
-                        <CalendarIcon className="text-primary h-4 w-4" />
-                        <span className="font-medium">Selected Time</span>
-                      </div>
-                      <p className="text-muted-foreground text-sm">
-                        {format(selectedDate, 'EEEE, MMMM d, yyyy')} at {selectedTimeSlot}
-                      </p>
-                      <Button className="mt-4 w-full" onClick={() => setCurrentStep('booking')}>
-                        Continue to Booking Details
+                ) : availableSlots.length > 0 ? (
+                  <div className="grid gap-2">
+                    {availableSlots.map((slot, index) => (
+                      <Button
+                        key={index}
+                        variant={selectedTimeSlot === slot.time ? 'default' : 'outline'}
+                        className="justify-start"
+                        disabled={!slot.available}
+                        onClick={() => setSelectedTimeSlot(slot.time)}
+                      >
+                        <Clock className="mr-2 h-4 w-4" />
+                        {slot.time}
                       </Button>
-                    </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-muted-foreground rounded-md border border-dashed p-8 text-center">
+                    <CalendarIcon className="mx-auto mb-2 h-8 w-8" />
+                    <p className="text-sm">No available time slots for this date</p>
                   </div>
                 )}
               </div>
             </div>
           )}
+
+          {/* Continue Button */}
+          {selectedEventType && selectedTimeSlot && (
+            <div className="mt-6 flex justify-end">
+              <Button onClick={() => setCurrentStep('booking')}>Continue</Button>
+            </div>
+          )}
         </div>
-      ) : (
+      ) : currentStep === 'booking' ? (
         <div className="p-6">
           <div className="mb-6">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setCurrentStep('calendar')}
-              className="mb-4"
-            >
-              <ChevronLeft className="mr-2 h-4 w-4" />
-              Back to Calendar
-            </Button>
-            <h2 className="mb-2 text-xl font-semibold">Booking Details</h2>
-            <div className="border-primary/20 bg-primary/5 rounded-lg border p-4">
-              <div className="flex items-center gap-2">
-                <CalendarIcon className="text-primary h-4 w-4" />
-                <span className="font-medium">
-                  {format(selectedDate, 'EEEE, MMMM d, yyyy')} at {selectedTimeSlot}
-                </span>
-              </div>
-            </div>
+            <h2 className="mb-2 text-xl font-semibold">Your Details</h2>
+            <p className="text-muted-foreground text-sm">
+              Please provide your contact information for the booking
+            </p>
           </div>
 
           <div className="max-w-md space-y-4">
             <div>
-              <Label htmlFor="name">Full Name *</Label>
+              <Label htmlFor="name">Full Name</Label>
               <Input
                 id="name"
+                type="text"
                 value={formData.name}
                 onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="Enter your full name"
-                required
+                placeholder="Your full name"
               />
             </div>
 
             <div>
-              <Label htmlFor="email">Email Address *</Label>
+              <Label htmlFor="email">Email Address</Label>
               <Input
                 id="email"
                 type="email"
                 value={formData.email}
                 onChange={e => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                placeholder="Enter your email"
-                required
+                placeholder="your.email@example.com"
               />
             </div>
 
-            <Button
-              className="w-full"
-              size="lg"
-              onClick={handleBooking}
-              disabled={!formData.name || !formData.email || createBookingMutation.isPending}
-            >
-              {createBookingMutation.isPending ? 'Confirming...' : 'Confirm Booking'}
-            </Button>
+            {/* Booking Summary */}
+            {selectedEventType && selectedTimeSlot && (
+              <Card className="mt-4">
+                <CardContent className="pt-4">
+                  <h3 className="mb-2 font-medium">Booking Summary</h3>
+                  <div className="space-y-1 text-sm">
+                    <div className="flex justify-between">
+                      <span>Session:</span>
+                      <span>{selectedEventType.title}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Date:</span>
+                      <span>{selectedDate.toDateString()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Time:</span>
+                      <span>{selectedTimeSlot}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Duration:</span>
+                      <span>{selectedEventType.length} minutes</span>
+                    </div>
+                    <div className="flex justify-between border-t pt-2 font-medium">
+                      <span>Price:</span>
+                      <span>
+                        {selectedEventType.price && selectedEventType.price > 0
+                          ? `$${(selectedEventType.price / 100).toFixed(2)} ${selectedEventType.currency}`
+                          : 'Free'}
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={() => setCurrentStep('calendar')}>
+                Back
+              </Button>
+              <Button
+                onClick={() => createBookingMutation.mutate()}
+                disabled={!formData.name || !formData.email || createBookingMutation.isPending}
+                className="flex-1"
+              >
+                {createBookingMutation.isPending ? (
+                  <>
+                    <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                    Creating...
+                  </>
+                ) : selectedEventType?.price && selectedEventType.price > 0 ? (
+                  'Continue to Payment'
+                ) : (
+                  'Confirm Booking'
+                )}
+              </Button>
+            </div>
           </div>
         </div>
+      ) : (
+        // Payment step using Stripe Elements
+        clientSecret &&
+        selectedEventType && (
+          <div className="p-6">
+            <Elements
+              stripe={stripePromise}
+              options={{
+                clientSecret,
+                appearance: {
+                  theme: 'night',
+                  variables: {
+                    colorPrimary: '#0f172a',
+                    colorBackground: '#ffffff',
+                    colorText: '#0f172a',
+                    colorDanger: '#dc2626',
+                    borderRadius: '8px',
+                  },
+                },
+              }}
+            >
+              <PaymentForm
+                eventType={selectedEventType}
+                selectedDate={selectedDate}
+                selectedTimeSlot={selectedTimeSlot ?? ''}
+                formData={formData}
+                onBack={() => setCurrentStep('booking')}
+                onPaymentConfirmed={onPaymentConfirmed}
+                onPaymentError={handlePaymentError}
+              />
+            </Elements>
+          </div>
+        )
       )}
     </div>
+  )
+}
+
+// Internal PaymentForm component for handling Stripe payments
+interface PaymentFormProps {
+  eventType: EventType
+  selectedDate: Date
+  selectedTimeSlot: string
+  formData: BookingFormData
+  onBack: () => void
+  onPaymentConfirmed: () => void
+  onPaymentError: (error: string) => void
+}
+
+const PaymentForm = ({
+  eventType,
+  selectedDate,
+  selectedTimeSlot,
+  formData,
+  onBack,
+  onPaymentConfirmed,
+  onPaymentError,
+}: PaymentFormProps) => {
+  const stripe = useStripe()
+  const elements = useElements()
+  const [isLoading, setIsLoading] = useState(false)
+  const [message, setMessage] = useState('')
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!stripe || !elements) {
+      return
+    }
+
+    setIsLoading(true)
+    setMessage('')
+
+    try {
+      const result = await stripe.confirmPayment({
+        elements,
+        redirect: 'if_required',
+      })
+
+      if (result.error) {
+        setMessage(result.error.message ?? 'An error occurred during payment')
+        onPaymentError(result.error.message ?? 'An error occurred during payment')
+      } else if (result.paymentIntent.status === 'succeeded') {
+        // Payment successful, notify parent to update UI
+        onPaymentConfirmed()
+      } else {
+        onPaymentError('Payment was not completed successfully')
+      }
+    } catch (error) {
+      console.error('Payment confirmation error:', error)
+      const errorMessage = 'An unexpected error occurred. Please try again.'
+      setMessage(errorMessage)
+      onPaymentError(errorMessage)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const amount = eventType.price ?? 0
+  const platformFee = Math.round(amount * 0.05) // 5% platform fee
+  const total = amount + platformFee
+  const formattedAmount = (total / 100).toFixed(2)
+
+  return (
+    <Card className="mx-auto w-full max-w-md">
+      <CardHeader className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={onBack}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <CardTitle className="flex items-center gap-2">
+            <CreditCard className="h-5 w-5" />
+            Complete Your Payment
+          </CardTitle>
+        </div>
+
+        {/* Session Summary */}
+        <div className="bg-muted/50 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold">{eventType.title}</h3>
+              <p className="text-muted-foreground text-sm">
+                {format(selectedDate, 'EEEE, MMMM d, yyyy')} at {selectedTimeSlot}
+              </p>
+              <p className="text-muted-foreground text-sm">with {formData.name}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-lg font-bold">${formattedAmount}</p>
+              <p className="text-muted-foreground text-xs">
+                Includes ${(platformFee / 100).toFixed(2)} platform fee
+              </p>
+            </div>
+          </div>
+        </div>
+      </CardHeader>
+
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-4">
+            <PaymentElement />
+          </div>
+
+          {message && (
+            <div className="bg-destructive/15 text-destructive rounded-md p-3 text-sm">
+              {message}
+            </div>
+          )}
+
+          <Button type="submit" className="w-full" disabled={!stripe || !elements || isLoading}>
+            {isLoading ? 'Processing...' : `Pay $${formattedAmount}`}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   )
 }
 
@@ -363,11 +526,6 @@ const BookingEmbedSkeleton = () => {
 
         <div className="space-y-4">
           <Skeleton className="h-6 w-40" />
-          <div className="grid grid-cols-2 gap-2">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <Skeleton key={i} className="h-10 w-full" />
-            ))}
-          </div>
         </div>
       </div>
     </div>

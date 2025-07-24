@@ -137,3 +137,54 @@ export const updateCalcomUser = async (data: UpdateCalcomUserInput): Promise<voi
 
   // User's .edu email is already verified through the auth process
 }
+
+/**
+ * Create a booking via Cal.com API
+ */
+export const createCalcomBooking = async (input: {
+  eventTypeId: number
+  start: string
+  attendeeName: string
+  attendeeEmail: string
+  timeZone: string
+  stripePaymentIntentId?: string
+}): Promise<{ id: number; uid: string }> => {
+  const { eventTypeId, start, attendeeName, attendeeEmail, timeZone, stripePaymentIntentId } = input
+
+  const calcomPayload = {
+    start, // ISO string in UTC
+    attendee: {
+      name: attendeeName,
+      email: attendeeEmail,
+      timeZone: timeZone,
+      language: 'en', // Default language
+    },
+    eventTypeId,
+    metadata: {
+      stripePaymentIntentId: stripePaymentIntentId ?? '',
+    },
+  }
+
+  const response = await fetch(`${env.NEXT_PUBLIC_CALCOM_API_URL}/bookings`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${env.X_CAL_SECRET_KEY}`,
+      'Content-Type': 'application/json',
+      'cal-api-version': '2024-08-13',
+    },
+    body: JSON.stringify(calcomPayload),
+  })
+
+  if (!response.ok) {
+    const err = await response.text()
+    throw new ExternalApiError(`Failed to create Cal.com booking: ${response.status} ${err}`)
+  }
+
+  const data = await response.json()
+
+  if (data.status === 'success' && data.data?.uid) {
+    return { id: data.data.id, uid: data.data.uid }
+  }
+
+  throw new ExternalApiError(data.error ?? 'Unknown Cal.com booking error')
+}

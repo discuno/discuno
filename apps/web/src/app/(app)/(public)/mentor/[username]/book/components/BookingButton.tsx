@@ -4,17 +4,9 @@ import Image from 'next/image'
 import { Suspense, useState } from 'react'
 import { BookingEmbed } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingEmbed'
 import { BookingEmbedSkeleton } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingEmbedSkeleton'
+import type { BookingData } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingInterface'
 import { Button } from '~/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '~/components/ui/dialog'
-
-interface BookingData {
-  calcomUsername: string
-  name: string
-  image: string
-  bio: string
-  school: string
-  major: string
-}
 
 interface BookingButtonProps {
   bookingData: BookingData
@@ -55,7 +47,7 @@ export const BookingButton = ({ bookingData, children, className }: BookingButto
 
           <div className="flex-1 overflow-y-auto">
             <Suspense fallback={<BookingEmbedSkeleton />}>
-              <BookingEmbed username={bookingData.calcomUsername} />
+              <BookingEmbed bookingData={bookingData} />
             </Suspense>
           </div>
         </DialogContent>

@@ -25,7 +25,7 @@ const RootLayout = ({ children }: Readonly<{ children: React.ReactNode }>) => {
     <html
       lang="en"
       dir="ltr"
-      className={`${GeistSans.variable} theme-vercel-esque`}
+      className={`${GeistSans.variable} theme-discuno`}
       suppressHydrationWarning
     >
       <body className="bg-background text-foreground min-h-screen font-sans antialiased transition-colors duration-300">

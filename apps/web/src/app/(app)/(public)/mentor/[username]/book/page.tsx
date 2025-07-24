@@ -1,6 +1,3 @@
-import { BookingContent } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingContent'
-import { BookingShell } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingShell'
-
 interface BookingPageProps {
   params: Promise<{
     username: string
@@ -10,15 +7,8 @@ interface BookingPageProps {
   }>
 }
 
-const BookingPage = async ({ params, searchParams }: BookingPageProps) => {
-  const { username } = await params
-  const { eventType } = await searchParams
-
-  return (
-    <BookingShell username={username}>
-      <BookingContent username={username} eventType={eventType} />
-    </BookingShell>
-  )
+const BookingPage = async () => {
+  return <p>Under Construction</p>
 }
 
 export default BookingPage

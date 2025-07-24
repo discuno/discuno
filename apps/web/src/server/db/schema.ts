@@ -427,6 +427,10 @@ export const bookings = pgTable(
     // Event type reference
     mentorEventTypeId: integer().references(() => mentorEventTypes.id, { onDelete: 'set null' }),
 
+    // Payment reference (will be set after payment is processed)
+    paymentId: integer(),
+    requiresPayment: boolean().notNull().default(true),
+
     // Response data (name, email, location, notes, etc.)
     responses: jsonb().default('{}'),
 
@@ -451,4 +455,80 @@ export const bookingsRelations = relations(bookings, ({ one }) => ({
     fields: [bookings.mentorEventTypeId],
     references: [mentorEventTypes.id],
   }),
+  payment: one(payments, { fields: [bookings.paymentId], references: [payments.id] }),
+}))
+
+// Payment status enum
+export const paymentStatusEnum = pgEnum('payment_status', [
+  'PENDING',
+  'PROCESSING',
+  'SUCCEEDED',
+  'FAILED',
+  'DISPUTED',
+  'REFUNDED',
+  'TRANSFERRED',
+] as const)
+
+export const stripePaymentStatusEnum = pgEnum('stripe_payment_status', [
+  'requires_payment_method',
+  'requires_confirmation',
+  'requires_action',
+  'processing',
+  'requires_capture',
+  'canceled',
+  'succeeded',
+] as const)
+
+// Payments table to track Stripe payments and transfers
+export const payments = pgTable(
+  'discuno_payment',
+  {
+    id: integer().primaryKey().generatedByDefaultAsIdentity(),
+
+    stripePaymentIntentId: varchar({ length: 255 }).notNull().unique(),
+
+    bookingId: integer(),
+
+    mentorUserId: varchar({ length: 255 })
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+
+    customerEmail: varchar({ length: 255 }).notNull(),
+    customerName: varchar({ length: 255 }).notNull(),
+
+    amount: integer().notNull(), // in cents
+    currency: varchar({ length: 3 }).notNull().default('USD'),
+
+    platformFee: integer().notNull(), // in cents
+    mentorAmount: integer().notNull(), // in cents (amount - platformFee)
+
+    platformStatus: paymentStatusEnum().notNull().default('PENDING'),
+    stripeStatus: stripePaymentStatusEnum().notNull().default('requires_payment_method'), // Stripe payment status
+
+    transferId: varchar({ length: 255 }), // Stripe transfer ID when funds sent to mentor
+    transferStatus: varchar({ length: 50 }), // Transfer status
+    transferRetryCount: integer().notNull().default(0), // Number of transfer retry attempts
+
+    disputeRequested: boolean().notNull().default(false), // Admin flag to prevent auto-transfer
+    disputePeriodEnds: timestamp({
+      mode: 'date',
+      withTimezone: true,
+    }).notNull(),
+
+    metadata: jsonb().default('{}'),
+
+    ...timestamps,
+  },
+  table => [
+    index('payments_booking_id_idx').on(table.bookingId),
+    index('payments_mentor_user_id_idx').on(table.mentorUserId),
+    index('payments_platform_status_idx').on(table.platformStatus),
+    index('payments_dispute_period_ends_idx').on(table.disputePeriodEnds),
+    index('payments_stripe_payment_intent_id_idx').on(table.stripePaymentIntentId),
+  ]
+)
+
+export const paymentsRelations = relations(payments, ({ one }) => ({
+  booking: one(bookings, { fields: [payments.bookingId], references: [bookings.id] }),
+  mentorUser: one(users, { fields: [payments.mentorUserId], references: [users.id] }),
 }))

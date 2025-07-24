@@ -47,9 +47,6 @@ Large-Scale Next.js App Router Best Practices (2025 Edition)
 🧱 State Management
 -------------------
 8. Prefer local state + server actions.
-9. For global state, use:
-   - Zustand or Jotai.
-   - Context only for static or rarely changing state.
 
 🧪 Testing & Type Safety
 -------------------------
@@ -62,7 +59,7 @@ Large-Scale Next.js App Router Best Practices (2025 Edition)
 13. Use fetch in Server Components with cache control.
     Example:
       fetch('/api/data', { next: { revalidate: 60 } })
-14. Avoid client-side fetching unless necessary.
+14. Avoid client-side fetching unless necessary. Use react query to call server actions from the client
 
 🔒 Security & Auth
 -------------------

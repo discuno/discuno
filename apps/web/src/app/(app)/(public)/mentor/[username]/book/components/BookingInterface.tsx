@@ -13,7 +13,8 @@ interface BookingInterfaceProps {
   userId: string
 }
 
-interface BookingData {
+export interface BookingData {
+  userId: string
   calcomUsername: string
   name: string
   image: string
@@ -36,6 +37,7 @@ export const BookingInterface = async ({
   }
 
   const bookingData: BookingData = {
+    userId: profile.id,
     calcomUsername: profile.calcomUsername ?? 'fake-username',
     name: profile.name ?? 'Mentor',
     image: profile.image ?? '',
@@ -82,7 +84,7 @@ const BookingInline = ({ bookingData }: { bookingData: BookingData }) => {
   return (
     <div className="w-full">
       <Suspense fallback={<BookingEmbedSkeleton />}>
-        <BookingEmbed username={bookingData.calcomUsername} />
+        <BookingEmbed bookingData={bookingData} />
       </Suspense>
     </div>
   )

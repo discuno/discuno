@@ -8,7 +8,8 @@ import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '~/components/ui/dialog'
 
-interface BookingData {
+export interface BookingData {
+  userId: string
   calcomUsername: string
   name: string
   image: string
@@ -70,7 +71,7 @@ export const BookingModal = ({ bookingData, children, className }: BookingModalP
           {/* Booking Interface */}
           <div className="bg-background flex-1 overflow-y-auto">
             <Suspense fallback={<BookingEmbedSkeleton />}>
-              <BookingEmbed username={bookingData.calcomUsername} />
+              <BookingEmbed bookingData={bookingData} />
             </Suspense>
           </div>
         </DialogContent>

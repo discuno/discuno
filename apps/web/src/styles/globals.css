@@ -406,3 +406,63 @@
     --ring: 0 0% 100%;
   }
 }
+
+.theme-discuno {
+  --background: 220 25% 98%; /* #F9FAFB */
+  --foreground: 225 10% 10%; /* #1A1A1A */
+
+  --card: 0 0% 100%; /* #FFFFFF */
+  --card-foreground: 225 10% 10%; /* #1A1A1A */
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 225 10% 10%;
+
+  --primary: 234 100% 60%; /* #3D5AFE (indigo-blue) */
+  --primary-foreground: 0 0% 100%; /* white */
+
+  --secondary: 142 100% 40%; /* #00C853 (emerald green) */
+  --secondary-foreground: 0 0% 100%; /* white */
+
+  --muted: 225 10% 50%; /* #6B7280 (slate gray) */
+  --muted-foreground: 225 15% 85%;
+
+  --accent: 234 100% 60%; /* same as primary */
+  --accent-foreground: 0 0% 100%;
+
+  --destructive: 0 85% 60%; /* #EF4444 (red) */
+  --destructive-foreground: 0 0% 100%;
+
+  --border: 220 14% 90%; /* soft border */
+  --input: 220 14% 90%;
+  --ring: 234 100% 60%; /* match primary */
+}
+
+.theme-discuno.dark {
+  --background: 225 10% 10%; /* near-black */
+  --foreground: 0 0% 100%; /* white */
+
+  --card: 225 10% 15%; /* very dark gray */
+  --card-foreground: 0 0% 100%;
+
+  --popover: 225 10% 15%;
+  --popover-foreground: 0 0% 100%;
+
+  --primary: 234 100% 70%; /* lighter indigo-blue for contrast */
+  --primary-foreground: 0 0% 10%;
+
+  --secondary: 142 100% 45%; /* brighter emerald green */
+  --secondary-foreground: 0 0% 10%;
+
+  --muted: 225 10% 35%;
+  --muted-foreground: 0 0% 80%;
+
+  --accent: 234 100% 70%;
+  --accent-foreground: 0 0% 10%;
+
+  --destructive: 0 85% 60%; /* red */
+  --destructive-foreground: 0 0% 100%;
+
+  --border: 225 10% 25%;
+  --input: 225 10% 25%;
+  --ring: 234 100% 70%;
+}
