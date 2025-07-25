@@ -606,9 +606,13 @@ export const seedDatabase = async (environment?: Environment) => {
       // Note: bookings and payments will be created via webhooks/API, not seeded
     }
 
-    let insertedMajors: any[] = []
-    let insertedSchools: any[] = []
-    let insertedUsers: any[] = []
+    type InsertedMajor = typeof majors.$inferSelect
+    type InsertedSchool = typeof schools.$inferSelect
+    type InsertedUser = typeof users.$inferSelect
+
+    let insertedMajors: InsertedMajor[] = []
+    let insertedSchools: InsertedSchool[] = []
+    let insertedUsers: InsertedUser[] = []
 
     // Step 1: Insert majors
     try {
@@ -894,7 +898,8 @@ export const seedDatabase = async (environment?: Environment) => {
     if (insertedUsers.length > 0) {
       try {
         console.log('💳 Creating Stripe Connect test accounts for mentors...')
-        const stripeAccountData: any[] = []
+        type StripeAccountData = typeof mentorStripeAccounts.$inferInsert
+        const stripeAccountData: StripeAccountData[] = []
 
         const stripeSecretKey = process.env.STRIPE_SECRET_KEY
         if (!stripeSecretKey) {
@@ -972,7 +977,8 @@ export const seedDatabase = async (environment?: Environment) => {
 
     // Step 11: Seed mentor event types
     // Step 11: Insert master event types first
-    let insertedEventTypes: any[] = []
+    type InsertedEventType = typeof globalEventTypes.$inferSelect
+    let insertedEventTypes: InsertedEventType[] = []
     try {
       console.log('� Seeding master event types...')
 

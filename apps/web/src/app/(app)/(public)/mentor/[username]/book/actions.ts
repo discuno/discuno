@@ -166,7 +166,7 @@ export const fetchAvailableSlots = async (
 
   const raw = data.data[key] ?? []
 
-  return raw.map((s: any) => ({
+  return raw.map(s => ({
     time: new Date(s.start).toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit',

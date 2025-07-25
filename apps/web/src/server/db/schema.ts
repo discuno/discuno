@@ -351,7 +351,7 @@ export const mentorEventTypes = pgTable(
     globalEventTypeId: integer()
       .notNull()
       .references(() => globalEventTypes.id, { onDelete: 'cascade' }),
-    calcomEventTypeId: integer(), // The mentor's individual Cal.com event type ID
+    calcomEventTypeId: integer().unique(), // The mentor's individual Cal.com event type ID
     isEnabled: boolean().notNull().default(false), // Whether this mentor has enabled this event type
     customPrice: integer(), // Price in cents (e.g., 2500 = $25.00)
     currency: varchar({ length: 3 }).notNull().default('USD'),
@@ -430,7 +430,9 @@ export const bookings = pgTable(
     currency: varchar({ length: 3 }).default('USD'),
 
     // Event type reference
-    mentorEventTypeId: integer().references(() => mentorEventTypes.id, { onDelete: 'set null' }),
+    mentorEventTypeId: integer().references(() => mentorEventTypes.calcomEventTypeId, {
+      onDelete: 'set null',
+    }),
 
     // Payment reference (will be set after payment is processed)
     paymentId: integer().references(() => payments.id, { onDelete: 'set null' }),
@@ -458,7 +460,7 @@ export const bookingsRelations = relations(bookings, ({ one }) => ({
   organizer: one(users, { fields: [bookings.organizerId], references: [users.id] }),
   mentorEventType: one(mentorEventTypes, {
     fields: [bookings.mentorEventTypeId],
-    references: [mentorEventTypes.id],
+    references: [mentorEventTypes.calcomEventTypeId],
   }),
   payment: one(payments, { fields: [bookings.paymentId], references: [payments.id] }),
 }))

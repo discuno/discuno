@@ -105,7 +105,30 @@ const buildPostsQuery = () => {
     .leftJoin(majors, eq(userMajors.majorId, majors.id))
 }
 
-const transformPostResult = (result: any[]): Card[] => {
+type PostQueryResult = {
+  post: {
+    id: number
+    name: string | null
+    description: string | null
+    createdById: string
+    createdAt: Date
+  }
+  creator: {
+    image: string | null
+  } | null
+  profile: {
+    graduationYear: number | null
+    schoolYear: string | null
+  } | null
+  school: {
+    name: string | null
+  } | null
+  major: {
+    name: string | null
+  } | null
+}
+
+const transformPostResult = (result: PostQueryResult[]): Card[] => {
   // Transform raw query result to Card format, deduplicating by post.id (e.g., multiple majors)
   const postMap = new Map<number, Card>()
   for (const { post, creator, profile, school, major } of result) {
@@ -896,7 +919,10 @@ export const removeUserImage = async (): Promise<void> => {
 /**
  * Find or create a school by name (within a transaction)
  */
-const findOrCreateSchoolInternal = async (tx: any, schoolName: string): Promise<number> => {
+const findOrCreateSchoolInternal = async (
+  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+  schoolName: string
+): Promise<number> => {
   // First try to find existing school
   const existingSchool = await tx
     .select({ id: schools.id })
@@ -904,7 +930,7 @@ const findOrCreateSchoolInternal = async (tx: any, schoolName: string): Promise<
     .where(eq(schools.name, schoolName))
     .limit(1)
 
-  if (existingSchool.length > 0) {
+  if (existingSchool.length > 0 && existingSchool[0]) {
     return existingSchool[0].id
   }
 
@@ -940,7 +966,10 @@ export const findOrCreateSchool = async (schoolName: string): Promise<number> =>
 /**
  * Find or create a major by name (within a transaction)
  */
-const findOrCreateMajor = async (tx: any, majorName: string): Promise<number> => {
+const findOrCreateMajor = async (
+  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+  majorName: string
+): Promise<number> => {
   // First try to find existing major
   const existingMajor = await tx
     .select({ id: majors.id })
@@ -948,7 +977,7 @@ const findOrCreateMajor = async (tx: any, majorName: string): Promise<number> =>
     .where(eq(majors.name, majorName))
     .limit(1)
 
-  if (existingMajor.length > 0) {
+  if (existingMajor.length > 0 && existingMajor[0]) {
     return existingMajor[0].id
   }
 
@@ -1072,7 +1101,7 @@ const mentorStripeAccountSchema = z.object({
   payoutsEnabled: z.boolean().default(false),
   chargesEnabled: z.boolean().default(false),
   detailsSubmitted: z.boolean().optional(),
-  requirements: z.any().optional(),
+  requirements: z.record(z.unknown()).optional(), // Stripe requirements object
 })
 
 /**
@@ -1289,7 +1318,7 @@ export const upsertMentorStripeAccount = async (data: {
   payoutsEnabled?: boolean
   chargesEnabled?: boolean
   detailsSubmitted?: boolean
-  requirements?: any
+  requirements?: Record<string, unknown>
 }): Promise<void> => {
   const validData = mentorStripeAccountSchema.parse(data)
 

@@ -599,15 +599,26 @@ export const fetchTeamEventTypes = async (): Promise<
     console.log('Team event types response:', data)
 
     if (data.status === 'success' && data.data && Array.isArray(data.data)) {
-      return data.data.map((eventType: any) => ({
-        id: eventType.id,
-        title: eventType.title,
-        slug: eventType.slug,
-        length: eventType.lengthInMinutes ?? eventType.length,
-        description: eventType.description,
-        price: eventType.price ?? null,
-        currency: eventType.currency ?? 'USD',
-      }))
+      return data.data.map(
+        (eventType: {
+          id: number
+          title: string
+          slug: string
+          length?: number
+          lengthInMinutes?: number
+          description?: string
+          price?: number
+          currency?: string
+        }) => ({
+          id: eventType.id,
+          title: eventType.title,
+          slug: eventType.slug,
+          length: eventType.lengthInMinutes ?? eventType.length,
+          description: eventType.description,
+          price: eventType.price ?? null,
+          currency: eventType.currency ?? 'USD',
+        })
+      )
     }
 
     console.warn('Unexpected team event types response structure:', data)

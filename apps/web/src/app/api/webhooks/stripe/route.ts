@@ -59,7 +59,7 @@ async function handleAccountUpdated(account: Stripe.Account) {
     chargesEnabled: account.charges_enabled,
     payoutsEnabled: account.payouts_enabled,
     detailsSubmitted: account.details_submitted,
-    requirements: account.requirements,
+    requirements: account.requirements as unknown as Record<string, unknown>,
   })
 }
 

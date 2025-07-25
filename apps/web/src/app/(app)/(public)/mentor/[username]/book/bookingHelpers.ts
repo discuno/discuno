@@ -33,7 +33,9 @@ export const getMentorCalcomEventTypeId = async (
   }
 
   // Find the event type by slug
-  const eventType = data.data.find((et: any) => et.slug === eventTypeSlug)
+  const eventType = (data.data as Array<{ slug: string; id: number }>).find(
+    et => et.slug === eventTypeSlug
+  )
 
   if (!eventType) {
     throw new ExternalApiError(

@@ -32,6 +32,16 @@ export interface MockMajor {
   name: string
 }
 
+export interface MockCalcomToken {
+  userId: string
+  calcomUserId: number
+  calcomUsername: string
+  accessToken: string
+  refreshToken: string
+  accessTokenExpiresAt: Date
+  refreshTokenExpiresAt: Date
+}
+
 // Mock database class
 export class MockDatabase {
   users: Map<string, MockUser> = new Map()
@@ -41,7 +51,7 @@ export class MockDatabase {
   majors: Map<number, MockMajor> = new Map()
   userSchools: Map<string, number> = new Map() // userId -> schoolId
   userMajors: Map<string, number> = new Map() // userId -> majorId
-  calcomTokens: Map<string, any> = new Map()
+  calcomTokens: Map<string, MockCalcomToken> = new Map()
 
   reset() {
     this.users.clear()

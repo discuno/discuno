@@ -187,10 +187,10 @@ const dropAllTables = async (environment: Environment) => {
         sql`SELECT stripe_account_id FROM discuno_mentor_stripe_account`
       )
       for (const row of accounts) {
-        const acctId = (row as any).stripe_account_id
+        const acctId = row.stripe_account_id
         try {
           console.log(`Deleting Stripe account ${acctId}`)
-          await stripe.accounts.del(acctId)
+          await stripe.accounts.del(acctId as string)
           console.log(`Deleted Stripe account ${acctId}`)
         } catch (err) {
           console.error(`Error deleting Stripe account ${acctId}:`, err)
@@ -219,7 +219,7 @@ const dropAllTables = async (environment: Environment) => {
     }
 
     console.log(`📋 Found ${tableRows.length} tables to drop:`)
-    tableRows.forEach((row: any) => {
+    tableRows.forEach(row => {
       console.log(`   - ${row.tablename}`)
     })
 
@@ -227,7 +227,7 @@ const dropAllTables = async (environment: Environment) => {
     await db.transaction(async tx => {
       // Drop all tables with CASCADE to handle dependencies
       for (const row of tableRows) {
-        const tableName = (row as any).tablename
+        const tableName = row.tablename
         console.log(`   Dropping table: ${tableName}`)
         await tx.execute(sql.raw(`DROP TABLE IF EXISTS "${tableName}" CASCADE;`))
       }

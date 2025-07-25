@@ -1,10 +1,13 @@
-import React from 'react'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import React from 'react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // Mock next-themes to prevent SSR issues
 vi.mock('next-themes', () => ({
-  ThemeProvider: ({ children, ...props }: any) => (
+  ThemeProvider: ({
+    children,
+    ...props
+  }: React.PropsWithChildren<React.HTMLProps<HTMLDivElement>>) => (
     <div data-testid="theme-provider" {...props}>
       {children}
     </div>

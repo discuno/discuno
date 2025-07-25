@@ -187,7 +187,7 @@ export interface Booking {
   currency: string
   status: BookingStatus
   requiresConfirmation: boolean
-  customResponses: Record<string, any>
+  customResponses: Record<string, unknown>
   confirmedAt: Date | null
   completedAt: Date | null
   cancelledAt: Date | null

@@ -85,12 +85,16 @@ const testConnection = async (environment: Environment) => {
         now() as current_time
     `)
 
-    const row = dbInfo[0] as any
+    const row = dbInfo[0]
     console.log('📊 Database Info:')
-    console.log(`   Database Name: ${row?.database_name ?? 'Unknown'}`)
-    console.log(`   Connected User: ${row?.username ?? 'Unknown'}`)
-    console.log(`   PostgreSQL Version: ${row?.postgres_version?.split?.(',')[0] ?? 'Unknown'}`)
-    console.log(`   Server Time: ${row?.current_time ?? 'Unknown'}`)
+    console.log(
+      `   Database Name: ${row?.database_name ? (row.database_name as string) : 'Unknown'}`
+    )
+    console.log(`   Connected User: ${row?.username ? (row.username as string) : 'Unknown'}`)
+    console.log(
+      `   PostgreSQL Version: ${row?.postgres_version ? (row.postgres_version as string).split(',')[0] : 'Unknown'}`
+    )
+    console.log(`   Server Time: ${row?.current_time ? (row.current_time as string) : 'Unknown'}`)
 
     // Check for existing tables with our prefix
     const tables = await db.execute(sql`
@@ -104,7 +108,7 @@ const testConnection = async (environment: Environment) => {
     console.log('─'.repeat(60))
     console.log(`📋 Existing Discuno Tables (${tables.length} found):`)
     if (tables.length > 0) {
-      tables.forEach((table: any) => {
+      tables.forEach(table => {
         console.log(`   • ${table.table_name}`)
       })
     } else {
@@ -121,10 +125,10 @@ const testConnection = async (environment: Environment) => {
     `
       )
       .then(async result => {
-        const tableExists = (result[0] as any)?.count === '1'
+        const tableExists = result[0]?.count === '1'
         if (tableExists) {
           const users = await db.execute(sql`SELECT COUNT(*) as count FROM discuno_user`)
-          return parseInt((users[0] as any)?.count ?? '0')
+          return users[0]?.count as number
         }
         return 0
       })

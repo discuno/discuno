@@ -5,6 +5,16 @@ import { env } from '~/env'
 // Initialize SendGrid
 sgMail.setApiKey(env.SENDGRID_API_KEY)
 
+// Type definitions for booking data
+interface BookingData {
+  id: string | number
+  title: string
+  startTime: string | Date
+  duration?: number
+  attendeeName?: string
+  organizerName: string
+}
+
 /**
  * Send booking confirmation email to both attendee and mentor
  */
@@ -15,7 +25,7 @@ export const sendBookingConfirmationEmail = async ({
 }: {
   attendeeEmail: string
   mentorEmail: string
-  booking: any
+  booking: BookingData
 }) => {
   try {
     console.log('Sending booking confirmation email:', {
@@ -121,8 +131,8 @@ export const sendRefundNotificationEmail = async ({
  */
 export const alertAdminForManualRefund = async (
   sessionId: string,
-  bookingError: any,
-  refundError: any
+  bookingError: Error,
+  refundError: Error
 ) => {
   try {
     console.error('URGENT: Manual refund required', {

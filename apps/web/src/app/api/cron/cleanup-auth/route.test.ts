@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { GET } from './route'
 import { NextRequest } from 'next/server'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { GET } from './route'
 
 // Mock the database using factory function
 vi.mock('~/server/db', () => ({
@@ -26,7 +26,13 @@ vi.mock('drizzle-orm', () => ({
 }))
 
 import { db } from '~/server/db'
-const mockDb = db as any
+
+// Type for our mocked database
+type MockDb = {
+  delete: ReturnType<typeof vi.fn>
+}
+
+const mockDb = db as unknown as MockDb
 
 describe('Cleanup Auth API Route', () => {
   const originalEnv = process.env.CRON_SECRET
