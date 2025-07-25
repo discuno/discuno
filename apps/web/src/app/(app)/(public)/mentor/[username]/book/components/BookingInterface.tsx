@@ -37,7 +37,7 @@ export const BookingInterface = async ({
   }
 
   const bookingData: BookingData = {
-    userId: profile.id,
+    userId: profile.userId, // use userId string from FullUserProfile
     calcomUsername: profile.calcomUsername ?? 'fake-username',
     name: profile.name ?? 'Mentor',
     image: profile.image ?? '',

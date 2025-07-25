@@ -141,7 +141,7 @@ export interface UpdateCalcomUserInput extends Partial<CreateCalcomUserInput> {
 }
 
 export interface FullUserProfile {
-  id: string
+  userId: string
   userProfileId: number
   email: string | null
   emailVerified: boolean

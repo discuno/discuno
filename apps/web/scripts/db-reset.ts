@@ -246,9 +246,14 @@ const dropAllTables = async (environment: Environment) => {
         await tx.execute(sql.raw(`DROP SEQUENCE IF EXISTS "${sequenceName}" CASCADE;`))
       }
       // Drop enum types to match updated schema
-      console.log('   Dropping enum types: stripe_account_status, school_year')
+      console.log(
+        '   Dropping enum types: stripe_account_status, school_year, booking_status, payment_status, stripe_payment_status'
+      )
       await tx.execute(sql.raw(`DROP TYPE IF EXISTS public."stripe_account_status" CASCADE;`))
       await tx.execute(sql.raw(`DROP TYPE IF EXISTS public."school_year" CASCADE;`))
+      await tx.execute(sql.raw(`DROP TYPE IF EXISTS public."booking_status" CASCADE;`))
+      await tx.execute(sql.raw(`DROP TYPE IF EXISTS public."payment_status" CASCADE;`))
+      await tx.execute(sql.raw(`DROP TYPE IF EXISTS public."stripe_payment_status" CASCADE;`))
     })
 
     // Re-enable foreign key checks

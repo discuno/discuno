@@ -22,8 +22,8 @@ import { Switch } from '~/components/ui/switch'
 
 interface EventTypePreference {
   id: number
+  globalEventTypeId: number
   title: string
-  slug: string
   length: number
   description?: string
   isEnabled: boolean
@@ -91,7 +91,7 @@ export const EventTypeToggleSection = () => {
     // Use the checked parameter directly instead of toggling based on current state
     await updateEventTypeMutation.mutateAsync({
       calcomEventTypeId: eventType.id,
-      calcomEventTypeSlug: eventType.slug,
+      globalEventTypeId: eventType.globalEventTypeId,
       isEnabled: checked,
       customPrice: eventType.customPrice ?? undefined,
       currency: eventType.currency,
@@ -117,7 +117,7 @@ export const EventTypeToggleSection = () => {
 
     await updateEventTypeMutation.mutateAsync({
       calcomEventTypeId: selectedEventType.id,
-      calcomEventTypeSlug: selectedEventType.slug,
+      globalEventTypeId: selectedEventType.globalEventTypeId,
       isEnabled: selectedEventType.isEnabled,
       customPrice: priceInCents ?? undefined,
       currency: 'USD',

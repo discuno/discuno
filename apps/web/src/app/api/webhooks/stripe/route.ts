@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { Stripe } from 'stripe'
-import { handlePaymentIntentComplete } from '~/app/(app)/(public)/mentor/[username]/book/actions'
+import { handlePaymentIntentWebhook } from '~/app/(app)/(public)/mentor/[username]/book/actions'
 import { env } from '~/env'
 import { stripe } from '~/lib/stripe'
 import { upsertMentorStripeAccount } from '~/server/queries'
@@ -24,10 +24,6 @@ export async function POST(req: Request) {
   switch (event.type) {
     case 'account.updated':
       await handleAccountUpdated(event.data.object)
-      break
-
-    case 'checkout.session.completed':
-      await handleCheckoutSessionCompleted(event.data.object)
       break
 
     case 'payment_intent.succeeded':
@@ -68,36 +64,19 @@ async function handleAccountUpdated(account: Stripe.Account) {
 }
 
 /**
- * Handle completed checkout sessions
- */
-async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
-  console.log(`Checkout session completed: ${session.id}`)
-  try {
-    // Get the payment intent from the checkout session
-    if (session.payment_intent && typeof session.payment_intent === 'string') {
-      await handlePaymentIntentComplete(session.payment_intent)
-      console.log(`Successfully processed checkout session: ${session.id}`)
-    } else {
-      console.error(`No payment intent found in checkout session: ${session.id}`)
-    }
-  } catch (error) {
-    console.error(`Failed to process checkout session ${session.id}:`, error)
-    // Send admin alert for failed checkout processing (placeholder for now)
-    console.error('ADMIN ALERT: Checkout session processing failed', {
-      sessionId: session.id,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    })
-  }
-}
-
-/**
  * Handle successful payment intents
  */
 async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent) {
-  console.log(`Payment intent succeeded: ${paymentIntent.id}`)
-
-  // Update payment status if needed
-  // Most processing is done in checkout.session.completed
+  try {
+    const result = await handlePaymentIntentWebhook(paymentIntent)
+    if (!result.success) {
+      console.error(`❌ Failed to handle payment intent: ${result.error}`)
+    } else {
+      console.log(`✅ Successfully handled payment intent: ${paymentIntent.id}`)
+    }
+  } catch (error) {
+    console.error(`❌ Error handling payment intent: ${error}`)
+  }
 }
 
 /**

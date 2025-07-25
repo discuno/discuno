@@ -1,22 +1,15 @@
 'use server'
 
 import { eq } from 'drizzle-orm'
+import type Stripe from 'stripe'
 import { z } from 'zod'
-import { getMentorCalcomEventTypeId } from '~/app/(app)/(public)/mentor/[username]/book/bookingHelpers'
 import { env } from '~/env'
 import { createCalcomBooking } from '~/lib/calcom'
-import { sendBookingConfirmationEmail } from '~/lib/emails/booking-notifications'
 import { BadRequestError, ExternalApiError } from '~/lib/errors'
 import { stripe } from '~/lib/stripe'
 import { db } from '~/server/db'
 import { mentorStripeAccounts, payments } from '~/server/db/schema'
-import {
-  createLocalBooking,
-  getEventTypeWithPricingBySlug,
-  getMentorByUsername,
-  getMentorCalcomTokensByUsername,
-  getMentorEnabledEventTypes,
-} from '~/server/queries'
+import { getMentorCalcomTokensByUsername, getMentorEnabledEventTypes } from '~/server/queries'
 
 interface TimeSlot {
   time: string
@@ -67,7 +60,7 @@ const BookingFormInputSchema = z.object({
     .string()
     .trim()
     .min(3, 'Mentor username must be at least 3 characters')
-    .max(50, 'Mentor username must be at most 50 characters')
+    .max(100, 'Mentor username must be at most 100 characters')
     .regex(
       /^[a-zA-Z0-9.-]+$/,
       'Mentor username can only contain letters, numbers, dots, and dashes'
@@ -122,7 +115,7 @@ export const fetchEventTypes = async (username: string): Promise<EventType[]> =>
     slug: pref.calcomEventTypeSlug,
     length: pref.duration,
     description: pref.description ?? undefined,
-    price: pref.customPrice ? pref.customPrice / 100 : undefined,
+    price: pref.customPrice ?? undefined, // Keep in cents for consistency with display logic
     currency: pref.currency,
   }))
 }
@@ -131,8 +124,7 @@ export const fetchEventTypes = async (username: string): Promise<EventType[]> =>
  * Fetch available slots for a given date and username
  */
 export const fetchAvailableSlots = async (
-  username: string,
-  eventSlug: string,
+  eventTypeId: number,
   date: Date,
   timeZone?: string
 ): Promise<TimeSlot[]> => {
@@ -143,8 +135,7 @@ export const fetchAvailableSlots = async (
   end.setHours(23, 59, 59, 999)
 
   const url = new URL(`${env.NEXT_PUBLIC_CALCOM_API_URL}/slots`)
-  url.searchParams.append('username', username)
-  url.searchParams.append('eventTypeSlug', eventSlug)
+  url.searchParams.append('eventTypeId', eventTypeId.toString())
   url.searchParams.append('start', start.toISOString())
   url.searchParams.append('end', end.toISOString())
   if (timeZone) url.searchParams.append('timeZone', timeZone)
@@ -242,6 +233,7 @@ export const createStripePaymentIntent = async (
   error?: string
 }> => {
   const {
+    eventTypeId,
     eventTypeSlug,
     startTimeIso,
     attendeeName,
@@ -252,8 +244,15 @@ export const createStripePaymentIntent = async (
     currency,
     timeZone,
   } = input
-  // TODO: Handle case where price is 0 (free bookings)
+
   try {
+    BookingFormInputSchema.parse(input)
+
+    // TODO: Handle case where price is 0 (free bookings)
+    if (price === 0) {
+      return { success: false, error: 'Free bookings should use direct booking flow' }
+    }
+
     // Get mentor's Stripe account
     const stripeAccount = await db
       .select()
@@ -268,9 +267,10 @@ export const createStripePaymentIntent = async (
     const stripeAccountData = stripeAccount[0]
 
     // Calculate fees
-    const platformFee = Math.round(price * 0.05) // 5% platform fee
-    const mentorAmount = price - platformFee
-    const total = Math.round((price + platformFee)) // Customer pays session fee + platform fee
+    const mentorFee = Math.round(price * 0.1) // 10% mentor fee
+    const menteeFee = Math.round(price * 0.05) // 5% mentee fee
+    const mentorAmount = price - mentorFee
+    const total = Math.round(price + menteeFee) // Customer pays session fee + mentee fee
 
     // Create Stripe Payment Intent
     const paymentIntent = await stripe.paymentIntents.create({
@@ -278,13 +278,15 @@ export const createStripePaymentIntent = async (
       currency: currency,
       metadata: {
         mentorUserId: mentorUserId.toString(),
+        eventTypeId: eventTypeId.toString(),
         eventTypeSlug: eventTypeSlug,
         startTime: startTimeIso,
         attendeeName: attendeeName,
         attendeeEmail: attendeeEmail,
         attendeeTimeZone: timeZone,
         mentorUsername: mentorUsername,
-        platformFee: platformFee.toString(),
+        mentorFee: mentorFee.toString(),
+        menteeFee: menteeFee.toString(),
         mentorAmount: mentorAmount.toString(),
         mentorStripeAccountId: stripeAccountData.stripeAccountId,
       },
@@ -303,52 +305,30 @@ export const createStripePaymentIntent = async (
 /**
  * Handle completed payment intents and create bookings
  */
-export const handlePaymentIntentComplete = async (
-  paymentIntentId: string
-): Promise<{
-  success: boolean
-  bookingId?: number
-  error?: string
-}> => {
+export const handlePaymentIntentWebhook = async (
+  paymentIntent: Stripe.PaymentIntent
+): Promise<{ success: boolean; error?: string }> => {
   try {
-    // 1. Retrieve the payment intent
-    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId)
-
-    if (paymentIntent.status !== 'succeeded') {
-      return { success: false, error: 'Payment not completed' }
-    }
-
-    // Check if we already processed this payment intent
-    const existingPayment = await db
-      .select()
-      .from(payments)
-      .where(eq(payments.stripePaymentIntentId, paymentIntentId))
-      .limit(1)
-
-    if (existingPayment.length > 0) {
-      const bookingId = existingPayment[0]?.bookingId
-      return { success: true, clientSecret bookingId: bookingId ?? 0 }
-    }
-
-    // Validate required metadata
-    const metadata = paymentIntent.metadata
-    if (
-      !metadata.mentorUserId ||
-      !metadata.attendeeEmail ||
-      !metadata.attendeeName ||
-      !metadata.eventTypeSlug ||
-      !metadata.mentorUsername ||
-      !metadata.startTime ||
-      !metadata.attendeeTimeZone ||
-      !metadata.platformFee ||
-      !metadata.mentorAmount
-    ) {
-      return { success: false, error: 'Missing required payment metadata' }
-    }
+    const { metadata } = paymentIntent
 
     // 2. Store payment record
     const disputePeriodEnd = new Date()
     disputePeriodEnd.setHours(disputePeriodEnd.getHours() + 72)
+
+    if (
+      !metadata.mentorUserId ||
+      !metadata.attendeeEmail ||
+      !metadata.attendeeName ||
+      !metadata.mentorFee ||
+      !metadata.menteeFee ||
+      !metadata.mentorAmount ||
+      !metadata.mentorUsername ||
+      !metadata.startTime ||
+      !metadata.attendeeTimeZone ||
+      !metadata.mentorStripeAccountId
+    ) {
+      return { success: false, error: 'Missing required metadata' }
+    }
 
     const payment = await db
       .insert(payments)
@@ -359,7 +339,8 @@ export const handlePaymentIntentComplete = async (
         customerName: metadata.attendeeName,
         amount: paymentIntent.amount,
         currency: paymentIntent.currency.toUpperCase(),
-        platformFee: parseInt(metadata.platformFee),
+        mentorFee: parseInt(metadata.mentorFee),
+        menteeFee: parseInt(metadata.menteeFee),
         mentorAmount: parseInt(metadata.mentorAmount),
         platformStatus: 'SUCCEEDED',
         stripeStatus: paymentIntent.status,
@@ -372,61 +353,19 @@ export const handlePaymentIntentComplete = async (
       return { success: false, error: 'Failed to create payment record' }
     }
 
-    const newPayment = payment[0]
-
-    // 3. Create the booking
-    const mentor = await getMentorByUsername(metadata.mentorUsername)
-    const eventType = await getEventTypeWithPricingBySlug(metadata.eventTypeSlug, mentor.id)
-
-    const mentorCalcomEventTypeId = await getMentorCalcomEventTypeId(
-      mentor.username,
-      metadata.eventTypeSlug
-    )
-
-    const calcomBooking = await createCalcomBooking({
-      eventTypeId: mentorCalcomEventTypeId,
+    // Triggers cal.com webhook to create booking locally
+    await createCalcomBooking({
+      calcomEventTypeId: Number(metadata.eventTypeId),
       start: new Date(metadata.startTime).toISOString(),
       attendeeName: metadata.attendeeName,
       attendeeEmail: metadata.attendeeEmail,
       timeZone: metadata.attendeeTimeZone,
+      stripePaymentIntentId: paymentIntent.id,
+      paymentId: payment[0].id,
+      mentorUserId: metadata.mentorUserId,
     })
 
-    const localBooking = await createLocalBooking({
-      calcomBookingId: calcomBooking.id,
-      calcomUid: calcomBooking.uid,
-      title: eventType.title,
-      startTime: new Date(metadata.startTime),
-      duration: eventType.duration,
-      organizerId: mentor.id,
-      organizerName: mentor.name ?? mentor.username,
-      organizerEmail: mentor.email ?? '',
-      organizerUsername: mentor.username,
-      attendeeName: metadata.attendeeName,
-      attendeeEmail: metadata.attendeeEmail,
-      attendeeTimeZone: metadata.attendeeTimeZone,
-      price: paymentIntent.amount,
-      currency: paymentIntent.currency.toUpperCase(),
-      mentorEventTypeId: eventType.id,
-      paymentId: newPayment.id,
-      requiresPayment: true,
-    })
-
-    // 4. Update payment with booking ID
-    await db
-      .update(payments)
-      .set({ bookingId: localBooking.id })
-      .where(eq(payments.id, newPayment.id))
-
-    // 5. Send confirmation email
-    if (mentor.email) {
-      await sendBookingConfirmationEmail({
-        attendeeEmail: metadata.attendeeEmail,
-        mentorEmail: mentor.email,
-        booking: localBooking,
-      })
-    }
-
-    return { success: true, bookingId: localBooking.id }
+    return { success: true }
   } catch (error) {
     console.error('handlePaymentIntentComplete error:', error)
     return { success: false, error: 'Failed to complete booking' }

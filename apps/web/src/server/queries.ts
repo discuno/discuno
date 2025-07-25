@@ -1,4 +1,4 @@
-import { and, desc, eq, lt } from 'drizzle-orm'
+import { and, desc, eq, isNotNull, lt } from 'drizzle-orm'
 import { cache } from 'react'
 import 'server-only'
 import { z } from 'zod'
@@ -9,7 +9,7 @@ import { db } from '~/server/db'
 import {
   bookings,
   calcomTokens,
-  eventTypes,
+  globalEventTypes,
   majors,
   mentorEventTypes,
   mentorStripeAccounts,
@@ -583,6 +583,7 @@ export const getFullProfile = cache(async (): Promise<FullUserProfile | null> =>
   const res = await db
     .select({
       // User basic info
+      id: users.id,
       name: users.name,
       email: users.email,
       emailVerified: users.emailVerified,
@@ -621,7 +622,7 @@ export const getFullProfile = cache(async (): Promise<FullUserProfile | null> =>
   }
 
   return {
-    id: userData.userProfileId ?? 0,
+    userId: userData.id,
     userProfileId: userData.userProfileId ?? 0,
     email: userData.email,
     emailVerified: !!userData.emailVerified,
@@ -687,7 +688,7 @@ export const getFullProfileByUserId = cache(
     }
 
     return {
-      id: userData.id ?? 0,
+      userId: userData.id,
       userProfileId: userData.userProfileId ?? 0,
       email: userData.email,
       emailVerified: !!userData.emailVerified,
@@ -716,6 +717,7 @@ export const getProfileByUsername = cache(
     const res = await db
       .select({
         // User basic info
+        userId: users.id,
         name: users.name,
         email: users.email,
         emailVerified: users.emailVerified,
@@ -754,7 +756,7 @@ export const getProfileByUsername = cache(
     }
 
     return {
-      id: userData.userProfileId ?? 0,
+      userId: userData.userId,
       userProfileId: userData.userProfileId ?? 0,
       email: userData.email,
       emailVerified: !!userData.emailVerified,
@@ -782,6 +784,7 @@ export const getProfileByCalcomUsername = cache(
     const res = await db
       .select({
         // User basic info
+        userId: users.id,
         name: users.name,
         email: users.email,
         emailVerified: users.emailVerified,
@@ -820,7 +823,7 @@ export const getProfileByCalcomUsername = cache(
     }
 
     return {
-      id: userData.userProfileId ?? 0,
+      userId: userData.userId,
       userProfileId: userData.userProfileId ?? 0,
       email: userData.email,
       emailVerified: !!userData.emailVerified,
@@ -1054,6 +1057,7 @@ export const updateCompleteProfile = async (data: {
 const mentorEventTypeSchema = z.object({
   userId: z.string().min(1),
   calcomEventTypeId: z.number().int().positive(),
+  globalEventTypeId: z.number().int().positive(),
   calcomEventTypeSlug: z.string().min(1),
   isEnabled: z.boolean(),
   customPrice: z.number().int().positive().optional(),
@@ -1079,7 +1083,7 @@ export const getMentorEventTypes = cache(
     Array<{
       id: number
       calcomEventTypeId: number
-      calcomEventTypeSlug: string
+      globalEventTypeId: number
       title: string
       description: string | null
       duration: number
@@ -1092,14 +1096,16 @@ export const getMentorEventTypes = cache(
   > => {
     const { id: currentUserId } = await requireAuth()
 
+    // Get mentor event types with individual event type IDs
     const result = await db
       .select({
         id: mentorEventTypes.id,
-        calcomEventTypeId: eventTypes.calcomEventTypeId,
-        calcomEventTypeSlug: eventTypes.calcomEventTypeSlug,
-        title: eventTypes.title,
-        description: eventTypes.description,
-        duration: eventTypes.duration,
+        calcomEventTypeId: mentorEventTypes.calcomEventTypeId,
+        globalEventTypeId: mentorEventTypes.globalEventTypeId,
+        calcomEventTypeSlug: globalEventTypes.calcomEventTypeSlug,
+        title: globalEventTypes.title,
+        description: globalEventTypes.description,
+        duration: globalEventTypes.duration,
         isEnabled: mentorEventTypes.isEnabled,
         customPrice: mentorEventTypes.customPrice,
         currency: mentorEventTypes.currency,
@@ -1107,13 +1113,16 @@ export const getMentorEventTypes = cache(
         updatedAt: mentorEventTypes.updatedAt,
       })
       .from(mentorEventTypes)
-      .innerJoin(eventTypes, eq(mentorEventTypes.eventTypeId, eventTypes.id))
-      .where(eq(mentorEventTypes.userId, currentUserId))
+      .innerJoin(globalEventTypes, eq(mentorEventTypes.globalEventTypeId, globalEventTypes.id))
+      .where(eq(mentorEventTypes.mentorUserId, currentUserId))
 
-    return result.map(item => ({
-      ...item,
-      isEnabled: item.isEnabled,
-    }))
+    return result
+      .filter(item => item.calcomEventTypeId !== null)
+      .map(item => ({
+        ...item,
+        calcomEventTypeId: item.calcomEventTypeId as number,
+        isEnabled: item.isEnabled,
+      }))
   }
 )
 
@@ -1123,40 +1132,24 @@ export const getMentorEventTypes = cache(
 export const upsertMentorEventType = async (data: {
   userId: string
   calcomEventTypeId: number
-  calcomEventTypeSlug: string
+  globalEventTypeId: number
   isEnabled: boolean
   customPrice?: number
   currency?: string
 }): Promise<void> => {
   const validData = mentorEventTypeSchema.parse(data)
 
-  // First, find the eventType by calcomEventTypeId
-  const eventType = await db
-    .select({ id: eventTypes.id })
-    .from(eventTypes)
-    .where(eq(eventTypes.calcomEventTypeId, validData.calcomEventTypeId))
-    .limit(1)
-
-  if (eventType.length === 0) {
-    throw new NotFoundError(`Event type with Cal.com ID ${validData.calcomEventTypeId} not found`)
-  }
-
-  const eventTypeId = eventType[0]?.id
-  if (!eventTypeId) {
-    throw new NotFoundError(`Event type with Cal.com ID ${validData.calcomEventTypeId} not found`)
-  }
-
   await db
     .insert(mentorEventTypes)
     .values({
-      userId: validData.userId,
-      eventTypeId,
+      mentorUserId: validData.userId,
+      globalEventTypeId: validData.globalEventTypeId,
       isEnabled: validData.isEnabled,
       customPrice: validData.customPrice,
       currency: validData.currency,
     })
     .onConflictDoUpdate({
-      target: [mentorEventTypes.userId, mentorEventTypes.eventTypeId],
+      target: [mentorEventTypes.mentorUserId, mentorEventTypes.globalEventTypeId],
       set: {
         isEnabled: validData.isEnabled,
         customPrice: validData.customPrice,
@@ -1185,21 +1178,34 @@ export const getMentorEnabledEventTypes = cache(
   > => {
     const result = await db
       .select({
-        calcomEventTypeId: eventTypes.calcomEventTypeId,
-        calcomEventTypeSlug: eventTypes.calcomEventTypeSlug,
-        title: eventTypes.title,
-        description: eventTypes.description,
-        duration: eventTypes.duration,
+        calcomEventTypeId: mentorEventTypes.calcomEventTypeId, // Use individual event type ID
+        calcomEventTypeSlug: globalEventTypes.calcomEventTypeSlug,
+        title: globalEventTypes.title,
+        description: globalEventTypes.description,
+        duration: globalEventTypes.duration,
         customPrice: mentorEventTypes.customPrice,
         currency: mentorEventTypes.currency,
       })
       .from(mentorEventTypes)
-      .innerJoin(eventTypes, eq(mentorEventTypes.eventTypeId, eventTypes.id))
-      .where(and(eq(mentorEventTypes.userId, userId), eq(mentorEventTypes.isEnabled, true)))
+      .innerJoin(globalEventTypes, eq(mentorEventTypes.globalEventTypeId, globalEventTypes.id))
+      .where(
+        and(
+          eq(mentorEventTypes.mentorUserId, userId),
+          eq(mentorEventTypes.isEnabled, true),
+          isNotNull(mentorEventTypes.calcomEventTypeId) // Only return mentors with individual event type IDs
+        )
+      )
 
-    return result.map(item => ({
-      ...item,
-    }))
+    console.log('getMentorEnabledEventTypes result:', result)
+
+    return result
+      .filter(
+        (item): item is typeof item & { calcomEventTypeId: number } =>
+          item.calcomEventTypeId !== null
+      )
+      .map(item => ({
+        ...item,
+      }))
   }
 )
 
@@ -1466,17 +1472,17 @@ export const getEventTypeWithPricingBySlug = async (
       id: mentorEventTypes.id,
       customPrice: mentorEventTypes.customPrice,
       currency: mentorEventTypes.currency,
-      title: eventTypes.title,
-      duration: eventTypes.duration,
-      calcomEventTypeId: eventTypes.calcomEventTypeId,
-      calcomEventTypeSlug: eventTypes.calcomEventTypeSlug,
+      title: globalEventTypes.title,
+      duration: globalEventTypes.duration,
+      calcomEventTypeId: mentorEventTypes.calcomEventTypeId,
+      calcomEventTypeSlug: globalEventTypes.calcomEventTypeSlug,
     })
     .from(mentorEventTypes)
-    .innerJoin(eventTypes, eq(mentorEventTypes.eventTypeId, eventTypes.id))
+    .innerJoin(globalEventTypes, eq(mentorEventTypes.globalEventTypeId, globalEventTypes.id))
     .where(
       and(
-        eq(eventTypes.calcomEventTypeSlug, eventTypeSlug),
-        eq(mentorEventTypes.userId, mentorUserId),
+        eq(globalEventTypes.calcomEventTypeSlug, eventTypeSlug),
+        eq(mentorEventTypes.mentorUserId, mentorUserId),
         eq(mentorEventTypes.isEnabled, true)
       )
     )
@@ -1498,10 +1504,10 @@ export const createLocalBooking = async (input: {
   title: string
   startTime: Date
   duration: number
-  organizerId: string
-  organizerName: string
-  organizerEmail: string
-  organizerUsername: string
+  organizerUserId: string
+  calcomOrganizerName: string
+  calcomOrganizerEmail: string
+  calcomOrganizerUsername: string
   attendeeName: string
   attendeeEmail: string
   attendeeTimeZone: string
@@ -1522,10 +1528,10 @@ export const createLocalBooking = async (input: {
       startTime: input.startTime,
       endTime,
       status: 'ACCEPTED',
-      organizerId: input.organizerId,
-      organizerName: input.organizerName,
-      organizerEmail: input.organizerEmail,
-      organizerUsername: input.organizerUsername,
+      organizerId: input.organizerUserId,
+      organizerName: input.calcomOrganizerName,
+      organizerEmail: input.calcomOrganizerEmail,
+      organizerUsername: input.calcomOrganizerUsername,
       attendeeName: input.attendeeName,
       attendeeEmail: input.attendeeEmail,
       attendeeTimeZone: input.attendeeTimeZone,

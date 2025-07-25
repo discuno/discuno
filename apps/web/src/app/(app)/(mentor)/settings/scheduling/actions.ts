@@ -625,8 +625,8 @@ export const getMentorEventTypePreferences = async (): Promise<{
   success: boolean
   data?: Array<{
     id: number
+    globalEventTypeId: number
     title: string
-    slug: string
     length: number
     description?: string
     isEnabled: boolean
@@ -643,7 +643,7 @@ export const getMentorEventTypePreferences = async (): Promise<{
     const combined = mentorPreferences.map(pref => ({
       id: pref.calcomEventTypeId,
       title: pref.title,
-      slug: pref.calcomEventTypeSlug,
+      globalEventTypeId: pref.globalEventTypeId,
       length: pref.duration,
       description: pref.description ?? undefined,
       isEnabled: pref.isEnabled,
@@ -669,7 +669,7 @@ export const getMentorEventTypePreferences = async (): Promise<{
  */
 export const updateMentorEventTypePreferences = async (data: {
   calcomEventTypeId: number
-  calcomEventTypeSlug: string
+  globalEventTypeId: number
   isEnabled: boolean
   customPrice?: number
   currency?: string
@@ -683,7 +683,7 @@ export const updateMentorEventTypePreferences = async (data: {
     await upsertMentorEventType({
       userId,
       calcomEventTypeId: data.calcomEventTypeId,
-      calcomEventTypeSlug: data.calcomEventTypeSlug,
+      globalEventTypeId: data.globalEventTypeId,
       isEnabled: data.isEnabled,
       customPrice: data.customPrice,
       currency: data.currency ?? 'USD',

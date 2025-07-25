@@ -1,10 +1,11 @@
 import { config } from 'dotenv'
+import { and, eq, inArray } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 import Stripe from 'stripe'
 import {
   calcomTokens,
-  eventTypes,
+  globalEventTypes,
   majors,
   mentorEventTypes,
   mentorReviews,
@@ -601,6 +602,8 @@ export const seedDatabase = async (environment?: Environment) => {
       eventTypes: false,
       mentorEventTypes: false,
       waitlist: false,
+      calcomIndividualEventTypes: false,
+      // Note: bookings and payments will be created via webhooks/API, not seeded
     }
 
     let insertedMajors: any[] = []
@@ -999,7 +1002,7 @@ export const seedDatabase = async (environment?: Environment) => {
         },
       ]
 
-      insertedEventTypes = await db.insert(eventTypes).values(masterEventTypes).returning()
+      insertedEventTypes = await db.insert(globalEventTypes).values(masterEventTypes).returning()
       seedResults.eventTypes = true
       console.log('✅ Master event types seeded successfully')
       console.log(`   Created ${insertedEventTypes.length} master event types`)
@@ -1021,8 +1024,8 @@ export const seedDatabase = async (environment?: Environment) => {
 
           for (const eventType of selectedEventTypes) {
             mentorEventTypesData.push({
-              userId: user.id,
-              eventTypeId: eventType.id, // Reference to eventTypes.id
+              mentorUserId: user.id,
+              globalEventTypeId: eventType.id, // Reference to globalEventTypes.id
               isEnabled: Math.random() > 0.2, // 80% chance of being enabled
               customPrice: Math.floor(Math.random() * 20000) + 2500, // $25-$225 in cents
               currency: 'USD',
@@ -1041,7 +1044,95 @@ export const seedDatabase = async (environment?: Environment) => {
       }
     }
 
-    // Step 13: Insert waitlist entries
+    // Step 13: Update mentor event types with individual Cal.com event type IDs
+    if (insertedUsers.length > 0 && seedResults.calcomTokens) {
+      try {
+        console.log('🔄 Fetching and updating individual Cal.com event type IDs for mentors...')
+        const calcomApiBase = process.env.NEXT_PUBLIC_CALCOM_API_URL
+        const calcomSecretKey = process.env.X_CAL_SECRET_KEY
+
+        if (!calcomApiBase || !calcomSecretKey) {
+          throw new Error('Missing Cal.com API credentials for fetching event types')
+        }
+
+        // We need to get all tokens to get the calcomUsername
+        const allCalcomTokens = await db
+          .select({
+            userId: calcomTokens.userId,
+            calcomUsername: calcomTokens.calcomUsername,
+          })
+          .from(calcomTokens)
+          .where(
+            inArray(
+              calcomTokens.userId,
+              insertedUsers.map(u => u.id)
+            )
+          )
+
+        for (const token of allCalcomTokens) {
+          if (!token.calcomUsername) continue
+
+          try {
+            const response = await fetch(
+              `${calcomApiBase}/event-types?username=${encodeURIComponent(token.calcomUsername)}`,
+              {
+                headers: {
+                  Authorization: `Bearer ${calcomSecretKey}`,
+                  'cal-api-version': '2024-06-14',
+                },
+              }
+            )
+
+            if (!response.ok) {
+              const errorText = await response.text()
+              console.error(
+                `Failed to fetch event types for ${token.calcomUsername}: ${response.status} ${errorText}`
+              )
+              continue
+            }
+
+            const data = await response.json()
+
+            if (data.status !== 'success' || !Array.isArray(data.data)) {
+              console.error(`Invalid event types response for ${token.calcomUsername}`)
+              continue
+            }
+
+            const mentorIndividualEventTypes = data.data
+
+            for (const individualEventType of mentorIndividualEventTypes) {
+              // Find the corresponding global event type to get the slug
+              const globalEventType = await db
+                .select()
+                .from(globalEventTypes)
+                .where(eq(globalEventTypes.calcomEventTypeSlug, individualEventType.slug))
+                .limit(1)
+
+              if (globalEventType.length > 0 && globalEventType[0]) {
+                await db
+                  .update(mentorEventTypes)
+                  .set({ calcomEventTypeId: individualEventType.id })
+                  .where(
+                    and(
+                      eq(mentorEventTypes.mentorUserId, token.userId),
+                      eq(mentorEventTypes.globalEventTypeId, globalEventType[0].id)
+                    )
+                  )
+              }
+            }
+            console.log(`✅ Successfully updated event type IDs for ${token.calcomUsername}`)
+          } catch (error) {
+            console.error(`Error updating event types for mentor ${token.calcomUsername}:`, error)
+          }
+        }
+        seedResults.calcomIndividualEventTypes = true
+        console.log('✅ All individual Cal.com event type IDs updated successfully.')
+      } catch (error) {
+        console.error('❌ Failed to update individual Cal.com event type IDs:', error)
+      }
+    }
+
+    // Step 14: Insert waitlist entries
     try {
       console.log('📧 Inserting waitlist entries...')
       const waitlistData = waitlistEmails.map(email => ({ email }))

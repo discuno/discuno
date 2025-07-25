@@ -1,77 +1,101 @@
 import crypto from 'crypto'
-import { and, eq } from 'drizzle-orm'
-import { NextResponse } from 'next/server'
+import { z } from 'zod'
 import { env } from '~/env'
-import { db } from '~/server/db'
-import { bookings, calcomTokens, eventTypes, mentorEventTypes } from '~/server/db/schema'
+import { createLocalBooking } from '~/server/queries'
 
-interface CalcomBookingPayload {
-  type: string
-  title: string
-  description?: string
-  additionalNotes?: string
-  customInputs?: Record<string, any>
-  startTime: string
-  endTime: string
-  organizer: {
-    id: number
-    name: string
-    email: string
-    username: string
-    timeZone?: string
-    language?: {
-      locale: string
-    }
-    timeFormat?: string
-  }
-  responses: Record<string, any>
-  userFieldsResponses?: Record<string, any>
-  attendees: Array<{
-    email: string
-    name: string
-    timeZone?: string
-    language?: {
-      locale: string
-    }
-  }>
-  location?: string
-  destinationCalendar?: {
-    id: number
-    integration: string
-    externalId: string
-    userId: number
-    eventTypeId: number | null
-    credentialId: number
-  }
-  hideCalendarNotes?: boolean
-  requiresConfirmation?: boolean | null
-  eventTypeId: number
-  seatsShowAttendees?: boolean
-  seatsPerTimeSlot?: number | null
-  uid: string
-  appsStatus?: Array<{
-    appName: string
-    type: string
-    success: number
-    failures: number
-    errors: any[]
-    warnings: any[]
-  }>
-  eventTitle?: string
-  eventDescription?: string
-  price?: number
-  currency?: string
-  length?: number
-  bookingId: number
-  metadata?: Record<string, any>
-  status: 'ACCEPTED' | 'PENDING' | 'CANCELLED' | 'REJECTED'
-}
+export const CalcomBookingPayloadSchema = z.object({
+  type: z.string(),
+  title: z.string(),
+  description: z.string().optional(),
+  additionalNotes: z.string().optional(),
+  customInputs: z.record(z.any()).optional(),
+  startTime: z.string().datetime(),
+  endTime: z.string().datetime(),
+  organizer: z.object({
+    id: z.number(),
+    name: z.string(),
+    email: z.string().email(),
+    username: z.string(),
+    timeZone: z.string(),
+    language: z
+      .object({
+        locale: z.string(),
+      })
+      .optional(),
+    timeFormat: z.string().optional(),
+  }),
+  responses: z.record(z.any()),
+  userFieldsResponses: z.record(z.any()).optional(),
+  attendees: z
+    .array(
+      z.object({
+        email: z.string().email(),
+        name: z.string(),
+        timeZone: z.string(),
+        language: z
+          .object({
+            locale: z.string(),
+          })
+          .optional(),
+      })
+    )
+    .nonempty('At least one attendee is required'),
+  location: z.string(),
+  destinationCalendar: z
+    .object({
+      id: z.number(),
+      integration: z.string(),
+      externalId: z.string().url(),
+      userId: z.number(),
+      eventTypeId: z.number().nullable(),
+      credentialId: z.number(),
+    })
+    .optional(),
+  hideCalendarNotes: z.boolean().optional(),
+  requiresConfirmation: z.boolean().nullable().optional(),
+  eventTypeId: z.number(),
+  seatsShowAttendees: z.boolean().optional(),
+  seatsPerTimeSlot: z.number().nullable().optional(),
+  uid: z.string(),
+  appsStatus: z
+    .array(
+      z.object({
+        appName: z.string(),
+        type: z.string(),
+        success: z.number(),
+        failures: z.number(),
+        errors: z.array(z.any()),
+        warnings: z.array(z.any()),
+      })
+    )
+    .optional(),
+  eventTitle: z.string().optional(),
+  eventDescription: z.string().optional(),
+  price: z.number().optional(),
+  currency: z.string().optional(),
+  length: z
+    .number()
+    .int()
+    .positive('Length must be a positive integer')
+    .max(60, 'Length cannot exceed 60 minutes'),
+  bookingId: z.number(),
+  metadata: z.object({
+    stripePaymentIntentId: z.string().min(1, 'Stripe payment intent ID is required'),
+    paymentId: z.string().optional(),
+    mentorUserId: z.string().uuid('Mentor user ID must be a valid UUID'),
+  }),
+  status: z.enum(['ACCEPTED', 'PENDING', 'CANCELLED', 'REJECTED']),
+})
 
-interface CalcomWebhookEvent {
-  triggerEvent: string
-  createdAt: string
-  payload: CalcomBookingPayload
-}
+export type CalcomBookingPayload = z.infer<typeof CalcomBookingPayloadSchema>
+
+export const CalcomWebhookSchema = z.object({
+  triggerEvent: z.string(),
+  createdAt: z.string(),
+  payload: CalcomBookingPayloadSchema,
+})
+
+export type CalcomWebhookEvent = z.infer<typeof CalcomWebhookSchema>
 
 export async function POST(req: Request) {
   const signature = req.headers.get('x-cal-signature-256') ?? ''
@@ -87,7 +111,7 @@ export async function POST(req: Request) {
     !crypto.timingSafeEqual(Buffer.from(expectedSignature, 'utf8'), Buffer.from(signature, 'utf8'))
   ) {
     console.error('❌ Webhook signature verification failed for Cal.com payload')
-    return new Response('Invalid signature', { status: 400 })
+    return Response.json({ error: 'Invalid signature' }, { status: 400 })
   }
 
   let event: CalcomWebhookEvent
@@ -95,7 +119,7 @@ export async function POST(req: Request) {
     event = JSON.parse(bodyText)
   } catch (err) {
     console.error('❌ Failed to parse Cal.com webhook payload:', err)
-    return new Response('Invalid payload', { status: 400 })
+    return Response.json({ error: 'Invalid payload' }, { status: 400 })
   }
 
   const { triggerEvent, payload } = event
@@ -103,95 +127,59 @@ export async function POST(req: Request) {
 
   if (triggerEvent === 'BOOKING_CREATED') {
     try {
-      await handleBookingCreated(payload, event)
-      console.log(`✅ Successfully processed BOOKING_CREATED for booking ${payload.bookingId}`)
-    } catch (error) {
-      console.error('❌ Failed to process BOOKING_CREATED webhook:', error)
-      return new Response('Failed to process booking', { status: 500 })
+      return await storeBooking(payload)
+    } catch {
+      return Response.json({ error: 'Failed to process booking' }, { status: 500 })
     }
   } else {
     console.log(`ℹ️ Unhandled webhook event type: ${triggerEvent}`)
   }
 
-  return NextResponse.json({ received: true })
+  return Response.json({ received: true })
 }
 
-async function handleBookingCreated(payload: CalcomBookingPayload, fullEvent: CalcomWebhookEvent) {
+async function storeBooking(event: CalcomBookingPayload) {
+  const validation = CalcomBookingPayloadSchema.safeParse(event)
+  if (!validation.success) {
+    console.warn('❌ Invalid Cal.com booking payload:', validation.error)
+    return Response.json({ error: 'Invalid booking payload' }, { status: 400 })
+  }
+
   const {
     bookingId,
     uid,
     title,
-    startTime,
-    endTime,
-    status,
-    organizer,
     attendees,
-    responses,
+    startTime,
+    length,
+    organizer,
     eventTypeId,
-    type, // This is the event type slug
-  } = payload
+    price,
+    currency,
+    metadata,
+  } = event
 
-  console.log('eventTypeId:', eventTypeId)
-  console.log('Event type slug:', type)
-  // Find the organizer in our database by Cal.com username
-  const organizerTokens = await db
-    .select({
-      userId: calcomTokens.userId,
-    })
-    .from(calcomTokens)
-    .where(eq(calcomTokens.calcomUsername, organizer.username))
-    .limit(1)
+  const [attendee] = attendees
 
-  if (!organizerTokens.length) {
-    throw new Error(`Organizer not found in database: ${organizer.username}`)
-  }
-
-  const organizerRecord = organizerTokens[0]
-  if (!organizerRecord) {
-    throw new Error(`Organizer record is null: ${organizer.username}`)
-  }
-
-  const organizerId = organizerRecord.userId
-
-  // Find the mentor event type by matching the event type slug from the webhook
-  const mentorEventType = await db
-    .select({
-      id: mentorEventTypes.id,
-      customPrice: mentorEventTypes.customPrice,
-      currency: mentorEventTypes.currency,
-    })
-    .from(mentorEventTypes)
-    .innerJoin(eventTypes, eq(mentorEventTypes.eventTypeId, eventTypes.id))
-    .where(and(eq(mentorEventTypes.userId, organizerId), eq(eventTypes.calcomEventTypeSlug, type)))
-    .limit(1)
-
-  console.log(`mentorEventType by slug (${type}):`, mentorEventType)
-
-  // Get the first attendee (primary attendee)
-  const primaryAttendee = attendees[0]
-  if (!primaryAttendee) {
-    throw new Error('No attendees found in booking')
-  }
-
-  // Insert the booking into our database
-  await db.insert(bookings).values({
+  const booking = createLocalBooking({
     calcomBookingId: bookingId,
     calcomUid: uid,
     title,
     startTime: new Date(startTime),
-    endTime: new Date(endTime),
-    status,
-    organizerId,
-    organizerName: organizer.name,
-    organizerEmail: organizer.email,
-    organizerUsername: organizer.username,
-    attendeeName: primaryAttendee.name,
-    attendeeEmail: primaryAttendee.email,
-    attendeeTimeZone: primaryAttendee.timeZone,
-    price: mentorEventType[0]?.customPrice ?? null,
-    currency: mentorEventType[0]?.currency ?? 'USD',
-    mentorEventTypeId: mentorEventType[0]?.id ?? null,
-    responses,
-    webhookPayload: fullEvent,
+    duration: length,
+    organizerUserId: metadata.mentorUserId,
+    calcomOrganizerEmail: organizer.email,
+    calcomOrganizerUsername: organizer.username,
+    calcomOrganizerName: organizer.name,
+    attendeeName: attendee.name,
+    attendeeEmail: attendee.email,
+    attendeeTimeZone: attendee.timeZone,
+    price: price ?? 0,
+    currency: currency ?? 'USD',
+    mentorEventTypeId: eventTypeId,
+    paymentId: metadata.paymentId ? Number(metadata.paymentId) : undefined,
+    requiresPayment: !!price,
   })
+
+  return Response.json(booking, { status: 201 })
 }

@@ -323,8 +323,8 @@ export const mentorStripeAccountsRelations = relations(mentorStripeAccounts, ({ 
 }))
 
 // Master event types table (the 3 Cal.com event types we support)
-export const eventTypes = pgTable(
-  'discuno_event_type',
+export const globalEventTypes = pgTable(
+  'discuno_global_event_type',
   {
     id: integer().primaryKey().generatedByDefaultAsIdentity(),
     calcomEventTypeId: integer().notNull().unique(), // Cal.com event type ID from team
@@ -345,35 +345,40 @@ export const mentorEventTypes = pgTable(
   'discuno_mentor_event_type',
   {
     id: integer().primaryKey().generatedByDefaultAsIdentity(),
-    userId: varchar({ length: 255 })
+    mentorUserId: varchar({ length: 255 })
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
-    eventTypeId: integer()
+    globalEventTypeId: integer()
       .notNull()
-      .references(() => eventTypes.id, { onDelete: 'cascade' }),
+      .references(() => globalEventTypes.id, { onDelete: 'cascade' }),
+    calcomEventTypeId: integer(), // The mentor's individual Cal.com event type ID
     isEnabled: boolean().notNull().default(false), // Whether this mentor has enabled this event type
     customPrice: integer(), // Price in cents (e.g., 2500 = $25.00)
     currency: varchar({ length: 3 }).notNull().default('USD'),
     ...timestamps,
   },
   table => [
-    index('mentor_event_types_user_event_type_idx').on(table.userId, table.eventTypeId),
-    index('mentor_event_types_user_id_idx').on(table.userId),
-    index('mentor_event_types_event_type_id_idx').on(table.eventTypeId),
+    index('mentor_event_types_user_global_idx').on(table.mentorUserId, table.globalEventTypeId),
+    index('mentor_event_types_user_idx').on(table.mentorUserId),
+    index('mentor_event_types_global_idx').on(table.globalEventTypeId),
+    index('mentor_event_types_calcom_idx').on(table.calcomEventTypeId),
     // Ensure one record per user per event type
-    unique('mentor_event_types_user_event_type_unique').on(table.userId, table.eventTypeId),
+    unique('mentor_event_types_user_event_type_unique').on(
+      table.mentorUserId,
+      table.globalEventTypeId
+    ),
   ]
 )
 
-export const eventTypesRelations = relations(eventTypes, ({ many }) => ({
+export const eventTypesRelations = relations(globalEventTypes, ({ many }) => ({
   mentorEventTypes: many(mentorEventTypes),
 }))
 
 export const mentorEventTypesRelations = relations(mentorEventTypes, ({ one, many }) => ({
-  user: one(users, { fields: [mentorEventTypes.userId], references: [users.id] }),
-  eventType: one(eventTypes, {
-    fields: [mentorEventTypes.eventTypeId],
-    references: [eventTypes.id],
+  user: one(users, { fields: [mentorEventTypes.mentorUserId], references: [users.id] }),
+  eventType: one(globalEventTypes, {
+    fields: [mentorEventTypes.globalEventTypeId],
+    references: [globalEventTypes.id],
   }),
   bookings: many(bookings),
 }))
@@ -428,7 +433,7 @@ export const bookings = pgTable(
     mentorEventTypeId: integer().references(() => mentorEventTypes.id, { onDelete: 'set null' }),
 
     // Payment reference (will be set after payment is processed)
-    paymentId: integer(),
+    paymentId: integer().references(() => payments.id, { onDelete: 'set null' }),
     requiresPayment: boolean().notNull().default(true),
 
     // Response data (name, email, location, notes, etc.)
@@ -487,8 +492,6 @@ export const payments = pgTable(
 
     stripePaymentIntentId: varchar({ length: 255 }).notNull().unique(),
 
-    bookingId: integer(),
-
     mentorUserId: varchar({ length: 255 })
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
@@ -499,7 +502,9 @@ export const payments = pgTable(
     amount: integer().notNull(), // in cents
     currency: varchar({ length: 3 }).notNull().default('USD'),
 
-    platformFee: integer().notNull(), // in cents
+    mentorFee: integer().notNull(), // in cents (amount - platformFee)
+    menteeFee: integer().notNull(), // in cents (amount - platformFee)
+
     mentorAmount: integer().notNull(), // in cents (amount - platformFee)
 
     platformStatus: paymentStatusEnum().notNull().default('PENDING'),
@@ -520,7 +525,6 @@ export const payments = pgTable(
     ...timestamps,
   },
   table => [
-    index('payments_booking_id_idx').on(table.bookingId),
     index('payments_mentor_user_id_idx').on(table.mentorUserId),
     index('payments_platform_status_idx').on(table.platformStatus),
     index('payments_dispute_period_ends_idx').on(table.disputePeriodEnds),
@@ -529,6 +533,5 @@ export const payments = pgTable(
 )
 
 export const paymentsRelations = relations(payments, ({ one }) => ({
-  booking: one(bookings, { fields: [payments.bookingId], references: [bookings.id] }),
   mentorUser: one(users, { fields: [payments.mentorUserId], references: [users.id] }),
 }))

@@ -35,6 +35,8 @@ export const env = createEnv({
     COLLEGE_MENTOR_TEAM_ID: z.string(),
     CALCOM_ORG_ID: z.string(),
     CALCOM_WEBHOOK_SECRET: z.string(),
+    CALCOM_COLLEGE_MENTORS_TEAM_SLUG: z.string(),
+    CALCOM_ORG_SLUG: z.string(),
   },
 
   /**
@@ -84,6 +86,8 @@ export const env = createEnv({
     COLLEGE_MENTOR_TEAM_ID: process.env.COLLEGE_MENTOR_TEAM_ID,
     CALCOM_ORG_ID: process.env.CALCOM_ORG_ID,
     CALCOM_WEBHOOK_SECRET: process.env.CALCOM_WEBHOOK_SECRET,
+    CALCOM_COLLEGE_MENTORS_TEAM_SLUG: process.env.CALCOM_COLLEGE_MENTORS_TEAM_SLUG,
+    CALCOM_ORG_SLUG: process.env.CALCOM_ORG_SLUG,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

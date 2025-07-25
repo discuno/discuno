@@ -142,14 +142,25 @@ export const updateCalcomUser = async (data: UpdateCalcomUserInput): Promise<voi
  * Create a booking via Cal.com API
  */
 export const createCalcomBooking = async (input: {
-  eventTypeId: number
+  calcomEventTypeId: number
   start: string
   attendeeName: string
   attendeeEmail: string
   timeZone: string
   stripePaymentIntentId?: string
+  paymentId?: number
+  mentorUserId: string
 }): Promise<{ id: number; uid: string }> => {
-  const { eventTypeId, start, attendeeName, attendeeEmail, timeZone, stripePaymentIntentId } = input
+  const {
+    calcomEventTypeId,
+    start,
+    attendeeName,
+    attendeeEmail,
+    timeZone,
+    stripePaymentIntentId,
+    paymentId,
+    mentorUserId,
+  } = input
 
   const calcomPayload = {
     start, // ISO string in UTC
@@ -159,9 +170,11 @@ export const createCalcomBooking = async (input: {
       timeZone: timeZone,
       language: 'en', // Default language
     },
-    eventTypeId,
+    eventTypeId: calcomEventTypeId,
     metadata: {
       stripePaymentIntentId: stripePaymentIntentId ?? '',
+      paymentId: paymentId?.toString() ?? '',
+      mentorUserId,
     },
   }
 

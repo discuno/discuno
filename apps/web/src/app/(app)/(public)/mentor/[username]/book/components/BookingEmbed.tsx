@@ -63,20 +63,22 @@ export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
   })
 
   // Use the selected event type
-  const currentEventSlug = selectedEventType?.slug
+  const currentEventId = selectedEventType?.id
 
   const {
     data: availableSlots = [],
     isFetching,
     error,
   } = useQuery({
-    queryKey: ['available-slots', calcomUsername, currentEventSlug, selectedDate],
+    queryKey: ['available-slots', currentEventId, selectedDate],
     queryFn: () => {
-      if (!currentEventSlug) throw new BadRequestError('No event type selected')
-      return fetchSlotsAction(calcomUsername, currentEventSlug, selectedDate, timeZone)
+      if (!currentEventId) throw new BadRequestError('No event type selected')
+      const fetched = fetchSlotsAction(currentEventId, selectedDate, timeZone)
+      console.log(fetched)
+      return fetched
     },
     staleTime: 1000 * 30,
-    enabled: currentStep === 'calendar' && !!currentEventSlug,
+    enabled: currentStep === 'calendar' && !!currentEventId,
   })
 
   // Create booking mutation (unified for both free and paid)
@@ -91,8 +93,6 @@ export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
       const startTime = new Date(selectedDate)
       startTime.setHours(parseInt(hours ?? '0'), parseInt(minutes ?? '0'), 0, 0)
 
-      // Handle paid booking
-      // Replace this with an actual API call that creates the booking and returns the expected response
       const bookingPayload: BookingFormInput = {
         eventTypeId: selectedEventType.id,
         eventTypeSlug: selectedEventType.slug,
@@ -101,17 +101,16 @@ export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
         attendeeEmail: formData.email,
         mentorUsername: calcomUsername,
         mentorUserId: bookingData.userId,
-        price: selectedEventType.price ?? 0,
+        price: selectedEventType.price ?? 0, // price in cents
         currency: selectedEventType.currency ?? 'USD',
         timeZone: timeZone,
       }
-
       const response = await createStripePaymentIntent(bookingPayload)
 
       if (response.success && response.clientSecret) {
         setCurrentStep('payment')
-        // You may want to store clientSecret in state if needed
-        return response
+
+        setClientSecret(response.clientSecret)
       } else {
         throw new Error(response.error ?? 'Failed to create booking')
       }
