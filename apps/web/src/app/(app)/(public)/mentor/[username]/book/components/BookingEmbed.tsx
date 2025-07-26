@@ -2,7 +2,7 @@
 
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { endOfMonth, endOfWeek, format, startOfMonth, startOfWeek } from 'date-fns'
+import { addDays, endOfMonth, endOfWeek, format, startOfMonth, startOfWeek } from 'date-fns'
 import { ArrowLeft, CalendarIcon, Clock, CreditCard } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
@@ -41,12 +41,13 @@ interface BookingFormData {
 
 export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
   const { calcomUsername } = bookingData
+  const today = useMemo(() => new Date(), [])
 
   const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
 
   const [selectedEventType, setSelectedEventType] = useState<EventType | null>(null)
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date())
-  const [currentMonth, setCurrentMonth] = useState(new Date())
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(today)
+  const [currentMonth, setCurrentMonth] = useState(today)
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string | null>(null)
   const [currentStep, setCurrentStep] = useState<'calendar' | 'booking' | 'payment'>('calendar')
   const [formData, setFormData] = useState<BookingFormData>({
@@ -55,6 +56,13 @@ export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
   })
   const [clientSecret, setClientSecret] = useState<string | null>(null)
   const [monthlyAvailability, setMonthlyAvailability] = useState<Record<string, TimeSlot[]>>({})
+  // Select today's date on initial load
+  useEffect(() => {
+    setSelectedDate(today)
+  }, [today])
+
+  const startMonth = startOfMonth(today)
+  const endMonth = endOfMonth(addDays(today, 60))
 
   // Fetch event types
   const {
@@ -89,12 +97,12 @@ export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
     enabled: currentStep === 'calendar' && !!currentEventId,
   })
 
-  // Update monthly availability when data is fetched
+  // When new slots are fetched, set them as the monthly availability
   useEffect(() => {
-    if (availableSlots && isSlotsFetched) {
+    if (isSlotsFetched) {
       setMonthlyAvailability(availableSlots)
     }
-  }, [availableSlots, isSlotsFetched])
+  }, [isSlotsFetched, availableSlots])
 
   const slotsForSelectedDate = useMemo(() => {
     if (!selectedDate) return []
@@ -226,7 +234,7 @@ export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
           {selectedEventType && (
             <div className="grid gap-6 md:grid-cols-2">
               {/* Calendar */}
-              <div>
+              <div className="">
                 <Label className="mb-2 block text-sm font-medium">Select Date</Label>
                 <Calendar
                   mode="single"
@@ -237,12 +245,18 @@ export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
                       setSelectedTimeSlot(null) // Reset time slot when changing date
                     }
                   }}
-                  onMonthChange={setCurrentMonth}
+                  onMonthChange={month => {
+                    setCurrentMonth(month)
+                    setSelectedDate(undefined)
+                    setSelectedTimeSlot(null)
+                  }}
                   disabled={date => {
                     const dateKey = format(date, 'yyyy-MM-dd')
-                    return date < new Date() || !monthlyAvailability[dateKey]?.length
+                    return date < today || !monthlyAvailability[dateKey]?.length
                   }}
                   className="rounded-md border"
+                  startMonth={startMonth}
+                  endMonth={endMonth}
                 />
               </div>
 
@@ -273,7 +287,7 @@ export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
                 ) : (
                   <div className="text-muted-foreground rounded-md border border-dashed p-8 text-center">
                     <CalendarIcon className="mx-auto mb-2 h-8 w-8" />
-                    <p className="text-sm">No available time slots for this date</p>
+                    <p className="text-sm">Please select an available date</p>
                   </div>
                 )}
               </div>
