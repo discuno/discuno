@@ -5,13 +5,13 @@ import type Stripe from 'stripe'
 import { z } from 'zod'
 import { env } from '~/env'
 import { createCalcomBooking } from '~/lib/calcom'
-import { BadRequestError, ExternalApiError } from '~/lib/errors'
+import { ExternalApiError } from '~/lib/errors'
 import { stripe } from '~/lib/stripe'
 import { db } from '~/server/db'
 import { mentorStripeAccounts, payments } from '~/server/db/schema'
 import { getMentorCalcomTokensByUsername, getMentorEnabledEventTypes } from '~/server/queries'
 
-interface TimeSlot {
+export interface TimeSlot {
   time: string
   available: boolean
 }
@@ -121,23 +121,18 @@ export const fetchEventTypes = async (username: string): Promise<EventType[]> =>
 }
 
 /**
- * Fetch available slots for a given date and username
+ * Fetch available slots for a given date range and username
  */
 export const fetchAvailableSlots = async (
   eventTypeId: number,
-  date: Date,
+  startDate: Date,
+  endDate: Date,
   timeZone?: string
-): Promise<TimeSlot[]> => {
-  // Build date range
-  const start = new Date(date)
-  start.setHours(0, 0, 0, 0)
-  const end = new Date(date)
-  end.setHours(23, 59, 59, 999)
-
+): Promise<Record<string, TimeSlot[]>> => {
   const url = new URL(`${env.NEXT_PUBLIC_CALCOM_API_URL}/slots`)
   url.searchParams.append('eventTypeId', eventTypeId.toString())
-  url.searchParams.append('start', start.toISOString())
-  url.searchParams.append('end', end.toISOString())
+  url.searchParams.append('start', startDate.toISOString())
+  url.searchParams.append('end', endDate.toISOString())
   if (timeZone) url.searchParams.append('timeZone', timeZone)
 
   const response = await fetch(url.toString(), {
@@ -158,23 +153,24 @@ export const fetchAvailableSlots = async (
     throw new ExternalApiError('Invalid slots response')
   }
 
-  const key = start.toISOString().split('T')[0]
+  const availableSlots: Record<string, TimeSlot[]> = {}
 
-  if (!key) {
-    throw new BadRequestError('No slots available for the selected date')
+  for (const dateKey in data.data) {
+    const slots = data.data[dateKey]
+    if (slots) {
+      availableSlots[dateKey] = slots.map(s => ({
+        time: new Date(s.start).toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true,
+          timeZone: timeZone ?? 'America/New_York',
+        }),
+        available: true,
+      }))
+    }
   }
 
-  const raw = data.data[key] ?? []
-
-  return raw.map(s => ({
-    time: new Date(s.start).toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true,
-      timeZone: timeZone ?? 'America/New_York',
-    }),
-    available: true,
-  }))
+  return availableSlots
 }
 
 /**

@@ -2,10 +2,14 @@
 
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { format } from 'date-fns'
+import { endOfMonth, endOfWeek, format, startOfMonth, startOfWeek } from 'date-fns'
 import { ArrowLeft, CalendarIcon, Clock, CreditCard } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
+import type {
+  BookingFormInput,
+  TimeSlot,
+} from '~/app/(app)/(public)/mentor/[username]/book/actions'
 import type { BookingData } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingModal'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
@@ -23,7 +27,6 @@ import {
 import { Skeleton } from '~/components/ui/skeleton'
 import { BadRequestError, ExternalApiError } from '~/lib/errors'
 import { stripePromise } from '~/lib/stripe/client'
-import type { BookingFormInput } from '../actions'
 import {
   createStripePaymentIntent,
   fetchEventTypes as fetchEventTypesAction,
@@ -42,7 +45,8 @@ export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
   const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
 
   const [selectedEventType, setSelectedEventType] = useState<EventType | null>(null)
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date())
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date())
+  const [currentMonth, setCurrentMonth] = useState(new Date())
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string | null>(null)
   const [currentStep, setCurrentStep] = useState<'calendar' | 'booking' | 'payment'>('calendar')
   const [formData, setFormData] = useState<BookingFormData>({
@@ -50,6 +54,7 @@ export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
     email: '',
   })
   const [clientSecret, setClientSecret] = useState<string | null>(null)
+  const [monthlyAvailability, setMonthlyAvailability] = useState<Record<string, TimeSlot[]>>({})
 
   // Fetch event types
   const {
@@ -66,25 +71,41 @@ export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
   const currentEventId = selectedEventType?.id
 
   const {
-    data: availableSlots = [],
+    data: availableSlots,
+    isSuccess: isSlotsFetched,
     isFetching,
     error,
   } = useQuery({
-    queryKey: ['available-slots', currentEventId, selectedDate],
+    queryKey: ['available-slots', currentEventId, format(currentMonth, 'yyyy-MM')],
     queryFn: () => {
       if (!currentEventId) throw new BadRequestError('No event type selected')
-      const fetched = fetchSlotsAction(currentEventId, selectedDate, timeZone)
-      console.log(fetched)
-      return fetched
+      const monthStart = startOfMonth(currentMonth)
+      const monthEnd = endOfMonth(currentMonth)
+      const startDate = startOfWeek(monthStart)
+      const endDate = endOfWeek(monthEnd)
+      return fetchSlotsAction(currentEventId, startDate, endDate, timeZone)
     },
-    staleTime: 1000 * 30,
+    staleTime: 1000 * 60, // 1 minute
     enabled: currentStep === 'calendar' && !!currentEventId,
   })
+
+  // Update monthly availability when data is fetched
+  useEffect(() => {
+    if (availableSlots && isSlotsFetched) {
+      setMonthlyAvailability(availableSlots)
+    }
+  }, [availableSlots, isSlotsFetched])
+
+  const slotsForSelectedDate = useMemo(() => {
+    if (!selectedDate) return []
+    const dateKey = format(selectedDate, 'yyyy-MM-dd')
+    return monthlyAvailability[dateKey] ?? []
+  }, [monthlyAvailability, selectedDate])
 
   // Create booking mutation (unified for both free and paid)
   const createBookingMutation = useMutation({
     mutationFn: async () => {
-      if (!selectedTimeSlot || !selectedEventType) {
+      if (!selectedTimeSlot || !selectedEventType || !selectedDate) {
         throw new Error('Missing required booking data')
       }
 
@@ -216,7 +237,11 @@ export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
                       setSelectedTimeSlot(null) // Reset time slot when changing date
                     }
                   }}
-                  disabled={date => date < new Date()}
+                  onMonthChange={setCurrentMonth}
+                  disabled={date => {
+                    const dateKey = format(date, 'yyyy-MM-dd')
+                    return date < new Date() || !monthlyAvailability[dateKey]?.length
+                  }}
                   className="rounded-md border"
                 />
               </div>
@@ -230,9 +255,9 @@ export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
                       <Skeleton key={i} className="h-10 w-full" />
                     ))}
                   </div>
-                ) : availableSlots.length > 0 ? (
+                ) : slotsForSelectedDate.length > 0 ? (
                   <div className="grid gap-2">
-                    {availableSlots.map((slot, index) => (
+                    {slotsForSelectedDate.map((slot, index) => (
                       <Button
                         key={index}
                         variant={selectedTimeSlot === slot.time ? 'default' : 'outline'}
@@ -306,7 +331,7 @@ export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
                     </div>
                     <div className="flex justify-between">
                       <span>Date:</span>
-                      <span>{selectedDate.toDateString()}</span>
+                      <span>{selectedDate?.toDateString()}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Time:</span>
@@ -355,7 +380,8 @@ export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
       ) : (
         // Payment step using Stripe Elements
         clientSecret &&
-        selectedEventType && (
+        selectedEventType &&
+        selectedDate && (
           <div className="p-6">
             <Elements
               stripe={stripePromise}
