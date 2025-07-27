@@ -1,9 +1,12 @@
 import react from '@vitejs/plugin-react'
-import path from 'path'
+import dotenv from 'dotenv'
+import tsconfigPaths from 'vite-tsconfig-paths'
 import { defineConfig } from 'vitest/config'
 
+dotenv.config({ path: '.env.test', override: true })
+
 export default defineConfig({
-  plugins: [react()],
+  plugins: [tsconfigPaths(), react()],
   test: {
     globals: true,
     environment: 'jsdom',
@@ -39,11 +42,5 @@ export default defineConfig({
     },
     include: ['src/**/*.{test,spec}.{js,ts,jsx,tsx}'],
     exclude: ['node_modules/', '.next/', 'dist/', 'coverage/'],
-  },
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
-      '~': path.resolve(__dirname, './src'),
-    },
   },
 })

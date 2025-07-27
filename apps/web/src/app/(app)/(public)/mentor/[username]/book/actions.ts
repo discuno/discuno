@@ -228,28 +228,28 @@ export const createStripePaymentIntent = async (
   clientSecret?: string
   error?: string
 }> => {
-  const {
-    eventTypeId,
-    eventTypeSlug,
-    startTimeIso,
-    attendeeName,
-    attendeeEmail,
-    mentorUsername,
-    mentorUserId,
-    price,
-    currency,
-    timeZone,
-  } = input
-
   try {
-    BookingFormInputSchema.parse(input)
+    const validatedInput = BookingFormInputSchema.parse(input)
+    const {
+      eventTypeId,
+      eventTypeSlug,
+      startTimeIso,
+      attendeeName,
+      attendeeEmail,
+      mentorUsername,
+      mentorUserId,
+      price,
+      currency,
+      timeZone,
+    } = validatedInput
 
-    // TODO: Handle case where price is 0 (free bookings)
+    console.log('Creating Stripe Payment Intent for:', { mentorUsername, attendeeEmail, price })
+
     if (price === 0) {
+      console.log('Skipping Stripe for free booking.')
       return { success: false, error: 'Free bookings should use direct booking flow' }
     }
 
-    // Get mentor's Stripe account
     const stripeAccount = await db
       .select()
       .from(mentorStripeAccounts)
@@ -257,18 +257,16 @@ export const createStripePaymentIntent = async (
       .limit(1)
 
     if (!stripeAccount.length || !stripeAccount[0]?.stripeAccountId) {
+      console.error(`Mentor ${mentorUsername} has not set up a Stripe account.`)
       return { success: false, error: 'Mentor has not set up payments' }
     }
 
     const stripeAccountData = stripeAccount[0]
-
-    // Calculate fees
-    const mentorFee = Math.round(price * 0.1) // 10% mentor fee
-    const menteeFee = Math.round(price * 0.05) // 5% mentee fee
+    const mentorFee = Math.round(price * 0.1)
+    const menteeFee = Math.round(price * 0.05)
     const mentorAmount = price - mentorFee
-    const total = Math.round(price + menteeFee) // Customer pays session fee + mentee fee
+    const total = Math.round(price + menteeFee)
 
-    // Create Stripe Payment Intent
     const paymentIntent = await stripe.paymentIntents.create({
       amount: total,
       currency: currency,
@@ -288,13 +286,47 @@ export const createStripePaymentIntent = async (
       },
     })
 
+    console.log(`Successfully created Payment Intent: ${paymentIntent.id}`)
     return {
       success: paymentIntent.client_secret !== null,
       clientSecret: paymentIntent.client_secret ?? undefined,
     }
-  } catch (stripeError) {
-    console.error('Stripe payment intent creation failed:', stripeError)
-    return { success: false, error: 'Failed to create payment session' }
+  } catch (error) {
+    console.error('Stripe payment intent creation failed:', error)
+    if (error instanceof z.ZodError) {
+      return { success: false, error: 'Invalid input data.' }
+    }
+    return { success: false, error: 'Failed to create payment session.' }
+  }
+}
+
+/**
+ * Refund a Stripe Payment Intent and update the payment record.
+ */
+export const refundStripePaymentIntent = async (
+  paymentIntentId: string,
+  reason: 'duplicate' | 'fraudulent' | 'requested_by_customer'
+): Promise<{ success: boolean; error?: string }> => {
+  try {
+    console.log(`Refunding payment intent ${paymentIntentId} for reason: ${reason}`)
+    const refund = await stripe.refunds.create({
+      payment_intent: paymentIntentId,
+      reason: reason,
+    })
+
+    await db
+      .update(payments)
+      .set({
+        platformStatus: 'REFUNDED',
+        stripeStatus: 'canceled', // Or another appropriate status
+      })
+      .where(eq(payments.stripePaymentIntentId, paymentIntentId))
+
+    console.log(`Successfully refunded ${refund.id} for payment intent ${paymentIntentId}`)
+    return { success: true }
+  } catch (error) {
+    console.error(`Failed to refund payment intent ${paymentIntentId}:`, error)
+    return { success: false, error: 'Failed to process refund.' }
   }
 }
 
@@ -304,66 +336,81 @@ export const createStripePaymentIntent = async (
 export const handlePaymentIntentWebhook = async (
   paymentIntent: Stripe.PaymentIntent
 ): Promise<{ success: boolean; error?: string }> => {
+  const { metadata, id: paymentIntentId } = paymentIntent
+  console.log(`Handling payment intent webhook for: ${paymentIntentId}`)
+
+  if (
+    !metadata.mentorUserId ||
+    !metadata.attendeeEmail ||
+    !metadata.attendeeName ||
+    !metadata.mentorFee ||
+    !metadata.menteeFee ||
+    !metadata.mentorAmount ||
+    !metadata.mentorUsername ||
+    !metadata.startTime ||
+    !metadata.attendeeTimeZone ||
+    !metadata.mentorStripeAccountId
+  ) {
+    console.error('Missing required metadata in payment intent:', paymentIntentId)
+    return { success: false, error: 'Missing required metadata' }
+  }
+
+  const disputePeriodEnd = new Date()
+  disputePeriodEnd.setHours(disputePeriodEnd.getHours() + 72)
+
+  const paymentRecord = await db
+    .insert(payments)
+    .values({
+      stripePaymentIntentId: paymentIntentId,
+      mentorUserId: metadata.mentorUserId,
+      customerEmail: metadata.attendeeEmail,
+      customerName: metadata.attendeeName,
+      amount: paymentIntent.amount,
+      currency: paymentIntent.currency.toUpperCase(),
+      mentorFee: parseInt(metadata.mentorFee),
+      menteeFee: parseInt(metadata.menteeFee),
+      mentorAmount: parseInt(metadata.mentorAmount),
+      platformStatus: 'SUCCEEDED',
+      stripeStatus: paymentIntent.status,
+      disputePeriodEnds: disputePeriodEnd,
+      metadata: { paymentIntentMetadata: metadata },
+    })
+    .returning()
+
+  if (!paymentRecord[0]) {
+    console.error('Failed to create payment record for payment intent:', paymentIntentId)
+    return { success: false, error: 'Failed to create payment record' }
+  }
+
+  console.log(`Payment record created for intent ${paymentIntentId}`)
+
   try {
-    const { metadata } = paymentIntent
-
-    // 2. Store payment record
-    const disputePeriodEnd = new Date()
-    disputePeriodEnd.setHours(disputePeriodEnd.getHours() + 72)
-
-    if (
-      !metadata.mentorUserId ||
-      !metadata.attendeeEmail ||
-      !metadata.attendeeName ||
-      !metadata.mentorFee ||
-      !metadata.menteeFee ||
-      !metadata.mentorAmount ||
-      !metadata.mentorUsername ||
-      !metadata.startTime ||
-      !metadata.attendeeTimeZone ||
-      !metadata.mentorStripeAccountId
-    ) {
-      return { success: false, error: 'Missing required metadata' }
-    }
-
-    const payment = await db
-      .insert(payments)
-      .values({
-        stripePaymentIntentId: paymentIntent.id,
-        mentorUserId: metadata.mentorUserId,
-        customerEmail: metadata.attendeeEmail,
-        customerName: metadata.attendeeName,
-        amount: paymentIntent.amount,
-        currency: paymentIntent.currency.toUpperCase(),
-        mentorFee: parseInt(metadata.mentorFee),
-        menteeFee: parseInt(metadata.menteeFee),
-        mentorAmount: parseInt(metadata.mentorAmount),
-        platformStatus: 'SUCCEEDED',
-        stripeStatus: paymentIntent.status,
-        disputePeriodEnds: disputePeriodEnd,
-        metadata: { paymentIntentMetadata: paymentIntent.metadata },
-      })
-      .returning()
-
-    if (!payment[0]) {
-      return { success: false, error: 'Failed to create payment record' }
-    }
-
-    // Triggers cal.com webhook to create booking locally
+    console.log(`Attempting to create Cal.com booking for payment intent: ${paymentIntentId}`)
     await createCalcomBooking({
       calcomEventTypeId: Number(metadata.eventTypeId),
       start: new Date(metadata.startTime).toISOString(),
       attendeeName: metadata.attendeeName,
       attendeeEmail: metadata.attendeeEmail,
       timeZone: metadata.attendeeTimeZone,
-      stripePaymentIntentId: paymentIntent.id,
-      paymentId: payment[0].id,
+      stripePaymentIntentId: paymentIntentId,
+      paymentId: paymentRecord[0].id,
       mentorUserId: metadata.mentorUserId,
     })
-
+    console.log(`Successfully created Cal.com booking for payment intent: ${paymentIntentId}`)
     return { success: true }
   } catch (error) {
-    console.error('handlePaymentIntentComplete error:', error)
-    return { success: false, error: 'Failed to complete booking' }
+    console.error(
+      `Cal.com booking failed for payment intent ${paymentIntentId}. Initiating refund.`,
+      error
+    )
+
+    await refundStripePaymentIntent(paymentIntentId, 'requested_by_customer')
+
+    await db
+      .update(payments)
+      .set({ platformStatus: 'FAILED' })
+      .where(eq(payments.stripePaymentIntentId, paymentIntentId))
+
+    return { success: false, error: 'Failed to create booking, payment has been refunded.' }
   }
 }
