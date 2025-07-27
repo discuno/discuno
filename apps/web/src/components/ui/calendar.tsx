@@ -92,6 +92,7 @@ function Calendar({
         range_start: cn('rounded-l-md bg-accent', defaultClassNames.range_start),
         range_middle: cn('rounded-none', defaultClassNames.range_middle),
         range_end: cn('rounded-r-md bg-accent', defaultClassNames.range_end),
+        // Modified today class to include a dot instead of shade
         today: cn(
           'relative before:absolute before:bottom-1 before:left-1/2 before:-translate-x-1/2 before:h-1 before:w-1 before:rounded-full before:bg-primary',
           defaultClassNames.today
