@@ -83,10 +83,7 @@ export function AvailabilityManager({ initialAvailability }: AvailabilityManager
           setAvailability(prev => (prev ? { ...prev, weeklySchedule: newSchedule } : null))
         }}
       />
-      <DateOverridesManager
-        overrides={availability.dateOverrides}
-        onOverridesChange={handleOverridesChange}
-      />
+      <DateOverridesManager availability={availability} onOverridesChange={handleOverridesChange} />
       <div className="flex justify-end space-x-4">
         <Button variant="outline" onClick={handleCancel} disabled={!isDirty || isPending}>
           Cancel

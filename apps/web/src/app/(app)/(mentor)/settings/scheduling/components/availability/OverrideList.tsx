@@ -1,18 +1,18 @@
 'use client'
 
 import { useState } from 'react'
-import type { DateOverride } from '~/app/types/availability'
+import type { Availability, DateOverride } from '~/app/types/availability'
 import { Button } from '~/components/ui/button'
 import { DeleteOverrideDialog } from './DeleteOverrideDialog'
 import { OverrideListItem } from './OverrideListItem'
 import { SaveOverrideModal } from './SaveOverrideModal'
 
 interface OverrideListProps {
-  initialOverrides: DateOverride[]
+  availability: Availability | null
   onOverridesChange: (newOverrides: DateOverride[]) => void
 }
 
-export function OverrideList({ initialOverrides, onOverridesChange }: OverrideListProps) {
+export function OverrideList({ availability, onOverridesChange }: OverrideListProps) {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [selectedOverride, setSelectedOverride] = useState<DateOverride | null>(null)
@@ -33,7 +33,7 @@ export function OverrideList({ initialOverrides, onOverridesChange }: OverrideLi
     setIsDialogOpen(true)
   }
 
-  const existingOverrideDates = initialOverrides.map(o => o.date)
+  const initialOverrides = availability?.dateOverrides ?? []
 
   return (
     <div className="space-y-4">
@@ -59,7 +59,7 @@ export function OverrideList({ initialOverrides, onOverridesChange }: OverrideLi
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         overrideToEdit={selectedOverride}
-        existingOverrideDates={existingOverrideDates}
+        currentAvailability={availability}
         onSave={(newOverrides: DateOverride[]) => {
           onOverridesChange(newOverrides)
           setIsModalOpen(false)

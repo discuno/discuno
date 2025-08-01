@@ -1,15 +1,18 @@
 'use client'
 
-import type { DateOverride } from '~/app/types/availability'
+import type { Availability, DateOverride } from '~/app/types/availability'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
 import { OverrideList } from './OverrideList'
 
 interface DateOverridesManagerProps {
-  overrides: DateOverride[]
+  availability: Availability | null
   onOverridesChange: (overrides: DateOverride[]) => void
 }
 
-export function DateOverridesManager({ overrides, onOverridesChange }: DateOverridesManagerProps) {
+export function DateOverridesManager({
+  availability,
+  onOverridesChange,
+}: DateOverridesManagerProps) {
   return (
     <Card>
       <CardHeader>
@@ -19,7 +22,7 @@ export function DateOverridesManager({ overrides, onOverridesChange }: DateOverr
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <OverrideList initialOverrides={overrides} onOverridesChange={onOverridesChange} />
+        <OverrideList availability={availability} onOverridesChange={onOverridesChange} />
       </CardContent>
     </Card>
   )
