@@ -6,7 +6,7 @@ import type { CalcomToken, CreateCalcomUserInput, UpdateCalcomUserInput } from '
 import type { Availability, DateOverride, WeeklySchedule } from '~/app/types/availability'
 import { availabilitySchema, dateOverrideSchema } from '~/app/types/availability'
 import { env } from '~/env'
-import { BadRequestError, ExternalApiError, requireAuth } from '~/lib/auth/auth-utils'
+import { ExternalApiError, requireAuth } from '~/lib/auth/auth-utils'
 
 import {
   createCalcomUser as createCalcomUserCore,
@@ -66,7 +66,7 @@ const getCalcomAccessToken = async (): Promise<{
  */
 const refreshCalcomToken = async (): Promise<{
   success: boolean
-  accessToken: string
+  accessToken?: string
   error?: string
 }> => {
   try {
@@ -74,7 +74,6 @@ const refreshCalcomToken = async (): Promise<{
     if (!tokenRecord) {
       return {
         success: false,
-        accessToken: '',
         error: 'Token not found',
       }
     }
@@ -83,7 +82,15 @@ const refreshCalcomToken = async (): Promise<{
     const now = new Date()
     if (tokenRecord.accessTokenExpiresAt < now) {
       // Try force refresh if refresh token is expired
-      return await forceRefreshCalcomToken(tokenRecord.calcomUserId, tokenRecord.userId)
+      const forceRefreshResult = await forceRefreshCalcomToken(
+        tokenRecord.calcomUserId,
+        tokenRecord.userId
+      )
+      return {
+        success: forceRefreshResult.success,
+        accessToken: forceRefreshResult.accessToken ?? undefined,
+        error: forceRefreshResult.error,
+      }
     }
 
     // Refresh the tokens using Cal.com API v2 - correct endpoint from docs
@@ -107,7 +114,17 @@ const refreshCalcomToken = async (): Promise<{
 
       // Try force refresh on any failure
       console.log('Normal refresh failed, trying force refresh...')
-      return await forceRefreshCalcomToken(tokenRecord.calcomUserId, tokenRecord.userId)
+      {
+        const forceRefreshResult = await forceRefreshCalcomToken(
+          tokenRecord.calcomUserId,
+          tokenRecord.userId
+        )
+        return {
+          success: forceRefreshResult.success,
+          accessToken: forceRefreshResult.accessToken ?? undefined,
+          error: forceRefreshResult.error,
+        }
+      }
     }
 
     const refreshData = await refreshResponse.json()
@@ -115,7 +132,17 @@ const refreshCalcomToken = async (): Promise<{
     if (refreshData.status !== 'success') {
       console.error('Refresh response error:', refreshData)
       // Try force refresh on any failure
-      return await forceRefreshCalcomToken(tokenRecord.calcomUserId, tokenRecord.userId)
+      {
+        const forceRefreshResult = await forceRefreshCalcomToken(
+          tokenRecord.calcomUserId,
+          tokenRecord.userId
+        )
+        return {
+          success: forceRefreshResult.success,
+          accessToken: forceRefreshResult.accessToken ?? undefined,
+          error: forceRefreshResult.error,
+        }
+      }
     }
 
     // Use the expiration times from the API response
@@ -166,7 +193,7 @@ const forceRefreshCalcomToken = async (
   userId: string
 ): Promise<{
   success: boolean
-  accessToken: string
+  accessToken?: string
   error?: string
 }> => {
   try {
@@ -188,14 +215,20 @@ const forceRefreshCalcomToken = async (
     if (!forceRefreshResponse.ok) {
       const errorText = await forceRefreshResponse.text()
       console.error('Force refresh failed:', forceRefreshResponse.status, errorText)
-      throw new Error(`Force refresh failed: ${forceRefreshResponse.status} - ${errorText}`)
+      return {
+        success: false,
+        error: `Force refresh failed: ${forceRefreshResponse.status} - ${errorText}`,
+      }
     }
 
     const forceRefreshData = await forceRefreshResponse.json()
 
     if (forceRefreshData.status !== 'success') {
       console.error('Force refresh response error:', forceRefreshData)
-      throw new Error(`Force refresh API error: ${JSON.stringify(forceRefreshData)}`)
+      return {
+        success: false,
+        error: `Force refresh API error: ${JSON.stringify(forceRefreshData)}`,
+      }
     }
 
     // Use the expiration times from the API response
@@ -277,36 +310,59 @@ const getUserCalcomToken = async (): Promise<{
 const createCalcomUser = async (
   data: CreateCalcomUserInput
 ): Promise<{
+  success: boolean
   calcomUserId?: number
   username?: string
+  error?: string
 }> => {
   try {
     const result = await createCalcomUserCore(data)
     return {
+      success: true,
       calcomUserId: result.calcomUserId,
       username: result.username,
     }
   } catch (error) {
     console.error('Cal.com user creation error:', error)
     if (error instanceof ExternalApiError) {
-      throw error
+      return {
+        success: false,
+        error: error.message,
+      }
     }
-    throw new BadRequestError('Failed to create Cal.com user')
+    return {
+      success: false,
+      error: `Failed to create Cal.com user: ${error}`,
+    }
   }
 }
 
 /**
  * Update Cal.com user (server action wrapper)
  */
-const updateCalcomUser = async (data: UpdateCalcomUserInput): Promise<void> => {
+const updateCalcomUser = async (
+  data: UpdateCalcomUserInput
+): Promise<{
+  success: boolean
+  error?: string
+}> => {
   try {
     await updateCalcomUserCore(data)
+    return {
+      success: true,
+    }
   } catch (error) {
     console.error('Cal.com user update error:', error)
     if (error instanceof ExternalApiError) {
-      throw error
+      return {
+        success: false,
+        error: error.message,
+      }
     }
-    throw new BadRequestError('Failed to update Cal.com user')
+    return {
+      success: false,
+      error: `Failed to update Cal.com user: ${error}`,
+    }
   }
 }
 
@@ -674,7 +730,10 @@ export async function deleteDateOverride(date: string): Promise<{
 export const fetchEventTypes = async () => {
   const tokenResult = await getCalcomAccessToken()
   if (!tokenResult.success || !tokenResult.accessToken || !tokenResult.username) {
-    throw new Error('No valid Cal.com access token available')
+    return {
+      success: false,
+      error: 'Failed to get valid Cal.com access token',
+    }
   }
 
   const response = await fetch(
@@ -688,18 +747,26 @@ export const fetchEventTypes = async () => {
   )
 
   if (!response.ok) {
-    throw new ExternalApiError('Failed to fetch event types')
+    return {
+      success: false,
+      error: 'Response not ok',
+    }
   }
 
   const payload = await response.json()
-  return Array.isArray(payload.data) ? payload.data : []
+  return {
+    success: true,
+    data: Array.isArray(payload.data) ? payload.data : [],
+  }
 }
 
 /**
  * Fetch team event types from Cal.com
  */
-export const fetchTeamEventTypes = async (): Promise<
-  Array<{
+// Unused
+export const fetchTeamEventTypes = async (): Promise<{
+  success: boolean
+  data?: Array<{
     id: number
     title: string
     slug: string
@@ -708,13 +775,17 @@ export const fetchTeamEventTypes = async (): Promise<
     price?: number
     currency?: string
   }>
-> => {
+  error?: string
+}> => {
   try {
     const teamId = env.COLLEGE_MENTOR_TEAM_ID
     const orgId = env.CALCOM_ORG_ID
 
     if (!teamId || !orgId) {
-      throw new Error('Missing team or organization ID')
+      return {
+        success: false,
+        error: 'Missing team or organization ID',
+      }
     }
 
     const response = await fetch(
@@ -730,7 +801,10 @@ export const fetchTeamEventTypes = async (): Promise<
     if (!response.ok) {
       const errorText = await response.text()
       console.error('Failed to fetch team event types:', response.status, errorText)
-      throw new ExternalApiError('Failed to fetch team event types')
+      return {
+        success: false,
+        error: `Failed to fetch team event types: ${errorText}`,
+      }
     }
 
     const data = await response.json()
@@ -760,10 +834,16 @@ export const fetchTeamEventTypes = async (): Promise<
     }
 
     console.warn('Unexpected team event types response structure:', data)
-    return []
+    return {
+      success: false,
+      error: 'Unexpected team event types response structure',
+    }
   } catch (error) {
     console.error('Error fetching team event types:', error)
-    throw error
+    return {
+      success: false,
+      error: 'Failed to fetch team event types',
+    }
   }
 }
 
