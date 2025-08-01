@@ -1,10 +1,27 @@
 import '@testing-library/jest-dom'
 import { cleanup } from '@testing-library/react'
+import dotenv from 'dotenv'
 import { afterEach, vi } from 'vitest'
 
 // Cleanup after each test
 afterEach(() => {
   cleanup()
+  vi.mock('~/env', () => {
+    dotenv.config({ path: '.env.test' })
+
+    return {
+      env: {
+        ...process.env,
+        // Add any other env variables that are not prefixed with NEXT_PUBLIC_
+        STRIPE_API_KEY: process.env.STRIPE_API_KEY,
+        STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
+        X_CAL_SECRET_KEY: process.env.X_CAL_SECRET_KEY,
+        DATABASE_URL: process.env.DATABASE_URL,
+        NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
+        NEXTAUTH_URL: process.env.NEXTAUTH_URL,
+      },
+    }
+  })
 })
 
 // Mock Next.js router

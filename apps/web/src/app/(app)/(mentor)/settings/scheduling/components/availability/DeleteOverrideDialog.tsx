@@ -34,13 +34,13 @@ export function DeleteOverrideDialog({
     if (!override) return
 
     startTransition(async () => {
-      try {
-        const newOverrides = await deleteDateOverride(override.date)
+      const result = await deleteDateOverride(override.date)
+      if (result.success && result.data) {
         toast.success('Override deleted successfully!')
-        onDelete(newOverrides)
-      } catch (error) {
-        toast.error('Failed to delete override. Please try again.')
-        console.error(error)
+        onDelete(result.data)
+        onClose()
+      } else {
+        toast.error(`Failed to delete override: ${result.error ?? 'Unknown error'}`)
       }
     })
   }

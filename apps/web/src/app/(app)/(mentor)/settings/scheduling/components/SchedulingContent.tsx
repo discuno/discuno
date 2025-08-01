@@ -4,7 +4,18 @@ import { AvailabilityManager } from './availability/AvailabilityManager'
 import { EventTypeToggleSection } from './EventTypeToggleSection'
 
 export async function SchedulingContent() {
-  const initialAvailability = await getSchedule()
+  const scheduleResult = await getSchedule()
+
+  if (!scheduleResult.success) {
+    return (
+      <div className="flex h-32 items-center justify-center">
+        <p className="text-destructive">
+          Failed to load schedule: {scheduleResult.error ?? 'Unknown error'}
+        </p>
+      </div>
+    )
+  }
+
   return (
     <Tabs defaultValue="availability" className="space-y-4">
       <TabsList>
@@ -13,7 +24,7 @@ export async function SchedulingContent() {
       </TabsList>
 
       <TabsContent value="availability">
-        <AvailabilityManager initialAvailability={initialAvailability} />
+        <AvailabilityManager initialAvailability={scheduleResult.data} />
       </TabsContent>
 
       <TabsContent value="event-types">

@@ -1145,6 +1145,8 @@ export const getMentorEventTypes = cache(
       .innerJoin(globalEventTypes, eq(mentorEventTypes.globalEventTypeId, globalEventTypes.id))
       .where(eq(mentorEventTypes.mentorUserId, currentUserId))
 
+    console.log('getMentorEventTypes result:', result)
+
     return result
       .filter(item => item.calcomEventTypeId !== null)
       .map(item => ({

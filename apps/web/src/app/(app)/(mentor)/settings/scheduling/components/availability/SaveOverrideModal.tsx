@@ -70,27 +70,31 @@ export function SaveOverrideModal({
 
   const updateOverrideMutation = useMutation({
     mutationFn: updateDateOverride,
-    onSuccess: (newOverrides: DateOverride[]) => {
-      toast.success('Override updated')
-      onSave(newOverrides)
-      void queryClient.invalidateQueries({ queryKey: ['schedule'] })
-      onClose()
-    },
-    onError: (error: Error) => {
-      toast.error(`Failed to update override: ${error.message}`)
+    onSuccess: result => {
+      if (result.success && result.data) {
+        toast.success('Override updated')
+        onSave(result.data)
+        void queryClient.invalidateQueries({ queryKey: ['schedule'] })
+        onClose()
+      } else {
+        console.warn(result.error)
+        toast.error(`Failed to update override: ${result.error ?? 'Unknown error'}`)
+      }
     },
   })
 
   const createOverrideMutation = useMutation({
     mutationFn: createDateOverride,
-    onSuccess: (newOverrides: DateOverride[]) => {
-      toast.success('Overrides created')
-      onSave(newOverrides)
-      void queryClient.invalidateQueries({ queryKey: ['schedule'] })
-      onClose()
-    },
-    onError: (error: Error) => {
-      toast.error(`Failed to create overrides: ${error.message}`)
+    onSuccess: result => {
+      if (result.success && result.data) {
+        toast.success('Override created')
+        onSave(result.data)
+        void queryClient.invalidateQueries({ queryKey: ['schedule'] })
+        onClose()
+      } else {
+        console.warn(result.error)
+        toast.error(`Failed to create override: ${result.error ?? 'Unknown error'}`)
+      }
     },
   })
 
@@ -117,8 +121,11 @@ export function SaveOverrideModal({
 
       updateOverrideMutation.mutate(override)
     } else {
-      // create multiple overrides
+      // create overrides sequentially for multiple dates
       if (selectedDates.length === 0) return
+
+      // For simplicity, create them one by one
+      // In a production app, you might want a batch endpoint
       for (const d of selectedDates) {
         const dateStr = d.toISOString().substring(0, 10)
         const override: DateOverride = {
@@ -127,6 +134,8 @@ export function SaveOverrideModal({
         }
 
         createOverrideMutation.mutate(override)
+        // Note: This will fire multiple mutations, but they're async
+        // The mutation will handle success/error for each one
       }
     }
   }
