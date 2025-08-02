@@ -1,3 +1,6 @@
+'use server'
+import 'server-only'
+
 import type { CreateCalcomUserInput, UpdateCalcomUserInput } from '~/app/types'
 import { env } from '~/env'
 import { ExternalApiError } from '~/lib/auth/auth-utils'
@@ -200,4 +203,50 @@ export const createCalcomBooking = async (input: {
   }
 
   throw new ExternalApiError(data.error ?? 'Unknown Cal.com booking error')
+}
+
+/**
+ * Fetch Cal.com event types for any username
+ */
+export const fetchCalcomEventTypesByUsername = async (
+  username: string
+): Promise<
+  Array<{
+    id: number
+    slug: string
+    title: string
+    lengthInMinutes: number
+    description?: string
+  }>
+> => {
+  const response = await fetch(
+    `${env.NEXT_PUBLIC_CALCOM_API_URL}/event-types?username=${encodeURIComponent(username)}`,
+    {
+      headers: {
+        Authorization: `Bearer ${env.X_CAL_SECRET_KEY}`,
+        'cal-api-version': '2024-06-14',
+      },
+    }
+  )
+
+  if (!response.ok) {
+    const errorText = await response.text()
+    throw new ExternalApiError(
+      `Failed to fetch event types from Cal.com: ${response.status} ${errorText}`
+    )
+  }
+
+  const data = await response.json()
+
+  if (data.status !== 'success' || !Array.isArray(data.data)) {
+    throw new ExternalApiError('Invalid Cal.com event types response')
+  }
+
+  return data.data as Array<{
+    id: number
+    slug: string
+    title: string
+    lengthInMinutes: number
+    description?: string
+  }>
 }

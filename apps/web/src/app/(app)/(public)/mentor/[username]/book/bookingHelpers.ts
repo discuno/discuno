@@ -1,4 +1,4 @@
-import { env } from '~/env'
+import { fetchCalcomEventTypesByUsername } from '~/lib/calcom'
 import { ExternalApiError } from '~/lib/errors'
 
 /**
@@ -9,33 +9,10 @@ export const getMentorCalcomEventTypeId = async (
   mentorUsername: string,
   eventTypeSlug: string
 ): Promise<number> => {
-  const response = await fetch(
-    `${env.NEXT_PUBLIC_CALCOM_API_URL}/event-types?username=${encodeURIComponent(mentorUsername)}`,
-    {
-      headers: {
-        Authorization: `Bearer ${env.X_CAL_SECRET_KEY}`,
-        'cal-api-version': '2024-06-14',
-      },
-    }
-  )
-
-  if (!response.ok) {
-    const errorText = await response.text()
-    throw new ExternalApiError(
-      `Failed to fetch mentor event types: ${response.status} ${errorText}`
-    )
-  }
-
-  const data = await response.json()
-
-  if (data.status !== 'success' || !Array.isArray(data.data)) {
-    throw new ExternalApiError('Invalid Cal.com event types response')
-  }
+  const eventTypes = await fetchCalcomEventTypesByUsername(mentorUsername)
 
   // Find the event type by slug
-  const eventType = (data.data as Array<{ slug: string; id: number }>).find(
-    et => et.slug === eventTypeSlug
-  )
+  const eventType = eventTypes.find(et => et.slug === eventTypeSlug)
 
   if (!eventType) {
     throw new ExternalApiError(

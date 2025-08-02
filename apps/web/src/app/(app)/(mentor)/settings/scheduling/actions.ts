@@ -7,16 +7,15 @@ import type { Availability, DateOverride, WeeklySchedule } from '~/app/types/ava
 import { availabilitySchema, dateOverrideSchema } from '~/app/types/availability'
 import { env } from '~/env'
 import { ExternalApiError, requireAuth } from '~/lib/auth/auth-utils'
-
 import {
   createCalcomUser as createCalcomUserCore,
   updateCalcomUser as updateCalcomUserCore,
 } from '~/lib/calcom'
 import {
   getFullProfile,
+  getMentorCalcomTokens,
   getMentorEventTypes,
   getMentorStripeAccount,
-  getUserCalcomTokens,
   updateCalcomTokensByUserId,
   upsertMentorEventType,
   upsertMentorStripeAccount,
@@ -34,7 +33,7 @@ const getCalcomAccessToken = async (): Promise<{
 }> => {
   try {
     console.log('getCalcomAccessToken')
-    const tokens = await getUserCalcomTokens()
+    const tokens = await getMentorCalcomTokens()
     console.log('tokens', tokens)
 
     if (!tokens) {
@@ -70,7 +69,7 @@ const refreshCalcomToken = async (): Promise<{
   error?: string
 }> => {
   try {
-    const tokenRecord = await getUserCalcomTokens()
+    const tokenRecord = await getMentorCalcomTokens()
     if (!tokenRecord) {
       return {
         success: false,
@@ -80,7 +79,7 @@ const refreshCalcomToken = async (): Promise<{
 
     // Check if refresh token is expired
     const now = new Date()
-    if (tokenRecord.accessTokenExpiresAt < now) {
+    if (tokenRecord.refreshTokenExpiresAt < now) {
       // Try force refresh if refresh token is expired
       const forceRefreshResult = await forceRefreshCalcomToken(
         tokenRecord.calcomUserId,
@@ -276,7 +275,7 @@ const forceRefreshCalcomToken = async (
  */
 const hasCalcomIntegration = async () => {
   try {
-    const tokens = await getUserCalcomTokens()
+    const tokens = await getMentorCalcomTokens()
     return !!tokens
   } catch (error) {
     console.error('Check Cal.com integration error:', error)
@@ -727,126 +726,6 @@ export async function deleteDateOverride(date: string): Promise<{
   }
 }
 
-export const fetchEventTypes = async () => {
-  const tokenResult = await getCalcomAccessToken()
-  if (!tokenResult.success || !tokenResult.accessToken || !tokenResult.username) {
-    return {
-      success: false,
-      error: 'Failed to get valid Cal.com access token',
-    }
-  }
-
-  const response = await fetch(
-    `${env.NEXT_PUBLIC_CALCOM_API_URL}/event-types?username=${encodeURIComponent(tokenResult.username)}`,
-    {
-      headers: {
-        Authorization: `Bearer ${env.X_CAL_SECRET_KEY}`,
-        'cal-api-version': '2024-06-14',
-      },
-    }
-  )
-
-  if (!response.ok) {
-    return {
-      success: false,
-      error: 'Response not ok',
-    }
-  }
-
-  const payload = await response.json()
-  return {
-    success: true,
-    data: Array.isArray(payload.data) ? payload.data : [],
-  }
-}
-
-/**
- * Fetch team event types from Cal.com
- */
-// Unused
-export const fetchTeamEventTypes = async (): Promise<{
-  success: boolean
-  data?: Array<{
-    id: number
-    title: string
-    slug: string
-    length: number
-    description?: string
-    price?: number
-    currency?: string
-  }>
-  error?: string
-}> => {
-  try {
-    const teamId = env.COLLEGE_MENTOR_TEAM_ID
-    const orgId = env.CALCOM_ORG_ID
-
-    if (!teamId || !orgId) {
-      return {
-        success: false,
-        error: 'Missing team or organization ID',
-      }
-    }
-
-    const response = await fetch(
-      `${env.NEXT_PUBLIC_CALCOM_API_URL}/organizations/${orgId}/teams/${teamId}/event-types`,
-      {
-        headers: {
-          Authorization: `Bearer ${env.X_CAL_SECRET_KEY}`,
-          'cal-api-version': '2024-06-14',
-        },
-      }
-    )
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('Failed to fetch team event types:', response.status, errorText)
-      return {
-        success: false,
-        error: `Failed to fetch team event types: ${errorText}`,
-      }
-    }
-
-    const data = await response.json()
-    console.log('Team event types response:', data)
-
-    if (data.status === 'success' && data.data && Array.isArray(data.data)) {
-      return data.data.map(
-        (eventType: {
-          id: number
-          title: string
-          slug: string
-          length?: number
-          lengthInMinutes?: number
-          description?: string
-          price?: number
-          currency?: string
-        }) => ({
-          id: eventType.id,
-          title: eventType.title,
-          slug: eventType.slug,
-          length: eventType.lengthInMinutes ?? eventType.length,
-          description: eventType.description,
-          price: eventType.price ?? null,
-          currency: eventType.currency ?? 'USD',
-        })
-      )
-    }
-
-    console.warn('Unexpected team event types response structure:', data)
-    return {
-      success: false,
-      error: 'Unexpected team event types response structure',
-    }
-  } catch (error) {
-    console.error('Error fetching team event types:', error)
-    return {
-      success: false,
-      error: 'Failed to fetch team event types',
-    }
-  }
-}
-
 /**
  * Get mentor's event type preferences with team event types
  */
@@ -1095,7 +974,7 @@ export const getValidCalcomToken = async (): Promise<{
 }> => {
   try {
     // First, get current tokens from database
-    const tokens = await getUserCalcomTokens()
+    const tokens = await getMentorCalcomTokens()
     if (!tokens) {
       return {
         success: false,
