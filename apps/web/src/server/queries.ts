@@ -4,7 +4,7 @@ import 'server-only'
 import { z } from 'zod'
 import type { CalcomTokenWithId, Card, FullUserProfile, UserProfile } from '~/app/types'
 import { getAuthSession, requireAuth } from '~/lib/auth/auth-utils'
-import { BadRequestError, InternalServerError, NotFoundError } from '~/lib/errors'
+import { InternalServerError, NotFoundError } from '~/lib/errors'
 import { db } from '~/server/db'
 import {
   bookings,
@@ -338,34 +338,6 @@ const getProfileWithImage = async (): Promise<{
 
 export const getProfileWithImageCached = cache(getProfileWithImage)
 
-export const storeCalcomTokens = async ({
-  calcomUserId,
-  calcomUsername,
-  accessToken,
-  refreshToken,
-  accessTokenExpiresAt,
-  refreshTokenExpiresAt,
-}: {
-  calcomUserId: number
-  calcomUsername: string
-  accessToken: string
-  refreshToken: string
-  accessTokenExpiresAt: number
-  refreshTokenExpiresAt: number
-}): Promise<void> => {
-  const { id: userId } = await requireAuth()
-
-  await storeCalcomTokensForUser({
-    userId,
-    calcomUserId,
-    calcomUsername,
-    accessToken,
-    refreshToken,
-    accessTokenExpiresAt,
-    refreshTokenExpiresAt,
-  })
-}
-
 /**
  * Store Cal.com tokens for a specific user ID (used during authentication flow)
  */
@@ -432,50 +404,6 @@ export const storeCalcomTokensForUser = async ({
   }
 }
 
-export const updateCalcomTokens = async ({
-  calcomUserId,
-  accessToken,
-  refreshToken,
-  accessTokenExpiresAt,
-  refreshTokenExpiresAt,
-}: {
-  calcomUserId: number
-  accessToken: string
-  refreshToken: string
-  accessTokenExpiresAt: number
-  refreshTokenExpiresAt: number
-}): Promise<void> => {
-  const { id: userId } = await requireAuth()
-
-  const validData = calcomUpdateTokensSchema.parse({
-    calcomUserId,
-    accessToken,
-    refreshToken,
-    accessTokenExpiresAt,
-    refreshTokenExpiresAt,
-  })
-
-  const accessExpiry = new Date(validData.accessTokenExpiresAt)
-  const refreshExpiry = new Date(validData.refreshTokenExpiresAt)
-
-  const res = await db
-    .update(calcomTokens)
-    .set({
-      calcomUserId: validData.calcomUserId,
-      accessToken: validData.accessToken,
-      refreshToken: validData.refreshToken,
-      accessTokenExpiresAt: accessExpiry,
-      refreshTokenExpiresAt: refreshExpiry,
-      updatedAt: new Date(),
-    })
-    .where(eq(calcomTokens.userId, userId))
-    .returning({ userId: calcomTokens.userId })
-
-  if (res.length === 0) {
-    throw new InternalServerError('Failed to update calcom tokens')
-  }
-}
-
 export const updateCalcomTokensByUserId = async ({
   userId,
   calcomUserId,
@@ -520,23 +448,7 @@ export const updateCalcomTokensByUserId = async ({
   }
 }
 
-export const getCalcomToken = async (accessToken: string): Promise<CalcomTokenWithId | null> => {
-  if (!accessToken || typeof accessToken !== 'string' || accessToken.trim() === '') {
-    throw new BadRequestError('Invalid access token')
-  }
-
-  const tokenRecord = await db.query.calcomTokens.findFirst({
-    where: eq(calcomTokens.accessToken, accessToken),
-  })
-
-  if (!tokenRecord) {
-    throw new NotFoundError('Calcom token not found')
-  }
-
-  return tokenRecord
-}
-
-export const getUserCalcomTokens = cache(async (): Promise<CalcomTokenWithId | null> => {
+export const getMentorCalcomTokens = cache(async (): Promise<CalcomTokenWithId | null> => {
   const { id: userId } = await requireAuth()
 
   const tokens = await db.query.calcomTokens.findFirst({
@@ -564,44 +476,16 @@ export const getMentorCalcomTokensByUsername = async (
   return calUser
 }
 
-export const getUserName = cache(async (): Promise<string | null> => {
-  const { id: userId } = await requireAuth()
-
-  const user = await db.query.users.findFirst({
-    where: eq(users.id, userId),
-    columns: {
-      name: true,
-    },
-  })
-
-  if (!user?.name) {
-    throw new NotFoundError('User name not found')
-  }
-
-  return user.name
-})
-
 export const getUserId = async (): Promise<string> => {
   const { id: userId } = await requireAuth()
   return userId
 }
 
-export const getCalcomUserId = cache(async (): Promise<number | null> => {
-  const { id: userId } = await requireAuth()
-
-  const token = await db.query.calcomTokens.findFirst({
-    where: eq(calcomTokens.userId, userId),
-  })
-
-  if (!token?.calcomUserId) {
-    throw new NotFoundError('Calcom user id not found')
+// Internal core function
+const getFullProfileById = async (userId: string): Promise<FullUserProfile | null> => {
+  if (!userId) {
+    return null
   }
-
-  return token.calcomUserId
-})
-
-export const getFullProfile = cache(async (): Promise<FullUserProfile | null> => {
-  const { id: userId } = await requireAuth()
 
   const res = await db
     .select({
@@ -641,7 +525,7 @@ export const getFullProfile = cache(async (): Promise<FullUserProfile | null> =>
   const userData = res[0]
 
   if (!userData) {
-    throw new NotFoundError('User not found')
+    return null
   }
 
   return {
@@ -661,209 +545,18 @@ export const getFullProfile = cache(async (): Promise<FullUserProfile | null> =>
     accessToken: userData.accessToken,
     refreshToken: userData.refreshToken,
   }
+}
+
+export const getFullProfileByUserId = cache(getFullProfileById)
+
+export const getFullProfile = cache(async (): Promise<FullUserProfile | null> => {
+  const { id: userId } = await requireAuth()
+  const profile = await getFullProfileById(userId)
+  if (!profile) {
+    throw new NotFoundError('Profile not found')
+  }
+  return profile
 })
-
-export const getFullProfileByUserId = cache(
-  async (userId: string): Promise<FullUserProfile | null> => {
-    if (!userId) {
-      return null
-    }
-
-    const res = await db
-      .select({
-        // User basic info
-        id: users.id,
-        name: users.name,
-        email: users.email,
-        emailVerified: users.emailVerified,
-        image: users.image,
-
-        // Profile info
-        userProfileId: userProfiles.id,
-        bio: userProfiles.bio,
-        schoolYear: userProfiles.schoolYear,
-        graduationYear: userProfiles.graduationYear,
-
-        // School and major info
-        schoolName: schools.name,
-        majorName: majors.name,
-
-        // Cal.com integration
-        calcomUserId: calcomTokens.calcomUserId,
-        calcomUsername: calcomTokens.calcomUsername,
-        accessToken: calcomTokens.accessToken,
-        refreshToken: calcomTokens.refreshToken,
-      })
-      .from(users)
-      .leftJoin(userProfiles, eq(users.id, userProfiles.userId))
-      .leftJoin(userSchools, eq(users.id, userSchools.userId))
-      .leftJoin(schools, eq(userSchools.schoolId, schools.id))
-      .leftJoin(userMajors, eq(users.id, userMajors.userId))
-      .leftJoin(majors, eq(userMajors.majorId, majors.id))
-      .leftJoin(calcomTokens, eq(users.id, calcomTokens.userId))
-      .where(eq(users.id, userId))
-      .limit(1)
-
-    const userData = res[0]
-
-    if (!userData) {
-      return null
-    }
-
-    return {
-      userId: userData.id,
-      userProfileId: userData.userProfileId ?? 0,
-      email: userData.email,
-      emailVerified: !!userData.emailVerified,
-      bio: userData.bio,
-      schoolYear: userData.schoolYear ?? 'Freshman',
-      graduationYear: userData.graduationYear ?? new Date().getFullYear(),
-      image: userData.image,
-      name: userData.name,
-      school: userData.schoolName,
-      major: userData.majorName,
-      calcomUserId: userData.calcomUserId,
-      calcomUsername: userData.calcomUsername,
-      accessToken: userData.accessToken,
-      refreshToken: userData.refreshToken,
-    }
-  }
-)
-
-// Not used
-export const getProfileByUsername = cache(
-  async (username: string): Promise<FullUserProfile | null> => {
-    if (!username) {
-      return null
-    }
-
-    const res = await db
-      .select({
-        // User basic info
-        userId: users.id,
-        name: users.name,
-        email: users.email,
-        emailVerified: users.emailVerified,
-        image: users.image,
-
-        // Profile info
-        userProfileId: userProfiles.id,
-        bio: userProfiles.bio,
-        schoolYear: userProfiles.schoolYear,
-        graduationYear: userProfiles.graduationYear,
-
-        // School and major info
-        schoolName: schools.name,
-        majorName: majors.name,
-
-        // Cal.com integration
-        calcomUserId: calcomTokens.calcomUserId,
-        calcomUsername: calcomTokens.calcomUsername,
-        accessToken: calcomTokens.accessToken,
-        refreshToken: calcomTokens.refreshToken,
-      })
-      .from(users)
-      .leftJoin(userProfiles, eq(users.id, userProfiles.userId))
-      .leftJoin(userSchools, eq(users.id, userSchools.userId))
-      .leftJoin(schools, eq(userSchools.schoolId, schools.id))
-      .leftJoin(userMajors, eq(users.id, userMajors.userId))
-      .leftJoin(majors, eq(userMajors.majorId, majors.id))
-      .leftJoin(calcomTokens, eq(users.id, calcomTokens.userId))
-      .where(eq(users.name, username))
-      .limit(1)
-
-    const userData = res[0]
-
-    if (!userData) {
-      return null
-    }
-
-    return {
-      userId: userData.userId,
-      userProfileId: userData.userProfileId ?? 0,
-      email: userData.email,
-      emailVerified: !!userData.emailVerified,
-      bio: userData.bio,
-      schoolYear: userData.schoolYear ?? 'Freshman',
-      graduationYear: userData.graduationYear ?? new Date().getFullYear(),
-      image: userData.image,
-      name: userData.name,
-      school: userData.schoolName,
-      major: userData.majorName,
-      calcomUserId: userData.calcomUserId,
-      calcomUsername: userData.calcomUsername,
-      accessToken: userData.accessToken,
-      refreshToken: userData.refreshToken,
-    }
-  }
-)
-
-export const getProfileByCalcomUsername = cache(
-  async (calcomUsername: string): Promise<FullUserProfile | null> => {
-    if (!calcomUsername) {
-      return null
-    }
-
-    const res = await db
-      .select({
-        // User basic info
-        userId: users.id,
-        name: users.name,
-        email: users.email,
-        emailVerified: users.emailVerified,
-        image: users.image,
-
-        // Profile info
-        userProfileId: userProfiles.id,
-        bio: userProfiles.bio,
-        schoolYear: userProfiles.schoolYear,
-        graduationYear: userProfiles.graduationYear,
-
-        // School and major info
-        schoolName: schools.name,
-        majorName: majors.name,
-
-        // Cal.com integration
-        calcomUserId: calcomTokens.calcomUserId,
-        calcomUsername: calcomTokens.calcomUsername,
-        accessToken: calcomTokens.accessToken,
-        refreshToken: calcomTokens.refreshToken,
-      })
-      .from(users)
-      .leftJoin(userProfiles, eq(users.id, userProfiles.userId))
-      .leftJoin(userSchools, eq(users.id, userSchools.userId))
-      .leftJoin(schools, eq(userSchools.schoolId, schools.id))
-      .leftJoin(userMajors, eq(users.id, userMajors.userId))
-      .leftJoin(majors, eq(userMajors.majorId, majors.id))
-      .leftJoin(calcomTokens, eq(users.id, calcomTokens.userId))
-      .where(eq(calcomTokens.calcomUsername, calcomUsername))
-      .limit(1)
-
-    const userData = res[0]
-
-    if (!userData) {
-      return null
-    }
-
-    return {
-      userId: userData.userId,
-      userProfileId: userData.userProfileId ?? 0,
-      email: userData.email,
-      emailVerified: !!userData.emailVerified,
-      bio: userData.bio,
-      schoolYear: userData.schoolYear ?? 'Freshman',
-      graduationYear: userData.graduationYear ?? new Date().getFullYear(),
-      image: userData.image,
-      name: userData.name,
-      school: userData.schoolName,
-      major: userData.majorName,
-      calcomUserId: userData.calcomUserId,
-      calcomUsername: userData.calcomUsername,
-      accessToken: userData.accessToken,
-      refreshToken: userData.refreshToken,
-    }
-  }
-)
 
 /**
  * Get current user's profile image URL for checking existing images
@@ -1175,6 +868,7 @@ export const upsertMentorEventType = async (data: {
     .values({
       mentorUserId: validData.userId,
       globalEventTypeId: validData.globalEventTypeId,
+      calcomEventTypeId: validData.calcomEventTypeId,
       isEnabled: validData.isEnabled,
       customPrice: validData.customPrice,
       currency: validData.currency,
@@ -1182,6 +876,7 @@ export const upsertMentorEventType = async (data: {
     .onConflictDoUpdate({
       target: [mentorEventTypes.mentorUserId, mentorEventTypes.globalEventTypeId],
       set: {
+        calcomEventTypeId: validData.calcomEventTypeId,
         isEnabled: validData.isEnabled,
         customPrice: validData.customPrice,
         currency: validData.currency,
