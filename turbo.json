@@ -1,5 +1,8 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "remoteCache": {
+    "enabled": true
+  },
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
@@ -30,7 +33,9 @@
         "NEXT_PUBLIC_BASE_URL",
         "NEXT_PUBLIC_X_CAL_ID",
         "NEXT_PUBLIC_CALCOM_API_URL",
-        "SKIP_ENV_VALIDATION"
+        "SKIP_ENV_VALIDATION",
+        "SENTRY_AUTH_TOKEN",
+        "STRIPE_SECRET_KEY"
       ]
     },
     "dev": {

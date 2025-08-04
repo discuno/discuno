@@ -1119,7 +1119,9 @@ export const createLocalBooking = async (input: {
     })
 
     if (!mentorEventType) {
-      throw new NotFoundError(`Mentor event type with Cal.com ID ${input.calcomEventTypeId} not found`)
+      throw new NotFoundError(
+        `Mentor event type with Cal.com ID ${input.calcomEventTypeId} not found`
+      )
     }
 
     // Create the booking record

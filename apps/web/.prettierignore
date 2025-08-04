@@ -11,8 +11,8 @@ out
 # Cache directories
 .turbo
 .cache
-.nuxt
 .output
+.nuxt
 
 # Environment files
 .env*
