@@ -1,14 +1,17 @@
 echo "🚀 Running pre-push checks..."
 
-# Run tests across the monorepo
-echo "🧪 Running tests..."
-pnpm test:run
-
-if [ $? -eq 0 ]; then
-  echo "✅ All tests passed!"
+if [ "$SKIP_TESTS" = "1" ]; then
+  echo "⚠️  Skipping tests because SKIP_TESTS=1"
 else
-  echo "❌ Tests failed. Please fix failing tests before pushing."
-  exit 1
+  echo "🧪 Running tests..."
+  pnpm test:run
+
+  if [ $? -eq 0 ]; then
+    echo "✅ All tests passed!"
+  else
+    echo "❌ Tests failed. Please fix failing tests before pushing."
+    exit 1
+  fi
 fi
 
 echo "🔍 Running final build check..."

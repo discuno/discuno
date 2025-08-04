@@ -213,7 +213,6 @@ export const fetchCalcomEventTypesByUsername = async (
 ): Promise<
   Array<{
     id: number
-    slug: string
     title: string
     lengthInMinutes: number
     description?: string
@@ -244,7 +243,6 @@ export const fetchCalcomEventTypesByUsername = async (
 
   return data.data as Array<{
     id: number
-    slug: string
     title: string
     lengthInMinutes: number
     description?: string

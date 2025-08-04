@@ -10,7 +10,6 @@ import {
   primaryKey,
   text,
   timestamp,
-  unique,
   varchar,
 } from 'drizzle-orm/pg-core'
 import { type AdapterAccount } from 'next-auth/adapters'
@@ -322,24 +321,6 @@ export const mentorStripeAccountsRelations = relations(mentorStripeAccounts, ({ 
   user: one(users, { fields: [mentorStripeAccounts.userId], references: [users.id] }),
 }))
 
-// Master event types table (the 3 Cal.com event types we support)
-export const globalEventTypes = pgTable(
-  'discuno_global_event_type',
-  {
-    id: integer().primaryKey().generatedByDefaultAsIdentity(),
-    calcomEventTypeId: integer().notNull().unique(), // Cal.com event type ID from team
-    calcomEventTypeSlug: varchar({ length: 255 }).notNull().unique(), // Cal.com event type slug
-    title: varchar({ length: 255 }).notNull(), // Event type display name
-    description: text(), // Event type description
-    duration: integer().notNull(), // Duration in minutes
-    ...timestamps,
-  },
-  table => [
-    index('event_types_calcom_event_type_id_idx').on(table.calcomEventTypeId),
-    index('event_types_slug_idx').on(table.calcomEventTypeSlug),
-  ]
-)
-
 // Mentor event type preferences and pricing (junction table)
 export const mentorEventTypes = pgTable(
   'discuno_mentor_event_type',
@@ -348,38 +329,23 @@ export const mentorEventTypes = pgTable(
     mentorUserId: varchar({ length: 255 })
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
-    globalEventTypeId: integer()
-      .notNull()
-      .references(() => globalEventTypes.id, { onDelete: 'cascade' }),
     calcomEventTypeId: integer().unique(), // The mentor's individual Cal.com event type ID
     isEnabled: boolean().notNull().default(false), // Whether this mentor has enabled this event type
     customPrice: integer(), // Price in cents (e.g., 2500 = $25.00)
     currency: varchar({ length: 3 }).notNull().default('USD'),
+    title: varchar({ length: 255 }).notNull(),
+    description: text(),
+    duration: integer().notNull(),
     ...timestamps,
   },
   table => [
-    index('mentor_event_types_user_global_idx').on(table.mentorUserId, table.globalEventTypeId),
     index('mentor_event_types_user_idx').on(table.mentorUserId),
-    index('mentor_event_types_global_idx').on(table.globalEventTypeId),
     index('mentor_event_types_calcom_idx').on(table.calcomEventTypeId),
-    // Ensure one record per user per event type
-    unique('mentor_event_types_user_event_type_unique').on(
-      table.mentorUserId,
-      table.globalEventTypeId
-    ),
   ]
 )
 
-export const eventTypesRelations = relations(globalEventTypes, ({ many }) => ({
-  mentorEventTypes: many(mentorEventTypes),
-}))
-
 export const mentorEventTypesRelations = relations(mentorEventTypes, ({ one, many }) => ({
   user: one(users, { fields: [mentorEventTypes.mentorUserId], references: [users.id] }),
-  eventType: one(globalEventTypes, {
-    fields: [mentorEventTypes.globalEventTypeId],
-    references: [globalEventTypes.id],
-  }),
   bookings: many(bookings),
 }))
 
@@ -430,7 +396,7 @@ export const bookings = pgTable(
     currency: varchar({ length: 3 }).default('USD'),
 
     // Event type reference
-    mentorEventTypeId: integer().references(() => mentorEventTypes.calcomEventTypeId, {
+    mentorEventTypeId: integer().references(() => mentorEventTypes.id, {
       onDelete: 'set null',
     }),
 
@@ -460,7 +426,7 @@ export const bookingsRelations = relations(bookings, ({ one }) => ({
   organizer: one(users, { fields: [bookings.organizerId], references: [users.id] }),
   mentorEventType: one(mentorEventTypes, {
     fields: [bookings.mentorEventTypeId],
-    references: [mentorEventTypes.calcomEventTypeId],
+    references: [mentorEventTypes.id],
   }),
   payment: one(payments, { fields: [bookings.paymentId], references: [payments.id] }),
 }))

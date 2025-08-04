@@ -733,7 +733,7 @@ export const getMentorEventTypePreferences = async (): Promise<{
   success: boolean
   data?: Array<{
     id: number
-    globalEventTypeId: number
+    calcomEventTypeId: number
     title: string
     length: number
     description?: string
@@ -748,20 +748,22 @@ export const getMentorEventTypePreferences = async (): Promise<{
     const mentorPreferences = await getMentorEventTypes()
 
     // Transform the data to match the expected format
-    const combined = mentorPreferences.map(pref => ({
-      id: pref.calcomEventTypeId,
-      title: pref.title,
-      globalEventTypeId: pref.globalEventTypeId,
-      length: pref.duration,
-      description: pref.description ?? undefined,
-      isEnabled: pref.isEnabled,
-      customPrice: pref.customPrice,
-      currency: pref.currency,
-    }))
+    const combined = mentorPreferences
+      .filter(pref => pref.calcomEventTypeId !== null)
+      .map(pref => ({
+        id: pref.id,
+        calcomEventTypeId: pref.calcomEventTypeId as number,
+        title: pref.title,
+        length: pref.duration,
+        description: pref.description ?? undefined,
+        isEnabled: pref.isEnabled,
+        customPrice: pref.customPrice,
+        currency: pref.currency,
+      }))
 
     return {
       success: true,
-      data: combined,
+      data: combined.map(c => ({ ...c, id: c.calcomEventTypeId })),
     }
   } catch (error) {
     console.error('Error getting mentor event type preferences:', error)
@@ -777,10 +779,12 @@ export const getMentorEventTypePreferences = async (): Promise<{
  */
 export const updateMentorEventTypePreferences = async (data: {
   calcomEventTypeId: number
-  globalEventTypeId: number
   isEnabled: boolean
   customPrice?: number
   currency?: string
+  title: string
+  description: string | null
+  duration: number
 }): Promise<{
   success: boolean
   error?: string
@@ -791,10 +795,12 @@ export const updateMentorEventTypePreferences = async (data: {
     await upsertMentorEventType({
       userId,
       calcomEventTypeId: data.calcomEventTypeId,
-      globalEventTypeId: data.globalEventTypeId,
       isEnabled: data.isEnabled,
       customPrice: data.customPrice,
       currency: data.currency ?? 'USD',
+      title: data.title,
+      description: data.description,
+      duration: data.duration,
     })
 
     return {

@@ -19,7 +19,6 @@ export interface TimeSlot {
 export interface EventType {
   id: number
   title: string
-  slug: string
   length: number
   description?: string
   price?: number
@@ -34,7 +33,7 @@ interface BookingData {
 
 interface CreateBookingInput {
   username: string
-  eventSlug: string
+  eventTypeId: number
   startTime: string // ISO string
   attendee: BookingData
   metadata?: {
@@ -46,7 +45,6 @@ interface CreateBookingInput {
 // Zod schema for payment booking validation
 const BookingFormInputSchema = z.object({
   eventTypeId: z.number().int().positive('Event type ID must be a positive integer'),
-  eventTypeSlug: z.string().min(1, 'Event type slug is required'),
   startTimeIso: z.string().refine(val => !isNaN(Date.parse(val)), {
     message: 'Start time must be a valid ISO date string',
   }),
@@ -112,7 +110,6 @@ export const fetchEventTypes = async (username: string): Promise<EventType[]> =>
   return mentorPrefs.map(pref => ({
     id: pref.calcomEventTypeId,
     title: pref.title,
-    slug: pref.calcomEventTypeSlug,
     length: pref.duration,
     description: pref.description ?? undefined,
     price: pref.customPrice ?? undefined, // Keep in cents for consistency with display logic
@@ -186,7 +183,7 @@ export const createBooking = async (input: CreateBookingInput): Promise<string> 
       timeZone: input.attendee.timeZone ?? 'America/New_York',
       language: 'en', // Default language
     },
-    eventTypeSlug: input.eventSlug,
+    eventTypeId: input.eventTypeId,
     username: input.username,
     metadata: { stripePaymentIntentId: input.metadata?.stripePaymentIntentId ?? '' },
   }
@@ -232,7 +229,6 @@ export const createStripePaymentIntent = async (
     const validatedInput = BookingFormInputSchema.parse(input)
     const {
       eventTypeId,
-      eventTypeSlug,
       startTimeIso,
       attendeeName,
       attendeeEmail,
@@ -273,7 +269,6 @@ export const createStripePaymentIntent = async (
       metadata: {
         mentorUserId: mentorUserId.toString(),
         eventTypeId: eventTypeId.toString(),
-        eventTypeSlug: eventTypeSlug,
         startTime: startTimeIso,
         attendeeName: attendeeName,
         attendeeEmail: attendeeEmail,
@@ -386,7 +381,8 @@ export const handlePaymentIntentWebhook = async (
 
   try {
     console.log(`Attempting to create Cal.com booking for payment intent: ${paymentIntentId}`)
-    await createCalcomBooking({
+
+    const bookingArgs = {
       calcomEventTypeId: Number(metadata.eventTypeId),
       start: new Date(metadata.startTime).toISOString(),
       attendeeName: metadata.attendeeName,
@@ -395,7 +391,11 @@ export const handlePaymentIntentWebhook = async (
       stripePaymentIntentId: paymentIntentId,
       paymentId: paymentRecord[0].id,
       mentorUserId: metadata.mentorUserId,
-    })
+    }
+
+    console.log('Calling createCalcomBooking with:', JSON.stringify(bookingArgs, null, 2))
+
+    await createCalcomBooking(bookingArgs)
     console.log(`Successfully created Cal.com booking for payment intent: ${paymentIntentId}`)
     return { success: true }
   } catch (error) {

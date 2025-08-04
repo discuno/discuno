@@ -207,7 +207,6 @@ export interface BookingWithMentor extends Booking {
   eventType: {
     id: number
     calcomEventTypeId: number
-    calcomEventTypeSlug: string
     title: string
     description: string | null
     duration: number
@@ -218,7 +217,6 @@ export interface BookingWithEventType extends Booking {
   eventType: {
     id: number
     calcomEventTypeId: number
-    calcomEventTypeSlug: string
     title: string
     description: string | null
     duration: number

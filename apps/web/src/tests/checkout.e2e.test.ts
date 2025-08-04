@@ -106,7 +106,6 @@ describe('Checkout Flow E2E', () => {
 
     const bookingInput: BookingFormInput = {
       eventTypeId: 1,
-      eventTypeSlug: '30-min-meeting',
       startTimeIso: new Date().toISOString(),
       attendeeName: 'Test User',
       attendeeEmail: 'test@example.com',
@@ -137,7 +136,6 @@ describe('Checkout Flow E2E', () => {
 
     const bookingInput: BookingFormInput = {
       eventTypeId: 1,
-      eventTypeSlug: '30-min-meeting',
       startTimeIso: startTime.toISOString(),
       attendeeName: 'E2E Test User',
       attendeeEmail: 'e2e@example.com',
@@ -162,7 +160,6 @@ describe('Checkout Flow E2E', () => {
       metadata: {
         mentorUserId,
         eventTypeId: bookingInput.eventTypeId.toString(),
-        eventTypeSlug: bookingInput.eventTypeSlug,
         startTime: bookingInput.startTimeIso,
         attendeeName: bookingInput.attendeeName,
         attendeeEmail: bookingInput.attendeeEmail,

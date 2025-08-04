@@ -9,7 +9,6 @@ import { db } from '~/server/db'
 import {
   bookings,
   calcomTokens,
-  globalEventTypes,
   majors,
   mentorEventTypes,
   mentorStripeAccounts,
@@ -779,11 +778,12 @@ export const updateCompleteProfile = async (data: {
 const mentorEventTypeSchema = z.object({
   userId: z.string().min(1),
   calcomEventTypeId: z.number().int().positive(),
-  globalEventTypeId: z.number().int().positive(),
-  calcomEventTypeSlug: z.string().min(1),
   isEnabled: z.boolean(),
   customPrice: z.number().int().positive().optional(),
   currency: z.string().length(3).default('USD'),
+  title: z.string(),
+  description: z.string().nullable(),
+  duration: z.number().int().positive(),
 })
 
 const mentorStripeAccountSchema = z.object({
@@ -804,8 +804,7 @@ export const getMentorEventTypes = cache(
   async (): Promise<
     Array<{
       id: number
-      calcomEventTypeId: number
-      globalEventTypeId: number
+      calcomEventTypeId: number | null
       title: string
       description: string | null
       duration: number
@@ -823,11 +822,9 @@ export const getMentorEventTypes = cache(
       .select({
         id: mentorEventTypes.id,
         calcomEventTypeId: mentorEventTypes.calcomEventTypeId,
-        globalEventTypeId: mentorEventTypes.globalEventTypeId,
-        calcomEventTypeSlug: globalEventTypes.calcomEventTypeSlug,
-        title: globalEventTypes.title,
-        description: globalEventTypes.description,
-        duration: globalEventTypes.duration,
+        title: mentorEventTypes.title,
+        description: mentorEventTypes.description,
+        duration: mentorEventTypes.duration,
         isEnabled: mentorEventTypes.isEnabled,
         customPrice: mentorEventTypes.customPrice,
         currency: mentorEventTypes.currency,
@@ -835,7 +832,6 @@ export const getMentorEventTypes = cache(
         updatedAt: mentorEventTypes.updatedAt,
       })
       .from(mentorEventTypes)
-      .innerJoin(globalEventTypes, eq(mentorEventTypes.globalEventTypeId, globalEventTypes.id))
       .where(eq(mentorEventTypes.mentorUserId, currentUserId))
 
     console.log('getMentorEventTypes result:', result)
@@ -856,10 +852,12 @@ export const getMentorEventTypes = cache(
 export const upsertMentorEventType = async (data: {
   userId: string
   calcomEventTypeId: number
-  globalEventTypeId: number
   isEnabled: boolean
   customPrice?: number
   currency?: string
+  title: string
+  description: string | null
+  duration: number
 }): Promise<void> => {
   const validData = mentorEventTypeSchema.parse(data)
 
@@ -867,19 +865,23 @@ export const upsertMentorEventType = async (data: {
     .insert(mentorEventTypes)
     .values({
       mentorUserId: validData.userId,
-      globalEventTypeId: validData.globalEventTypeId,
       calcomEventTypeId: validData.calcomEventTypeId,
       isEnabled: validData.isEnabled,
       customPrice: validData.customPrice,
       currency: validData.currency,
+      title: validData.title,
+      description: validData.description,
+      duration: validData.duration,
     })
     .onConflictDoUpdate({
-      target: [mentorEventTypes.mentorUserId, mentorEventTypes.globalEventTypeId],
+      target: [mentorEventTypes.calcomEventTypeId],
       set: {
-        calcomEventTypeId: validData.calcomEventTypeId,
         isEnabled: validData.isEnabled,
         customPrice: validData.customPrice,
         currency: validData.currency,
+        title: validData.title,
+        description: validData.description,
+        duration: validData.duration,
         updatedAt: new Date(),
       },
     })
@@ -894,7 +896,6 @@ export const getMentorEnabledEventTypes = cache(
   ): Promise<
     Array<{
       calcomEventTypeId: number
-      calcomEventTypeSlug: string
       title: string
       description: string | null
       duration: number
@@ -905,15 +906,13 @@ export const getMentorEnabledEventTypes = cache(
     const result = await db
       .select({
         calcomEventTypeId: mentorEventTypes.calcomEventTypeId, // Use individual event type ID
-        calcomEventTypeSlug: globalEventTypes.calcomEventTypeSlug,
-        title: globalEventTypes.title,
-        description: globalEventTypes.description,
-        duration: globalEventTypes.duration,
+        title: mentorEventTypes.title,
+        description: mentorEventTypes.description,
+        duration: mentorEventTypes.duration,
         customPrice: mentorEventTypes.customPrice,
         currency: mentorEventTypes.currency,
       })
       .from(mentorEventTypes)
-      .innerJoin(globalEventTypes, eq(mentorEventTypes.globalEventTypeId, globalEventTypes.id))
       .where(
         and(
           eq(mentorEventTypes.mentorUserId, userId),
@@ -986,24 +985,6 @@ export const getMentorStripeAccount = cache(
   }
 )
 
-export const getMentorStripeAccountByStripeId = async (stripeAccountId: string) => {
-  const account = await db.query.mentorStripeAccounts.findFirst({
-    where: eq(mentorStripeAccounts.stripeAccountId, stripeAccountId),
-  })
-
-  if (!account) {
-    return null
-  }
-
-  return {
-    ...account,
-    payoutsEnabled: account.payoutsEnabled,
-    chargesEnabled: account.chargesEnabled,
-    detailsSubmitted: account.detailsSubmitted,
-    requirements: (account.requirements ?? {}) as object,
-  }
-}
-
 /**
  * Upsert mentor Stripe account
  */
@@ -1046,18 +1027,6 @@ export const upsertMentorStripeAccount = async (data: {
       },
     })
 }
-
-/**
- * Check if mentor has Stripe connected and ready for payments
- */
-export const isMentorStripeReady = cache(async (): Promise<boolean> => {
-  const stripeAccount = await getMentorStripeAccount()
-  return (
-    stripeAccount?.stripeAccountStatus === 'active' &&
-    stripeAccount.payoutsEnabled &&
-    stripeAccount.chargesEnabled
-  )
-})
 
 const timezoneSchema = z
   .string()
@@ -1113,113 +1082,6 @@ export const getMentorBookings = cache(async (mentorId: string) => {
 
   return result
 })
-
-/**
- * Get a specific booking by Cal.com UID
- */
-export const getBookingByCalcomUid = async (uid: string) => {
-  const result = await db.select().from(bookings).where(eq(bookings.calcomUid, uid)).limit(1)
-
-  return result[0] ?? null
-}
-
-/**
- * Get bookings for a specific attendee email
- */
-export const getBookingsForAttendee = cache(async (attendeeEmail: string) => {
-  const result = await db
-    .select({
-      id: bookings.id,
-      calcomBookingId: bookings.calcomBookingId,
-      calcomUid: bookings.calcomUid,
-      title: bookings.title,
-      startTime: bookings.startTime,
-      endTime: bookings.endTime,
-      status: bookings.status,
-      organizerName: bookings.organizerName,
-      organizerEmail: bookings.organizerEmail,
-      price: bookings.price,
-      currency: bookings.currency,
-      createdAt: bookings.createdAt,
-    })
-    .from(bookings)
-    .where(eq(bookings.attendeeEmail, attendeeEmail))
-    .orderBy(desc(bookings.startTime))
-
-  return result
-})
-
-/**
- * Update booking status
- */
-export const updateBookingStatus = async (
-  calcomUid: string,
-  status: 'ACCEPTED' | 'PENDING' | 'CANCELLED' | 'REJECTED'
-) => {
-  await db
-    .update(bookings)
-    .set({ status, updatedAt: new Date() })
-    .where(eq(bookings.calcomUid, calcomUid))
-}
-
-/**
- * Helper function to get mentor and validate access
- */
-export const getMentorByUsername = async (username: string) => {
-  const mentor = await db
-    .select({
-      id: users.id,
-      name: users.name,
-      email: users.email,
-      username: calcomTokens.calcomUsername,
-    })
-    .from(users)
-    .innerJoin(calcomTokens, eq(users.id, calcomTokens.userId))
-    .where(eq(calcomTokens.calcomUsername, username))
-    .limit(1)
-
-  if (!mentor.length || !mentor[0]) {
-    throw new NotFoundError(`Mentor not found: ${username}`)
-  }
-
-  return mentor[0]
-}
-
-/**
- * Helper function to get event type with pricing by event type slug
- * We use slug instead of the parent event type ID to avoid the managed event type issue
- */
-export const getEventTypeWithPricingBySlug = async (
-  eventTypeSlug: string,
-  mentorUserId: string
-) => {
-  const eventType = await db
-    .select({
-      id: mentorEventTypes.id,
-      customPrice: mentorEventTypes.customPrice,
-      currency: mentorEventTypes.currency,
-      title: globalEventTypes.title,
-      duration: globalEventTypes.duration,
-      calcomEventTypeId: mentorEventTypes.calcomEventTypeId,
-      calcomEventTypeSlug: globalEventTypes.calcomEventTypeSlug,
-    })
-    .from(mentorEventTypes)
-    .innerJoin(globalEventTypes, eq(mentorEventTypes.globalEventTypeId, globalEventTypes.id))
-    .where(
-      and(
-        eq(globalEventTypes.calcomEventTypeSlug, eventTypeSlug),
-        eq(mentorEventTypes.mentorUserId, mentorUserId),
-        eq(mentorEventTypes.isEnabled, true)
-      )
-    )
-    .limit(1)
-
-  if (!eventType.length || !eventType[0]) {
-    throw new NotFoundError(`Event type not found or not enabled: ${eventTypeSlug}`)
-  }
-
-  return eventType[0]
-}
 
 /**
  * Helper function to create local booking record

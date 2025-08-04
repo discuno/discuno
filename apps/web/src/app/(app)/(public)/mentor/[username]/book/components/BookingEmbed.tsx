@@ -124,7 +124,6 @@ export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
 
       const bookingPayload: BookingFormInput = {
         eventTypeId: selectedEventType.id,
-        eventTypeSlug: selectedEventType.slug,
         startTimeIso: startTime.toISOString(),
         attendeeName: formData.name,
         attendeeEmail: formData.email,
