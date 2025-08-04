@@ -3,37 +3,36 @@ description:
 globs:
 alwaysApply: false
 ---
-Large-Scale Next.js App Router Best Practices (2025 Edition)
-===========================================================
 
-🗂️ Project Structure
---------------------
+# Large-Scale Next.js App Router Best Practices (2025 Edition)
+
+## 🗂️ Project Structure
+
 1. Use /app/ directory (App Router) instead of /pages/.
 2. Modularize by feature, not by file type.
    Example:
-     /app
-       /dashboard
-         page.tsx
-         layout.tsx
-         loading.tsx
-         DashboardClient.tsx
-         DashboardServer.ts
+   /app
+   /dashboard
+   error.tsx
+   page.tsx
+   layout.tsx
+   loading.tsx
+   DashboardClient.tsx
+   DashboardServer.ts
 3. Use `lib/` and `services/` folders:
    - lib/: Utility and pure functions.
    - services/: Business logic, API calls, DB access.
 
-🧠 Component Patterns
----------------------
+## 🧠 Component Patterns
+
 4. Use `use client` sparingly.
    - Only use for interactivity (forms, modals, dropdowns).
-5. Co-locate CSS Modules or use Tailwind CSS.
-   - Use typography plugin for content-heavy pages.
-5.5. Use arrow function syntax
-   - With named exports when possible
+5. Use Tailwind CSS.
+6. Use arrow function syntax with named exports when possible.
 
-⚙️ Server-Side Practices
--------------------------
-6. Prefer server actions over API routes.
+## ⚙️ Server-Side Practices
+
+7. Prefer server actions over API routes.
    Example:
      'use server'
 
@@ -74,3 +73,4 @@ Large-Scale Next.js App Router Best Practices (2025 Edition)
     - A/B testing
     - Logging
     - Geo-redirects
+
