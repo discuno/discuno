@@ -1142,7 +1142,9 @@ export const createLocalBooking = async (input: {
       .returning()
 
     if (!booking[0]) {
-      throw new Error('Failed to create booking record')
+      throw new Error(
+        `Failed to create booking record for calcomBookingId: ${input.calcomBookingId}, calcomUid: ${input.calcomUid}, title: ${input.title}`
+      )
     }
 
     // Create the organizer record
