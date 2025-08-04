@@ -386,11 +386,6 @@ export const bookings = pgTable(
     organizerEmail: varchar({ length: 255 }).notNull(),
     organizerUsername: varchar({ length: 255 }).notNull(),
 
-    // Attendee info snapshot
-    attendeeName: varchar({ length: 255 }).notNull(),
-    attendeeEmail: varchar({ length: 255 }).notNull(),
-    attendeeTimeZone: varchar({ length: 100 }),
-
     // Pricing snapshot (from our database at time of booking)
     price: integer(), // Price in cents
     currency: varchar({ length: 3 }).default('USD'),
@@ -422,13 +417,41 @@ export const bookings = pgTable(
   ]
 )
 
-export const bookingsRelations = relations(bookings, ({ one }) => ({
+// Booking attendees table to store attendee information separately
+export const bookingAttendees = pgTable(
+  'discuno_booking_attendee',
+  {
+    id: integer().primaryKey().generatedByDefaultAsIdentity(),
+    bookingId: integer()
+      .notNull()
+      .references(() => bookings.id, { onDelete: 'cascade' }),
+    // Future proofing for logged in users
+    userId: varchar({ length: 255 }).references(() => users.id, { onDelete: 'set null' }),
+    name: varchar({ length: 255 }).notNull(),
+    email: varchar({ length: 255 }).notNull(),
+    timeZone: varchar({ length: 100 }),
+    ...timestamps,
+  },
+  table => [
+    index('booking_attendees_booking_id_idx').on(table.bookingId),
+    index('booking_attendees_user_id_idx').on(table.userId),
+    index('booking_attendees_email_idx').on(table.email),
+  ]
+)
+
+export const bookingsRelations = relations(bookings, ({ one, many }) => ({
   organizer: one(users, { fields: [bookings.organizerId], references: [users.id] }),
   mentorEventType: one(mentorEventTypes, {
     fields: [bookings.mentorEventTypeId],
     references: [mentorEventTypes.id],
   }),
   payment: one(payments, { fields: [bookings.paymentId], references: [payments.id] }),
+  attendees: many(bookingAttendees),
+}))
+
+export const bookingAttendeesRelations = relations(bookingAttendees, ({ one }) => ({
+  booking: one(bookings, { fields: [bookingAttendees.bookingId], references: [bookings.id] }),
+  user: one(users, { fields: [bookingAttendees.userId], references: [users.id] }),
 }))
 
 // Payment status enum

@@ -7,6 +7,7 @@ import { getAuthSession, requireAuth } from '~/lib/auth/auth-utils'
 import { InternalServerError, NotFoundError } from '~/lib/errors'
 import { db } from '~/server/db'
 import {
+  bookingAttendees,
   bookings,
   calcomTokens,
   majors,
@@ -1069,14 +1070,15 @@ export const getMentorBookings = cache(async (mentorId: string) => {
       startTime: bookings.startTime,
       endTime: bookings.endTime,
       status: bookings.status,
-      attendeeName: bookings.attendeeName,
-      attendeeEmail: bookings.attendeeEmail,
-      attendeeTimeZone: bookings.attendeeTimeZone,
+      attendeeName: bookingAttendees.name,
+      attendeeEmail: bookingAttendees.email,
+      attendeeTimeZone: bookingAttendees.timeZone,
       price: bookings.price,
       currency: bookings.currency,
       createdAt: bookings.createdAt,
     })
     .from(bookings)
+    .innerJoin(bookingAttendees, eq(bookings.id, bookingAttendees.bookingId))
     .where(eq(bookings.organizerId, mentorId))
     .orderBy(desc(bookings.startTime))
 
@@ -1099,6 +1101,7 @@ export const createLocalBooking = async (input: {
   attendeeName: string
   attendeeEmail: string
   attendeeTimeZone: string
+  attendeeUserId?: string
   price: number
   currency: string
   mentorEventTypeId: number
@@ -1107,34 +1110,43 @@ export const createLocalBooking = async (input: {
 }) => {
   const endTime = new Date(input.startTime.getTime() + input.duration * 60000)
 
-  const booking = await db
-    .insert(bookings)
-    .values({
-      calcomBookingId: input.calcomBookingId,
-      calcomUid: input.calcomUid,
-      title: input.title,
-      startTime: input.startTime,
-      endTime,
-      status: 'ACCEPTED',
-      organizerId: input.organizerUserId,
-      organizerName: input.calcomOrganizerName,
-      organizerEmail: input.calcomOrganizerEmail,
-      organizerUsername: input.calcomOrganizerUsername,
-      attendeeName: input.attendeeName,
-      attendeeEmail: input.attendeeEmail,
-      attendeeTimeZone: input.attendeeTimeZone,
-      price: input.price,
-      currency: input.currency,
-      mentorEventTypeId: input.mentorEventTypeId,
-      paymentId: input.paymentId,
-      requiresPayment: input.requiresPayment,
-      webhookPayload: {},
+  return await db.transaction(async tx => {
+    // Create the booking record
+    const booking = await tx
+      .insert(bookings)
+      .values({
+        calcomBookingId: input.calcomBookingId,
+        calcomUid: input.calcomUid,
+        title: input.title,
+        startTime: input.startTime,
+        endTime,
+        status: 'ACCEPTED',
+        organizerId: input.organizerUserId,
+        organizerName: input.calcomOrganizerName,
+        organizerEmail: input.calcomOrganizerEmail,
+        organizerUsername: input.calcomOrganizerUsername,
+        price: input.price,
+        currency: input.currency,
+        mentorEventTypeId: input.mentorEventTypeId,
+        paymentId: input.paymentId,
+        requiresPayment: input.requiresPayment,
+        webhookPayload: {},
+      })
+      .returning()
+
+    if (!booking[0]) {
+      throw new Error('Failed to create booking record')
+    }
+
+    // Create the attendee record
+    await tx.insert(bookingAttendees).values({
+      bookingId: booking[0].id,
+      userId: input.attendeeUserId ?? null,
+      name: input.attendeeName,
+      email: input.attendeeEmail,
+      timeZone: input.attendeeTimeZone,
     })
-    .returning()
 
-  if (!booking[0]) {
-    throw new Error('Failed to create booking record')
-  }
-
-  return booking[0]
+    return booking[0]
+  })
 }

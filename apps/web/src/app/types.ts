@@ -167,6 +167,18 @@ export type BookingStatus =
   | 'no_show'
   | 'rescheduled'
 
+export interface BookingAttendee {
+  id: number
+  bookingId: number
+  userId?: string | null
+  name: string
+  email: string
+  timeZone: string
+  createdAt: Date
+  updatedAt: Date | null
+  deletedAt: Date | null
+}
+
 export interface Booking {
   id: number
   calcomBookingId: number
@@ -174,9 +186,7 @@ export interface Booking {
   calcomEventTypeId: number
   mentorId: string
   mentorCalcomUserId: number
-  attendeeName: string
-  attendeeEmail: string
-  attendeeTimeZone: string
+  attendees: BookingAttendee[]
   title: string
   description: string | null
   additionalNotes: string | null
