@@ -378,14 +378,6 @@ export const bookings = pgTable(
     }).notNull(),
     status: bookingStatusEnum().notNull().default('PENDING'),
 
-    // Organizer (mentor) info snapshot
-    organizerId: varchar({ length: 255 })
-      .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
-    organizerName: varchar({ length: 255 }).notNull(),
-    organizerEmail: varchar({ length: 255 }).notNull(),
-    organizerUsername: varchar({ length: 255 }).notNull(),
-
     // Pricing snapshot (from our database at time of booking)
     price: integer(), // Price in cents
     currency: varchar({ length: 3 }).default('USD'),
@@ -410,7 +402,6 @@ export const bookings = pgTable(
   table => [
     index('bookings_calcom_booking_id_idx').on(table.calcomBookingId),
     index('bookings_calcom_uid_idx').on(table.calcomUid),
-    index('bookings_organizer_id_idx').on(table.organizerId),
     index('bookings_start_time_idx').on(table.startTime),
     index('bookings_status_idx').on(table.status),
     index('bookings_mentor_event_type_id_idx').on(table.mentorEventTypeId),
@@ -439,19 +430,47 @@ export const bookingAttendees = pgTable(
   ]
 )
 
+// Booking organizers table to store organizer (mentor) information separately
+export const bookingOrganizers = pgTable(
+  'discuno_booking_organizer',
+  {
+    id: integer().primaryKey().generatedByDefaultAsIdentity(),
+    bookingId: integer()
+      .notNull()
+      .references(() => bookings.id, { onDelete: 'cascade' }),
+    userId: varchar({ length: 255 })
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    name: varchar({ length: 255 }).notNull(),
+    email: varchar({ length: 255 }).notNull(),
+    username: varchar({ length: 255 }).notNull(),
+    ...timestamps,
+  },
+  table => [
+    index('booking_organizers_booking_id_idx').on(table.bookingId),
+    index('booking_organizers_user_id_idx').on(table.userId),
+    index('booking_organizers_email_idx').on(table.email),
+  ]
+)
+
 export const bookingsRelations = relations(bookings, ({ one, many }) => ({
-  organizer: one(users, { fields: [bookings.organizerId], references: [users.id] }),
   mentorEventType: one(mentorEventTypes, {
     fields: [bookings.mentorEventTypeId],
     references: [mentorEventTypes.id],
   }),
   payment: one(payments, { fields: [bookings.paymentId], references: [payments.id] }),
   attendees: many(bookingAttendees),
+  organizers: many(bookingOrganizers),
 }))
 
 export const bookingAttendeesRelations = relations(bookingAttendees, ({ one }) => ({
   booking: one(bookings, { fields: [bookingAttendees.bookingId], references: [bookings.id] }),
   user: one(users, { fields: [bookingAttendees.userId], references: [users.id] }),
+}))
+
+export const bookingOrganizersRelations = relations(bookingOrganizers, ({ one }) => ({
+  booking: one(bookings, { fields: [bookingOrganizers.bookingId], references: [bookings.id] }),
+  user: one(users, { fields: [bookingOrganizers.userId], references: [users.id] }),
 }))
 
 // Payment status enum

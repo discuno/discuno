@@ -170,10 +170,22 @@ export type BookingStatus =
 export interface BookingAttendee {
   id: number
   bookingId: number
-  userId?: string | null
+  userId?: string | null // User ID used for logged in mentees
   name: string
   email: string
   timeZone: string
+  createdAt: Date
+  updatedAt: Date | null
+  deletedAt: Date | null
+}
+
+export interface BookingOrganizer {
+  id: number
+  bookingId: number
+  userId: string
+  name: string
+  email: string
+  username: string
   createdAt: Date
   updatedAt: Date | null
   deletedAt: Date | null
@@ -184,9 +196,6 @@ export interface Booking {
   calcomBookingId: number
   calcomUid: string
   calcomEventTypeId: number
-  mentorId: string
-  mentorCalcomUserId: number
-  attendees: BookingAttendee[]
   title: string
   description: string | null
   additionalNotes: string | null
@@ -205,6 +214,8 @@ export interface Booking {
   createdAt: Date
   updatedAt: Date | null
   deletedAt: Date | null
+  attendees: BookingAttendee[]
+  organizers: BookingOrganizer[]
 }
 
 export interface BookingWithMentor extends Booking {
