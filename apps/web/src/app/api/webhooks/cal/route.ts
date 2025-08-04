@@ -93,7 +93,7 @@ async function storeBooking(event: CalcomBookingPayload) {
       attendeeTimeZone: attendee.timeZone,
       price: price ?? 0,
       currency: currency ?? 'USD',
-      mentorEventTypeId: eventTypeId,
+      calcomEventTypeId: eventTypeId,
       paymentId: metadata.paymentId ? Number(metadata.paymentId) : undefined,
       requiresPayment: !!price,
     })

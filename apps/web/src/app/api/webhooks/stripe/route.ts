@@ -94,8 +94,8 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
       console.log(`✅ Successfully handled payment intent: ${paymentIntent.id}`)
     } else {
       console.error(`❌ Failed to handle payment intent ${paymentIntent.id}: ${result.error}`)
-      // Optionally, you might want to throw an error here to indicate a processing failure
-      // throw new Error(`Failed to handle payment intent ${paymentIntent.id}: ${result.error}`);
+      // Throw an error to indicate a processing failure
+      throw new Error(`Failed to handle payment intent ${paymentIntent.id}: ${result.error}`)
     }
   } catch (error) {
     console.error(`❌ Error handling payment intent ${paymentIntent.id}:`, error)

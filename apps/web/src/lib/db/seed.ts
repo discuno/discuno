@@ -599,7 +599,7 @@ export const seedDatabase = async (environment?: Environment) => {
       stripeAccounts: false,
       mentorEventTypes: false,
       waitlist: false,
-      // Note: bookings and payments will be created via webhooks/API, not seeded
+      // Note: bookings, attendees, organizers, and payments will be created via webhooks/API, not seeded
     }
 
     type InsertedMajor = typeof majors.$inferSelect
