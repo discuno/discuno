@@ -3,12 +3,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import {
-  createDateOverride,
-  updateDateOverride,
-} from '~/app/(app)/(mentor)/settings/scheduling/actions'
+import { updateSchedule } from '~/app/(app)/(mentor)/settings/scheduling/actions'
 import { TimeIntervalRow } from '~/app/(app)/(mentor)/settings/scheduling/components/availability/TimeIntervalRow'
-import type { DateOverride, TimeInterval } from '~/app/types/availability'
+import type { Availability, DateOverride, TimeInterval } from '~/app/types/availability'
 import { Button } from '~/components/ui/button'
 import { Calendar } from '~/components/ui/calendar'
 import {
@@ -26,7 +23,7 @@ interface SaveOverrideModalProps {
   isOpen: boolean
   onClose: () => void
   overrideToEdit: DateOverride | null
-  existingOverrideDates: string[]
+  currentAvailability: Availability | null
   onSave: (newOverrides: DateOverride[]) => void
 }
 
@@ -34,7 +31,7 @@ export function SaveOverrideModal({
   isOpen,
   onClose,
   overrideToEdit,
-  existingOverrideDates,
+  currentAvailability,
   onSave,
 }: SaveOverrideModalProps) {
   const queryClient = useQueryClient()
@@ -52,8 +49,9 @@ export function SaveOverrideModal({
   }, [])
 
   const disabledDates: Date[] = useMemo(() => {
-    return existingOverrideDates.map(d => new Date(`${d}T00:00:00`))
-  }, [existingOverrideDates])
+    if (!currentAvailability) return []
+    return currentAvailability.dateOverrides.map(o => new Date(`${o.date}T00:00:00`))
+  }, [currentAvailability])
 
   useEffect(() => {
     if (!isOpen) return
@@ -68,29 +66,53 @@ export function SaveOverrideModal({
     }
   }, [isOpen, isEditMode, overrideToEdit])
 
-  const updateOverrideMutation = useMutation({
-    mutationFn: updateDateOverride,
-    onSuccess: (newOverrides: DateOverride[]) => {
-      toast.success('Override updated')
-      onSave(newOverrides)
-      void queryClient.invalidateQueries({ queryKey: ['schedule'] })
-      onClose()
-    },
-    onError: (error: Error) => {
-      toast.error(`Failed to update override: ${error.message}`)
-    },
-  })
+  const batchOverrideMutation = useMutation({
+    mutationFn: async ({
+      overridesToAdd,
+      overrideToUpdate,
+    }: {
+      overridesToAdd?: DateOverride[]
+      overrideToUpdate?: DateOverride
+    }) => {
+      if (!currentAvailability) {
+        throw new Error('No current availability data')
+      }
 
-  const createOverrideMutation = useMutation({
-    mutationFn: createDateOverride,
-    onSuccess: (newOverrides: DateOverride[]) => {
-      toast.success('Overrides created')
+      let newOverrides = [...currentAvailability.dateOverrides]
+
+      if (overrideToUpdate) {
+        // Update existing override
+        newOverrides = newOverrides.map(o =>
+          o.date === overrideToUpdate.date ? overrideToUpdate : o
+        )
+      } else if (overridesToAdd) {
+        // Add new overrides
+        newOverrides.push(...overridesToAdd)
+      }
+
+      // Update the entire schedule
+      const updateResult = await updateSchedule({
+        ...currentAvailability,
+        dateOverrides: newOverrides,
+      })
+
+      if (!updateResult.success) {
+        throw new Error(updateResult.error ?? 'Failed to update schedule')
+      }
+
+      return newOverrides
+    },
+    onSuccess: newOverrides => {
+      const message = isEditMode ? 'Override updated' : 'Overrides created'
+      toast.success(message)
       onSave(newOverrides)
       void queryClient.invalidateQueries({ queryKey: ['schedule'] })
       onClose()
     },
     onError: (error: Error) => {
-      toast.error(`Failed to create overrides: ${error.message}`)
+      console.warn(error)
+      const message = isEditMode ? 'Failed to update override' : 'Failed to create overrides'
+      toast.error(`${message}: ${error.message}`)
     },
   })
 
@@ -115,23 +137,21 @@ export function SaveOverrideModal({
         intervals,
       }
 
-      updateOverrideMutation.mutate(override)
+      batchOverrideMutation.mutate({ overrideToUpdate: override })
     } else {
-      // create multiple overrides
+      // create overrides in batch for multiple dates
       if (selectedDates.length === 0) return
-      for (const d of selectedDates) {
-        const dateStr = d.toISOString().substring(0, 10)
-        const override: DateOverride = {
-          date: dateStr,
-          intervals,
-        }
 
-        createOverrideMutation.mutate(override)
-      }
+      const overridesToAdd: DateOverride[] = selectedDates.map(d => ({
+        date: d.toISOString().substring(0, 10),
+        intervals,
+      }))
+
+      batchOverrideMutation.mutate({ overridesToAdd })
     }
   }
 
-  const isPending = updateOverrideMutation.isPending || createOverrideMutation.isPending
+  const isPending = batchOverrideMutation.isPending
   // Determine if form has unsaved changes: in edit mode, intervals differ; in create mode, at least one date selected
   const isDirty = isEditMode
     ? JSON.stringify(intervals) !== JSON.stringify(overrideToEdit.intervals)

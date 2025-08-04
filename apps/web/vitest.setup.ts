@@ -1,42 +1,27 @@
 import '@testing-library/jest-dom'
 import { cleanup } from '@testing-library/react'
-import { afterEach, beforeAll, vi } from 'vitest'
-
-// Global test setup
-beforeAll(() => {
-  // Mock environment variables for tests
-  vi.stubEnv('NODE_ENV', 'test')
-  vi.stubEnv('NEXTAUTH_SECRET', 'test-secret')
-  vi.stubEnv('NEXTAUTH_URL', 'http://localhost:3000')
-  vi.stubEnv('DATABASE_URL', 'mock://test')
-
-  // Mock required client-side environment variables for Cal.com integration
-  vi.stubEnv('NEXT_PUBLIC_BASE_URL', 'http://localhost:3000')
-  vi.stubEnv('NEXT_PUBLIC_X_CAL_ID', 'test-cal-id')
-  vi.stubEnv('NEXT_PUBLIC_CALCOM_API_URL', 'https://api.cal.com/v2')
-  vi.stubEnv('NEXT_PUBLIC_STRIPE_PUBLIC_KEY', 'pk_test_mock_stripe_key')
-
-  // Mock additional required server environment variables
-  vi.stubEnv('AUTH_DISCORD_ID', 'test-discord-id')
-  vi.stubEnv('AUTH_DISCORD_SECRET', 'test-discord-secret')
-  vi.stubEnv('AUTH_GOOGLE_ID', 'test-google-id')
-  vi.stubEnv('AUTH_GOOGLE_SECRET', 'test-google-secret')
-  vi.stubEnv('AUTH_EMAIL_FROM', 'test@example.com')
-  vi.stubEnv('JWT_SECRET', 'test-jwt-secret')
-  vi.stubEnv('SENDGRID_API_KEY', 'test-sendgrid-key')
-  vi.stubEnv('STRIPE_SECRET_KEY', 'sk_test_mock_stripe_secret')
-  vi.stubEnv('STRIPE_WEBHOOK_SECRET', 'whsec_test_webhook_secret')
-  vi.stubEnv('CRON_SECRET', 'test-cron-secret')
-  vi.stubEnv('SENTRY_AUTH_TOKEN', 'test-sentry-token')
-  vi.stubEnv('AUTH_EMAIL_SERVER', 'test-email-server')
-  vi.stubEnv('X_CAL_SECRET_KEY', 'test-cal-secret-key')
-  vi.stubEnv('SENTRY_DSN', 'https://test@sentry.io/test')
-  vi.stubEnv('SENTRY_ENVIRONMENT', 'test')
-})
+import dotenv from 'dotenv'
+import { afterEach, vi } from 'vitest'
 
 // Cleanup after each test
 afterEach(() => {
   cleanup()
+  vi.mock('~/env', () => {
+    dotenv.config({ path: '.env.test' })
+
+    return {
+      env: {
+        ...process.env,
+        // Add any other env variables that are not prefixed with NEXT_PUBLIC_
+        STRIPE_API_KEY: process.env.STRIPE_API_KEY,
+        STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
+        X_CAL_SECRET_KEY: process.env.X_CAL_SECRET_KEY,
+        DATABASE_URL: process.env.DATABASE_URL,
+        NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
+        NEXTAUTH_URL: process.env.NEXTAUTH_URL,
+      },
+    }
+  })
 })
 
 // Mock Next.js router
@@ -61,6 +46,15 @@ vi.mock('next/dynamic', () => ({
   },
 }))
 
+vi.mock('next/server', () => ({}))
+
+vi.mock('next-auth', () => ({
+  getServerSession: vi.fn(),
+}))
+vi.mock('next-auth/react', () => ({
+  useSession: vi.fn().mockReturnValue({ data: null, status: 'unauthenticated' }),
+}))
+
 // Global mocks for DOM APIs that might not be available in jsdom
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
@@ -68,8 +62,8 @@ Object.defineProperty(window, 'matchMedia', {
     matches: false,
     media: query,
     onchange: null,
-    addListener: vi.fn(), // deprecated
-    removeListener: vi.fn(), // deprecated
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
     dispatchEvent: vi.fn(),

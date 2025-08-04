@@ -4,9 +4,8 @@ import GoogleProvider from 'next-auth/providers/google'
 import MicrosoftEntraID from 'next-auth/providers/microsoft-entra-id'
 
 // import EmailProvider from "next-auth/providers/nodemailer";
-import { env } from '~/env'
-
 import { eq } from 'drizzle-orm'
+import { env } from '~/env'
 import { downloadAndUploadProfileImage } from '~/lib/blob'
 import { enforceCalcomIntegration } from '~/server/auth/dal'
 import { db } from '~/server/db'
@@ -156,6 +155,10 @@ export const authConfig = {
 
         if (result.success) {
           console.log(`Cal.com integration created successfully for: ${user.email ?? 'unknown'}`)
+
+          if (isNewUser) {
+            // TODO: Sync mentor event types after successful Cal.com integration
+          }
         } else {
           console.error(
             `Cal.com integration failed for: ${user.email ?? 'unknown'} - ${result.error}`

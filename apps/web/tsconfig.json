@@ -25,5 +25,5 @@
     ".next/types/**/*.ts",
     "prettier.config.mjs"
   ],
-  "exclude": ["node_modules", "coverage", "src/components/ui"]
+  "exclude": ["node_modules", "coverage"]
 }

@@ -35,62 +35,75 @@ export async function POST(req: Request) {
   const { triggerEvent, payload } = event
   console.log(`✅ Received Cal.com webhook event: ${triggerEvent}`)
 
-  if (triggerEvent === 'BOOKING_CREATED') {
-    try {
-      return await storeBooking(payload)
-    } catch {
-      return Response.json({ error: 'Failed to process booking' }, { status: 500 })
+  try {
+    switch (triggerEvent) {
+      case 'BOOKING_CREATED':
+        return await storeBooking(payload)
+      // Add other event types here in the future
+      default:
+        console.log(`ℹ️ Unhandled webhook event type: ${triggerEvent}`)
+        break
     }
-  } else {
-    console.log(`ℹ️ Unhandled webhook event type: ${triggerEvent}`)
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    console.error(`❌ Error processing webhook event ${triggerEvent}:`, errorMessage)
+    return Response.json({ error: 'Failed to process webhook' }, { status: 500 })
   }
 
   return Response.json({ received: true })
 }
 
 async function storeBooking(event: CalcomBookingPayload) {
-  console.log('✅ Cal.com booking payload received:', JSON.stringify(event, null, 2))
-  const validation = CalcomBookingPayloadSchema.safeParse(event)
-  if (!validation.success) {
-    console.warn('❌ Invalid Cal.com booking payload:', validation.error)
-    return Response.json({ error: 'Invalid booking payload' }, { status: 400 })
+  console.log('Processing Cal.com BOOKING_CREATED event...')
+  try {
+    const validation = CalcomBookingPayloadSchema.safeParse(event)
+    if (!validation.success) {
+      console.warn('❌ Invalid Cal.com booking payload:', validation.error.flatten())
+      return Response.json({ error: 'Invalid booking payload' }, { status: 400 })
+    }
+
+    const {
+      bookingId,
+      uid,
+      title,
+      attendees,
+      startTime,
+      length,
+      organizer,
+      eventTypeId,
+      price,
+      currency,
+      metadata,
+    } = validation.data
+
+    const [attendee] = attendees
+
+    const booking = await createLocalBooking({
+      calcomBookingId: bookingId,
+      calcomUid: uid,
+      title,
+      startTime: new Date(startTime),
+      duration: length,
+      organizerUserId: metadata.mentorUserId,
+      calcomOrganizerEmail: organizer.email,
+      calcomOrganizerUsername: organizer.username,
+      calcomOrganizerName: organizer.name,
+      attendeeName: attendee.name,
+      attendeeEmail: attendee.email,
+      attendeeTimeZone: attendee.timeZone,
+      price: price ?? 0,
+      currency: currency ?? 'USD',
+      mentorEventTypeId: eventTypeId,
+      paymentId: metadata.paymentId ? Number(metadata.paymentId) : undefined,
+      requiresPayment: !!price,
+    })
+
+    console.log(`✅ Successfully stored booking ${booking.id} for Cal.com event ${uid}`)
+    return Response.json(booking, { status: 201 })
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    console.error(`❌ Failed to store booking for Cal.com event:`, errorMessage)
+    console.error('Raw payload:', JSON.stringify(event, null, 2))
+    return Response.json({ error: 'Failed to process booking' }, { status: 500 })
   }
-
-  const {
-    bookingId,
-    uid,
-    title,
-    attendees,
-    startTime,
-    length,
-    organizer,
-    eventTypeId,
-    price,
-    currency,
-    metadata,
-  } = event
-
-  const [attendee] = attendees
-
-  const booking = createLocalBooking({
-    calcomBookingId: bookingId,
-    calcomUid: uid,
-    title,
-    startTime: new Date(startTime),
-    duration: length,
-    organizerUserId: metadata.mentorUserId,
-    calcomOrganizerEmail: organizer.email,
-    calcomOrganizerUsername: organizer.username,
-    calcomOrganizerName: organizer.name,
-    attendeeName: attendee.name,
-    attendeeEmail: attendee.email,
-    attendeeTimeZone: attendee.timeZone,
-    price: price ?? 0,
-    currency: currency ?? 'USD',
-    mentorEventTypeId: eventTypeId,
-    paymentId: metadata.paymentId ? Number(metadata.paymentId) : undefined,
-    requiresPayment: !!price,
-  })
-
-  return Response.json(booking, { status: 201 })
 }

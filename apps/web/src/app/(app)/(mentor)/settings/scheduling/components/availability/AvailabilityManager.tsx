@@ -24,7 +24,7 @@ const defaultAvailability: Availability = {
 }
 
 interface AvailabilityManagerProps {
-  initialAvailability: Availability | null
+  initialAvailability: Availability | null | undefined
 }
 
 export function AvailabilityManager({ initialAvailability }: AvailabilityManagerProps) {
@@ -35,17 +35,15 @@ export function AvailabilityManager({ initialAvailability }: AvailabilityManager
     mutationFn: async (scheduleData: Availability) => {
       return updateSchedule(scheduleData)
     },
-    onSuccess: savedData => {
-      queryClient.setQueryData(['schedule'], savedData)
-      toast.success('Availability saved successfully!', {
-        description: 'Your availability has been saved.',
-      })
-    },
-    onError: e => {
-      console.error(e)
-      toast.error('Failed to save availability. Please try again.', {
-        description: 'Failed to save availability. Please try again.',
-      })
+    onSuccess: result => {
+      if (result.success && result.data) {
+        queryClient.setQueryData(['schedule'], result.data)
+        toast.success('Availability saved successfully!', {
+          description: 'Your availability has been saved.',
+        })
+      } else {
+        toast.error(`Failed to save availability: ${result.error ?? 'Unknown error'}`)
+      }
     },
   })
 
@@ -85,10 +83,7 @@ export function AvailabilityManager({ initialAvailability }: AvailabilityManager
           setAvailability(prev => (prev ? { ...prev, weeklySchedule: newSchedule } : null))
         }}
       />
-      <DateOverridesManager
-        overrides={availability.dateOverrides}
-        onOverridesChange={handleOverridesChange}
-      />
+      <DateOverridesManager availability={availability} onOverridesChange={handleOverridesChange} />
       <div className="flex justify-end space-x-4">
         <Button variant="outline" onClick={handleCancel} disabled={!isDirty || isPending}>
           Cancel

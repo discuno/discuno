@@ -6,17 +6,16 @@ import type { CalcomToken, CreateCalcomUserInput, UpdateCalcomUserInput } from '
 import type { Availability, DateOverride, WeeklySchedule } from '~/app/types/availability'
 import { availabilitySchema, dateOverrideSchema } from '~/app/types/availability'
 import { env } from '~/env'
-import { BadRequestError, ExternalApiError, requireAuth } from '~/lib/auth/auth-utils'
-
+import { ExternalApiError, requireAuth } from '~/lib/auth/auth-utils'
 import {
   createCalcomUser as createCalcomUserCore,
   updateCalcomUser as updateCalcomUserCore,
 } from '~/lib/calcom'
 import {
   getFullProfile,
+  getMentorCalcomTokens,
   getMentorEventTypes,
   getMentorStripeAccount,
-  getUserCalcomTokens,
   updateCalcomTokensByUserId,
   upsertMentorEventType,
   upsertMentorStripeAccount,
@@ -34,7 +33,7 @@ const getCalcomAccessToken = async (): Promise<{
 }> => {
   try {
     console.log('getCalcomAccessToken')
-    const tokens = await getUserCalcomTokens()
+    const tokens = await getMentorCalcomTokens()
     console.log('tokens', tokens)
 
     if (!tokens) {
@@ -66,24 +65,31 @@ const getCalcomAccessToken = async (): Promise<{
  */
 const refreshCalcomToken = async (): Promise<{
   success: boolean
-  accessToken: string
+  accessToken?: string
   error?: string
 }> => {
   try {
-    const tokenRecord = await getUserCalcomTokens()
+    const tokenRecord = await getMentorCalcomTokens()
     if (!tokenRecord) {
       return {
         success: false,
-        accessToken: '',
         error: 'Token not found',
       }
     }
 
     // Check if refresh token is expired
     const now = new Date()
-    if (tokenRecord.accessTokenExpiresAt < now) {
+    if (tokenRecord.refreshTokenExpiresAt < now) {
       // Try force refresh if refresh token is expired
-      return await forceRefreshCalcomToken(tokenRecord.calcomUserId, tokenRecord.userId)
+      const forceRefreshResult = await forceRefreshCalcomToken(
+        tokenRecord.calcomUserId,
+        tokenRecord.userId
+      )
+      return {
+        success: forceRefreshResult.success,
+        accessToken: forceRefreshResult.accessToken ?? undefined,
+        error: forceRefreshResult.error,
+      }
     }
 
     // Refresh the tokens using Cal.com API v2 - correct endpoint from docs
@@ -107,7 +113,17 @@ const refreshCalcomToken = async (): Promise<{
 
       // Try force refresh on any failure
       console.log('Normal refresh failed, trying force refresh...')
-      return await forceRefreshCalcomToken(tokenRecord.calcomUserId, tokenRecord.userId)
+      {
+        const forceRefreshResult = await forceRefreshCalcomToken(
+          tokenRecord.calcomUserId,
+          tokenRecord.userId
+        )
+        return {
+          success: forceRefreshResult.success,
+          accessToken: forceRefreshResult.accessToken ?? undefined,
+          error: forceRefreshResult.error,
+        }
+      }
     }
 
     const refreshData = await refreshResponse.json()
@@ -115,7 +131,17 @@ const refreshCalcomToken = async (): Promise<{
     if (refreshData.status !== 'success') {
       console.error('Refresh response error:', refreshData)
       // Try force refresh on any failure
-      return await forceRefreshCalcomToken(tokenRecord.calcomUserId, tokenRecord.userId)
+      {
+        const forceRefreshResult = await forceRefreshCalcomToken(
+          tokenRecord.calcomUserId,
+          tokenRecord.userId
+        )
+        return {
+          success: forceRefreshResult.success,
+          accessToken: forceRefreshResult.accessToken ?? undefined,
+          error: forceRefreshResult.error,
+        }
+      }
     }
 
     // Use the expiration times from the API response
@@ -166,7 +192,7 @@ const forceRefreshCalcomToken = async (
   userId: string
 ): Promise<{
   success: boolean
-  accessToken: string
+  accessToken?: string
   error?: string
 }> => {
   try {
@@ -188,14 +214,20 @@ const forceRefreshCalcomToken = async (
     if (!forceRefreshResponse.ok) {
       const errorText = await forceRefreshResponse.text()
       console.error('Force refresh failed:', forceRefreshResponse.status, errorText)
-      throw new Error(`Force refresh failed: ${forceRefreshResponse.status} - ${errorText}`)
+      return {
+        success: false,
+        error: `Force refresh failed: ${forceRefreshResponse.status} - ${errorText}`,
+      }
     }
 
     const forceRefreshData = await forceRefreshResponse.json()
 
     if (forceRefreshData.status !== 'success') {
       console.error('Force refresh response error:', forceRefreshData)
-      throw new Error(`Force refresh API error: ${JSON.stringify(forceRefreshData)}`)
+      return {
+        success: false,
+        error: `Force refresh API error: ${JSON.stringify(forceRefreshData)}`,
+      }
     }
 
     // Use the expiration times from the API response
@@ -243,7 +275,7 @@ const forceRefreshCalcomToken = async (
  */
 const hasCalcomIntegration = async () => {
   try {
-    const tokens = await getUserCalcomTokens()
+    const tokens = await getMentorCalcomTokens()
     return !!tokens
   } catch (error) {
     console.error('Check Cal.com integration error:', error)
@@ -277,36 +309,59 @@ const getUserCalcomToken = async (): Promise<{
 const createCalcomUser = async (
   data: CreateCalcomUserInput
 ): Promise<{
+  success: boolean
   calcomUserId?: number
   username?: string
+  error?: string
 }> => {
   try {
     const result = await createCalcomUserCore(data)
     return {
+      success: true,
       calcomUserId: result.calcomUserId,
       username: result.username,
     }
   } catch (error) {
     console.error('Cal.com user creation error:', error)
     if (error instanceof ExternalApiError) {
-      throw error
+      return {
+        success: false,
+        error: error.message,
+      }
     }
-    throw new BadRequestError('Failed to create Cal.com user')
+    return {
+      success: false,
+      error: `Failed to create Cal.com user: ${error}`,
+    }
   }
 }
 
 /**
  * Update Cal.com user (server action wrapper)
  */
-const updateCalcomUser = async (data: UpdateCalcomUserInput): Promise<void> => {
+const updateCalcomUser = async (
+  data: UpdateCalcomUserInput
+): Promise<{
+  success: boolean
+  error?: string
+}> => {
   try {
     await updateCalcomUserCore(data)
+    return {
+      success: true,
+    }
   } catch (error) {
     console.error('Cal.com user update error:', error)
     if (error instanceof ExternalApiError) {
-      throw error
+      return {
+        success: false,
+        error: error.message,
+      }
     }
-    throw new BadRequestError('Failed to update Cal.com user')
+    return {
+      success: false,
+      error: `Failed to update Cal.com user: ${error}`,
+    }
   }
 }
 
@@ -314,12 +369,19 @@ const updateCalcomUser = async (data: UpdateCalcomUserInput): Promise<void> => {
  * Fetches the user's availability schedule from Cal.com.
  * @see https://cal.com/docs/enterprise/api-reference/v2/openapi#/paths/~1schedules/get
  */
-export async function getSchedule(): Promise<Availability | null> {
+export async function getSchedule(): Promise<{
+  success: boolean
+  data?: Availability
+  error?: string
+}> {
   try {
     const tokenResult = await getValidCalcomToken()
 
     if (!tokenResult.success || !tokenResult.accessToken) {
-      throw new ExternalApiError('Failed to get valid Cal.com token.')
+      return {
+        success: false,
+        error: 'Failed to get valid Cal.com token',
+      }
     }
 
     const response = await fetch(`${env.NEXT_PUBLIC_CALCOM_API_URL}/schedules/default`, {
@@ -332,13 +394,19 @@ export async function getSchedule(): Promise<Availability | null> {
 
     if (!response.ok) {
       const errorBody = await response.text()
-      throw new ExternalApiError(`Failed to fetch schedule: ${errorBody}`)
+      return {
+        success: false,
+        error: `Failed to fetch schedule: ${errorBody}`,
+      }
     }
 
     const data = await response.json()
 
     if (!data.data) {
-      return null
+      return {
+        success: true,
+        data: undefined,
+      }
     }
 
     // The /schedules/default endpoint returns a single schedule object
@@ -401,14 +469,19 @@ export async function getSchedule(): Promise<Availability | null> {
     }
 
     return {
-      id: calcomSchedule.id.toString(),
-      weeklySchedule,
-      dateOverrides,
+      success: true,
+      data: {
+        id: calcomSchedule.id.toString(),
+        weeklySchedule,
+        dateOverrides,
+      },
     }
   } catch (error) {
     console.error('Error fetching schedule:', error)
-    if (error instanceof ExternalApiError) throw error
-    throw new Error('An unexpected error occurred while fetching the schedule.')
+    return {
+      success: false,
+      error: 'An unexpected error occurred while fetching the schedule',
+    }
   }
 }
 
@@ -416,16 +489,29 @@ export async function getSchedule(): Promise<Availability | null> {
  * Updates an existing availability schedule in Cal.com.
  * @see https://cal.com/docs/enterprise/api-reference/v2/openapi#/paths/~1schedules~1{schedule_id}/patch
  */
-export async function updateSchedule(schedule: Availability): Promise<Availability> {
+export async function updateSchedule(schedule: Availability): Promise<{
+  success: boolean
+  data?: Availability
+  error?: string
+}> {
   console.log('updateSchedule called with:', schedule)
   try {
-    // Validate input using canonical schema
-    availabilitySchema.parse(schedule)
+    // Validate input using canonical schema with safeParse
+    const validationResult = availabilitySchema.safeParse(schedule)
+    if (!validationResult.success) {
+      return {
+        success: false,
+        error: `Invalid schedule data: ${validationResult.error.issues.map(i => i.message).join(', ')}`,
+      }
+    }
 
     const tokenResult = await getValidCalcomToken()
 
     if (!tokenResult.success || !tokenResult.accessToken) {
-      throw new ExternalApiError('Failed to get valid Cal.com token.')
+      return {
+        success: false,
+        error: 'Failed to get valid Cal.com token',
+      }
     }
 
     const payload = {
@@ -457,175 +543,186 @@ export async function updateSchedule(schedule: Availability): Promise<Availabili
     })
 
     console.log('updateSchedule response status:', response.status)
-    console.log('response json:', await response.json())
 
     if (!response.ok) {
       const errorBody = await response.text()
-      throw new ExternalApiError(`Failed to update schedule: ${errorBody}`)
+      return {
+        success: false,
+        error: `Failed to update schedule: ${errorBody}`,
+      }
     }
 
     revalidatePath('/scheduling')
 
-    return schedule
+    return {
+      success: true,
+      data: schedule,
+    }
   } catch (error) {
     console.error('Error updating schedule:', error)
-    if (error instanceof ExternalApiError) throw error
-    throw new Error('An unexpected error occurred while updating the schedule.')
+    return {
+      success: false,
+      error: 'An unexpected error occurred while updating the schedule',
+    }
   }
 }
 
 /**
  * Adds a new date-specific override to the user's schedule.
  */
-export async function createDateOverride(override: DateOverride): Promise<DateOverride[]> {
-  dateOverrideSchema.parse(override)
-  const schedule = await getSchedule()
-  if (!schedule) {
-    throw new Error('Could not find schedule to update.')
-  }
+export async function createDateOverride(override: DateOverride): Promise<{
+  success: boolean
+  data?: DateOverride[]
+  error?: string
+}> {
+  try {
+    // Validate input using safeParse
+    const validationResult = dateOverrideSchema.safeParse(override)
+    if (!validationResult.success) {
+      return {
+        success: false,
+        error: `Invalid override data: ${validationResult.error.issues.map(i => i.message).join(', ')}`,
+      }
+    }
 
-  const newOverrides = [...schedule.dateOverrides, override]
-  const newSchedule: Availability = {
-    ...schedule,
-    dateOverrides: newOverrides,
-  }
+    const scheduleResult = await getSchedule()
+    if (!scheduleResult.success || !scheduleResult.data) {
+      return {
+        success: false,
+        error: scheduleResult.error ?? 'Could not find schedule to update',
+      }
+    }
 
-  await updateSchedule(newSchedule)
-  return newOverrides
+    const newOverrides = [...scheduleResult.data.dateOverrides, override]
+    const newSchedule: Availability = {
+      ...scheduleResult.data,
+      dateOverrides: newOverrides,
+    }
+
+    const updateResult = await updateSchedule(newSchedule)
+    if (!updateResult.success) {
+      return {
+        success: false,
+        error: updateResult.error ?? 'Failed to update schedule',
+      }
+    }
+
+    return {
+      success: true,
+      data: newOverrides,
+    }
+  } catch (error) {
+    console.error('Error creating date override:', error)
+    return {
+      success: false,
+      error: 'An unexpected error occurred while creating the override',
+    }
+  }
 }
 
 /**
  * Updates an existing date-specific override in the user's schedule.
  */
-export async function updateDateOverride(override: DateOverride): Promise<DateOverride[]> {
-  dateOverrideSchema.parse(override)
-  const schedule = await getSchedule()
-  if (!schedule) {
-    throw new Error('Could not find schedule to update.')
-  }
+export async function updateDateOverride(override: DateOverride): Promise<{
+  success: boolean
+  data?: DateOverride[]
+  error?: string
+}> {
+  try {
+    // Validate input using safeParse
+    const validationResult = dateOverrideSchema.safeParse(override)
+    if (!validationResult.success) {
+      return {
+        success: false,
+        error: `Invalid override data: ${validationResult.error.issues.map(i => i.message).join(', ')}`,
+      }
+    }
 
-  const newOverrides = schedule.dateOverrides.map(o => (o.date === override.date ? override : o))
-  const newSchedule: Availability = {
-    ...schedule,
-    dateOverrides: newOverrides,
-  }
+    const scheduleResult = await getSchedule()
+    if (!scheduleResult.success || !scheduleResult.data) {
+      return {
+        success: false,
+        error: scheduleResult.error ?? 'Could not find schedule to update',
+      }
+    }
 
-  await updateSchedule(newSchedule)
-  return newOverrides
+    const newOverrides = scheduleResult.data.dateOverrides.map(o =>
+      o.date === override.date ? override : o
+    )
+    const newSchedule: Availability = {
+      ...scheduleResult.data,
+      dateOverrides: newOverrides,
+    }
+
+    const updateResult = await updateSchedule(newSchedule)
+    if (!updateResult.success) {
+      return {
+        success: false,
+        error: updateResult.error ?? 'Failed to update schedule',
+      }
+    }
+
+    return {
+      success: true,
+      data: newOverrides,
+    }
+  } catch (error) {
+    console.error('Error updating date override:', error)
+    return {
+      success: false,
+      error: 'An unexpected error occurred while updating the override',
+    }
+  }
 }
 
 /**
  * Deletes a date-specific override from the user's schedule.
  */
-export async function deleteDateOverride(date: string): Promise<DateOverride[]> {
-  const schedule = await getSchedule()
-  if (!schedule) {
-    throw new Error('Could not find schedule to update.')
-  }
-
-  const newOverrides = schedule.dateOverrides.filter(o => o.date !== date)
-  const newSchedule: Availability = {
-    ...schedule,
-    dateOverrides: newOverrides,
-  }
-
-  await updateSchedule(newSchedule)
-  return newOverrides
-}
-
-export const fetchEventTypes = async () => {
-  const tokenResult = await getCalcomAccessToken()
-  if (!tokenResult.success || !tokenResult.accessToken || !tokenResult.username) {
-    throw new Error('No valid Cal.com access token available')
-  }
-
-  const response = await fetch(
-    `${env.NEXT_PUBLIC_CALCOM_API_URL}/event-types?username=${encodeURIComponent(tokenResult.username)}`,
-    {
-      headers: {
-        Authorization: `Bearer ${env.X_CAL_SECRET_KEY}`,
-        'cal-api-version': '2024-06-14',
-      },
-    }
-  )
-
-  if (!response.ok) {
-    throw new ExternalApiError('Failed to fetch event types')
-  }
-
-  const payload = await response.json()
-  return Array.isArray(payload.data) ? payload.data : []
-}
-
-/**
- * Fetch team event types from Cal.com
- */
-export const fetchTeamEventTypes = async (): Promise<
-  Array<{
-    id: number
-    title: string
-    slug: string
-    length: number
-    description?: string
-    price?: number
-    currency?: string
-  }>
-> => {
+export async function deleteDateOverride(date: string): Promise<{
+  success: boolean
+  data?: DateOverride[]
+  error?: string
+}> {
   try {
-    const teamId = env.COLLEGE_MENTOR_TEAM_ID
-    const orgId = env.CALCOM_ORG_ID
-
-    if (!teamId || !orgId) {
-      throw new Error('Missing team or organization ID')
-    }
-
-    const response = await fetch(
-      `${env.NEXT_PUBLIC_CALCOM_API_URL}/organizations/${orgId}/teams/${teamId}/event-types`,
-      {
-        headers: {
-          Authorization: `Bearer ${env.X_CAL_SECRET_KEY}`,
-          'cal-api-version': '2024-06-14',
-        },
+    if (!date || typeof date !== 'string') {
+      return {
+        success: false,
+        error: 'Invalid date provided',
       }
-    )
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('Failed to fetch team event types:', response.status, errorText)
-      throw new ExternalApiError('Failed to fetch team event types')
     }
 
-    const data = await response.json()
-    console.log('Team event types response:', data)
-
-    if (data.status === 'success' && data.data && Array.isArray(data.data)) {
-      return data.data.map(
-        (eventType: {
-          id: number
-          title: string
-          slug: string
-          length?: number
-          lengthInMinutes?: number
-          description?: string
-          price?: number
-          currency?: string
-        }) => ({
-          id: eventType.id,
-          title: eventType.title,
-          slug: eventType.slug,
-          length: eventType.lengthInMinutes ?? eventType.length,
-          description: eventType.description,
-          price: eventType.price ?? null,
-          currency: eventType.currency ?? 'USD',
-        })
-      )
+    const scheduleResult = await getSchedule()
+    if (!scheduleResult.success || !scheduleResult.data) {
+      return {
+        success: false,
+        error: scheduleResult.error ?? 'Could not find schedule to update',
+      }
     }
 
-    console.warn('Unexpected team event types response structure:', data)
-    return []
+    const newOverrides = scheduleResult.data.dateOverrides.filter(o => o.date !== date)
+    const newSchedule: Availability = {
+      ...scheduleResult.data,
+      dateOverrides: newOverrides,
+    }
+
+    const updateResult = await updateSchedule(newSchedule)
+    if (!updateResult.success) {
+      return {
+        success: false,
+        error: updateResult.error ?? 'Failed to update schedule',
+      }
+    }
+
+    return {
+      success: true,
+      data: newOverrides,
+    }
   } catch (error) {
-    console.error('Error fetching team event types:', error)
-    throw error
+    console.error('Error deleting date override:', error)
+    return {
+      success: false,
+      error: 'An unexpected error occurred while deleting the override',
+    }
   }
 }
 
@@ -636,7 +733,7 @@ export const getMentorEventTypePreferences = async (): Promise<{
   success: boolean
   data?: Array<{
     id: number
-    globalEventTypeId: number
+    calcomEventTypeId: number
     title: string
     length: number
     description?: string
@@ -651,20 +748,22 @@ export const getMentorEventTypePreferences = async (): Promise<{
     const mentorPreferences = await getMentorEventTypes()
 
     // Transform the data to match the expected format
-    const combined = mentorPreferences.map(pref => ({
-      id: pref.calcomEventTypeId,
-      title: pref.title,
-      globalEventTypeId: pref.globalEventTypeId,
-      length: pref.duration,
-      description: pref.description ?? undefined,
-      isEnabled: pref.isEnabled,
-      customPrice: pref.customPrice,
-      currency: pref.currency,
-    }))
+    const combined = mentorPreferences
+      .filter(pref => pref.calcomEventTypeId !== null)
+      .map(pref => ({
+        id: pref.id,
+        calcomEventTypeId: pref.calcomEventTypeId as number,
+        title: pref.title,
+        length: pref.duration,
+        description: pref.description ?? undefined,
+        isEnabled: pref.isEnabled,
+        customPrice: pref.customPrice,
+        currency: pref.currency,
+      }))
 
     return {
       success: true,
-      data: combined,
+      data: combined.map(c => ({ ...c, id: c.calcomEventTypeId })),
     }
   } catch (error) {
     console.error('Error getting mentor event type preferences:', error)
@@ -680,10 +779,12 @@ export const getMentorEventTypePreferences = async (): Promise<{
  */
 export const updateMentorEventTypePreferences = async (data: {
   calcomEventTypeId: number
-  globalEventTypeId: number
   isEnabled: boolean
   customPrice?: number
   currency?: string
+  title: string
+  description: string | null
+  duration: number
 }): Promise<{
   success: boolean
   error?: string
@@ -694,10 +795,12 @@ export const updateMentorEventTypePreferences = async (data: {
     await upsertMentorEventType({
       userId,
       calcomEventTypeId: data.calcomEventTypeId,
-      globalEventTypeId: data.globalEventTypeId,
       isEnabled: data.isEnabled,
       customPrice: data.customPrice,
       currency: data.currency ?? 'USD',
+      title: data.title,
+      description: data.description,
+      duration: data.duration,
     })
 
     return {
@@ -877,7 +980,7 @@ export const getValidCalcomToken = async (): Promise<{
 }> => {
   try {
     // First, get current tokens from database
-    const tokens = await getUserCalcomTokens()
+    const tokens = await getMentorCalcomTokens()
     if (!tokens) {
       return {
         success: false,
