@@ -79,7 +79,7 @@ const createSeedConnection = (environment?: Environment) => {
     max: 1,
   })
   const db = drizzle(seedClient, { casing: 'snake_case' })
-  console.log('Drizzle instance created:', db)
+
   return { client: seedClient, db }
 }
 

@@ -80,7 +80,6 @@ export const accounts = pgTable(
     provider: varchar({ length: 255 }).notNull(),
     // NextAuth requires snake case for these fields
     providerAccountId: varchar({ length: 255 }).notNull(),
-    // NextAuth requires snake case for these fields
     refresh_token: text(''),
     access_token: text(''),
     expires_at: integer(),

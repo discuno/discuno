@@ -273,7 +273,6 @@ export const getPostsByFilters = async (
 
   const result = await query
 
-  console.log('getPostsByFilters result', result)
   const hasMore = result.length > validLimit
   const postsData = hasMore ? result.slice(0, -1) : result
   const nextCursor = hasMore ? postsData[postsData.length - 1]?.post.id : undefined
@@ -836,8 +835,6 @@ export const getMentorEventTypes = cache(
       .from(mentorEventTypes)
       .where(eq(mentorEventTypes.mentorUserId, currentUserId))
 
-    console.log('getMentorEventTypes result:', result)
-
     return result
       .filter(item => item.calcomEventTypeId !== null)
       .map(item => ({
@@ -922,8 +919,6 @@ export const getMentorEnabledEventTypes = cache(
           isNotNull(mentorEventTypes.calcomEventTypeId) // Only return mentors with individual event type IDs
         )
       )
-
-    console.log('getMentorEnabledEventTypes result:', result)
 
     return result
       .filter(
