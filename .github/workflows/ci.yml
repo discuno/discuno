@@ -170,6 +170,8 @@ jobs:
       - name: Build packages
         env:
           SKIP_ENV_VALIDATION: true
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
         run: pnpm build
 
       - name: Upload build artifacts
