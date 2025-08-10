@@ -9,7 +9,14 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
+        // Legacy default (kept for backwards compatibility)
         default: 'bg-primary text-primary-foreground shadow-xs hover:bg-primary/90',
+        // New visual system inspired by Apple/shadcn
+        filled: 'bg-primary text-primary-foreground shadow-xs hover:bg-primary/90',
+        tinted:
+          'bg-primary/10 text-primary hover:bg-primary/15 border border-transparent dark:bg-primary/20 dark:hover:bg-primary/25',
+        gray: 'bg-muted text-foreground hover:bg-muted/80 border border-transparent dark:bg-muted/25 dark:hover:bg-muted/35',
+        plain: 'bg-transparent text-primary shadow-none hover:bg-transparent hover:text-primary/80',
         destructive:
           'bg-destructive text-white shadow-xs hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60',
         outline:
