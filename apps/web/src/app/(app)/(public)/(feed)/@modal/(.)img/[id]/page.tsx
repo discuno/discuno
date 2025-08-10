@@ -116,7 +116,7 @@ const PostModal = async ({ params }: { params: Promise<{ id: string }> }) => {
             )}
 
             <Button variant="secondary" asChild className="flex-1">
-              <Link href={`/img/${post.id}`}>
+              <Link href={`/img/${post.id}`} target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="mr-2 h-4 w-4" />
                 View Full Profile
               </Link>

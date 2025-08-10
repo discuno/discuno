@@ -3,13 +3,27 @@ import * as React from 'react'
 import { Button } from '~/components/ui/button'
 import { cn } from '~/lib/utils'
 
-type ButtonVariant = 'filled' | 'tinted' | 'gray' | 'plain'
+type ButtonVariant =
+  | 'default'
+  | 'secondary'
+  | 'outline'
+  | 'ghost'
+  | 'link'
+  | 'destructive'
+  | 'gray'
+  | 'plain'
+  | 'tinted'
 
 const BUTTON_PREVIEWS: Array<{ variant: ButtonVariant; label: string }> = [
-  { variant: 'filled', label: 'Filled' },
-  { variant: 'tinted', label: 'Tinted' },
+  { variant: 'default', label: 'Default' },
+  { variant: 'secondary', label: 'Secondary' },
+  { variant: 'outline', label: 'Outline' },
+  { variant: 'ghost', label: 'Ghost' },
+  { variant: 'link', label: 'Link' },
+  { variant: 'destructive', label: 'Destructive' },
   { variant: 'gray', label: 'Gray' },
   { variant: 'plain', label: 'Plain' },
+  { variant: 'tinted', label: 'Tinted' },
 ]
 
 const Panel = ({
