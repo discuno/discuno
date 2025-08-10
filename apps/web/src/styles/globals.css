@@ -80,8 +80,9 @@
     --primary: 212 100% 50%; /* iOS system blue (#0A84FF) */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 240 6% 95%; /* soft gray surface */
-    --secondary-foreground: 224 15% 20%;
+    /* Secondary = neutral gray block from your spec */
+    --secondary: 220 8% 64%; /* ~#9aa0a8 */
+    --secondary-foreground: 224 14% 12%;
 
     --muted: 240 5% 96%;
     --muted-foreground: 224 10% 45%;
@@ -120,7 +121,8 @@
     --primary: 212 100% 62%; /* brighter system blue */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 240 6% 20%; /* #3A3A3C */
+    /* Secondary = darker neutral from your spec */
+    --secondary: 220 6% 30%; /* ~#4c4f54 */
     --secondary-foreground: 210 40% 98%;
 
     --muted: 240 6% 20%;
@@ -152,8 +154,8 @@
   --primary: 212 100% 50%; /* system blue */
   --primary-foreground: 0 0% 100%;
 
-  --secondary: 240 6% 95%;
-  --secondary-foreground: 224 15% 20%;
+  --secondary: 220 8% 64%;
+  --secondary-foreground: 224 14% 12%;
 
   --muted: 240 5% 96%;
   --muted-foreground: 224 10% 45%;
@@ -183,7 +185,7 @@
   --primary: 212 100% 62%;
   --primary-foreground: 0 0% 100%;
 
-  --secondary: 240 6% 20%;
+  --secondary: 220 6% 30%;
   --secondary-foreground: 210 40% 98%;
 
   --muted: 240 6% 20%;

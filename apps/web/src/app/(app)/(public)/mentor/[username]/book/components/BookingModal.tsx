@@ -34,7 +34,7 @@ export const BookingModal = ({ bookingData, children, className }: BookingModalP
       </Button>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="flex max-h-[95vh] max-w-6xl flex-col p-0">
+        <DialogContent className="flex max-h-[95vh] max-w-6xl flex-col p-0 focus:outline-none">
           {/* Enhanced Header */}
           <div className="from-primary/10 via-primary/5 relative flex-shrink-0 border-b bg-gradient-to-r to-transparent p-6">
             <DialogHeader>

@@ -1,9 +1,7 @@
 'use client'
-import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Dialog, DialogContent, DialogClose, DialogTitle } from '~/components/ui/dialog'
-import { DialogDescription } from '@radix-ui/react-dialog'
-import Link from 'next/link'
+import { useEffect, useState } from 'react'
+import { Dialog, DialogContent, DialogTitle } from '~/components/ui/dialog'
 
 type ModalProps = {
   children: React.ReactNode
@@ -24,15 +22,9 @@ export const Modal = ({ children }: ModalProps) => {
 
   return (
     <Dialog open={open} onOpenChange={isOpen => !isOpen && onDismiss()}>
-      <DialogContent>
-        <DialogTitle>More Info</DialogTitle>
-        <DialogDescription>
-          <Link href="/docs/primitives/alert-dialog">Dashboard</Link>
-        </DialogDescription>
+      <DialogContent className="p-0 focus:outline-none">
+        <DialogTitle className="sr-only">More Info</DialogTitle>
         {children}
-        <DialogClose asChild>
-          <button onClick={onDismiss} className="close-button" aria-label="Close" />
-        </DialogClose>
       </DialogContent>
     </Dialog>
   )

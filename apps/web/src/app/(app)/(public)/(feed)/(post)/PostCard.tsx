@@ -6,7 +6,7 @@ import { HoverCard, HoverCardContent, HoverCardTrigger } from '~/components/ui/h
 
 export const PostCard = ({ card }: { card: Card; index: number }) => {
   return (
-    <div className="border/50 bg-card/90 hover:shadow-primary/10 dark:bg-card/90 dark:shadow-primary/5 dark:hover:bg-card/95 dark:hover:shadow-primary/15 group relative overflow-hidden rounded-xl border p-0 shadow-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-xl dark:shadow-lg">
+    <div className="bg-card/90 hover:shadow-primary/10 dark:bg-card/90 dark:shadow-primary/5 dark:hover:bg-card/95 dark:hover:shadow-primary/15 group relative overflow-hidden rounded-xl p-0 shadow-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-xl dark:shadow-lg">
       {/* Profile Image Section */}
       <div className="relative h-48 w-full overflow-hidden">
         <Image
@@ -72,7 +72,7 @@ export const PostCard = ({ card }: { card: Card; index: number }) => {
         )}
 
         {/* Footer Info */}
-        <div className="border/50 flex items-center justify-between border-t pt-3">
+        <div className="flex items-center justify-between pt-3">
           <div className="text-muted-foreground flex items-center gap-1">
             <span className="text-xs">Class of</span>
             <span className="text-foreground text-xs font-medium">{card.graduationYear}</span>
@@ -86,7 +86,7 @@ export const PostCard = ({ card }: { card: Card; index: number }) => {
 
         {/* View Profile Link */}
         <Link href={`/img/${card.id}`} className="block w-full">
-          <button className="bg-primary/10 hover:bg-primary/20 text-primary border-primary/20 hover:border-primary/30 mt-3 w-full rounded-lg border px-4 py-2 text-sm font-medium transition-all duration-200 hover:shadow-sm">
+          <button className="bg-primary/10 hover:bg-primary/20 text-primary mt-3 w-full rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 hover:shadow-sm focus:outline-none focus-visible:outline-none">
             View Profile
           </button>
         </Link>
