@@ -2,6 +2,7 @@ import { Calendar, GraduationCap, School, User } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import type { Card } from '~/app/types'
+import { Button } from '~/components/ui/button'
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '~/components/ui/hover-card'
 
 export const PostCard = ({ card }: { card: Card; index: number }) => {
@@ -49,7 +50,7 @@ export const PostCard = ({ card }: { card: Card; index: number }) => {
 
         {/* Bio with HoverCard */}
         {card.description && (
-          <HoverCard>
+          <HoverCard openDelay={100} closeDelay={50}>
             <HoverCardTrigger asChild>
               <button className="w-full text-left">
                 <div className="text-muted-foreground hover:text-foreground flex items-center gap-2 transition-colors">
@@ -85,11 +86,9 @@ export const PostCard = ({ card }: { card: Card; index: number }) => {
         </div>
 
         {/* View Profile Link */}
-        <Link href={`/img/${card.id}`} className="block w-full">
-          <button className="bg-primary/10 hover:bg-primary/20 text-primary mt-3 w-full rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 hover:shadow-sm focus:outline-none focus-visible:outline-none">
-            View Profile
-          </button>
-        </Link>
+        <Button asChild variant="tinted" className="mt-3 w-full hover:shadow-sm">
+          <Link href={`/img/${card.id}`}>View Profile</Link>
+        </Button>
       </div>
     </div>
   )

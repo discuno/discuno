@@ -115,7 +115,7 @@ const PostModal = async ({ params }: { params: Promise<{ id: string }> }) => {
               </BookingInterface>
             )}
 
-            <Button variant="outline" asChild className="flex-1">
+            <Button variant="secondary" asChild className="flex-1">
               <Link href={`/img/${post.id}`}>
                 <ExternalLink className="mr-2 h-4 w-4" />
                 View Full Profile
