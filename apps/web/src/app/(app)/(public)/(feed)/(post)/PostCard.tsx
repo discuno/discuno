@@ -34,11 +34,25 @@ export const PostCard = ({ card }: { card: Card; index: number }) => {
           <div className="min-w-0 flex-1">
             <div className="mb-1 flex items-center gap-2">
               <School className="text-primary h-4 w-4 flex-shrink-0" />
-              <p className="text-foreground truncate text-sm font-semibold">{card.school}</p>
+              <Link
+                href={{ pathname: '/', query: { school: card.school ?? '' } }}
+                className="text-foreground truncate text-sm font-semibold hover:underline"
+                aria-label={`Filter by school ${card.school ?? ''}`}
+                title={card.school ?? ''}
+              >
+                {card.school}
+              </Link>
             </div>
             <div className="flex items-center gap-2">
               <GraduationCap className="text-muted-foreground h-4 w-4 flex-shrink-0" />
-              <p className="text-muted-foreground truncate text-sm">{card.major}</p>
+              <Link
+                href={{ pathname: '/', query: { major: card.major ?? '' } }}
+                className="text-muted-foreground hover:text-foreground truncate text-sm hover:underline"
+                aria-label={`Filter by major ${card.major ?? ''}`}
+                title={card.major ?? ''}
+              >
+                {card.major}
+              </Link>
             </div>
           </div>
 
