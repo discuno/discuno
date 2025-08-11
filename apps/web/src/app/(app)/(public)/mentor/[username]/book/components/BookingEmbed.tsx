@@ -197,12 +197,14 @@ export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
     <div className="bg-background h-full min-h-[600px] w-full">
       {currentStep === 'calendar' ? (
         <div className="p-6">
-          <div className="mb-6">
-            <h2 className="mb-2 text-xl font-semibold">Schedule a Session</h2>
-            <p className="text-muted-foreground text-sm">
-              Choose your session type, then select a date and time
-            </p>
-          </div>
+          {!selectedEventType && (
+            <div className="mb-6">
+              <h2 className="mb-2 text-xl font-semibold">Schedule a Session</h2>
+              <p className="text-muted-foreground text-sm">
+                Choose your session type, then select a date and time
+              </p>
+            </div>
+          )}
 
           {/* Event Type Selection */}
           <div className="mb-6">

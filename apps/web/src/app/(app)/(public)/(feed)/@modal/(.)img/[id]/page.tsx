@@ -30,8 +30,27 @@ const PostModal = async ({ params }: { params: Promise<{ id: string }> }) => {
     return `linear-gradient(180deg, hsl(${hueA} 70% 45% / 0.9), hsl(${hueB} 75% 42% / 0.85))`
   }
 
+  const footer = (
+    <div className="flex flex-row gap-2">
+      {post.createdById && (
+        <BookingInterface variant="modal" className="min-w-0 flex-1" userId={post.createdById}>
+          <Calendar className="mr-2 h-4 w-4" />
+          <span className="inline sm:hidden">Book</span>
+          <span className="hidden sm:inline">Schedule Meeting</span>
+        </BookingInterface>
+      )}
+      <Button variant="secondary" asChild className="min-w-0 flex-1">
+        <Link href={`/img/${post.id}`} target="_blank" rel="noopener noreferrer">
+          <ExternalLink className="mr-2 h-4 w-4" />
+          <span className="inline sm:hidden">Full Profile</span>
+          <span className="hidden sm:inline">View Full Profile</span>
+        </Link>
+      </Button>
+    </div>
+  )
+
   return (
-    <Modal>
+    <Modal footer={footer}>
       <div className="w-full">
         {/* Compact gradient header (replaces large hero image) */}
         <div
@@ -112,27 +131,7 @@ const PostModal = async ({ params }: { params: Promise<{ id: string }> }) => {
               </span>
             </div>
           </div>
-          {/* Actions (inline, not sticky) */}
-          <div className="flex flex-row gap-2 pt-1">
-            {post.createdById && (
-              <BookingInterface
-                variant="modal"
-                className="min-w-0 flex-1"
-                userId={post.createdById}
-              >
-                <Calendar className="mr-2 h-4 w-4" />
-                <span className="inline sm:hidden">Book</span>
-                <span className="hidden sm:inline">Schedule Meeting</span>
-              </BookingInterface>
-            )}
-            <Button variant="secondary" asChild className="min-w-0 flex-1">
-              <Link href={`/img/${post.id}`} target="_blank" rel="noopener noreferrer">
-                <ExternalLink className="mr-2 h-4 w-4" />
-                <span className="inline sm:hidden">Full Profile</span>
-                <span className="hidden sm:inline">View Full Profile</span>
-              </Link>
-            </Button>
-          </div>
+          {/* Actions moved to sticky footer via Modal.footer prop */}
         </div>
       </div>
     </Modal>
