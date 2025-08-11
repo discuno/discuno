@@ -64,7 +64,7 @@ export const PostCard = ({ card }: { card: Card; index: number }) => {
 
         {/* Bio with HoverCard */}
         {card.description && (
-          <HoverCard openDelay={100} closeDelay={50}>
+          <HoverCard openDelay={500} closeDelay={100}>
             <HoverCardTrigger asChild>
               <button className="w-full text-left">
                 <div className="text-muted-foreground hover:text-foreground flex items-center gap-2 transition-colors">
