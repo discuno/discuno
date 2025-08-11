@@ -2,6 +2,7 @@ import { Calendar, GraduationCap, School, User } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import type { Card } from '~/app/types'
+import { AspectRatio } from '~/components/ui/aspect-ratio'
 import { Button } from '~/components/ui/button'
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '~/components/ui/hover-card'
 
@@ -9,7 +10,7 @@ export const PostCard = ({ card }: { card: Card; index: number }) => {
   return (
     <div className="bg-card/90 hover:shadow-primary/10 dark:bg-card/90 dark:shadow-primary/5 dark:hover:bg-card/95 dark:hover:shadow-primary/15 group relative overflow-hidden rounded-xl p-0 shadow-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-xl dark:shadow-lg">
       {/* Profile Image Section */}
-      <div className="relative h-48 w-full overflow-hidden">
+      <AspectRatio ratio={16 / 9} className="relative w-full overflow-hidden">
         <Image
           src={card.userImage ?? '/images/placeholder.jpg'}
           alt={card.name ?? 'Student profile'}
@@ -25,7 +26,7 @@ export const PostCard = ({ card }: { card: Card; index: number }) => {
             {card.name ?? 'Student Name'}
           </h2>
         </div>
-      </div>
+      </AspectRatio>
 
       {/* Content Section */}
       <div className="space-y-3 p-4">

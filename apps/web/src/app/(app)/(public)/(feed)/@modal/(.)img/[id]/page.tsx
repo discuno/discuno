@@ -3,6 +3,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Modal } from '~/app/(app)/(public)/(feed)/@modal/(.)img/[id]/modal'
 import { BookingInterface } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingInterface'
+import { AspectRatio } from '~/components/ui/aspect-ratio'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
@@ -25,7 +26,7 @@ const PostModal = async ({ params }: { params: Promise<{ id: string }> }) => {
         {/* Header Section */}
         <div className="relative">
           {/* Hero Image */}
-          <div className="relative h-64 w-full overflow-hidden rounded-t-xl">
+          <AspectRatio ratio={16 / 9} className="relative w-full overflow-hidden rounded-t-xl">
             <Image
               src={post.userImage ?? '/images/placeholder.jpg'}
               alt={post.name ?? 'Student profile'}
@@ -51,7 +52,7 @@ const PostModal = async ({ params }: { params: Promise<{ id: string }> }) => {
                 </Badge>
               </div>
             </div>
-          </div>
+          </AspectRatio>
         </div>
 
         {/* Content Section */}
