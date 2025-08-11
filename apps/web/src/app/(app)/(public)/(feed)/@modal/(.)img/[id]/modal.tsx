@@ -22,9 +22,9 @@ export const Modal = ({ children }: ModalProps) => {
 
   return (
     <Dialog open={open} onOpenChange={isOpen => !isOpen && onDismiss()}>
-      <DialogContent className="h-[680px] max-h-[85vh] w-[720px] max-w-[90vw] overflow-hidden p-0 focus:outline-none">
+      <DialogContent className="max-h-[85vh] w-[95vw] max-w-[720px] overflow-hidden p-0 focus:outline-none sm:w-auto sm:rounded-xl">
         <DialogTitle className="sr-only">More Info</DialogTitle>
-        {children}
+        <div className="[padding-bottom:env(safe-area-inset-bottom)]">{children}</div>
       </DialogContent>
     </Dialog>
   )
