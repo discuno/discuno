@@ -112,7 +112,7 @@
     --background: 240 7% 12%; /* #1C1C1E */
     --foreground: 210 40% 98%; /* #F2F2F7 */
 
-    --card: 240 6% 15%; /* #2C2C2E */
+    --card: 240 6% 18%; /* slightly brighter than bg for contrast */
     --card-foreground: 210 40% 98%;
 
     --popover: 240 6% 15%;
@@ -173,14 +173,14 @@
 
 .theme-discuno.dark {
   /* Apple-inspired palette (dark) */
-  --background: 240 7% 12%;
-  --foreground: 210 40% 98%;
+  --background: 252 8% 12%;
+  --foreground: 0 0% 99%;
 
-  --card: 240 6% 15%;
-  --card-foreground: 210 40% 98%;
+  --card: 252 5% 18%;
+  --card-foreground: 0 0% 99%;
 
-  --popover: 240 6% 15%;
-  --popover-foreground: 210 40% 98%;
+  --popover: 252 5% 18%;
+  --popover-foreground: 0 0% 99%;
 
   --primary: 212 100% 62%;
   --primary-foreground: 0 0% 100%;
