@@ -6,9 +6,11 @@ import { Skeleton } from '~/components/ui/skeleton'
 export default function PostModalLoading() {
   return (
     <Dialog open>
-      <DialogContent className="p-0 focus:outline-none">
-        <DialogTitle>Loading Profile...</DialogTitle>
-        <DialogDescription>Please wait while we load the mentor&apos;s profile.</DialogDescription>
+      <DialogContent className="h-[680px] max-h-[85vh] w-[720px] max-w-[90vw] p-0 focus:outline-none">
+        <DialogTitle className="sr-only">Loading Profile...</DialogTitle>
+        <DialogDescription className="sr-only">
+          Please wait while we load the mentor&apos;s profile.
+        </DialogDescription>
         <div className="mt-4 space-y-4">
           <Skeleton className="h-64 w-full rounded-lg" />
           <Skeleton className="h-6 w-3/4 rounded" />

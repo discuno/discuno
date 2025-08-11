@@ -22,7 +22,7 @@ export const Modal = ({ children }: ModalProps) => {
 
   return (
     <Dialog open={open} onOpenChange={isOpen => !isOpen && onDismiss()}>
-      <DialogContent className="p-0 focus:outline-none">
+      <DialogContent className="h-[680px] max-h-[85vh] w-[720px] max-w-[90vw] overflow-hidden p-0 focus:outline-none">
         <DialogTitle className="sr-only">More Info</DialogTitle>
         {children}
       </DialogContent>

@@ -21,7 +21,7 @@ const PostModal = async ({ params }: { params: Promise<{ id: string }> }) => {
 
   return (
     <Modal>
-      <div className="mx-auto max-w-2xl">
+      <div className="w-full">
         {/* Header Section */}
         <div className="relative">
           {/* Hero Image */}
@@ -82,7 +82,9 @@ const PostModal = async ({ params }: { params: Promise<{ id: string }> }) => {
                 <User className="text-primary h-4 w-4" />
                 <h3 className="text-foreground font-semibold">About</h3>
               </div>
-              <p className="text-muted-foreground pl-6 leading-relaxed">{post.description}</p>
+              <p className="text-muted-foreground line-clamp-5 pl-6 leading-relaxed">
+                {post.description}
+              </p>
             </div>
           )}
 
