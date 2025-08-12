@@ -194,9 +194,9 @@ export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
   }
 
   return (
-    <div className="bg-background h-full min-h-[600px] w-full">
+    <div className="bg-background flex h-full w-full flex-col">
       {currentStep === 'calendar' ? (
-        <div className="p-6">
+        <div className="flex h-full min-h-0 flex-col p-6">
           {!selectedEventType && (
             <div className="mb-6">
               <h2 className="mb-2 text-xl font-semibold">Schedule a Session</h2>
@@ -245,9 +245,9 @@ export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
           </div>
 
           {selectedEventType && (
-            <div className="grid gap-6 md:grid-cols-2">
+            <div className="grid min-h-0 flex-1 gap-6 md:grid-cols-2">
               {/* Calendar */}
-              <div className="">
+              <div className="min-h-0">
                 <Label className="mb-2 block text-sm font-medium">Select Date</Label>
                 <Calendar
                   mode="single"
@@ -274,45 +274,45 @@ export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
               </div>
 
               {/* Time Slots */}
-              <div>
+              <div className="flex min-h-0 flex-col">
                 <Label className="mb-2 block text-sm font-medium">Available Times</Label>
-                {isFetching ? (
-                  <div className="space-y-2">
-                    {Array.from({ length: 6 }).map((_, i) => (
-                      <Skeleton key={i} className="h-10 w-full" />
-                    ))}
-                  </div>
-                ) : slotsForSelectedDate.length > 0 ? (
-                  <div className="grid gap-2">
-                    {slotsForSelectedDate.map((slot, index) => (
-                      <Button
-                        key={index}
-                        variant={selectedTimeSlot === slot.time ? 'default' : 'outline'}
-                        className="justify-start"
-                        disabled={!slot.available}
-                        onClick={() => setSelectedTimeSlot(slot.time)}
-                      >
-                        <Clock className="mr-2 h-4 w-4" />
-                        {slot.time}
-                      </Button>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-muted-foreground rounded-md border border-dashed p-8 text-center">
-                    <CalendarIcon className="mx-auto mb-2 h-8 w-8" />
-                    <p className="text-sm">Please select an available date</p>
-                  </div>
-                )}
+                <div className="flex-1 overflow-y-auto pr-1">
+                  {isFetching ? (
+                    <div className="space-y-2">
+                      {Array.from({ length: 6 }).map((_, i) => (
+                        <Skeleton key={i} className="h-10 w-full" />
+                      ))}
+                    </div>
+                  ) : slotsForSelectedDate.length > 0 ? (
+                    <div className="grid gap-2">
+                      {slotsForSelectedDate.map((slot, index) => (
+                        <Button
+                          key={index}
+                          variant="outline"
+                          className="justify-start"
+                          disabled={!slot.available}
+                          onClick={() => {
+                            setSelectedTimeSlot(slot.time)
+                            setCurrentStep('booking')
+                          }}
+                        >
+                          <Clock className="mr-2 h-4 w-4" />
+                          {slot.time}
+                        </Button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-muted-foreground rounded-md border border-dashed p-8 text-center">
+                      <CalendarIcon className="mx-auto mb-2 h-8 w-8" />
+                      <p className="text-sm">Please select an available date</p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}
 
-          {/* Continue Button */}
-          {selectedEventType && selectedTimeSlot && (
-            <div className="mt-6 flex justify-end">
-              <Button onClick={() => setCurrentStep('booking')}>Continue</Button>
-            </div>
-          )}
+          {/* Removed Continue button: clicking a time slot advances to the next step */}
         </div>
       ) : currentStep === 'booking' ? (
         <div className="p-6">
