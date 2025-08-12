@@ -10689,7 +10689,6 @@ packages:
       {
         integrity: sha512-gBXpgUm/3rp1lMZZrM/w7D8GKqshif0zAymAhbCyIt8KMe+0v9DQ7cdYLR4FHH/cKpdTXb+A/tKKU3eolfsI+g==,
       }
-
   tailwindcss@4.1.10:
     resolution:
       {
