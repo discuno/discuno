@@ -102,7 +102,9 @@ export const PostCard = ({ card }: { card: Card; index: number }) => {
 
         {/* View Profile Link */}
         <Button asChild variant="tinted" className="mt-3 w-full hover:shadow-sm">
-          <Link href={`/img/${card.id}`}>View Profile</Link>
+          <Link href={`/img/${card.id}`} scroll={false}>
+            View Profile
+          </Link>
         </Button>
       </div>
     </div>
