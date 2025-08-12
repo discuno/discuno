@@ -10,6 +10,7 @@ import {
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { addDays, endOfMonth, endOfWeek, format, startOfMonth, startOfWeek } from 'date-fns'
 import { ArrowLeft, CalendarIcon, Clock, CreditCard } from 'lucide-react'
+import Image from 'next/image'
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import type {
@@ -196,9 +197,59 @@ export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
   return (
     <div className="bg-background flex h-full w-full flex-col">
       {currentStep === 'calendar' ? (
-        <div className="flex h-full min-h-0 flex-col p-6">
+        <div className="animate-in fade-in slide-in-from-bottom-2 flex h-full min-h-0 flex-col p-6 duration-200">
+          {selectedEventType && (
+            <div className="bg-background/80 sticky top-0 z-30 -mx-6 -mt-6 border-b px-6 py-3 supports-[backdrop-filter]:backdrop-blur md:hidden">
+              <div className="flex items-center gap-3">
+                {bookingData.image && (
+                  <Image
+                    src={bookingData.image}
+                    alt={bookingData.name}
+                    width={40}
+                    height={40}
+                    className="ring-border h-10 w-10 shrink-0 rounded-full object-cover shadow-sm ring-1"
+                  />
+                )}
+                <div className="flex-1">
+                  <Select
+                    value={selectedEventType.id.toString()}
+                    onValueChange={value => {
+                      const eventType = eventTypes.find(et => et.id.toString() === value)
+                      setSelectedEventType(eventType ?? null)
+                      setSelectedTimeSlot(null)
+                    }}
+                  >
+                    <SelectTrigger className="h-10">
+                      <SelectValue placeholder="Session Type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {eventTypes.map(eventType => (
+                        <SelectItem key={eventType.id} value={eventType.id.toString()}>
+                          <div className="flex w-full items-center justify-between">
+                            <div className="flex flex-col items-start">
+                              <span className="font-medium">{eventType.title}</span>
+                              <span className="text-muted-foreground text-xs">
+                                {eventType.length} minutes
+                              </span>
+                            </div>
+                            {eventType.price && eventType.price > 0 ? (
+                              <Badge variant="secondary">
+                                ${(eventType.price / 100).toFixed(2)} {eventType.currency}
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline">Free</Badge>
+                            )}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+          )}
           {!selectedEventType && (
-            <div className="mb-6">
+            <div className="animate-in fade-in mb-6 duration-200">
               <h2 className="mb-2 text-xl font-semibold">Schedule a Session</h2>
               <p className="text-muted-foreground text-sm">
                 Choose your session type, then select a date and time
@@ -206,8 +257,10 @@ export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
             </div>
           )}
 
-          {/* Event Type Selection */}
-          <div className="mb-6">
+          {/* Event Type Selection (hidden on small screens after selection) */}
+          <div
+            className={`animate-in fade-in slide-in-from-bottom-2 mb-6 duration-200 ${selectedEventType ? 'hidden md:block' : ''}`}
+          >
             <Label className="mb-2 block text-sm font-medium">Session Type</Label>
             <Select
               value={selectedEventType?.id.toString() ?? ''}
@@ -245,10 +298,10 @@ export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
           </div>
 
           {selectedEventType && (
-            <div className="grid min-h-0 flex-1 gap-6 md:grid-cols-2">
+            <div className="animate-in fade-in slide-in-from-bottom-2 grid min-h-0 flex-1 grid-rows-[auto_1fr] gap-6 duration-200 md:grid-cols-2 md:grid-rows-1">
               {/* Calendar */}
               <div className="min-h-0">
-                <Label className="mb-2 block text-sm font-medium">Select Date</Label>
+                <Label className="mb-2 hidden text-sm font-medium md:block">Select Date</Label>
                 <Calendar
                   mode="single"
                   selected={selectedDate}
@@ -267,7 +320,7 @@ export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
                     const dateKey = format(date, 'yyyy-MM-dd')
                     return date < today || !monthlyAvailability[dateKey]?.length
                   }}
-                  className="rounded-md border"
+                  className="animate-in fade-in slide-in-from-bottom-2 mt-2 rounded-md border duration-200 md:mt-3"
                   startMonth={startMonth}
                   endMonth={endMonth}
                 />
@@ -275,21 +328,22 @@ export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
 
               {/* Time Slots */}
               <div className="flex min-h-0 flex-col">
-                <Label className="mb-2 block text-sm font-medium">Available Times</Label>
-                <div className="flex-1 overflow-y-auto pr-1">
+                <Label className="mb-2 hidden text-sm font-medium md:block">Available Times</Label>
+                <div className="flex-1 overflow-y-auto pr-1 md:pl-3">
                   {isFetching ? (
-                    <div className="space-y-2">
+                    <div className="animate-in fade-in space-y-2 duration-200">
                       {Array.from({ length: 6 }).map((_, i) => (
                         <Skeleton key={i} className="h-10 w-full" />
                       ))}
                     </div>
                   ) : slotsForSelectedDate.length > 0 ? (
-                    <div className="grid gap-2">
+                    <div className="animate-in fade-in slide-in-from-bottom-2 grid gap-2 duration-200">
                       {slotsForSelectedDate.map((slot, index) => (
                         <Button
                           key={index}
                           variant="outline"
-                          className="justify-start"
+                          className="animate-in fade-in slide-in-from-bottom-2 w-full justify-start duration-200"
+                          style={{ animationDelay: `${Math.min(index, 10) * 25}ms` }}
                           disabled={!slot.available}
                           onClick={() => {
                             setSelectedTimeSlot(slot.time)
@@ -302,7 +356,7 @@ export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
                       ))}
                     </div>
                   ) : (
-                    <div className="text-muted-foreground rounded-md border border-dashed p-8 text-center">
+                    <div className="text-muted-foreground animate-in fade-in rounded-md border border-dashed p-6 text-center duration-200">
                       <CalendarIcon className="mx-auto mb-2 h-8 w-8" />
                       <p className="text-sm">Please select an available date</p>
                     </div>
@@ -315,7 +369,7 @@ export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
           {/* Removed Continue button: clicking a time slot advances to the next step */}
         </div>
       ) : currentStep === 'booking' ? (
-        <div className="p-6">
+        <div className="animate-in fade-in slide-in-from-bottom-2 p-6 duration-200">
           <div className="mb-6">
             <h2 className="mb-2 text-xl font-semibold">Your Details</h2>
             <p className="text-muted-foreground text-sm">
@@ -409,7 +463,7 @@ export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
         clientSecret &&
         selectedEventType &&
         selectedDate && (
-          <div className="p-6">
+          <div className="animate-in fade-in slide-in-from-bottom-2 p-6 duration-200">
             <Elements
               stripe={stripePromise}
               options={{

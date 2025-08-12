@@ -26,7 +26,7 @@ export const BookingButton = ({ bookingData, children, className }: BookingButto
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="aspect-[9/16] max-h-[85vh] w-full max-w-[85vw] overflow-hidden p-0 focus:outline-none sm:rounded-xl">
           <div className="flex h-full min-h-0 flex-col">
-            <DialogHeader className="flex-shrink-0 p-6 pb-0">
+            <DialogHeader className="animate-in fade-in slide-in-from-top-2 flex-shrink-0 p-6 pb-0 duration-200">
               <DialogTitle className="text-xl font-semibold">
                 Schedule with {bookingData.name}
               </DialogTitle>
@@ -47,7 +47,7 @@ export const BookingButton = ({ bookingData, children, className }: BookingButto
             </DialogHeader>
 
             <div className="flex-1 overflow-hidden [padding-bottom:env(safe-area-inset-bottom)]">
-              <div className="h-full overflow-y-auto">
+              <div className="animate-in fade-in h-full overflow-y-auto duration-200">
                 <Suspense fallback={<BookingEmbedSkeleton />}>
                   <BookingEmbed bookingData={bookingData} />
                 </Suspense>

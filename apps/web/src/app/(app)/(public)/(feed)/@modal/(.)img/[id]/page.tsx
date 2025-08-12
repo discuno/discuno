@@ -18,18 +18,6 @@ const PostModal = async ({ params }: { params: Promise<{ id: string }> }) => {
 
   const post = await getPostById(idAsNumber)
 
-  const getSchoolGradient = (schoolName?: string | null) => {
-    const text = schoolName ?? ''
-    let hash = 0
-    for (let i = 0; i < text.length; i++) {
-      hash = (hash << 5) - hash + text.charCodeAt(i)
-      hash |= 0
-    }
-    const hueA = Math.abs(hash) % 360
-    const hueB = (hueA + 40) % 360
-    return `linear-gradient(180deg, hsl(${hueA} 70% 45% / 0.9), hsl(${hueB} 75% 42% / 0.85))`
-  }
-
   const footer = (
     <div className="flex flex-row gap-2">
       {post.createdById && (
@@ -52,30 +40,26 @@ const PostModal = async ({ params }: { params: Promise<{ id: string }> }) => {
   return (
     <Modal footer={footer}>
       <div className="w-full">
-        {/* Compact gradient header (replaces large hero image) */}
-        <div
-          className="relative rounded-t-xl px-6 pt-6"
-          style={{ background: getSchoolGradient(post.school) }}
-        >
+        {/* Header */}
+        <div className="rounded-t-xl px-6 pt-6">
           <div className="flex items-end gap-4 pb-5">
-            <Avatar className="h-14 w-14 border-2 border-white/90 shadow-md">
+            <Avatar className="border-border h-14 w-14 border-2 shadow-md">
               <AvatarImage src={post.userImage ?? ''} alt={post.name ?? ''} />
               <AvatarFallback className="bg-primary text-primary-foreground text-base font-bold">
                 {post.name?.charAt(0) ?? 'S'}
               </AvatarFallback>
             </Avatar>
-            <div className="text-white">
-              <h1 className="text-balance text-xl font-bold leading-tight drop-shadow sm:text-2xl">
+            <div className="text-foreground">
+              <h1 className="text-balance text-xl font-bold leading-tight sm:text-2xl">
                 {post.name ?? 'Student Name'}
               </h1>
               {post.schoolYear && (
-                <Badge variant="secondary" className="mt-1 border-white/30 bg-white/20 text-white">
+                <Badge variant="secondary" className="mt-1">
                   {post.schoolYear}
                 </Badge>
               )}
             </div>
           </div>
-          <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-b from-black/20 to-transparent" />
         </div>
 
         {/* Content Section */}
