@@ -15,6 +15,7 @@ afterEach(() => {
         // Add any other env variables that are not prefixed with NEXT_PUBLIC_
         STRIPE_API_KEY: process.env.STRIPE_API_KEY,
         STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
+        STRIPE_CONNECT_WEBHOOK_SECRET: process.env.STRIPE_CONNECT_WEBHOOK_SECRET,
         X_CAL_SECRET_KEY: process.env.X_CAL_SECRET_KEY,
         DATABASE_URL: process.env.DATABASE_URL,
         NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
