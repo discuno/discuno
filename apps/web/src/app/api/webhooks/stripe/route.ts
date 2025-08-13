@@ -4,10 +4,8 @@ import type { Stripe } from 'stripe'
 import { handlePaymentIntentWebhook } from '~/app/(app)/(public)/mentor/[username]/book/actions'
 import { env } from '~/env'
 import { stripe } from '~/lib/stripe'
-import { upsertMentorStripeAccount } from '~/server/queries'
 
 export async function POST(req: Request) {
-  console.log(`🔔 Received Stripe webhook`)
   const signature = (await headers()).get('stripe-signature') ?? ''
 
   let event: Stripe.Event
@@ -22,14 +20,8 @@ export async function POST(req: Request) {
     })
   }
 
-  console.log(`🔔 Received Stripe event: ${event.type}`)
-
   try {
     switch (event.type) {
-      case 'account.updated':
-        await handleAccountUpdated(event.data.object)
-        break
-
       case 'payment_intent.succeeded':
         await handlePaymentIntentSucceeded(event.data.object)
         break
@@ -50,37 +42,6 @@ export async function POST(req: Request) {
   }
 
   return NextResponse.json({ received: true })
-}
-
-/**
- * Handle Stripe account updates
- */
-async function handleAccountUpdated(account: Stripe.Account) {
-  try {
-    const userId = account.metadata?.userId
-
-    if (!userId) {
-      console.error(`❌ Stripe account ${account.id} has no userId in metadata.`)
-      return
-    }
-
-    await upsertMentorStripeAccount({
-      userId,
-      stripeAccountId: account.id,
-      stripeAccountStatus:
-        account.charges_enabled && account.payouts_enabled ? 'active' : 'pending',
-      chargesEnabled: account.charges_enabled,
-      payoutsEnabled: account.payouts_enabled,
-      detailsSubmitted: account.details_submitted,
-      requirements: account.requirements as unknown as Record<string, unknown>,
-    })
-
-    console.log(`✅ Successfully handled account update for Stripe account: ${account.id}`)
-  } catch (error) {
-    console.error(`❌ Error handling account update for Stripe account ${account.id}:`, error)
-    // Re-throw the error to be caught by the main POST function's error handler
-    throw error
-  }
 }
 
 /**

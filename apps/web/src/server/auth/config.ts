@@ -7,7 +7,7 @@ import MicrosoftEntraID from 'next-auth/providers/microsoft-entra-id'
 import { eq } from 'drizzle-orm'
 import { env } from '~/env'
 import { downloadAndUploadProfileImage } from '~/lib/blob'
-import { enforceCalcomIntegration } from '~/server/auth/dal'
+import { enforceCalcomIntegration, syncMentorEventTypesForUser } from '~/server/auth/dal'
 import { db } from '~/server/db'
 import {
   accounts,
@@ -157,7 +157,21 @@ export const authConfig = {
           console.log(`Cal.com integration created successfully for: ${user.email ?? 'unknown'}`)
 
           if (isNewUser) {
-            // TODO: Sync mentor event types after successful Cal.com integration
+            try {
+              const syncResult = await syncMentorEventTypesForUser(user.id)
+              if (syncResult.success) {
+                console.log(
+                  `Synced Cal.com event types for user ${user.email ?? 'unknown'}: ` +
+                    `created=${syncResult.created}, updated=${syncResult.updated}, deleted=${syncResult.deleted}`
+                )
+              } else {
+                console.error(
+                  `Failed to sync event types for ${user.email ?? 'unknown'}: ${syncResult.error}`
+                )
+              }
+            } catch (err) {
+              console.error('Unexpected error syncing mentor event types:', err)
+            }
           }
         } else {
           console.error(
