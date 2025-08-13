@@ -462,6 +462,26 @@ export const getMentorCalcomTokens = cache(async (): Promise<CalcomTokenWithId |
   return tokens
 })
 
+/**
+ * Lightweight Cal.com username lookup by userId
+ */
+export const getCalcomUsernameByUserId = cache(
+  async (userId: string): Promise<{ calcomUsername: string; calcomUserId: number } | null> => {
+    const rows = await db
+      .select({
+        calcomUsername: calcomTokens.calcomUsername,
+        calcomUserId: calcomTokens.calcomUserId,
+      })
+      .from(calcomTokens)
+      .where(eq(calcomTokens.userId, userId))
+      .limit(1)
+
+    const row = rows[0]
+    if (!row?.calcomUsername) return null
+    return { calcomUsername: row.calcomUsername, calcomUserId: row.calcomUserId }
+  }
+)
+
 export const getMentorCalcomTokensByUsername = async (
   username: string
 ): Promise<CalcomTokenWithId | null> => {
