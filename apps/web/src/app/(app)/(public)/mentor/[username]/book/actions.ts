@@ -3,7 +3,6 @@
 import { eq } from 'drizzle-orm'
 import type Stripe from 'stripe'
 import { z } from 'zod'
-import { createTaxTransaction } from '~/app/(app)/(public)/mentor/[username]/book/tax-actions'
 import { env } from '~/env'
 import { createCalcomBooking } from '~/lib/calcom'
 import { ExternalApiError } from '~/lib/errors'
@@ -55,6 +54,13 @@ const BookingFormInputSchema = z.object({
     .min(1, 'Attendee name is required')
     .max(100, 'Name must be at most 100 characters'),
   attendeeEmail: z.string().trim().email('Valid email is required'),
+  attendeePhone: z
+    .string()
+    .trim()
+    .optional()
+    .refine(val => !val || /^\+?[0-9\s\-()]{7,20}$/.test(val), {
+      message: 'Phone number must be a valid international phone number',
+    }),
   mentorUsername: z
     .string()
     .trim()
@@ -219,12 +225,12 @@ export const createBooking = async (input: CreateBookingInput): Promise<string> 
 /**
  * Create a paid booking with Stripe Payment Intent including tax calculation
  */
-export const createStripePaymentIntent = async (
+export const createStripeCheckoutSession = async (
   input: BookingFormInput
 ): Promise<{
   success: boolean
   clientSecret?: string
-  paymentIntentId?: string
+  checkoutSessionId?: string
   error?: string
 }> => {
   try {
@@ -234,6 +240,7 @@ export const createStripePaymentIntent = async (
       startTimeIso,
       attendeeName,
       attendeeEmail,
+      attendeePhone,
       mentorUsername,
       mentorUserId,
       price,
@@ -260,88 +267,129 @@ export const createStripePaymentIntent = async (
     }
 
     const stripeAccountData = stripeAccount[0]
-    const mentorFee = Math.round(price * 0.1)
     const menteeFee = Math.round(price * 0.05)
-    const mentorAmount = price - mentorFee
-    const subtotal = Math.round(price + menteeFee)
+    const mentorFee = Math.round(price * 0.15)
 
-    // Create payment intent; tax will be computed by Stripe from AddressElement data before confirm
-    // Build params separately to attach automatic_tax while keeping TS types clean
-    const createParams: Stripe.PaymentIntentCreateParams = {
-      amount: subtotal,
+    const existingCustomer = await stripe.customers.list({
+      email: attendeeEmail,
+      limit: 1,
+    })
+
+    const customerId = existingCustomer.data[0]?.id
+
+    const createParams: Stripe.Checkout.SessionCreateParams = {
+      automatic_tax: { enabled: true, liability: { type: 'self' } },
+      line_items: [
+        {
+          price_data: {
+            currency: currency.toLowerCase(),
+            product_data: {
+              name: 'Mentor Session',
+              metadata: {
+                mentorUserId: mentorUserId.toString(),
+                eventTypeId: eventTypeId.toString(),
+                startTime: startTimeIso,
+                attendeeName: attendeeName,
+              },
+            },
+            unit_amount: price,
+          },
+          quantity: 1,
+        },
+      ],
+      mode: 'payment',
+      ui_mode: 'custom',
+      allow_promotion_codes: true,
+      adaptive_pricing: { enabled: true },
+      consent_collection: {
+        payment_method_reuse_agreement: { position: 'auto' },
+        promotions: 'auto',
+      },
+      billing_address_collection: 'required',
       currency: currency.toLowerCase(),
+      ...(customerId
+        ? {
+            customer: customerId,
+            customer_update: {
+              address: 'auto',
+              name: 'auto',
+            },
+          }
+        : {
+            customer_creation: 'if_required',
+          }),
+      // TODO: discounts
+      payment_intent_data: {
+        application_fee_amount: mentorFee,
+        capture_method: 'automatic_async',
+        on_behalf_of: stripeAccountData.stripeAccountId,
+        transfer_data: {
+          destination: stripeAccountData.stripeAccountId,
+        },
+        receipt_email: attendeeEmail,
+        setup_future_usage: 'on_session',
+        statement_descriptor_suffix: `MENTOR SESSION`,
+      },
+      payment_method_options: {
+        card: {},
+        paypal: {},
+      },
+      phone_number_collection: {
+        enabled: true,
+      },
+      saved_payment_method_options: {
+        allow_redisplay_filters: ['always'],
+        payment_method_remove: 'enabled',
+        payment_method_save: 'enabled',
+      },
+      return_url: `${env.NEXT_PUBLIC_BASE_URL}/bookings/success?session_id={CHECKOUT_SESSION_ID}`,
+
       metadata: {
         mentorUserId: mentorUserId.toString(),
         eventTypeId: eventTypeId.toString(),
         startTime: startTimeIso,
         attendeeName: attendeeName,
         attendeeEmail: attendeeEmail,
+        attendeePhone: attendeePhone ?? '',
         attendeeTimeZone: timeZone,
         mentorUsername: mentorUsername,
         mentorFee: mentorFee.toString(),
         menteeFee: menteeFee.toString(),
-        mentorAmount: mentorAmount.toString(),
+        mentorAmount: (price - mentorFee).toString(),
         mentorStripeAccountId: stripeAccountData.stripeAccountId,
-        subtotal: subtotal.toString(),
       },
-      payment_method_types: ['card' /*'apple_pay', 'google_pay'*/], // TODO: Configure other payment methods
     }
 
-    const paymentIntent = await stripe.paymentIntents.create(createParams)
+    const session = await stripe.checkout.sessions.create(createParams)
 
-    console.log(`Successfully created Payment Intent: ${paymentIntent.id}`)
+    console.log(`Successfully created Checkout Session: ${session.id}`)
     return {
-      success: paymentIntent.client_secret !== null,
-      clientSecret: paymentIntent.client_secret ?? undefined,
-      paymentIntentId: paymentIntent.id,
+      success: session.client_secret !== null,
+      clientSecret: session.client_secret ?? undefined,
+      checkoutSessionId: session.id,
     }
   } catch (error) {
-    console.error('Stripe payment intent creation failed:', error)
+    console.error('Stripe checkout session creation failed:', error)
     if (error instanceof z.ZodError) {
       return { success: false, error: 'Invalid input data.' }
     }
-    return { success: false, error: 'Failed to create payment session.' }
-  }
-}
-
-/**
- * Refund a Stripe Payment Intent and update the payment record.
- */
-export const refundStripePaymentIntent = async (
-  paymentIntentId: string,
-  reason: 'duplicate' | 'fraudulent' | 'requested_by_customer'
-): Promise<{ success: boolean; error?: string }> => {
-  try {
-    console.log(`Refunding payment intent ${paymentIntentId} for reason: ${reason}`)
-    const refund = await stripe.refunds.create({
-      payment_intent: paymentIntentId,
-      reason: reason,
-    })
-
-    await db
-      .update(payments)
-      .set({
-        platformStatus: 'REFUNDED',
-        stripeStatus: 'canceled', // Or another appropriate status
-      })
-      .where(eq(payments.stripePaymentIntentId, paymentIntentId))
-
-    console.log(`Successfully refunded ${refund.id} for payment intent ${paymentIntentId}`)
-    return { success: true }
-  } catch (error) {
-    console.error(`Failed to refund payment intent ${paymentIntentId}:`, error)
-    return { success: false, error: 'Failed to process refund.' }
+    return { success: false, error: 'Failed to create checkout session.' }
   }
 }
 
 /**
  * Handle completed payment intents and create bookings
  */
-export const handlePaymentIntentWebhook = async (
-  paymentIntent: Stripe.PaymentIntent
+export const handleCheckoutSessionWebhook = async (
+  session: Stripe.Checkout.Session
 ): Promise<{ success: boolean; error?: string }> => {
-  const { metadata, id: paymentIntentId } = paymentIntent
-  console.log(`Handling payment intent webhook for: ${paymentIntentId}`)
+  const { metadata, id: sessionId } = session
+  if (!metadata) {
+    console.error('Missing metadata in checkout session:', sessionId)
+    return { success: false, error: 'Missing metadata' }
+  }
+
+  console.log(`Handling checkout session webhook for: ${sessionId}`)
 
   if (
     !metadata.mentorUserId ||
@@ -355,78 +403,71 @@ export const handlePaymentIntentWebhook = async (
     !metadata.attendeeTimeZone ||
     !metadata.mentorStripeAccountId
   ) {
-    console.error('Missing required metadata in payment intent:', paymentIntentId)
+    console.error('Missing required metadata in checkout session:', sessionId)
     return { success: false, error: 'Missing required metadata' }
   }
 
   const disputePeriodEnd = new Date()
   disputePeriodEnd.setHours(disputePeriodEnd.getHours() + 72)
 
-  const paymentRecord = await db
-    .insert(payments)
-    .values({
-      stripePaymentIntentId: paymentIntentId,
-      mentorUserId: metadata.mentorUserId,
-      customerEmail: metadata.attendeeEmail,
-      customerName: metadata.attendeeName,
-      amount: paymentIntent.amount,
-      currency: paymentIntent.currency.toUpperCase(),
-      mentorFee: parseInt(metadata.mentorFee),
-      menteeFee: parseInt(metadata.menteeFee),
-      mentorAmount: parseInt(metadata.mentorAmount),
-      platformStatus: 'SUCCEEDED',
-      stripeStatus: paymentIntent.status,
-      disputePeriodEnds: disputePeriodEnd,
-      metadata: { paymentIntentMetadata: metadata },
-    })
-    .returning()
+  const paymentIntentId =
+    typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id
+
+  if (!paymentIntentId) {
+    console.error('Missing payment intent id in checkout session:', sessionId)
+    return { success: false, error: 'Missing payment intent id' }
+  }
+
+  const insertData: typeof payments.$inferInsert = {
+    stripeCheckoutSessionId: sessionId,
+    stripePaymentIntentId: paymentIntentId,
+    mentorUserId: metadata.mentorUserId,
+    customerEmail: metadata.attendeeEmail,
+    customerName: metadata.attendeeName,
+    amount: session.amount_total ?? 0,
+    currency: session.currency?.toUpperCase() ?? 'USD',
+    mentorFee: parseInt(metadata.mentorFee),
+    menteeFee: parseInt(metadata.menteeFee),
+    mentorAmount: parseInt(metadata.mentorAmount),
+    platformStatus: 'SUCCEEDED',
+    stripeStatus: session.status ?? undefined,
+    disputePeriodEnds: disputePeriodEnd,
+    metadata: { checkoutSessionMetadata: metadata },
+  }
+
+  const paymentRecord = await db.insert(payments).values(insertData).returning()
 
   if (!paymentRecord[0]) {
-    console.error('Failed to create payment record for payment intent:', paymentIntentId)
+    console.error('Failed to create payment record for checkout session:', sessionId)
     return { success: false, error: 'Failed to create payment record' }
   }
 
-  console.log(`Payment record created for intent ${paymentIntentId}`)
+  console.log(`Payment record created for checkout session: ${sessionId}`)
+
+  const bookingArgs = {
+    calcomEventTypeId: Number(metadata.eventTypeId),
+    start: new Date(metadata.startTime).toISOString(),
+    attendeeName: metadata.attendeeName,
+    attendeeEmail: metadata.attendeeEmail,
+    attendeePhone: metadata.attendeePhone,
+    timeZone: metadata.attendeeTimeZone,
+    paymentId: paymentRecord[0].id,
+    mentorUserId: metadata.mentorUserId,
+  }
+
+  console.log('Calling createCalcomBooking with:', JSON.stringify(bookingArgs, null, 2))
 
   try {
-    // If a tax calculation was performed prior to confirmation, record the final tax transaction now
-    const calculationId = metadata.tax_calculation_id
-    if (calculationId) {
-      const taxTx = await createTaxTransaction({ calculationId, paymentIntentId })
-      if (!taxTx.success) {
-        console.error(
-          `Failed to create tax transaction for PI ${paymentIntentId} from calculation ${calculationId}: ${taxTx.error}`
-        )
-      } else {
-        console.log(`Created tax transaction ${taxTx.transactionId} for PI ${paymentIntentId}`)
-      }
-    }
-
-    console.log(`Attempting to create Cal.com booking for payment intent: ${paymentIntentId}`)
-
-    const bookingArgs = {
-      calcomEventTypeId: Number(metadata.eventTypeId),
-      start: new Date(metadata.startTime).toISOString(),
-      attendeeName: metadata.attendeeName,
-      attendeeEmail: metadata.attendeeEmail,
-      timeZone: metadata.attendeeTimeZone,
-      stripePaymentIntentId: paymentIntentId,
-      paymentId: paymentRecord[0].id,
-      mentorUserId: metadata.mentorUserId,
-    }
-
-    console.log('Calling createCalcomBooking with:', JSON.stringify(bookingArgs, null, 2))
-
     await createCalcomBooking(bookingArgs)
-    console.log(`Successfully created Cal.com booking for payment intent: ${paymentIntentId}`)
+    console.log(`Successfully created Cal.com booking for checkout session: ${sessionId}`)
     return { success: true }
   } catch (error) {
     console.error(
-      `Cal.com booking failed for payment intent ${paymentIntentId}. Initiating refund.`,
+      `Cal.com booking failed for checkout session ${sessionId}. Initiating refund.`,
       error
     )
 
-    await refundStripePaymentIntent(paymentIntentId, 'requested_by_customer')
+    await refundStripePaymentIntent(paymentIntentId, 'Error booking with cal.com')
 
     await db
       .update(payments)
@@ -434,5 +475,29 @@ export const handlePaymentIntentWebhook = async (
       .where(eq(payments.stripePaymentIntentId, paymentIntentId))
 
     return { success: false, error: 'Failed to create booking, payment has been refunded.' }
+  }
+}
+
+/**
+ * Refund a Stripe payment intent
+ */
+export const refundStripePaymentIntent = async (
+  paymentIntentId: string,
+  reason?: string
+): Promise<{ success: boolean; error?: string }> => {
+  try {
+    const refund = await stripe.refunds.create({
+      payment_intent: paymentIntentId,
+      reason: reason as Stripe.RefundCreateParams.Reason,
+    })
+
+    console.log(`Successfully created refund ${refund.id} for payment intent ${paymentIntentId}`)
+    return { success: true }
+  } catch (error) {
+    console.error(`Failed to refund payment intent ${paymentIntentId}:`, error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown refund error',
+    }
   }
 }

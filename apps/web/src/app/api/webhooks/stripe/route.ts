@@ -1,7 +1,7 @@
 import { headers } from 'next/headers'
 import { NextResponse } from 'next/server'
 import type { Stripe } from 'stripe'
-import { handlePaymentIntentWebhook } from '~/app/(app)/(public)/mentor/[username]/book/actions'
+import { handleCheckoutSessionWebhook } from '~/app/(app)/(public)/mentor/[username]/book/actions'
 import { env } from '~/env'
 import { stripe } from '~/lib/stripe'
 
@@ -22,12 +22,8 @@ export async function POST(req: Request) {
 
   try {
     switch (event.type) {
-      case 'payment_intent.succeeded':
-        await handlePaymentIntentSucceeded(event.data.object)
-        break
-
-      case 'transfer.created':
-        await handleTransferCreated(event.data.object)
+      case 'checkout.session.completed':
+        await handleCheckoutSessionSucceeded(event.data.object)
         break
 
       default:
@@ -45,38 +41,22 @@ export async function POST(req: Request) {
 }
 
 /**
- * Handle successful payment intents
+ * Handle successful checkout sessions
  */
-async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent) {
-  console.log(`Handling successful payment intent: ${paymentIntent.id}`)
+async function handleCheckoutSessionSucceeded(checkoutSession: Stripe.Checkout.Session) {
+  console.log(`Handling successful checkout session: ${checkoutSession.id}`)
   try {
-    const result = await handlePaymentIntentWebhook(paymentIntent)
+    const result = await handleCheckoutSessionWebhook(checkoutSession)
 
     if (result.success) {
-      console.log(`✅ Successfully handled payment intent: ${paymentIntent.id}`)
+      console.log(`✅ Successfully handled checkout session: ${checkoutSession.id}`)
     } else {
-      console.error(`❌ Failed to handle payment intent ${paymentIntent.id}: ${result.error}`)
+      console.error(`❌ Failed to handle checkout session ${checkoutSession.id}: ${result.error}`)
       // Throw an error to indicate a processing failure
-      throw new Error(`Failed to handle payment intent ${paymentIntent.id}: ${result.error}`)
+      throw new Error(`Failed to handle checkout session ${checkoutSession.id}: ${result.error}`)
     }
   } catch (error) {
-    console.error(`❌ Error handling payment intent ${paymentIntent.id}:`, error)
-    // Re-throw the error to be caught by the main POST function's error handler
-    throw error
-  }
-}
-
-/**
- * Handle transfer creation (when funds are sent to mentors)
- */
-async function handleTransferCreated(transfer: Stripe.Transfer) {
-  try {
-    console.log(`Transfer created: ${transfer.id} for ${transfer.amount} ${transfer.currency}`)
-    // Update transfer status in database if needed
-    // This can be used for additional monitoring and reconciliation
-    console.log(`✅ Successfully handled transfer created event: ${transfer.id}`)
-  } catch (error) {
-    console.error(`❌ Error handling transfer created event ${transfer.id}:`, error)
+    console.error(`❌ Error handling checkout session ${checkoutSession.id}:`, error)
     // Re-throw the error to be caught by the main POST function's error handler
     throw error
   }

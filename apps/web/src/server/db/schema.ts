@@ -419,6 +419,7 @@ export const bookingAttendees = pgTable(
     userId: varchar({ length: 255 }).references(() => users.id, { onDelete: 'set null' }),
     name: varchar({ length: 255 }).notNull(),
     email: varchar({ length: 255 }).notNull(),
+    phoneNumber: varchar({ length: 255 }),
     timeZone: varchar({ length: 100 }),
     ...timestamps,
   },
@@ -484,13 +485,9 @@ export const paymentStatusEnum = pgEnum('payment_status', [
 ] as const)
 
 export const stripePaymentStatusEnum = pgEnum('stripe_payment_status', [
-  'requires_payment_method',
-  'requires_confirmation',
-  'requires_action',
-  'processing',
-  'requires_capture',
-  'canceled',
-  'succeeded',
+  'open',
+  'complete',
+  'expired',
 ] as const)
 
 // Payments table to track Stripe payments and transfers
@@ -500,6 +497,8 @@ export const payments = pgTable(
     id: integer().primaryKey().generatedByDefaultAsIdentity(),
 
     stripePaymentIntentId: varchar({ length: 255 }).notNull().unique(),
+
+    stripeCheckoutSessionId: varchar({ length: 255 }).notNull().unique(),
 
     mentorUserId: varchar({ length: 255 })
       .notNull()
@@ -517,7 +516,7 @@ export const payments = pgTable(
     mentorAmount: integer().notNull(), // in cents (amount - platformFee)
 
     platformStatus: paymentStatusEnum().notNull().default('PENDING'),
-    stripeStatus: stripePaymentStatusEnum().notNull().default('requires_payment_method'), // Stripe payment status
+    stripeStatus: stripePaymentStatusEnum().notNull().default('open'), // Stripe payment status
 
     transferId: varchar({ length: 255 }), // Stripe transfer ID when funds sent to mentor
     transferStatus: varchar({ length: 50 }), // Transfer status
@@ -538,6 +537,7 @@ export const payments = pgTable(
     index('payments_platform_status_idx').on(table.platformStatus),
     index('payments_dispute_period_ends_idx').on(table.disputePeriodEnds),
     index('payments_stripe_payment_intent_id_idx').on(table.stripePaymentIntentId),
+    index('payments_stripe_checkout_session_id_idx').on(table.stripeCheckoutSessionId),
   ]
 )
 

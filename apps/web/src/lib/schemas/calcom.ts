@@ -27,6 +27,13 @@ export const CalcomBookingPayloadSchema = z.object({
     .array(
       z.object({
         email: z.string().email(),
+        phoneNumber: z
+          .string()
+          .trim()
+          .optional()
+          .refine(val => !val || /^\+?[0-9\s\-()]{7,20}$/.test(val), {
+            message: 'Phone number must be a valid international phone number',
+          }),
         name: z.string(),
         timeZone: z.string(),
         language: z
@@ -77,7 +84,6 @@ export const CalcomBookingPayloadSchema = z.object({
     .max(60, 'Length cannot exceed 60 minutes'),
   bookingId: z.number(),
   metadata: z.object({
-    stripePaymentIntentId: z.string().min(1, 'Stripe payment intent ID is required'),
     paymentId: z.string().optional(),
     mentorUserId: z.string().uuid('Mentor user ID must be a valid UUID'),
   }),

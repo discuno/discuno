@@ -1117,6 +1117,7 @@ export const createLocalBooking = async (input: {
   calcomOrganizerUsername: string
   attendeeName: string
   attendeeEmail: string
+  attendeePhone?: string
   attendeeTimeZone: string
   attendeeUserId?: string
   price: number
@@ -1179,6 +1180,7 @@ export const createLocalBooking = async (input: {
       userId: input.attendeeUserId ?? null, // User ID used for logged in mentees
       name: input.attendeeName,
       email: input.attendeeEmail,
+      phoneNumber: input.attendeePhone ?? null,
       timeZone: input.attendeeTimeZone,
     })
 
