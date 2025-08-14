@@ -149,8 +149,8 @@ export const createCalcomBooking = async (input: {
   start: string
   attendeeName: string
   attendeeEmail: string
+  attendeePhone?: string
   timeZone: string
-  stripePaymentIntentId?: string
   paymentId?: number
   mentorUserId: string
 }): Promise<{ id: number; uid: string }> => {
@@ -159,8 +159,8 @@ export const createCalcomBooking = async (input: {
     start,
     attendeeName,
     attendeeEmail,
+    attendeePhone,
     timeZone,
-    stripePaymentIntentId,
     paymentId,
     mentorUserId,
   } = input
@@ -170,12 +170,12 @@ export const createCalcomBooking = async (input: {
     attendee: {
       name: attendeeName,
       email: attendeeEmail,
+      phoneNumber: attendeePhone,
       timeZone: timeZone,
       language: 'en', // Default language
     },
     eventTypeId: calcomEventTypeId,
     metadata: {
-      stripePaymentIntentId: stripePaymentIntentId ?? '',
       paymentId: paymentId?.toString() ?? '',
       mentorUserId,
     },
