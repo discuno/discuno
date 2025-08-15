@@ -173,6 +173,12 @@ importers:
       '@sentry/wizard':
         specifier: ^5.1.0
         version: 5.1.0
+      '@stripe/connect-js':
+        specifier: ^3.3.27
+        version: 3.3.27
+      '@stripe/react-connect-js':
+        specifier: ^3.3.25
+        version: 3.3.25(@stripe/connect-js@3.3.27)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       '@stripe/react-stripe-js':
         specifier: ^3.7.0
         version: 3.7.0(@stripe/stripe-js@7.3.1)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -4152,6 +4158,22 @@ packages:
       }
     engines: { node: '>=18.20.6', npm: '>=3.10.7', yarn: '>=1.0.2' }
     hasBin: true
+
+  '@stripe/connect-js@3.3.27':
+    resolution:
+      {
+        integrity: sha512-QyPE6CRvS8LO7G3qFpM6qHq5So9UZCjn6PlYU1rKDtybv05B+g14+KLxnAZgi0ngaoNMVweP3slHSzA/eh78ow==,
+      }
+
+  '@stripe/react-connect-js@3.3.25':
+    resolution:
+      {
+        integrity: sha512-YunORyVCLSGzejoLD44WvrRASnymUgs7AmEw6eNUPLVufjE8tWLh4NzfPu1gExOR/fVch7XOWDbogJkvd4d0RQ==,
+      }
+    peerDependencies:
+      '@stripe/connect-js': '>=3.3.27'
+      react: '>=16.8.0'
+      react-dom: '>=16.8.0'
 
   '@stripe/react-stripe-js@3.7.0':
     resolution:
@@ -14403,6 +14425,14 @@ snapshots:
       yargs: 16.2.0
     transitivePeerDependencies:
       - debug
+
+  '@stripe/connect-js@3.3.27': {}
+
+  '@stripe/react-connect-js@3.3.25(@stripe/connect-js@3.3.27)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)':
+    dependencies:
+      '@stripe/connect-js': 3.3.27
+      react: 19.1.0
+      react-dom: 19.1.0(react@19.1.0)
 
   '@stripe/react-stripe-js@3.7.0(@stripe/stripe-js@7.3.1)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)':
     dependencies:

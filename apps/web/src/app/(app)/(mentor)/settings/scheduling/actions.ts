@@ -841,25 +841,11 @@ export const createStripeConnectAccount = async (): Promise<{
     const stripe = new Stripe(env.STRIPE_SECRET_KEY)
 
     if (existingAccount) {
-      // If account exists but is not active, create a new onboarding link
+      // If account exists but is not active, return account ID for embedded onboarding
       if (existingAccount.stripeAccountStatus !== 'active') {
-        try {
-          const accountLink = await stripe.accountLinks.create({
-            account: existingAccount.stripeAccountId,
-            refresh_url: `${env.NEXT_PUBLIC_BASE_URL}/scheduling?refresh=true`,
-            return_url: `${env.NEXT_PUBLIC_BASE_URL}/scheduling?success=true`,
-            type: 'account_onboarding',
-          })
-
-          return {
-            success: true,
-            accountId: existingAccount.stripeAccountId,
-            onboardingUrl: accountLink.url,
-          }
-        } catch (stripeError) {
-          console.error('Error creating onboarding link for existing account:', stripeError)
-          // If the account link creation fails, we might need to create a new account
-          // This can happen if the account was deleted from Stripe but still exists in our DB
+        return {
+          success: true,
+          accountId: existingAccount.stripeAccountId,
         }
       } else {
         return {
@@ -898,18 +884,9 @@ export const createStripeConnectAccount = async (): Promise<{
       chargesEnabled: false,
     })
 
-    // Create onboarding link
-    const accountLink = await stripe.accountLinks.create({
-      account: account.id,
-      refresh_url: `${env.NEXT_PUBLIC_BASE_URL}/scheduling?refresh=true`,
-      return_url: `${env.NEXT_PUBLIC_BASE_URL}/scheduling?success=true`,
-      type: 'account_onboarding',
-    })
-
     return {
       success: true,
       accountId: account.id,
-      onboardingUrl: accountLink.url,
     }
   } catch (error) {
     console.error('Error creating Stripe Connect account:', error)
@@ -931,6 +908,7 @@ export const getMentorStripeStatus = async (): Promise<{
     onboardingCompleted: boolean
     payoutsEnabled: boolean
     chargesEnabled: boolean
+    accountId?: string
   }
   error?: string
 }> => {
@@ -958,6 +936,7 @@ export const getMentorStripeStatus = async (): Promise<{
         onboardingCompleted: !!stripeAccount.onboardingCompleted,
         payoutsEnabled: stripeAccount.payoutsEnabled,
         chargesEnabled: stripeAccount.chargesEnabled,
+        accountId: stripeAccount.stripeAccountId,
       },
     }
   } catch (error) {
@@ -1018,6 +997,44 @@ export const getValidCalcomToken = async (): Promise<{
     return {
       success: false,
       error: 'Failed to get valid token',
+    }
+  }
+}
+
+/**
+ * Create Stripe Account Session for embedded onboarding
+ */
+export const createStripeAccountSession = async (
+  accountId: string
+): Promise<{
+  success: boolean
+  client_secret?: string
+  error?: string
+}> => {
+  try {
+    const stripe = new Stripe(env.STRIPE_SECRET_KEY)
+
+    const accountSession = await stripe.accountSessions.create({
+      account: accountId,
+      components: {
+        account_onboarding: {
+          enabled: true,
+        },
+        account_management: {
+          enabled: true,
+        },
+      },
+    })
+
+    return {
+      success: true,
+      client_secret: accountSession.client_secret,
+    }
+  } catch (error) {
+    console.error('Error creating Stripe Account Session:', error)
+    return {
+      success: false,
+      error: 'Failed to create Account Session',
     }
   }
 }

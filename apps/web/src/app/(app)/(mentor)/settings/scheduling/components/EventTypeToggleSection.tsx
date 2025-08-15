@@ -10,11 +10,18 @@ import {
   getMentorStripeStatus,
   updateMentorEventTypePreferences,
 } from '~/app/(app)/(mentor)/settings/scheduling/actions'
+import { StripeModal } from '~/app/(app)/(mentor)/settings/scheduling/components/StripeOnboardingModal'
 import { Alert, AlertDescription } from '~/components/ui/alert'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent } from '~/components/ui/card'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '~/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '~/components/ui/dialog'
 import { Input } from '~/components/ui/input'
 import { Label } from '~/components/ui/label'
 import { Skeleton } from '~/components/ui/skeleton'
@@ -34,6 +41,7 @@ export const EventTypeToggleSection = () => {
   const [selectedEventType, setSelectedEventType] = useState<EventTypePreference | null>(null)
   const [showPricingDialog, setShowPricingDialog] = useState(false)
   const [tempPrice, setTempPrice] = useState<string>('')
+  const [stripeAccountId, setStripeAccountId] = useState<string | null>(null)
 
   // Fetch mentor's event type preferences
   const {
@@ -48,7 +56,11 @@ export const EventTypeToggleSection = () => {
   })
 
   // Fetch mentor's Stripe status
-  const { data: stripeStatusData, isLoading: stripeStatusLoading } = useQuery({
+  const {
+    data: stripeStatusData,
+    isLoading: stripeStatusLoading,
+    refetch: refetchStripeStatus,
+  } = useQuery({
     queryKey: ['mentor-stripe-status'],
     queryFn: getMentorStripeStatus,
     staleTime: 5 * 60 * 1000,
@@ -71,8 +83,8 @@ export const EventTypeToggleSection = () => {
   const createStripeAccountMutation = useMutation({
     mutationFn: createStripeConnectAccount,
     onSuccess: result => {
-      if (result.success && result.onboardingUrl) {
-        window.location.href = result.onboardingUrl
+      if (result.success && result.accountId) {
+        setStripeAccountId(result.accountId)
       } else {
         toast.error(result.error ?? 'Failed to create Stripe account')
       }
@@ -130,8 +142,10 @@ export const EventTypeToggleSection = () => {
     setSelectedEventType(null)
   }
 
-  const handleConnectStripe = () => {
-    createStripeAccountMutation.mutate()
+  const handleOnboardingComplete = () => {
+    // Refetch Stripe status to check if onboarding was completed
+    void refetchStripeStatus()
+    toast.success('Stripe setup completed! You can now set pricing for your sessions.')
   }
 
   if (eventTypesLoading || stripeStatusLoading) {
@@ -160,27 +174,59 @@ export const EventTypeToggleSection = () => {
         <div className="flex items-center gap-2">
           <CreditCard className="h-4 w-4" />
           {stripeStatus?.hasAccount && stripeStatus.isActive ? (
-            <Badge variant="default">Stripe Connected</Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant="default">Stripe Connected</Badge>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button size="sm" variant="outline">
+                    Manage Account
+                  </Button>
+                </DialogTrigger>
+                <StripeModal
+                  accountId={stripeStatus.accountId}
+                  stripeStatus={stripeStatus}
+                  onOnboardingComplete={handleOnboardingComplete}
+                />
+              </Dialog>
+            </div>
           ) : stripeStatus?.hasAccount ? (
             <div className="flex items-center gap-2">
               <Badge variant="secondary">Stripe Pending</Badge>
-              <Button
-                onClick={handleConnectStripe}
-                disabled={createStripeAccountMutation.isPending}
-                size="sm"
-                variant="outline"
-              >
-                {createStripeAccountMutation.isPending ? 'Loading...' : 'Continue Setup'}
-              </Button>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button
+                    onClick={() => createStripeAccountMutation.mutate()}
+                    disabled={createStripeAccountMutation.isPending}
+                    size="sm"
+                    variant="outline"
+                  >
+                    {createStripeAccountMutation.isPending ? 'Loading...' : 'Continue Setup'}
+                  </Button>
+                </DialogTrigger>
+                <StripeModal
+                  accountId={stripeAccountId ?? undefined}
+                  stripeStatus={stripeStatus}
+                  onOnboardingComplete={handleOnboardingComplete}
+                />
+              </Dialog>
             </div>
           ) : (
-            <Button
-              onClick={handleConnectStripe}
-              disabled={createStripeAccountMutation.isPending}
-              size="sm"
-            >
-              {createStripeAccountMutation.isPending ? 'Connecting...' : 'Connect Stripe'}
-            </Button>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button
+                  onClick={() => createStripeAccountMutation.mutate()}
+                  disabled={createStripeAccountMutation.isPending}
+                  size="sm"
+                >
+                  {createStripeAccountMutation.isPending ? 'Connecting...' : 'Connect Stripe'}
+                </Button>
+              </DialogTrigger>
+              <StripeModal
+                accountId={stripeAccountId ?? undefined}
+                stripeStatus={stripeStatus}
+                onOnboardingComplete={handleOnboardingComplete}
+              />
+            </Dialog>
           )}
         </div>
       </div>
