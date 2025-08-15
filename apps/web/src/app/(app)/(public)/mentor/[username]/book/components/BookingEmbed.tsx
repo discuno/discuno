@@ -4,6 +4,7 @@ import { CheckoutProvider } from '@stripe/react-stripe-js'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { addDays, endOfMonth, endOfWeek, format, parse, startOfMonth, startOfWeek } from 'date-fns'
 import { CalendarIcon } from 'lucide-react'
+import { useTheme } from 'next-themes'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
@@ -34,6 +35,7 @@ export interface BookingFormData {
 type BookingStep = 'calendar' | 'booking' | 'payment'
 
 export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
+  const { resolvedTheme } = useTheme()
   const { calcomUsername } = bookingData
   const today = useMemo(() => new Date(), [])
   const timeZone = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC', [])
@@ -234,6 +236,11 @@ export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
                     throw new Error(response.error ?? 'Failed to create checkout session')
                   }
                   return response.clientSecret
+                },
+                elementsOptions: {
+                  appearance: {
+                    theme: resolvedTheme === 'dark' ? 'night' : 'stripe',
+                  },
                 },
               }}
             >

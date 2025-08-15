@@ -1,11 +1,12 @@
 import { AddressElement, PaymentElement, useCheckout } from '@stripe/react-stripe-js'
 import { format } from 'date-fns'
-import { ArrowLeft, CreditCard } from 'lucide-react'
+import { ArrowLeft, CreditCard, Receipt } from 'lucide-react'
 import { useState } from 'react'
 import type { EventType } from '~/app/(app)/(public)/mentor/[username]/book/actions'
 import type { BookingFormData } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingEmbed'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
+import { Separator } from '~/components/ui/separator'
 
 interface CheckoutFormProps {
   eventType: EventType
@@ -57,62 +58,127 @@ export const CheckoutForm = ({
       setIsLoading(false)
     }
   }
-
-  const formattedAmount = ((eventType.price ?? 0) / 100).toFixed(2)
+  console.log(checkout.total)
 
   return (
-    <Card className="mx-auto w-full max-w-md">
-      <CardHeader className="space-y-4">
+    <div className="mx-auto w-full max-w-lg space-y-4">
+      {/* Header */}
+      <div className="flex items-center gap-3 pb-2">
+        <Button variant="ghost" size="sm" onClick={onBack} className="p-2">
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={onBack}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <CardTitle className="flex items-center gap-2">
-            <CreditCard className="h-5 w-5" />
-            Complete Your Payment
+          <CreditCard className="text-primary h-5 w-5" />
+          <h2 className="text-lg font-semibold">Complete Payment</h2>
+        </div>
+      </div>
+
+      {/* Order Summary */}
+      <Card className="border-muted/40">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Receipt className="h-4 w-4" />
+            Order Summary
           </CardTitle>
-        </div>
-
-        {/* Session Summary */}
-        <div className="bg-muted/50 rounded-lg p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-semibold">{eventType.title}</h3>
-              <p className="text-muted-foreground text-sm">
-                {format(selectedDate, 'EEEE, MMMM d, yyyy')} at {selectedTimeSlot}
-              </p>
-              <p className="text-muted-foreground text-sm">with {formData.name}</p>
-            </div>
-            <div className="text-right">
-              <p className="text-lg font-bold">${formattedAmount}</p>
-              <div className="text-muted-foreground space-y-1 text-xs" />
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {/* Session Info */}
+          <div className="space-y-2">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <h3 className="text-sm font-medium">{eventType.title}</h3>
+                <p className="text-muted-foreground text-xs">
+                  {format(selectedDate, 'MMM d, yyyy')} • {selectedTimeSlot} • {eventType.length}min
+                </p>
+                <p className="text-muted-foreground text-xs">with {formData.name}</p>
+              </div>
             </div>
           </div>
-        </div>
-      </CardHeader>
 
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-4">
-            <PaymentElement />
-            <AddressElement
-              options={{
-                mode: 'billing',
-              }}
-            />
-          </div>
+          <Separator />
 
-          {message && (
-            <div className="bg-destructive/15 text-destructive rounded-md p-3 text-sm">
-              {message}
+          {/* Pricing */}
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Subtotal</span>
+              <span>{checkout.total.subtotal.amount}</span>
             </div>
-          )}
 
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? 'Processing...' : `Pay $${formattedAmount}`}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+            {checkout.total.taxExclusive.amount && checkout.total.taxExclusive.amount !== '0' && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Tax</span>
+                <span>{checkout.total.taxExclusive.amount}</span>
+              </div>
+            )}
+
+            <Separator />
+
+            <div className="flex justify-between font-semibold">
+              <span>Total</span>
+              <span>{checkout.total.total.amount}</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Payment Form */}
+      <Card className="border-muted/40">
+        <CardContent className="pt-6">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-4">
+              <div>
+                <h3 className="mb-3 text-sm font-medium">Payment Method</h3>
+                <PaymentElement
+                  options={{
+                    layout: {
+                      type: 'accordion',
+                      defaultCollapsed: false,
+                      radios: false,
+                      spacedAccordionItems: true,
+                    },
+                  }}
+                />
+              </div>
+
+              <div>
+                <h3 className="mb-3 text-sm font-medium">Billing Address</h3>
+                <AddressElement
+                  options={{
+                    mode: 'billing',
+                  }}
+                />
+              </div>
+            </div>
+
+            {message && (
+              <div className="bg-destructive/10 border-destructive/20 text-destructive rounded-lg border p-3 text-sm">
+                {message}
+              </div>
+            )}
+
+            <Button
+              type="submit"
+              className="h-12 w-full text-base font-medium"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <div className="flex items-center gap-2">
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                  Processing...
+                </div>
+              ) : (
+                `Pay ${checkout.total.total.amount}`
+              )}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      {/* Security Note */}
+      <p className="text-muted-foreground px-4 text-center text-xs">
+        Your payment information is secure and encrypted. You&apos;ll receive a confirmation email
+        after payment.
+      </p>
+    </div>
   )
 }
