@@ -90,6 +90,7 @@ async function storeBooking(event: CalcomBookingPayload) {
       calcomOrganizerName: organizer.name,
       attendeeName: attendee.name,
       attendeeEmail: attendee.email,
+      attendeePhone: attendee.phoneNumber,
       attendeeTimeZone: attendee.timeZone,
       price: price ?? 0,
       currency: currency ?? 'USD',

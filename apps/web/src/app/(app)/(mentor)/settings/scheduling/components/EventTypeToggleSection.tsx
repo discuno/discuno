@@ -1,15 +1,20 @@
 'use client'
 
+import { loadConnectAndInitialize } from '@stripe/connect-js'
+import { ConnectComponentsProvider } from '@stripe/react-connect-js'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { CreditCard, DollarSign, Settings, Timer } from 'lucide-react'
-import { useState } from 'react'
+import { useTheme } from 'next-themes'
+import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import {
+  createStripeAccountSession,
   createStripeConnectAccount,
   getMentorEventTypePreferences,
   getMentorStripeStatus,
   updateMentorEventTypePreferences,
 } from '~/app/(app)/(mentor)/settings/scheduling/actions'
+import { StripeNotificationBanner } from '~/app/(app)/(mentor)/settings/scheduling/components/StripeNotificationBanner'
 import { StripeModal } from '~/app/(app)/(mentor)/settings/scheduling/components/StripeOnboardingModal'
 import { Alert, AlertDescription } from '~/components/ui/alert'
 import { Badge } from '~/components/ui/badge'
@@ -26,6 +31,7 @@ import { Input } from '~/components/ui/input'
 import { Label } from '~/components/ui/label'
 import { Skeleton } from '~/components/ui/skeleton'
 import { Switch } from '~/components/ui/switch'
+import { env } from '~/env'
 
 interface EventTypePreference {
   id: number
@@ -38,10 +44,57 @@ interface EventTypePreference {
 }
 
 export const EventTypeToggleSection = () => {
+  const { theme } = useTheme()
   const [selectedEventType, setSelectedEventType] = useState<EventTypePreference | null>(null)
   const [showPricingDialog, setShowPricingDialog] = useState(false)
   const [tempPrice, setTempPrice] = useState<string>('')
   const [stripeAccountId, setStripeAccountId] = useState<string | null>(null)
+  const [stripeConnectInstance, setStripeConnectInstance] = useState<any>(null) // eslint-disable-line @typescript-eslint/no-explicit-any
+
+  const appearance = useMemo(() => {
+    const darkVariables = {
+      colorSecondaryText: 'hsl(0, 0%, 85%)',
+      colorBackground: 'hsl(252, 8%, 12%)',
+      colorText: 'hsl(0, 0%, 99%)',
+      colorPrimary: 'hsl(212, 100%, 62%)',
+      colorBorder: 'hsl(240, 6%, 23%)',
+      borderRadius: '0.75rem',
+      buttonSecondaryColorBackground: '#2B3039',
+      buttonSecondaryColorText: '#C9CED8',
+      actionSecondaryColorText: '#C9CED8',
+      actionSecondaryTextDecorationColor: '#C9CED8',
+      colorDanger: '#F23154',
+      badgeNeutralColorBackground: '#1B1E25',
+      badgeNeutralColorBorder: '#2B3039',
+      badgeNeutralColorText: '#8C99AD',
+      badgeSuccessColorBackground: '#152207',
+      badgeSuccessColorBorder: '#20360C',
+      badgeSuccessColorText: '#3EAE20',
+      badgeWarningColorBackground: '#400A00',
+      badgeWarningColorBorder: '#5F1400',
+      badgeWarningColorText: '#F27400',
+      badgeDangerColorBackground: '#420320',
+      badgeDangerColorBorder: '#61092D',
+      badgeDangerColorText: '#F46B7D',
+      offsetBackgroundColor: '#1B1E25',
+      formBackgroundColor: '#14171D',
+      overlayBackdropColor: 'rgba(0,0,0,0.5)',
+    }
+
+    const lightVariables = {
+      colorSecondaryText: 'hsl(224, 10%, 45%)',
+      colorBackground: 'hsl(0, 0%, 99%)',
+      colorText: 'hsl(224, 14%, 12%)',
+      colorPrimary: 'hsl(212, 100%, 50%)',
+      colorBorder: 'hsl(240, 6%, 90%)',
+      borderRadius: '0.75rem',
+    }
+
+    return {
+      overlays: 'dialog' as const,
+      variables: theme === 'dark' ? darkVariables : lightVariables,
+    }
+  }, [theme])
 
   // Fetch mentor's event type preferences
   const {
@@ -97,6 +150,49 @@ export const EventTypeToggleSection = () => {
 
   const eventTypes = eventTypesData?.data ?? []
   const stripeStatus = stripeStatusData?.data
+  const effectiveAccountId = stripeAccountId ?? stripeStatus?.accountId
+
+  // Fetch account session when effectiveAccountId is available
+  const { data: sessionData } = useQuery({
+    queryKey: ['stripe-account-session', effectiveAccountId],
+    queryFn: () => createStripeAccountSession(effectiveAccountId as string),
+    enabled: !!effectiveAccountId,
+    staleTime: 0, // Account sessions expire quickly, don't cache
+    retry: 1,
+  })
+
+  // Initialize Stripe Connect instance when session data is available
+  const initializeConnectMutation = useMutation({
+    mutationFn: async (clientSecret: string) => {
+      const connectInstance = loadConnectAndInitialize({
+        publishableKey: env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY,
+        fetchClientSecret: async () => clientSecret,
+        appearance,
+      })
+      return connectInstance
+    },
+    onSuccess: connectInstance => {
+      setStripeConnectInstance(connectInstance)
+    },
+    onError: error => {
+      console.error('Failed to initialize Stripe Connect:', error)
+      toast.error('Failed to initialize Stripe Connect')
+    },
+  })
+
+  // Initialize Connect when session data becomes available
+  useEffect(() => {
+    if (sessionData?.success && sessionData.client_secret && !stripeConnectInstance) {
+      initializeConnectMutation.mutate(sessionData.client_secret)
+    }
+  }, [sessionData, stripeConnectInstance, initializeConnectMutation])
+
+  // Reset connect instance when effectiveAccountId changes
+  useEffect(() => {
+    if (!effectiveAccountId) {
+      setStripeConnectInstance(null)
+    }
+  }, [effectiveAccountId])
 
   const handleToggleEventType = async (eventType: EventTypePreference, checked: boolean) => {
     // Use the checked parameter directly instead of toggling based on current state
@@ -160,8 +256,8 @@ export const EventTypeToggleSection = () => {
     )
   }
 
-  return (
-    <div className="space-y-6">
+  const content = (
+    <>
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold">Event Type Settings</h3>
@@ -339,6 +435,24 @@ export const EventTypeToggleSection = () => {
           </div>
         </DialogContent>
       </Dialog>
+    </>
+  )
+
+  return (
+    <div className="space-y-6">
+      {stripeConnectInstance ? (
+        <ConnectComponentsProvider connectInstance={stripeConnectInstance}>
+          {stripeStatus && (
+            <StripeNotificationBanner
+              stripeStatus={stripeStatus}
+              onRefetchStripeStatus={refetchStripeStatus}
+            />
+          )}
+          {content}
+        </ConnectComponentsProvider>
+      ) : (
+        content
+      )}
     </div>
   )
 }
