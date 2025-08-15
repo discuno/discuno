@@ -1023,6 +1023,9 @@ export const createStripeAccountSession = async (
         account_management: {
           enabled: true,
         },
+        notification_banner: {
+          enabled: true,
+        },
       },
     })
 

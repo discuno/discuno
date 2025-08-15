@@ -1,11 +1,14 @@
+import { getSchedule } from './actions'
 import { SchedulingContent } from './components/SchedulingContent'
 import { SchedulingShell } from './components/SchedulingShell'
 export const dynamic = 'force-dynamic'
 
 export default async function SchedulingPage() {
+  const scheduleResult = await getSchedule()
+
   return (
     <SchedulingShell>
-      <SchedulingContent />
+      <SchedulingContent initialScheduleResult={scheduleResult} />
     </SchedulingShell>
   )
 }
