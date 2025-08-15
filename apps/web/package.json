@@ -100,6 +100,8 @@
     "@sendgrid/mail": "^8.1.5",
     "@sentry/nextjs": "^9.29.0",
     "@sentry/wizard": "^5.1.0",
+    "@stripe/connect-js": "^3.3.27",
+    "@stripe/react-connect-js": "^3.3.25",
     "@stripe/react-stripe-js": "^3.7.0",
     "@stripe/stripe-js": "^7.3.1",
     "@t3-oss/env-nextjs": "^0.13.8",
