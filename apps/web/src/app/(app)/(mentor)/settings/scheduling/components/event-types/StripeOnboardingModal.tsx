@@ -1,10 +1,16 @@
 'use client'
 
-import { ConnectAccountManagement, ConnectAccountOnboarding } from '@stripe/react-connect-js'
+import type { StripeConnectInstance } from '@stripe/connect-js'
+import {
+  ConnectAccountManagement,
+  ConnectAccountOnboarding,
+  ConnectComponentsProvider,
+} from '@stripe/react-connect-js'
 import { LoadingSpinner } from '~/components/shared/LoadingSpinner'
 import { DialogContent, DialogTitle } from '~/components/ui/dialog'
 
 interface StripeModalProps {
+  connectInstance: StripeConnectInstance
   accountId?: string
   stripeStatus?: {
     hasAccount: boolean
@@ -18,6 +24,7 @@ interface StripeModalProps {
 }
 
 export const StripeModal = ({
+  connectInstance,
   accountId,
   stripeStatus,
   onOnboardingComplete,
@@ -40,40 +47,42 @@ export const StripeModal = ({
 
   return (
     <DialogContent className="max-h-[95vh] max-w-6xl p-0">
-      <div className="flex max-h-[95vh] flex-col">
-        <DialogTitle className="sr-only">{modalTitle}</DialogTitle>
+      <ConnectComponentsProvider connectInstance={connectInstance}>
+        <div className="flex max-h-[95vh] flex-col">
+          <DialogTitle className="sr-only">{modalTitle}</DialogTitle>
 
-        <div className="flex-1 overflow-y-auto">
-          {!effectiveAccountId && (
-            <div className="flex h-96 items-center justify-center p-6">
-              <LoadingSpinner />
-              <span className="ml-2">Setting up your Stripe account...</span>
-            </div>
-          )}
+          <div className="flex-1 overflow-y-auto">
+            {!effectiveAccountId && (
+              <div className="flex h-96 items-center justify-center p-6">
+                <LoadingSpinner />
+                <span className="ml-2">Setting up your Stripe account...</span>
+              </div>
+            )}
 
-          {effectiveAccountId && (
-            <div className="p-6">
-              {isManagementMode ? (
-                <ConnectAccountManagement
-                  collectionOptions={{
-                    fields: 'eventually_due',
-                    futureRequirements: 'include',
-                  }}
-                />
-              ) : (
-                <ConnectAccountOnboarding
-                  onExit={handleExit}
-                  onStepChange={handleStepChange}
-                  collectionOptions={{
-                    fields: 'eventually_due',
-                    futureRequirements: 'include',
-                  }}
-                />
-              )}
-            </div>
-          )}
+            {effectiveAccountId && (
+              <div className="p-6">
+                {isManagementMode ? (
+                  <ConnectAccountManagement
+                    collectionOptions={{
+                      fields: 'eventually_due',
+                      futureRequirements: 'include',
+                    }}
+                  />
+                ) : (
+                  <ConnectAccountOnboarding
+                    onExit={handleExit}
+                    onStepChange={handleStepChange}
+                    collectionOptions={{
+                      fields: 'eventually_due',
+                      futureRequirements: 'include',
+                    }}
+                  />
+                )}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      </ConnectComponentsProvider>
     </DialogContent>
   )
 }

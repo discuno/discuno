@@ -1,6 +1,6 @@
 'use client'
 
-import { loadConnectAndInitialize } from '@stripe/connect-js'
+import { loadConnectAndInitialize, type StripeConnectInstance } from '@stripe/connect-js'
 import { ConnectComponentsProvider } from '@stripe/react-connect-js'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useTheme } from 'next-themes'
@@ -19,6 +19,7 @@ import { Alert, AlertDescription } from '~/components/ui/alert'
 import { Card, CardContent } from '~/components/ui/card'
 import { Skeleton } from '~/components/ui/skeleton'
 import { env } from '~/env'
+import { darkVariables, lightVariables } from '~/lib/stripe/appearance'
 
 interface EventTypePreference {
   id: number
@@ -36,47 +37,11 @@ export const EventTypeToggleSection = () => {
   const [showPricingDialog, setShowPricingDialog] = useState(false)
   const [tempPrice, setTempPrice] = useState<string>('')
   const [stripeAccountId, setStripeAccountId] = useState<string | null>(null)
-  const [stripeConnectInstance, setStripeConnectInstance] = useState<any>(null) // eslint-disable-line @typescript-eslint/no-explicit-any
+  const [stripeConnectInstance, setStripeConnectInstance] = useState<StripeConnectInstance | null>(
+    null
+  )
 
   const appearance = useMemo(() => {
-    const darkVariables = {
-      colorSecondaryText: 'hsl(0, 0%, 85%)',
-      colorBackground: 'hsl(252, 8%, 12%)',
-      colorText: 'hsl(0, 0%, 99%)',
-      colorPrimary: 'hsl(212, 100%, 62%)',
-      colorBorder: 'hsl(240, 6%, 23%)',
-      borderRadius: '0.75rem',
-      buttonSecondaryColorBackground: '#2B3039',
-      buttonSecondaryColorText: '#C9CED8',
-      actionSecondaryColorText: '#C9CED8',
-      actionSecondaryTextDecorationColor: '#C9CED8',
-      colorDanger: '#F23154',
-      badgeNeutralColorBackground: '#1B1E25',
-      badgeNeutralColorBorder: '#2B3039',
-      badgeNeutralColorText: '#8C99AD',
-      badgeSuccessColorBackground: '#152207',
-      badgeSuccessColorBorder: '#20360C',
-      badgeSuccessColorText: '#3EAE20',
-      badgeWarningColorBackground: '#400A00',
-      badgeWarningColorBorder: '#5F1400',
-      badgeWarningColorText: '#F27400',
-      badgeDangerColorBackground: '#420320',
-      badgeDangerColorBorder: '#61092D',
-      badgeDangerColorText: '#F46B7D',
-      offsetBackgroundColor: '#1B1E25',
-      formBackgroundColor: '#14171D',
-      overlayBackdropColor: 'rgba(0,0,0,0.5)',
-    }
-
-    const lightVariables = {
-      colorSecondaryText: 'hsl(224, 10%, 45%)',
-      colorBackground: 'hsl(0, 0%, 99%)',
-      colorText: 'hsl(224, 14%, 12%)',
-      colorPrimary: 'hsl(212, 100%, 50%)',
-      colorBorder: 'hsl(240, 6%, 90%)',
-      borderRadius: '0.75rem',
-    }
-
     return {
       overlays: 'dialog' as const,
       variables: theme === 'dark' ? darkVariables : lightVariables,
@@ -142,11 +107,19 @@ export const EventTypeToggleSection = () => {
   // Fetch account session when effectiveAccountId is available
   const { data: sessionData } = useQuery({
     queryKey: ['stripe-account-session', effectiveAccountId],
-    queryFn: () => createStripeAccountSession(effectiveAccountId as string),
+    queryFn: () => {
+      if (!effectiveAccountId) {
+        // Should not happen due to the `enabled` flag, but satisfies TypeScript
+        throw new Error('effectiveAccountId is not available')
+      }
+      return createStripeAccountSession({ accountId: effectiveAccountId })
+    },
     enabled: !!effectiveAccountId,
     staleTime: 0, // Account sessions expire quickly, don't cache
     retry: 1,
   })
+
+  console.log(sessionData)
 
   // Initialize Stripe Connect instance when session data is available
   const initializeConnectMutation = useMutation({
@@ -257,6 +230,7 @@ export const EventTypeToggleSection = () => {
             eventTypes={eventTypes}
             stripeStatus={stripeStatus}
             stripeAccountId={stripeAccountId}
+            connectInstance={stripeConnectInstance}
             selectedEventType={selectedEventType}
             showPricingDialog={showPricingDialog}
             tempPrice={tempPrice}
@@ -275,6 +249,7 @@ export const EventTypeToggleSection = () => {
           eventTypes={eventTypes}
           stripeStatus={stripeStatus}
           stripeAccountId={stripeAccountId}
+          connectInstance={stripeConnectInstance}
           selectedEventType={selectedEventType}
           showPricingDialog={showPricingDialog}
           tempPrice={tempPrice}

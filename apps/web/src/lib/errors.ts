@@ -58,3 +58,10 @@ export class NotFoundError extends AppError {
     this.name = 'NotFoundError'
   }
 }
+
+export class StripeError extends AppError {
+  constructor(message = 'Stripe error') {
+    super(message, 'STRIPE_ERROR', 500)
+    this.name = 'StripeError'
+  }
+}

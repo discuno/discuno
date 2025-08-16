@@ -1004,9 +1004,17 @@ export const getValidCalcomToken = async (): Promise<{
 /**
  * Create Stripe Account Session for embedded onboarding
  */
-export const createStripeAccountSession = async (
+export const createStripeAccountSession = async ({
+  accountId,
+  accountManagement,
+  notificationBanner,
+  payouts,
+}: {
   accountId: string
-): Promise<{
+  accountManagement?: boolean
+  notificationBanner?: boolean
+  payouts?: boolean
+}): Promise<{
   success: boolean
   client_secret?: string
   error?: string
@@ -1014,19 +1022,41 @@ export const createStripeAccountSession = async (
   try {
     const stripe = new Stripe(env.STRIPE_SECRET_KEY)
 
+    const components: Stripe.AccountSessionCreateParams.Components = {}
+
+    if (accountManagement) {
+      components.account_management = {
+        enabled: true,
+        features: {
+          external_account_collection: true,
+        },
+      }
+    }
+
+    if (notificationBanner) {
+      components.notification_banner = {
+        enabled: true,
+        features: {
+          external_account_collection: true,
+        },
+      }
+    }
+
+    if (payouts) {
+      components.payouts = {
+        enabled: true,
+        features: {
+          instant_payouts: true,
+          standard_payouts: true,
+          edit_payout_schedule: true,
+          external_account_collection: true,
+        },
+      }
+    }
+
     const accountSession = await stripe.accountSessions.create({
       account: accountId,
-      components: {
-        account_onboarding: {
-          enabled: true,
-        },
-        account_management: {
-          enabled: true,
-        },
-        notification_banner: {
-          enabled: true,
-        },
-      },
+      components,
     })
 
     return {

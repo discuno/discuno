@@ -1,5 +1,6 @@
 'use client'
 
+import { type StripeConnectInstance } from '@stripe/connect-js'
 import type { UseMutationResult } from '@tanstack/react-query'
 import { CreditCard, DollarSign, Settings, Timer } from 'lucide-react'
 import type { updateMentorEventTypePreferences } from '~/app/(app)/(mentor)/settings/scheduling/actions'
@@ -42,6 +43,7 @@ interface EventTypeSettingsContentProps {
   eventTypes: EventTypePreference[]
   stripeStatus?: StripeStatus
   stripeAccountId: string | null
+  connectInstance: StripeConnectInstance | null
   selectedEventType: EventTypePreference | null
   showPricingDialog: boolean
   tempPrice: string
@@ -64,6 +66,7 @@ export const EventTypeSettingsContent = ({
   eventTypes,
   stripeStatus,
   stripeAccountId,
+  connectInstance,
   selectedEventType,
   showPricingDialog,
   tempPrice,
@@ -99,6 +102,7 @@ export const EventTypeSettingsContent = ({
                   </Button>
                 </DialogTrigger>
                 <StripeModal
+                  connectInstance={connectInstance}
                   accountId={stripeStatus.accountId}
                   stripeStatus={stripeStatus}
                   onOnboardingComplete={onOnboardingComplete}
@@ -120,6 +124,7 @@ export const EventTypeSettingsContent = ({
                   </Button>
                 </DialogTrigger>
                 <StripeModal
+                  connectInstance={connectInstance}
                   accountId={stripeAccountId ?? undefined}
                   stripeStatus={stripeStatus}
                   onOnboardingComplete={onOnboardingComplete}
@@ -138,6 +143,7 @@ export const EventTypeSettingsContent = ({
                 </Button>
               </DialogTrigger>
               <StripeModal
+                connectInstance={connectInstance}
                 accountId={stripeAccountId ?? undefined}
                 stripeStatus={stripeStatus}
                 onOnboardingComplete={onOnboardingComplete}
