@@ -3,7 +3,6 @@
 import { loadConnectAndInitialize } from '@stripe/connect-js'
 import { ConnectComponentsProvider } from '@stripe/react-connect-js'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { CreditCard, DollarSign, Settings, Timer } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
@@ -14,23 +13,11 @@ import {
   getMentorStripeStatus,
   updateMentorEventTypePreferences,
 } from '~/app/(app)/(mentor)/settings/scheduling/actions'
-import { StripeNotificationBanner } from '~/app/(app)/(mentor)/settings/scheduling/components/StripeNotificationBanner'
-import { StripeModal } from '~/app/(app)/(mentor)/settings/scheduling/components/StripeOnboardingModal'
+import { EventTypeSettingsContent } from '~/app/(app)/(mentor)/settings/scheduling/components/event-types/EventTypeSettingsContent'
+import { StripeNotificationBanner } from '~/app/(app)/(mentor)/settings/scheduling/components/event-types/StripeNotificationBanner'
 import { Alert, AlertDescription } from '~/components/ui/alert'
-import { Badge } from '~/components/ui/badge'
-import { Button } from '~/components/ui/button'
 import { Card, CardContent } from '~/components/ui/card'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '~/components/ui/dialog'
-import { Input } from '~/components/ui/input'
-import { Label } from '~/components/ui/label'
 import { Skeleton } from '~/components/ui/skeleton'
-import { Switch } from '~/components/ui/switch'
 import { env } from '~/env'
 
 interface EventTypePreference {
@@ -256,188 +243,6 @@ export const EventTypeToggleSection = () => {
     )
   }
 
-  const content = (
-    <>
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold">Event Type Settings</h3>
-          <p className="text-muted-foreground text-sm">
-            Configure which event types are available for booking and set your pricing
-          </p>
-        </div>
-
-        {/* Stripe Status */}
-        <div className="flex items-center gap-2">
-          <CreditCard className="h-4 w-4" />
-          {stripeStatus?.hasAccount && stripeStatus.isActive ? (
-            <div className="flex items-center gap-2">
-              <Badge variant="default">Stripe Connected</Badge>
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button size="sm" variant="outline">
-                    Manage Account
-                  </Button>
-                </DialogTrigger>
-                <StripeModal
-                  accountId={stripeStatus.accountId}
-                  stripeStatus={stripeStatus}
-                  onOnboardingComplete={handleOnboardingComplete}
-                />
-              </Dialog>
-            </div>
-          ) : stripeStatus?.hasAccount ? (
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary">Stripe Pending</Badge>
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button
-                    onClick={() => createStripeAccountMutation.mutate()}
-                    disabled={createStripeAccountMutation.isPending}
-                    size="sm"
-                    variant="outline"
-                  >
-                    {createStripeAccountMutation.isPending ? 'Loading...' : 'Continue Setup'}
-                  </Button>
-                </DialogTrigger>
-                <StripeModal
-                  accountId={stripeAccountId ?? undefined}
-                  stripeStatus={stripeStatus}
-                  onOnboardingComplete={handleOnboardingComplete}
-                />
-              </Dialog>
-            </div>
-          ) : (
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button
-                  onClick={() => createStripeAccountMutation.mutate()}
-                  disabled={createStripeAccountMutation.isPending}
-                  size="sm"
-                >
-                  {createStripeAccountMutation.isPending ? 'Connecting...' : 'Connect Stripe'}
-                </Button>
-              </DialogTrigger>
-              <StripeModal
-                accountId={stripeAccountId ?? undefined}
-                stripeStatus={stripeStatus}
-                onOnboardingComplete={handleOnboardingComplete}
-              />
-            </Dialog>
-          )}
-        </div>
-      </div>
-
-      {/* Event Types List */}
-      <div className="grid gap-4">
-        {eventTypes.map(eventType => (
-          <Card key={eventType.id} className="transition-shadow hover:shadow-md">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-semibold">{eventType.title}</h4>
-                      <Badge variant="outline" className="text-xs">
-                        <Timer className="mr-1 h-3 w-3" />
-                        {eventType.length} min
-                      </Badge>
-                    </div>
-                    <Switch
-                      checked={eventType.isEnabled}
-                      onCheckedChange={checked => handleToggleEventType(eventType, checked)}
-                      disabled={updateEventTypeMutation.isPending}
-                    />
-                  </div>
-
-                  {eventType.description && (
-                    <p className="text-muted-foreground mt-2 text-sm">{eventType.description}</p>
-                  )}
-
-                  <div className="mt-3 flex items-center gap-4">
-                    <div className="flex items-center gap-1 text-sm">
-                      <DollarSign className="h-4 w-4" />
-                      <span>
-                        {eventType.customPrice
-                          ? `$${(eventType.customPrice / 100).toFixed(2)} USD`
-                          : 'Free'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handlePricingChange(eventType)}
-                    disabled={updateEventTypeMutation.isPending}
-                  >
-                    <Settings className="mr-1 h-4 w-4" />
-                    Pricing
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Pricing Dialog */}
-      <Dialog open={showPricingDialog} onOpenChange={setShowPricingDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Configure Pricing - {selectedEventType?.title}</DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="price">Price (USD)</Label>
-              <div className="relative">
-                <DollarSign className="text-muted-foreground absolute left-3 top-3 h-4 w-4" />
-                <Input
-                  id="price"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="0.00"
-                  value={tempPrice}
-                  onChange={e => setTempPrice(e.target.value)}
-                  className="pl-9"
-                  disabled={!stripeStatus?.isActive}
-                />
-              </div>
-              <p className="text-muted-foreground text-xs">
-                {stripeStatus?.isActive
-                  ? 'Leave empty for free sessions'
-                  : 'Complete Stripe setup to enable paid pricing'}
-              </p>
-            </div>
-
-            {!stripeStatus?.isActive && (
-              <Alert>
-                <AlertDescription>
-                  You need to complete your Stripe setup before setting paid pricing.
-                </AlertDescription>
-              </Alert>
-            )}
-
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setShowPricingDialog(false)}>
-                Cancel
-              </Button>
-              <Button
-                onClick={handleSavePricing}
-                disabled={updateEventTypeMutation.isPending || !stripeStatus?.isActive}
-              >
-                {updateEventTypeMutation.isPending ? 'Saving...' : 'Save'}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </>
-  )
-
   return (
     <div className="space-y-6">
       {stripeConnectInstance ? (
@@ -448,10 +253,40 @@ export const EventTypeToggleSection = () => {
               onRefetchStripeStatus={refetchStripeStatus}
             />
           )}
-          {content}
+          <EventTypeSettingsContent
+            eventTypes={eventTypes}
+            stripeStatus={stripeStatus}
+            stripeAccountId={stripeAccountId}
+            selectedEventType={selectedEventType}
+            showPricingDialog={showPricingDialog}
+            tempPrice={tempPrice}
+            updateEventTypeMutation={updateEventTypeMutation}
+            createStripeAccountMutation={createStripeAccountMutation}
+            onToggleEventType={handleToggleEventType}
+            onPricingChange={handlePricingChange}
+            onSavePricing={handleSavePricing}
+            onOnboardingComplete={handleOnboardingComplete}
+            setShowPricingDialog={setShowPricingDialog}
+            setTempPrice={setTempPrice}
+          />
         </ConnectComponentsProvider>
       ) : (
-        content
+        <EventTypeSettingsContent
+          eventTypes={eventTypes}
+          stripeStatus={stripeStatus}
+          stripeAccountId={stripeAccountId}
+          selectedEventType={selectedEventType}
+          showPricingDialog={showPricingDialog}
+          tempPrice={tempPrice}
+          updateEventTypeMutation={updateEventTypeMutation}
+          createStripeAccountMutation={createStripeAccountMutation}
+          onToggleEventType={handleToggleEventType}
+          onPricingChange={handlePricingChange}
+          onSavePricing={handleSavePricing}
+          onOnboardingComplete={handleOnboardingComplete}
+          setShowPricingDialog={setShowPricingDialog}
+          setTempPrice={setTempPrice}
+        />
       )}
     </div>
   )

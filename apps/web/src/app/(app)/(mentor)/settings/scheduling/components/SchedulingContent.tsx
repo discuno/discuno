@@ -5,7 +5,7 @@ import type { getSchedule } from '~/app/(app)/(mentor)/settings/scheduling/actio
 import { Tabs, TabsList, TabsTrigger } from '~/components/ui/tabs'
 import { cn } from '~/lib/utils'
 import { AvailabilityManager } from './availability/AvailabilityManager'
-import { EventTypeToggleSection } from './EventTypeToggleSection'
+import { EventTypeToggleSection } from './event-types/EventTypeToggleSection'
 
 interface SchedulingContentProps {
   initialScheduleResult: Awaited<ReturnType<typeof getSchedule>>
