@@ -2,7 +2,7 @@ import { config } from 'dotenv'
 import { type Config } from 'drizzle-kit'
 
 // Load local environment variables
-config({ path: '.env.local' })
+config({ path: '.env.local', override: true })
 
 export default {
   schema: './src/server/db/schema.ts',

@@ -2,7 +2,7 @@ import { config } from 'dotenv'
 import { type Config } from 'drizzle-kit'
 
 // Load preview environment variables
-config({ path: '.env.preview' })
+config({ path: '.env.preview', override: true })
 
 export default {
   schema: './src/server/db/schema.ts',

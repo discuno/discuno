@@ -2,7 +2,7 @@ import { config } from 'dotenv'
 import { type Config } from 'drizzle-kit'
 
 // Load production environment variables
-config({ path: '.env.production' })
+config({ path: '.env.production', override: true })
 
 export default {
   schema: './src/server/db/schema.ts',
