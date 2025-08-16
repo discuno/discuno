@@ -1022,41 +1022,19 @@ export const createStripeAccountSession = async ({
   try {
     const stripe = new Stripe(env.STRIPE_SECRET_KEY)
 
-    const components: Stripe.AccountSessionCreateParams.Components = {}
-
-    if (accountManagement) {
-      components.account_management = {
-        enabled: true,
-        features: {
-          external_account_collection: true,
-        },
-      }
-    }
-
-    if (notificationBanner) {
-      components.notification_banner = {
-        enabled: true,
-        features: {
-          external_account_collection: true,
-        },
-      }
-    }
-
-    if (payouts) {
-      components.payouts = {
-        enabled: true,
-        features: {
-          instant_payouts: true,
-          standard_payouts: true,
-          edit_payout_schedule: true,
-          external_account_collection: true,
-        },
-      }
-    }
-
     const accountSession = await stripe.accountSessions.create({
       account: accountId,
-      components,
+      components: {
+        account_management: {
+          enabled: accountManagement ?? false,
+        },
+        notification_banner: {
+          enabled: notificationBanner ?? false,
+        },
+        payouts: {
+          enabled: payouts ?? false,
+        },
+      },
     })
 
     return {

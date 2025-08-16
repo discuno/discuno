@@ -92,7 +92,7 @@ export const EventTypeSettingsContent = ({
         {/* Stripe Status */}
         <div className="flex items-center gap-2">
           <CreditCard className="h-4 w-4" />
-          {stripeStatus?.hasAccount && stripeStatus.isActive ? (
+          {stripeStatus?.hasAccount && stripeStatus.isActive && connectInstance ? (
             <div className="flex items-center gap-2">
               <Badge variant="default">Stripe Connected</Badge>
               <Dialog>
@@ -109,7 +109,7 @@ export const EventTypeSettingsContent = ({
                 />
               </Dialog>
             </div>
-          ) : stripeStatus?.hasAccount ? (
+          ) : stripeStatus?.hasAccount && connectInstance ? (
             <div className="flex items-center gap-2">
               <Badge variant="secondary">Stripe Pending</Badge>
               <Dialog>
@@ -131,7 +131,7 @@ export const EventTypeSettingsContent = ({
                 />
               </Dialog>
             </div>
-          ) : (
+          ) : connectInstance ? (
             <Dialog>
               <DialogTrigger asChild>
                 <Button
@@ -149,6 +149,10 @@ export const EventTypeSettingsContent = ({
                 onOnboardingComplete={onOnboardingComplete}
               />
             </Dialog>
+          ) : (
+            <Button disabled size="sm" variant="outline">
+              Stripe Connection Unavailable
+            </Button>
           )}
         </div>
       </div>
