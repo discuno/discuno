@@ -112,7 +112,12 @@ export const EventTypeToggleSection = () => {
         // Should not happen due to the `enabled` flag, but satisfies TypeScript
         throw new Error('effectiveAccountId is not available')
       }
-      return createStripeAccountSession({ accountId: effectiveAccountId })
+      return createStripeAccountSession({
+        accountId: effectiveAccountId,
+        notificationBanner: true,
+        accountManagement: true,
+        accountOnboarding: true,
+      })
     },
     enabled: !!effectiveAccountId,
     staleTime: 0, // Account sessions expire quickly, don't cache

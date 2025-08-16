@@ -1007,11 +1007,13 @@ export const getValidCalcomToken = async (): Promise<{
 export const createStripeAccountSession = async ({
   accountId,
   accountManagement,
+  accountOnboarding,
   notificationBanner,
   payouts,
 }: {
   accountId: string
   accountManagement?: boolean
+  accountOnboarding?: boolean
   notificationBanner?: boolean
   payouts?: boolean
 }): Promise<{
@@ -1027,6 +1029,9 @@ export const createStripeAccountSession = async ({
       components: {
         account_management: {
           enabled: accountManagement ?? false,
+        },
+        account_onboarding: {
+          enabled: accountOnboarding ?? false,
         },
         notification_banner: {
           enabled: notificationBanner ?? false,
