@@ -20,7 +20,7 @@ const AvatarPic = ({ profilePic }: { profilePic: string | null }) => {
   return (
     <div className="h-10 w-10">
       <Avatar>
-        <AvatarImage src={profilePic ?? undefined} alt="Profile Picture" />
+        <AvatarImage src={profilePic ?? undefined} alt="Profile Picture" width={40} height={40} />
         <AvatarFallback>
           <User className="h-5 w-5" />
         </AvatarFallback>
