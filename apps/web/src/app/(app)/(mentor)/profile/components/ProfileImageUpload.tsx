@@ -1,12 +1,14 @@
 'use client'
 
+import { upload } from '@vercel/blob/client'
 import { Upload, User, X } from 'lucide-react'
 import Image from 'next/image'
 import { useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
-import { removeUserProfileImage, uploadUserProfileImage } from '../actions'
+import { compressFile } from '~/lib/blob/client-utils'
+import { removeUserProfileImage, updateUserProfileImage } from '../actions'
 
 interface ProfileImageUploadProps {
   currentImageUrl?: string | null
@@ -18,52 +20,43 @@ export const ProfileImageUpload = ({ currentImageUrl, userName }: ProfileImageUp
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentImageUrl ?? null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
 
-    // Validate file type
     if (!file.type.startsWith('image/')) {
       toast.error('Please select an image file')
       return
     }
 
-    // Validate file size (5MB limit)
     const maxSize = 5 * 1024 * 1024 // 5MB
     if (file.size > maxSize) {
       toast.error('File size must be less than 5MB')
       return
     }
 
-    // Create preview URL
-    const objectUrl = URL.createObjectURL(file)
-    setPreviewUrl(objectUrl)
-
-    // Upload the file
-    void handleUpload(file)
-  }
-
-  const handleUpload = async (file: File) => {
     setIsUploading(true)
-
     try {
-      const formData = new FormData()
-      formData.append('image', file)
+      const compressedFile = await compressFile(file)
 
-      const result = await uploadUserProfileImage(formData)
+      const objectUrl = URL.createObjectURL(compressedFile)
+      setPreviewUrl(objectUrl)
 
-      if (result.success) {
-        toast.success('Profile image updated successfully!')
-        setPreviewUrl(result.imageUrl)
-      }
+      const newBlob = await upload(compressedFile.name, compressedFile, {
+        access: 'public',
+        handleUploadUrl: '/api/avatar/upload',
+      })
+
+      await updateUserProfileImage(newBlob.url)
+
+      toast.success('Profile image updated successfully!')
+      setPreviewUrl(newBlob.url)
     } catch (error) {
       console.error('Upload error:', error)
       toast.error('Failed to upload image. Please try again.')
-      // Reset preview on error
       setPreviewUrl(currentImageUrl ?? null)
     } finally {
       setIsUploading(false)
-      // Reset file input
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
       }

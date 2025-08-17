@@ -2,35 +2,21 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { deleteProfileImage, extractPathnameFromBlobUrl, uploadProfileImage } from '~/lib/blob'
+import { deleteProfileImage, extractPathnameFromBlobUrl } from '~/lib/blob'
 import {
   getCurrentUserImage,
   getOrCreateUserTimezone,
-  getUserId,
   removeUserImage,
   updateCompleteProfile,
   updateUserImage,
 } from '~/server/queries'
 
-/**
- * Upload a new profile image for the current user
- */
-export const uploadUserProfileImage = async (formData: FormData) => {
-  const file = formData.get('image') as File
-  if (file.size === 0) {
-    throw new Error('No file provided')
-  }
-
+export const updateUserProfileImage = async (imageUrl: string) => {
   // Get current user image to check for existing image
   const currentImageUrl = await getCurrentUserImage()
 
-  // Upload new image to Vercel Blob (still need user ID for blob organization)
-  // Get user ID from a separate query since we need it for blob storage
-  const userId = await getUserId()
-  const blob = await uploadProfileImage(file, userId)
-
   // Update user record with new image URL
-  await updateUserImage(blob.url)
+  await updateUserImage(imageUrl)
 
   // Delete old image if it exists and is a blob URL
   if (currentImageUrl?.includes('blob.vercel-storage.com')) {
@@ -48,7 +34,7 @@ export const uploadUserProfileImage = async (formData: FormData) => {
   revalidatePath('/profile/view')
   revalidatePath('/profile/edit')
 
-  return { success: true, imageUrl: blob.url }
+  return { success: true, imageUrl }
 }
 
 /**
