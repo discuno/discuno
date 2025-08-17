@@ -1,6 +1,6 @@
 'use client'
 
-import { loadConnectAndInitialize } from '@stripe/connect-js'
+import { loadConnectAndInitialize, type StripeConnectInstance } from '@stripe/connect-js'
 import {
   ConnectAccountManagement,
   ConnectComponentsProvider,
@@ -29,9 +29,7 @@ export function StripeDashboard({ accountId }: StripeDashboardProps) {
     }
   }, [theme])
 
-  // TODO: Replace any with the correct type
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [connectInstance, setConnectInstance] = useState<any>(null)
+  const [connectInstance, setConnectInstance] = useState<StripeConnectInstance | null>(null)
 
   const { data: sessionData } = useQuery({
     queryKey: ['stripe-account-session', accountId],
