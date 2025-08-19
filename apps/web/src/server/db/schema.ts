@@ -8,8 +8,10 @@ import {
   pgEnum,
   pgTable,
   primaryKey,
+  real,
   text,
   timestamp,
+  unique,
   varchar,
 } from 'drizzle-orm/pg-core'
 import { type AdapterAccount } from 'next-auth/adapters'
@@ -152,6 +154,7 @@ export const userProfiles = pgTable(
     schoolYear: schoolYearEnum().notNull(),
     graduationYear: integer().notNull(), // E.g., 2027
     timezone: varchar({ length: 255 }).notNull().default('UTC'),
+    rankingScore: real('ranking_score').default(0).notNull(),
     ...timestamps,
   },
   table => ({
@@ -544,3 +547,39 @@ export const payments = pgTable(
 export const paymentsRelations = relations(payments, ({ one }) => ({
   mentorUser: one(users, { fields: [payments.mentorUserId], references: [users.id] }),
 }))
+
+export const analyticsEventEnum = pgEnum('analytics_event_type', [
+  'profile_view',
+  'post_like',
+  'discord_activity',
+  'chat_reply',
+])
+
+export const analyticsEvents = pgTable(
+  'discuno_analytics_event',
+  {
+    id: integer().primaryKey().generatedByDefaultAsIdentity(),
+    eventType: analyticsEventEnum('event_type').notNull(),
+    actorUserId: varchar({ length: 255 }).references(() => users.id, {
+      onDelete: 'set null',
+    }), // User performing the action (optional)
+    targetUserId: varchar({ length: 255 }).references(() => users.id, {
+      onDelete: 'set null',
+    }), // User being acted upon
+    postId: integer().references(() => posts.id, { onDelete: 'set null' }),
+    fingerprint: varchar({ length: 255 }), // Browser fingerprint for anonymous users
+    ...timestamps,
+  },
+  table => [
+    index('analytics_events_event_type_idx').on(table.eventType),
+    index('analytics_events_actor_user_id_idx').on(table.actorUserId),
+    index('analytics_events_target_user_id_idx').on(table.targetUserId),
+    index('analytics_events_post_id_idx').on(table.postId),
+    index('analytics_events_fingerprint_idx').on(table.fingerprint),
+    unique('anonymous_profile_view_unique_idx').on(
+      table.fingerprint,
+      table.targetUserId,
+      table.eventType
+    ),
+  ]
+)

@@ -1,12 +1,25 @@
+'use client'
+
 import { Calendar, GraduationCap, School, User } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { logAnalyticsEvent } from '~/app/(app)/(public)/(feed)/(post)/actions'
 import type { Card } from '~/app/types'
 import { AspectRatio } from '~/components/ui/aspect-ratio'
 import { Button } from '~/components/ui/button'
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '~/components/ui/hover-card'
 
 export const PostCard = ({ card }: { card: Card; index: number }) => {
+  const handleProfileView = () => {
+    const fingerprint = sessionStorage.getItem('fingerprint') ?? undefined
+    void logAnalyticsEvent({
+      eventType: 'profile_view',
+      targetUserId: card.createdById ?? '',
+      postId: card.id,
+      fingerprint,
+    })
+  }
+
   return (
     <div className="bg-card/90 hover:shadow-primary/10 dark:bg-card/90 dark:shadow-primary/5 dark:hover:bg-card/95 dark:hover:shadow-primary/15 group relative overflow-hidden rounded-xl p-0 shadow-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-xl dark:shadow-lg">
       {/* Profile Image Section */}
@@ -101,7 +114,12 @@ export const PostCard = ({ card }: { card: Card; index: number }) => {
         </div>
 
         {/* View Profile Link */}
-        <Button asChild variant="tinted" className="mt-3 w-full hover:shadow-sm">
+        <Button
+          asChild
+          variant="tinted"
+          className="mt-3 w-full hover:shadow-sm"
+          onClick={handleProfileView}
+        >
           <Link href={`/img/${card.id}`} scroll={false}>
             View Profile
           </Link>

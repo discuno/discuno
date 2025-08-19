@@ -200,6 +200,9 @@ importers:
       '@tanstack/react-table':
         specifier: ^8.21.3
         version: 8.21.3(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      '@thumbmarkjs/thumbmarkjs':
+        specifier: ^1.1.2
+        version: 1.1.2
       '@vercel/blob':
         specifier: ^1.1.1
         version: 1.1.1
@@ -4612,6 +4615,12 @@ packages:
     engines: { node: '>=12', npm: '>=6' }
     peerDependencies:
       '@testing-library/dom': '>=7.21.4'
+
+  '@thumbmarkjs/thumbmarkjs@1.1.2':
+    resolution:
+      {
+        integrity: sha512-OefMvVBHjyMQub4bjpnX6XWdS5+QtAQjlumbu8xN0ymAj1a/0Is/YZi0frjDBZ1BabQru/CrPnfzia3h4QcYfA==,
+      }
 
   '@trysound/sax@0.2.0':
     resolution:
@@ -14722,6 +14731,8 @@ snapshots:
   '@testing-library/user-event@14.6.1(@testing-library/dom@10.4.1)':
     dependencies:
       '@testing-library/dom': 10.4.1
+
+  '@thumbmarkjs/thumbmarkjs@1.1.2': {}
 
   '@trysound/sax@0.2.0': {}
 
