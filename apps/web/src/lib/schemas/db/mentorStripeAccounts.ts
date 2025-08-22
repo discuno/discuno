@@ -24,7 +24,7 @@ export const updateMentorStripeAccountSchema = createUpdateSchema(
 export type MentorStripeAccount = z.infer<typeof selectMentorStripeAccountSchema>
 export type NewMentorStripeAccount = Omit<
   z.infer<typeof insertMentorStripeAccountSchema>,
-  keyof typeof updateExcludedFields
+  keyof typeof insertExcludedFields
 >
 export type UpdateMentorStripeAccount = Omit<
   z.infer<typeof updateMentorStripeAccountSchema>,
