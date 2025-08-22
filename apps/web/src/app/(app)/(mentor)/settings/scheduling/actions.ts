@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import Stripe from 'stripe'
-import type { CalcomToken, CreateCalcomUserInput, UpdateCalcomUserInput } from '~/app/types'
+import type { CreateCalcomUserInput, UpdateCalcomUserInput } from '~/app/types'
 import type { Availability, DateOverride, WeeklySchedule } from '~/app/types/availability'
 import { availabilitySchema, dateOverrideSchema } from '~/app/types/availability'
 import { env } from '~/env'
@@ -11,6 +11,7 @@ import {
   createCalcomUser as createCalcomUserCore,
   updateCalcomUser as updateCalcomUserCore,
 } from '~/lib/calcom'
+import { type NewMentorEventType, type UpdateCalcomToken } from '~/lib/schemas/db'
 import {
   getFullProfile,
   getMentorCalcomTokens,
@@ -71,28 +72,14 @@ const refreshCalcomToken = async (): Promise<{
   try {
     const tokenRecord = await getMentorCalcomTokens()
     if (!tokenRecord) {
-      return {
-        success: false,
-        error: 'Token not found',
-      }
+      return { success: false, error: 'Token not found' }
     }
 
-    // Check if refresh token is expired
     const now = new Date()
     if (tokenRecord.refreshTokenExpiresAt < now) {
-      // Try force refresh if refresh token is expired
-      const forceRefreshResult = await forceRefreshCalcomToken(
-        tokenRecord.calcomUserId,
-        tokenRecord.userId
-      )
-      return {
-        success: forceRefreshResult.success,
-        accessToken: forceRefreshResult.accessToken ?? undefined,
-        error: forceRefreshResult.error,
-      }
+      return forceRefreshCalcomToken(tokenRecord.calcomUserId, tokenRecord.userId)
     }
 
-    // Refresh the tokens using Cal.com API v2 - correct endpoint from docs
     const refreshResponse = await fetch(
       `${env.NEXT_PUBLIC_CALCOM_API_URL}/oauth/${env.NEXT_PUBLIC_X_CAL_ID}/refresh`,
       {
@@ -101,86 +88,37 @@ const refreshCalcomToken = async (): Promise<{
           'Content-Type': 'application/json',
           'x-cal-secret-key': env.X_CAL_SECRET_KEY,
         },
-        body: JSON.stringify({
-          refreshToken: tokenRecord.refreshToken,
-        }),
+        body: JSON.stringify({ refreshToken: tokenRecord.refreshToken }),
       }
     )
 
     if (!refreshResponse.ok) {
       const errorText = await refreshResponse.text()
       console.error('Normal refresh failed:', refreshResponse.status, errorText)
-
-      // Try force refresh on any failure
-      console.log('Normal refresh failed, trying force refresh...')
-      {
-        const forceRefreshResult = await forceRefreshCalcomToken(
-          tokenRecord.calcomUserId,
-          tokenRecord.userId
-        )
-        return {
-          success: forceRefreshResult.success,
-          accessToken: forceRefreshResult.accessToken ?? undefined,
-          error: forceRefreshResult.error,
-        }
-      }
+      return forceRefreshCalcomToken(tokenRecord.calcomUserId, tokenRecord.userId)
     }
 
     const refreshData = await refreshResponse.json()
 
     if (refreshData.status !== 'success') {
       console.error('Refresh response error:', refreshData)
-      // Try force refresh on any failure
-      {
-        const forceRefreshResult = await forceRefreshCalcomToken(
-          tokenRecord.calcomUserId,
-          tokenRecord.userId
-        )
-        return {
-          success: forceRefreshResult.success,
-          accessToken: forceRefreshResult.accessToken ?? undefined,
-          error: forceRefreshResult.error,
-        }
-      }
+      return forceRefreshCalcomToken(tokenRecord.calcomUserId, tokenRecord.userId)
     }
 
-    // Use the expiration times from the API response
-    const newAccessTokenExpiresAt = new Date(
-      refreshData.data.accessTokenExpiresAt ?? Date.now() + 60 * 60 * 1000
-    )
-    const newRefreshTokenExpiresAt = new Date(
-      refreshData.data.refreshTokenExpiresAt ?? Date.now() + 365 * 24 * 60 * 60 * 1000
-    )
-
-    const token: CalcomToken = {
-      accessToken: refreshData.data.accessToken,
-      refreshToken: refreshData.data.refreshToken,
-      accessTokenExpiresAt: newAccessTokenExpiresAt,
-      refreshTokenExpiresAt: newRefreshTokenExpiresAt,
+    const token: UpdateCalcomToken = {
+      accessToken: refreshData.data.accessToken as string,
+      refreshToken: refreshData.data.refreshToken as string,
+      accessTokenExpiresAt: new Date(refreshData.data.accessTokenExpiresAt),
+      refreshTokenExpiresAt: new Date(refreshData.data.refreshTokenExpiresAt),
     }
 
-    await updateCalcomTokensByUserId({
-      userId: tokenRecord.userId,
-      calcomUserId: tokenRecord.calcomUserId,
-      accessToken: token.accessToken,
-      refreshToken: token.refreshToken,
-      accessTokenExpiresAt: token.accessTokenExpiresAt.getTime(),
-      refreshTokenExpiresAt: token.refreshTokenExpiresAt.getTime(),
-    })
+    await updateCalcomTokensByUserId(tokenRecord.userId, token)
 
     console.log('Token refresh successful')
-
-    return {
-      success: true,
-      accessToken: refreshData.data.accessToken,
-    }
+    return { success: true, accessToken: token.accessToken }
   } catch (error) {
     console.error('Cal.com refresh token error:', error)
-    return {
-      success: false,
-      accessToken: '',
-      error: 'Token refresh failed',
-    }
+    return { success: false, error: 'Token refresh failed' }
   }
 }
 
@@ -231,28 +169,17 @@ const forceRefreshCalcomToken = async (
     }
 
     // Use the expiration times from the API response
-    const newAccessTokenExpiresAt = new Date(
-      forceRefreshData.data.accessTokenExpiresAt ?? Date.now() + 60 * 60 * 1000
-    )
-    const newRefreshTokenExpiresAt = new Date(
-      forceRefreshData.data.refreshTokenExpiresAt ?? Date.now() + 365 * 24 * 60 * 60 * 1000
-    )
+    const newAccessTokenExpiresAt = new Date(forceRefreshData.data.accessTokenExpiresAt)
+    const newRefreshTokenExpiresAt = new Date(forceRefreshData.data.refreshTokenExpiresAt)
 
-    const token: CalcomToken = {
+    const token: UpdateCalcomToken = {
       accessToken: forceRefreshData.data.accessToken,
       refreshToken: forceRefreshData.data.refreshToken,
       accessTokenExpiresAt: newAccessTokenExpiresAt,
       refreshTokenExpiresAt: newRefreshTokenExpiresAt,
     }
 
-    await updateCalcomTokensByUserId({
-      userId,
-      calcomUserId,
-      accessToken: token.accessToken,
-      refreshToken: token.refreshToken,
-      accessTokenExpiresAt: token.accessTokenExpiresAt.getTime(),
-      refreshTokenExpiresAt: token.refreshTokenExpiresAt.getTime(),
-    })
+    await updateCalcomTokensByUserId(userId, token)
 
     console.log('Force refresh successful for user:', userId)
 
@@ -777,15 +704,9 @@ export const getMentorEventTypePreferences = async (): Promise<{
 /**
  * Update mentor's event type preferences
  */
-export const updateMentorEventTypePreferences = async (data: {
-  calcomEventTypeId: number
-  isEnabled: boolean
-  customPrice?: number
-  currency?: string
-  title: string
-  description: string | null
-  duration: number
-}): Promise<{
+export const updateMentorEventTypePreferences = async (
+  data: NewMentorEventType
+): Promise<{
   success: boolean
   error?: string
 }> => {
@@ -793,14 +714,8 @@ export const updateMentorEventTypePreferences = async (data: {
     const { id: userId } = await requireAuth()
 
     await upsertMentorEventType({
-      userId,
-      calcomEventTypeId: data.calcomEventTypeId,
-      isEnabled: data.isEnabled,
-      customPrice: data.customPrice,
-      currency: data.currency ?? 'USD',
-      title: data.title,
-      description: data.description,
-      duration: data.duration,
+      ...data,
+      mentorUserId: userId,
     })
 
     return {
@@ -875,7 +790,6 @@ export const createStripeConnectAccount = async (): Promise<{
       },
     })
 
-    // Store account info in database
     await upsertMentorStripeAccount({
       userId,
       stripeAccountId: account.id,
