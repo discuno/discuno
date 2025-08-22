@@ -227,6 +227,9 @@ importers:
       drizzle-seed:
         specifier: ^0.3.1
         version: 0.3.1(drizzle-orm@0.44.2(@neondatabase/serverless@1.0.1)(@opentelemetry/api@1.9.0)(@types/pg@8.15.4)(postgres@3.4.7))
+      drizzle-zod:
+        specifier: ^0.8.3
+        version: 0.8.3(drizzle-orm@0.44.2(@neondatabase/serverless@1.0.1)(@opentelemetry/api@1.9.0)(@types/pg@8.15.4)(postgres@3.4.7))(zod@3.25.64)
       esbuild:
         specifier: ^0.25.5
         version: 0.25.5
@@ -6903,6 +6906,15 @@ packages:
     peerDependenciesMeta:
       drizzle-orm:
         optional: true
+
+  drizzle-zod@0.8.3:
+    resolution:
+      {
+        integrity: sha512-66yVOuvGhKJnTdiqj1/Xaaz9/qzOdRJADpDa68enqS6g3t0kpNkwNYjUuaeXgZfO/UWuIM9HIhSlJ6C5ZraMww==,
+      }
+    peerDependencies:
+      drizzle-orm: '>=0.36.0'
+      zod: ^3.25.0 || ^4.0.0
 
   dunder-proto@1.0.1:
     resolution:
@@ -16100,6 +16112,11 @@ snapshots:
       pure-rand: 6.1.0
     optionalDependencies:
       drizzle-orm: 0.44.2(@neondatabase/serverless@1.0.1)(@opentelemetry/api@1.9.0)(@types/pg@8.15.4)(postgres@3.4.7)
+
+  drizzle-zod@0.8.3(drizzle-orm@0.44.2(@neondatabase/serverless@1.0.1)(@opentelemetry/api@1.9.0)(@types/pg@8.15.4)(postgres@3.4.7))(zod@3.25.64):
+    dependencies:
+      drizzle-orm: 0.44.2(@neondatabase/serverless@1.0.1)(@opentelemetry/api@1.9.0)(@types/pg@8.15.4)(postgres@3.4.7)
+      zod: 3.25.64
 
   dunder-proto@1.0.1:
     dependencies:
