@@ -5,14 +5,21 @@ import { z } from 'zod'
 import type { CalcomTokenWithId, Card, FullUserProfile, UserProfile } from '~/app/types'
 import { getAuthSession, requireAuth } from '~/lib/auth/auth-utils'
 import { InternalServerError, NotFoundError } from '~/lib/errors'
+import {
+  insertAnalyticsEventSchema,
+  type NewAnalyticsEvent,
+} from '~/lib/schemas/db/analyticsEvents'
+import { insertMentorReviewSchema } from '~/lib/schemas/db/mentorReviews'
 import { db } from '~/server/db'
 import {
+  analyticsEvents,
   bookingAttendees,
   bookingOrganizers,
   bookings,
   calcomTokens,
   majors,
   mentorEventTypes,
+  mentorReviews,
   mentorStripeAccounts,
   posts,
   schools,
@@ -213,8 +220,8 @@ export const getSchools = cache(async () => {
 export const getMajors = cache(async () => {
   const majors = await db.query.majors.findMany()
   return majors.map(major => ({
-    label: major.name ?? 'Unknown',
-    value: major.name?.toLowerCase() ?? 'unknown',
+    label: major.name,
+    value: major.name.toLowerCase(),
     id: major.id,
   }))
 })
@@ -1186,4 +1193,19 @@ export const createLocalBooking = async (input: {
 
     return booking[0]
   })
+}
+
+export const createMentorReview = async (data: {
+  mentorId: string
+  userId: string
+  rating: number
+  review?: string
+}) => {
+  const validatedData = insertMentorReviewSchema.parse(data)
+  return await db.insert(mentorReviews).values(validatedData).returning()
+}
+
+export const createAnalyticsEvent = async (data: NewAnalyticsEvent) => {
+  const validatedData = insertAnalyticsEventSchema.parse(data)
+  return await db.insert(analyticsEvents).values(validatedData).returning()
 }
