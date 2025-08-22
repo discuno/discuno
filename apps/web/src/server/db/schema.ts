@@ -11,11 +11,10 @@ import {
   real,
   text,
   timestamp,
-  unique,
   varchar,
 } from 'drizzle-orm/pg-core'
 import { type AdapterAccount } from 'next-auth/adapters'
-import { timestamps } from '~/server/db/columns.helpers'
+import { softDeleteTimestamps, timestamps } from '~/server/db/columns.helpers'
 
 /**
  * This is an example of how to use the multi-project schema feature of Drizzle ORM. Use the same
@@ -36,7 +35,7 @@ export const users = pgTable('discuno_user', {
     withTimezone: true,
   }).default(sql`CURRENT_TIMESTAMP`),
   image: varchar({ length: 255 }),
-  ...timestamps,
+  ...softDeleteTimestamps,
 })
 
 export const posts = pgTable(
@@ -49,7 +48,7 @@ export const posts = pgTable(
       .notNull()
       .unique()
       .references(() => users.id),
-    ...timestamps,
+    ...softDeleteTimestamps,
   },
   example => [
     index('created_by_idx').on(example.createdById),
@@ -155,7 +154,7 @@ export const userProfiles = pgTable(
     graduationYear: integer().notNull(), // E.g., 2027
     timezone: varchar({ length: 255 }).notNull().default('UTC'),
     rankingScore: real('ranking_score').default(0).notNull(),
-    ...timestamps,
+    ...softDeleteTimestamps,
   },
   table => ({
     graduationYearSchoolYearIdx: index('graduation_school_year_idx').on(
@@ -191,7 +190,7 @@ export const userMajors = pgTable(
     majorId: integer()
       .notNull()
       .references(() => majors.id),
-    ...timestamps,
+    ...softDeleteTimestamps,
   },
   table => [index('major_user_compound_idx').on(table.majorId, table.userId)]
 )
@@ -206,7 +205,7 @@ export const userSchools = pgTable(
     schoolId: integer()
       .notNull()
       .references(() => schools.id),
-    ...timestamps,
+    ...softDeleteTimestamps,
   },
   table => [
     index('user_school_idx').on(table.userId, table.schoolId),
@@ -216,7 +215,7 @@ export const userSchools = pgTable(
 
 export const majors = pgTable('discuno_major', {
   id: integer().primaryKey().generatedByDefaultAsIdentity(),
-  name: varchar({ length: 255 }).unique(),
+  name: varchar({ length: 255 }).notNull().unique(),
   ...timestamps,
 })
 
@@ -241,7 +240,7 @@ export const mentorReviews = pgTable(
       .references(() => users.id, { onDelete: 'cascade' }),
     rating: integer().notNull(),
     review: varchar({ length: 1000 }),
-    ...timestamps,
+    ...softDeleteTimestamps,
   },
   table => [check('rating_check', sql`${table.rating} >= 1 AND ${table.rating} <= 5`)]
 )
@@ -278,12 +277,6 @@ export const calcomTokens = pgTable(
 export const calcomTokensRelations = relations(calcomTokens, ({ one }) => ({
   user: one(users, { fields: [calcomTokens.userId], references: [users.id] }),
 }))
-
-export const waitlist = pgTable('discuno_waitlist', {
-  id: integer('id').primaryKey().generatedByDefaultAsIdentity(),
-  email: varchar('email', { length: 255 }).notNull(),
-  ...timestamps,
-})
 
 // Mentor Stripe account information
 export const stripeAccountStatusEnum = pgEnum('stripe_account_status', [
@@ -338,7 +331,7 @@ export const mentorEventTypes = pgTable(
     title: varchar({ length: 255 }).notNull(),
     description: text(),
     duration: integer().notNull(),
-    ...timestamps,
+    ...softDeleteTimestamps,
   },
   table => [
     index('mentor_event_types_user_idx').on(table.mentorUserId),
@@ -399,7 +392,7 @@ export const bookings = pgTable(
     // Full webhook payload for auditing and future-proofing
     webhookPayload: jsonb().notNull(),
 
-    ...timestamps,
+    ...softDeleteTimestamps,
   },
   table => [
     index('bookings_calcom_booking_id_idx').on(table.calcomBookingId),
@@ -424,7 +417,7 @@ export const bookingAttendees = pgTable(
     email: varchar({ length: 255 }).notNull(),
     phoneNumber: varchar({ length: 255 }),
     timeZone: varchar({ length: 100 }),
-    ...timestamps,
+    ...softDeleteTimestamps,
   },
   table => [
     index('booking_attendees_booking_id_idx').on(table.bookingId),
@@ -447,7 +440,7 @@ export const bookingOrganizers = pgTable(
     name: varchar({ length: 255 }).notNull(),
     email: varchar({ length: 255 }).notNull(),
     username: varchar({ length: 255 }).notNull(),
-    ...timestamps,
+    ...softDeleteTimestamps,
   },
   table => [
     index('booking_organizers_booking_id_idx').on(table.bookingId),
@@ -563,12 +556,14 @@ export const analyticsEvents = pgTable(
     actorUserId: varchar({ length: 255 }).references(() => users.id, {
       onDelete: 'set null',
     }), // User performing the action (optional)
-    targetUserId: varchar({ length: 255 }).references(() => users.id, {
-      onDelete: 'set null',
-    }), // User being acted upon
+    targetUserId: varchar({ length: 255 })
+      .notNull()
+      .references(() => users.id, {
+        onDelete: 'no action',
+      }), // User being acted upon
     postId: integer().references(() => posts.id, { onDelete: 'set null' }),
     fingerprint: varchar({ length: 255 }), // Browser fingerprint for anonymous users
-    ...timestamps,
+    ...softDeleteTimestamps,
   },
   table => [
     index('analytics_events_event_type_idx').on(table.eventType),
@@ -576,10 +571,5 @@ export const analyticsEvents = pgTable(
     index('analytics_events_target_user_id_idx').on(table.targetUserId),
     index('analytics_events_post_id_idx').on(table.postId),
     index('analytics_events_fingerprint_idx').on(table.fingerprint),
-    unique('anonymous_profile_view_unique_idx').on(
-      table.fingerprint,
-      table.targetUserId,
-      table.eventType
-    ),
   ]
 )
