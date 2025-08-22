@@ -1,15 +1,40 @@
+'server only'
+
 import { and, desc, eq, isNotNull, lt } from 'drizzle-orm'
 import { cache } from 'react'
-import 'server-only'
 import { z } from 'zod'
-import type { CalcomTokenWithId, Card, FullUserProfile, UserProfile } from '~/app/types'
+import type { Card, FullUserProfile } from '~/app/types'
 import { getAuthSession, requireAuth } from '~/lib/auth/auth-utils'
 import { InternalServerError, NotFoundError } from '~/lib/errors'
+import type {
+  CalcomToken,
+  MentorEventType,
+  MentorStripeAccount,
+  NewAnalyticsEvent,
+  NewBooking,
+  NewBookingAttendee,
+  NewBookingOrganizer,
+  NewCalcomToken,
+  NewMentorEventType,
+  NewMentorReview,
+  NewMentorStripeAccount,
+  UpdateCalcomToken,
+  UpdateUser,
+  UpdateUserProfile,
+  UserProfile,
+} from '~/lib/schemas/db'
 import {
   insertAnalyticsEventSchema,
-  type NewAnalyticsEvent,
-} from '~/lib/schemas/db/analyticsEvents'
-import { insertMentorReviewSchema } from '~/lib/schemas/db/mentorReviews'
+  insertCalcomTokenSchema,
+  insertMentorEventTypeSchema,
+  insertMentorReviewSchema,
+  insertMentorStripeAccountSchema,
+  selectMajorSchema,
+  selectSchoolSchema,
+  updateCalcomTokenSchema,
+  updateCompleteProfileSchema,
+  updateUserSchema,
+} from '~/lib/schemas/db'
 import { db } from '~/server/db'
 import {
   analyticsEvents,
@@ -48,37 +73,6 @@ const filterSchema = z.object({
   cursor: z.number().int().positive().optional(),
 })
 
-const calcomStoreTokensSchema = z.object({
-  calcomUserId: z.number().int().positive(),
-  calcomUsername: z.string().min(1),
-  accessToken: z.string().min(1),
-  refreshToken: z.string().min(1),
-  accessTokenExpiresAt: z.number().int().positive(),
-  refreshTokenExpiresAt: z.number().int().positive(),
-})
-
-const calcomUpdateTokensSchema = z.object({
-  calcomUserId: z.number().int().positive(),
-  accessToken: z.string().min(1),
-  refreshToken: z.string().min(1),
-  accessTokenExpiresAt: z.number().int().positive(),
-  refreshTokenExpiresAt: z.number().int().positive(),
-})
-
-const updateProfileImageSchema = z.object({
-  userId: z.string().min(1),
-  imageUrl: z.string().url(),
-})
-
-const updateCompleteProfileSchema = z.object({
-  name: z.string().min(1).max(255).optional(),
-  bio: z.string().max(1000).nullable().optional(),
-  schoolYear: z.enum(['Freshman', 'Sophomore', 'Junior', 'Senior', 'Graduate']).optional(),
-  graduationYear: z.number().int().min(1900).max(2100).optional(),
-  school: z.string().max(255).optional(),
-  major: z.string().max(255).optional(),
-})
-
 // Shared query builder for posts with all necessary joins
 const buildPostsQuery = () => {
   return db
@@ -89,6 +83,8 @@ const buildPostsQuery = () => {
         description: posts.description,
         createdById: posts.createdById,
         createdAt: posts.createdAt,
+        updatedAt: posts.updatedAt,
+        deletedAt: posts.deletedAt,
       },
       creator: {
         image: users.image,
@@ -113,28 +109,7 @@ const buildPostsQuery = () => {
     .leftJoin(majors, eq(userMajors.majorId, majors.id))
 }
 
-type PostQueryResult = {
-  post: {
-    id: number
-    name: string | null
-    description: string | null
-    createdById: string
-    createdAt: Date
-  }
-  creator: {
-    image: string | null
-  } | null
-  profile: {
-    graduationYear: number | null
-    schoolYear: string | null
-  } | null
-  school: {
-    name: string | null
-  } | null
-  major: {
-    name: string | null
-  } | null
-}
+type PostQueryResult = Awaited<ReturnType<typeof buildPostsQuery>>[number]
 
 const transformPostResult = (result: PostQueryResult[]): Card[] => {
   // Transform raw query result to Card format, deduplicating by post.id (e.g., multiple majors)
@@ -142,11 +117,7 @@ const transformPostResult = (result: PostQueryResult[]): Card[] => {
   for (const { post, creator, profile, school, major } of result) {
     if (!postMap.has(post.id)) {
       postMap.set(post.id, {
-        id: post.id,
-        name: post.name,
-        description: post.description,
-        createdById: post.createdById,
-        createdAt: post.createdAt,
+        ...post,
         userImage: creator?.image ?? null,
         graduationYear: profile?.graduationYear ?? null,
         schoolYear: profile?.schoolYear ?? null,
@@ -188,7 +159,7 @@ export const getPostsCursor = async (
 export const getPostById = async (id: number): Promise<Card> => {
   const { id: validId } = postIdSchema.parse({ id })
 
-  const post = await buildPostsQuery().where(eq(posts.id, validId)).limit(1).execute()
+  const post = await buildPostsQuery().where(eq(posts.id, validId)).limit(1)
 
   if (post.length === 0) {
     throw new NotFoundError('Post not found')
@@ -211,8 +182,8 @@ export const getPostById = async (id: number): Promise<Card> => {
 export const getSchools = cache(async () => {
   const schools = await db.query.schools.findMany()
   return schools.map(school => ({
-    label: school.name ?? 'Unknown',
-    value: school.name?.toLowerCase() ?? 'unknown',
+    label: school.name,
+    value: school.name.toLowerCase(),
     id: school.id,
   }))
 })
@@ -348,31 +319,11 @@ export const getProfileWithImageCached = cache(getProfileWithImage)
 /**
  * Store Cal.com tokens for a specific user ID (used during authentication flow)
  */
-export const storeCalcomTokensForUser = async ({
-  userId,
-  calcomUserId,
-  calcomUsername,
-  accessToken,
-  refreshToken,
-  accessTokenExpiresAt,
-  refreshTokenExpiresAt,
-}: {
-  userId: string
-  calcomUserId: number
-  calcomUsername: string
-  accessToken: string
-  refreshToken: string
-  accessTokenExpiresAt: number
-  refreshTokenExpiresAt: number
-}): Promise<void> => {
-  const validData = calcomStoreTokensSchema.parse({
-    calcomUserId,
-    calcomUsername,
-    accessToken,
-    refreshToken,
-    accessTokenExpiresAt,
-    refreshTokenExpiresAt,
-  })
+export const storeCalcomTokensForUser = async (
+  userId: string,
+  data: NewCalcomToken
+): Promise<void> => {
+  const validData = insertCalcomTokenSchema.parse(data)
 
   const accessExpiry = new Date(validData.accessTokenExpiresAt)
   const refreshExpiry = new Date(validData.refreshTokenExpiresAt)
@@ -381,22 +332,15 @@ export const storeCalcomTokensForUser = async ({
     // Use upsert pattern - insert or update if userId already exists
     .insert(calcomTokens)
     .values({
-      userId: userId,
-      calcomUserId: validData.calcomUserId,
-      calcomUsername: validData.calcomUsername,
-      accessToken: validData.accessToken,
-      refreshToken: validData.refreshToken,
+      ...validData,
+      userId,
       accessTokenExpiresAt: accessExpiry,
       refreshTokenExpiresAt: refreshExpiry,
-      updatedAt: new Date(),
     })
     .onConflictDoUpdate({
       target: calcomTokens.userId,
       set: {
-        calcomUserId: validData.calcomUserId,
-        calcomUsername: validData.calcomUsername,
-        accessToken: validData.accessToken,
-        refreshToken: validData.refreshToken,
+        ...validData,
         accessTokenExpiresAt: accessExpiry,
         refreshTokenExpiresAt: refreshExpiry,
         updatedAt: new Date(),
@@ -411,38 +355,19 @@ export const storeCalcomTokensForUser = async ({
   }
 }
 
-export const updateCalcomTokensByUserId = async ({
-  userId,
-  calcomUserId,
-  accessToken,
-  refreshToken,
-  accessTokenExpiresAt,
-  refreshTokenExpiresAt,
-}: {
-  userId: string
-  calcomUserId: number
-  accessToken: string
-  refreshToken: string
-  accessTokenExpiresAt: number
-  refreshTokenExpiresAt: number
-}): Promise<void> => {
-  const validData = calcomUpdateTokensSchema.parse({
-    calcomUserId,
-    accessToken,
-    refreshToken,
-    accessTokenExpiresAt,
-    refreshTokenExpiresAt,
-  })
+export const updateCalcomTokensByUserId = async (
+  userId: string,
+  data: UpdateCalcomToken
+): Promise<void> => {
+  const validData = updateCalcomTokenSchema.parse(data)
 
-  const accessExpiry = new Date(validData.accessTokenExpiresAt)
-  const refreshExpiry = new Date(validData.refreshTokenExpiresAt)
+  const accessExpiry = new Date(validData.accessTokenExpiresAt ?? '')
+  const refreshExpiry = new Date(validData.refreshTokenExpiresAt ?? '')
 
   const res = await db
     .update(calcomTokens)
     .set({
-      calcomUserId: validData.calcomUserId,
-      accessToken: validData.accessToken,
-      refreshToken: validData.refreshToken,
+      ...validData,
       accessTokenExpiresAt: accessExpiry,
       refreshTokenExpiresAt: refreshExpiry,
       updatedAt: new Date(),
@@ -455,7 +380,7 @@ export const updateCalcomTokensByUserId = async ({
   }
 }
 
-export const getMentorCalcomTokens = cache(async (): Promise<CalcomTokenWithId | null> => {
+export const getMentorCalcomTokens = cache(async (): Promise<CalcomToken | null> => {
   const { id: userId } = await requireAuth()
 
   const tokens = await db.query.calcomTokens.findFirst({
@@ -491,7 +416,7 @@ export const getCalcomUsernameByUserId = cache(
 
 export const getMentorCalcomTokensByUsername = async (
   username: string
-): Promise<CalcomTokenWithId | null> => {
+): Promise<CalcomToken | null> => {
   const calUser = await db.query.calcomTokens.findFirst({
     where: eq(calcomTokens.calcomUsername, username),
   })
@@ -606,12 +531,12 @@ export const getCurrentUserImage = async (): Promise<string | null> => {
 export const updateUserImage = async (imageUrl: string): Promise<void> => {
   const { id: userId } = await requireAuth()
 
-  const validData = updateProfileImageSchema.parse({ userId, imageUrl })
+  const validData = updateUserSchema.parse({ image: imageUrl })
 
   const result = await db
     .update(users)
-    .set({ image: validData.imageUrl })
-    .where(eq(users.id, validData.userId))
+    .set(validData)
+    .where(eq(users.id, userId))
     .returning({ id: users.id })
 
   if (result.length === 0) {
@@ -637,98 +562,48 @@ export const removeUserImage = async (): Promise<void> => {
 }
 
 /**
- * Find or create a school by name (within a transaction)
+ * Find a school by name
  */
-const findOrCreateSchoolInternal = async (
-  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
-  schoolName: string
-): Promise<number> => {
-  // First try to find existing school
-  const existingSchool = await tx
+export const findSchool = async (schoolName: string): Promise<number | null> => {
+  const name = selectSchoolSchema.shape.name.parse(schoolName)
+  const school = await db
     .select({ id: schools.id })
     .from(schools)
-    .where(eq(schools.name, schoolName))
+    .where(eq(schools.name, name))
     .limit(1)
 
-  if (existingSchool.length > 0 && existingSchool[0]) {
-    return existingSchool[0].id
+  if (school.length > 0 && school[0]) {
+    return school[0].id
   }
 
-  // Create new school if not found
-  const [newSchool] = await tx
-    .insert(schools)
-    .values({
-      name: schoolName,
-      domain: schoolName.toLowerCase().replace(/\s+/g, '') + '.edu',
-      location: 'Unknown',
-      image: null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    })
-    .returning({ id: schools.id })
-
-  if (!newSchool) {
-    throw new InternalServerError('Failed to create school')
-  }
-
-  return newSchool.id
-}
-
-/**
- * Find or create a school by name (within a transaction)
- */
-export const findOrCreateSchool = async (schoolName: string): Promise<number> => {
-  return await db.transaction(async tx => {
-    return await findOrCreateSchoolInternal(tx, schoolName)
-  })
+  return null
 }
 
 /**
  * Find or create a major by name (within a transaction)
  */
-const findOrCreateMajor = async (
-  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
-  majorName: string
-): Promise<number> => {
-  // First try to find existing major
-  const existingMajor = await tx
+const findMajor = async (majorName: string): Promise<number | null> => {
+  const name = selectMajorSchema.shape.name.parse(majorName)
+
+  const major = await db
     .select({ id: majors.id })
     .from(majors)
-    .where(eq(majors.name, majorName))
+    .where(eq(majors.name, name))
     .limit(1)
 
-  if (existingMajor.length > 0 && existingMajor[0]) {
-    return existingMajor[0].id
+  if (major.length > 0 && major[0]) {
+    return major[0].id
   }
 
-  // Create new major if not found
-  const [newMajor] = await tx
-    .insert(majors)
-    .values({
-      name: majorName,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    })
-    .returning({ id: majors.id })
-
-  if (!newMajor) {
-    throw new InternalServerError('Failed to create major')
-  }
-
-  return newMajor.id
+  return null
 }
 
 /**
  * Update a complete user profile with all fields
  */
-export const updateCompleteProfile = async (data: {
-  name?: string
-  bio?: string | null
-  schoolYear?: 'Freshman' | 'Sophomore' | 'Junior' | 'Senior' | 'Graduate'
-  graduationYear?: number
-  school?: string
-  major?: string
-}): Promise<void> => {
+export const updateCompleteProfile = async (
+  data: UpdateUserProfile & UpdateUser & { school?: string; major?: string }
+): Promise<void> => {
   const validData = updateCompleteProfileSchema.parse(data)
 
   const { id: userId } = await requireAuth()
@@ -753,8 +628,6 @@ export const updateCompleteProfile = async (data: {
           bio: validData.bio,
           schoolYear: validData.schoolYear ?? 'Freshman',
           graduationYear: validData.graduationYear ?? new Date().getFullYear(),
-          createdAt: new Date(),
-          updatedAt: new Date(),
         })
         .onConflictDoUpdate({
           target: userProfiles.userId,
@@ -769,145 +642,73 @@ export const updateCompleteProfile = async (data: {
 
     // 3. Handle school relationship
     if (validData.school) {
-      const schoolId = await findOrCreateSchoolInternal(tx, validData.school)
+      const schoolId = await findSchool(validData.school)
+      if (schoolId) {
+        // Remove existing school associations
+        await tx.delete(userSchools).where(eq(userSchools.userId, userId))
 
-      // Remove existing school associations
-      await tx.delete(userSchools).where(eq(userSchools.userId, userId))
-
-      // Add new school association
-      await tx.insert(userSchools).values({
-        userId: userId,
-        schoolId,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      })
+        // Add new school association
+        await tx.insert(userSchools).values({
+          userId: userId,
+          schoolId,
+        })
+      }
     }
 
     // 4. Handle major relationship
     if (validData.major) {
-      const majorId = await findOrCreateMajor(tx, validData.major)
+      const majorId = await findMajor(validData.major)
+      if (majorId) {
+        // Remove existing major associations
+        await tx.delete(userMajors).where(eq(userMajors.userId, userId))
 
-      // Remove existing major associations
-      await tx.delete(userMajors).where(eq(userMajors.userId, userId))
-
-      // Add new major association
-      await tx.insert(userMajors).values({
-        userId,
-        majorId,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      })
+        // Add new major association
+        await tx.insert(userMajors).values({
+          userId,
+          majorId,
+        })
+      }
     }
   })
 }
 
 // Mentor Event Types Queries
 
-const mentorEventTypeSchema = z.object({
-  userId: z.string().min(1),
-  calcomEventTypeId: z.number().int().positive(),
-  isEnabled: z.boolean(),
-  customPrice: z.number().int().positive().optional(),
-  currency: z.string().length(3).default('USD'),
-  title: z.string(),
-  description: z.string().nullable(),
-  duration: z.number().int().positive(),
-})
-
-const mentorStripeAccountSchema = z.object({
-  userId: z.string().min(1),
-  stripeAccountId: z.string().min(1),
-  stripeAccountStatus: z.enum(['pending', 'active', 'restricted', 'inactive']),
-  onboardingCompleted: z.date().optional(),
-  payoutsEnabled: z.boolean().default(false),
-  chargesEnabled: z.boolean().default(false),
-  detailsSubmitted: z.boolean().optional(),
-  requirements: z.record(z.unknown()).optional(), // Stripe requirements object
-})
-
 /**
  * Get mentor's event type preferences with details (using joins)
  */
-export const getMentorEventTypes = cache(
-  async (): Promise<
-    Array<{
-      id: number
-      calcomEventTypeId: number | null
-      title: string
-      description: string | null
-      duration: number
-      isEnabled: boolean
-      customPrice: number | null
-      currency: string
-      createdAt: Date
-      updatedAt: Date | null
-    }>
-  > => {
-    const { id: currentUserId } = await requireAuth()
+export const getMentorEventTypes = cache(async (): Promise<MentorEventType[]> => {
+  const { id: currentUserId } = await requireAuth()
 
-    // Get mentor event types with individual event type IDs
-    const result = await db
-      .select({
-        id: mentorEventTypes.id,
-        calcomEventTypeId: mentorEventTypes.calcomEventTypeId,
-        title: mentorEventTypes.title,
-        description: mentorEventTypes.description,
-        duration: mentorEventTypes.duration,
-        isEnabled: mentorEventTypes.isEnabled,
-        customPrice: mentorEventTypes.customPrice,
-        currency: mentorEventTypes.currency,
-        createdAt: mentorEventTypes.createdAt,
-        updatedAt: mentorEventTypes.updatedAt,
-      })
-      .from(mentorEventTypes)
-      .where(eq(mentorEventTypes.mentorUserId, currentUserId))
+  // Get mentor event types with individual event type IDs
+  const result = await db.query.mentorEventTypes.findMany({
+    where: eq(mentorEventTypes.mentorUserId, currentUserId),
+  })
 
-    return result
-      .filter(item => item.calcomEventTypeId !== null)
-      .map(item => ({
-        ...item,
-        calcomEventTypeId: item.calcomEventTypeId as number,
-        isEnabled: item.isEnabled,
-      }))
-  }
-)
+  return result
+    .filter(
+      (item): item is MentorEventType & { calcomEventTypeId: number } =>
+        item.calcomEventTypeId !== null
+    )
+    .map(item => ({
+      ...item,
+      isEnabled: item.isEnabled,
+    }))
+})
 
 /**
  * Upsert mentor event type preference
  */
-export const upsertMentorEventType = async (data: {
-  userId: string
-  calcomEventTypeId: number
-  isEnabled: boolean
-  customPrice?: number
-  currency?: string
-  title: string
-  description: string | null
-  duration: number
-}): Promise<void> => {
-  const validData = mentorEventTypeSchema.parse(data)
+export const upsertMentorEventType = async (data: NewMentorEventType): Promise<void> => {
+  const validData = insertMentorEventTypeSchema.parse(data)
 
   await db
     .insert(mentorEventTypes)
-    .values({
-      mentorUserId: validData.userId,
-      calcomEventTypeId: validData.calcomEventTypeId,
-      isEnabled: validData.isEnabled,
-      customPrice: validData.customPrice,
-      currency: validData.currency,
-      title: validData.title,
-      description: validData.description,
-      duration: validData.duration,
-    })
+    .values(validData)
     .onConflictDoUpdate({
       target: [mentorEventTypes.calcomEventTypeId],
       set: {
-        isEnabled: validData.isEnabled,
-        customPrice: validData.customPrice,
-        currency: validData.currency,
-        title: validData.title,
-        description: validData.description,
-        duration: validData.duration,
+        ...validData,
         updatedAt: new Date(),
       },
     })
@@ -963,90 +764,35 @@ export const getMentorEnabledEventTypes = cache(
 /**
  * Get mentor's Stripe account information
  */
-export const getMentorStripeAccount = cache(
-  async (): Promise<{
-    id: number
-    stripeAccountId: string
-    stripeAccountStatus: 'pending' | 'active' | 'restricted' | 'inactive'
-    onboardingCompleted: Date | null
-    payoutsEnabled: boolean
-    chargesEnabled: boolean
-    detailsSubmitted: boolean
-    requirements: object
-    createdAt: Date
-    updatedAt: Date | null
-  } | null> => {
-    const { id: currentUserId } = await requireAuth()
+export const getMentorStripeAccount = cache(async (): Promise<MentorStripeAccount | null> => {
+  const { id: currentUserId } = await requireAuth()
 
-    const result = await db
-      .select({
-        id: mentorStripeAccounts.id,
-        stripeAccountId: mentorStripeAccounts.stripeAccountId,
-        stripeAccountStatus: mentorStripeAccounts.stripeAccountStatus,
-        onboardingCompleted: mentorStripeAccounts.onboardingCompleted,
-        payoutsEnabled: mentorStripeAccounts.payoutsEnabled,
-        chargesEnabled: mentorStripeAccounts.chargesEnabled,
-        detailsSubmitted: mentorStripeAccounts.detailsSubmitted,
-        requirements: mentorStripeAccounts.requirements,
-        createdAt: mentorStripeAccounts.createdAt,
-        updatedAt: mentorStripeAccounts.updatedAt,
-      })
-      .from(mentorStripeAccounts)
-      .where(eq(mentorStripeAccounts.userId, currentUserId))
-      .limit(1)
+  const result = await db.query.mentorStripeAccounts.findFirst({
+    where: eq(mentorStripeAccounts.userId, currentUserId),
+  })
 
-    const account = result[0]
-    if (!account) return null
+  if (!result) return null
 
-    return {
-      ...account,
-      stripeAccountStatus: account.stripeAccountStatus ?? 'pending',
-      payoutsEnabled: account.payoutsEnabled,
-      chargesEnabled: account.chargesEnabled,
-      detailsSubmitted: account.detailsSubmitted,
-      requirements: (account.requirements ?? {}) as object,
-    }
+  return {
+    ...result,
+    stripeAccountStatus: result.stripeAccountStatus ?? 'pending',
+    requirements: result.requirements ?? {},
   }
-)
+})
 
 /**
  * Upsert mentor Stripe account
  */
-export const upsertMentorStripeAccount = async (data: {
-  userId: string
-  stripeAccountId: string
-  stripeAccountStatus: 'pending' | 'active' | 'restricted' | 'inactive'
-  onboardingCompleted?: Date
-  payoutsEnabled?: boolean
-  chargesEnabled?: boolean
-  detailsSubmitted?: boolean
-  requirements?: Record<string, unknown>
-}): Promise<void> => {
-  const validData = mentorStripeAccountSchema.parse(data)
+export const upsertMentorStripeAccount = async (data: NewMentorStripeAccount): Promise<void> => {
+  const validData = insertMentorStripeAccountSchema.parse(data)
 
   await db
     .insert(mentorStripeAccounts)
-    .values({
-      userId: validData.userId,
-      stripeAccountId: validData.stripeAccountId,
-      stripeAccountStatus: validData.stripeAccountStatus,
-      onboardingCompleted: validData.onboardingCompleted,
-      payoutsEnabled: validData.payoutsEnabled,
-      chargesEnabled: validData.chargesEnabled,
-      detailsSubmitted: validData.detailsSubmitted,
-      requirements: validData.requirements,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    })
+    .values(validData)
     .onConflictDoUpdate({
       target: mentorStripeAccounts.userId,
       set: {
-        stripeAccountStatus: validData.stripeAccountStatus,
-        onboardingCompleted: validData.onboardingCompleted,
-        payoutsEnabled: validData.payoutsEnabled,
-        chargesEnabled: validData.chargesEnabled,
-        detailsSubmitted: validData.detailsSubmitted,
-        requirements: validData.requirements,
+        ...validData,
         updatedAt: new Date(),
       },
     })
@@ -1112,27 +858,13 @@ export const getMentorBookings = cache(async (mentorId: string) => {
 /**
  * Helper function to create local booking record
  */
-export const createLocalBooking = async (input: {
-  calcomBookingId: number
-  calcomUid: string
-  title: string
-  startTime: Date
-  duration: number
-  organizerUserId: string
-  calcomOrganizerName: string
-  calcomOrganizerEmail: string
-  calcomOrganizerUsername: string
-  attendeeName: string
-  attendeeEmail: string
-  attendeePhone?: string
-  attendeeTimeZone: string
-  attendeeUserId?: string
-  price: number
-  currency: string
-  calcomEventTypeId: number
-  paymentId?: number
-  requiresPayment: boolean
-}) => {
+type CreateLocalBooking = NewBooking &
+  NewBookingAttendee &
+  NewBookingOrganizer & {
+    duration: number
+    calcomEventTypeId: number
+  }
+export const createLocalBooking = async (input: CreateLocalBooking) => {
   const endTime = new Date(input.startTime.getTime() + input.duration * 60000)
 
   return await db.transaction(async tx => {
@@ -1175,32 +907,27 @@ export const createLocalBooking = async (input: {
     // Create the organizer record
     await tx.insert(bookingOrganizers).values({
       bookingId: booking[0].id,
-      userId: input.organizerUserId,
-      name: input.calcomOrganizerName,
-      email: input.calcomOrganizerEmail,
-      username: input.calcomOrganizerUsername,
+      userId: input.userId,
+      name: input.name,
+      email: input.email,
+      username: input.username,
     })
 
     // Create the attendee record
     await tx.insert(bookingAttendees).values({
       bookingId: booking[0].id,
-      userId: input.attendeeUserId ?? null, // User ID used for logged in mentees
-      name: input.attendeeName,
-      email: input.attendeeEmail,
-      phoneNumber: input.attendeePhone ?? null,
-      timeZone: input.attendeeTimeZone,
+      userId: input.userId,
+      name: input.name,
+      email: input.email,
+      phoneNumber: input.phoneNumber,
+      timeZone: input.timeZone,
     })
 
     return booking[0]
   })
 }
 
-export const createMentorReview = async (data: {
-  mentorId: string
-  userId: string
-  rating: number
-  review?: string
-}) => {
+export const createMentorReview = async (data: NewMentorReview) => {
   const validatedData = insertMentorReviewSchema.parse(data)
   return await db.insert(mentorReviews).values(validatedData).returning()
 }

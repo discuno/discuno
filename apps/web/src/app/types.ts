@@ -1,16 +1,18 @@
-export interface Card {
-  id: number | undefined
+import {
+  type Booking as DbBooking,
+  type BookingAttendee as DbBookingAttendee,
+  type BookingOrganizer as DbBookingOrganizer,
+  type CalcomToken as DbCalcomToken,
+  type UserProfile as DbUserProfile,
+  type Post,
+} from '~/lib/schemas/db'
+
+export interface Card extends Post {
   userImage?: string | null
-  name?: string | null
-  description?: string | null
-  createdById: string | undefined
-  graduationYear?: number | null
   schoolYear?: string | null
   school?: string | null
   major?: string | null
-  createdAt: Date | undefined
-  updatedAt?: Date | null
-  deletedAt?: Date | null
+  graduationYear?: number | null
 }
 
 export interface PostGridProps {
@@ -20,16 +22,7 @@ export interface PostGridProps {
   graduationYear: number | null
 }
 
-export interface UserProfile {
-  id: number
-  updatedAt: Date | null
-  createdAt: Date
-  deletedAt: Date | null
-  userId: string
-  bio: string | null
-  schoolYear: 'Freshman' | 'Sophomore' | 'Junior' | 'Senior' | 'Graduate'
-  graduationYear: number
-}
+export type UserProfile = DbUserProfile
 
 export interface UserProfileWithImage extends UserProfile {
   user: {
@@ -56,12 +49,7 @@ export interface Toast {
   variant: 'success' | 'error'
 }
 
-export interface CalcomToken {
-  accessToken: string
-  refreshToken: string
-  accessTokenExpiresAt: Date
-  refreshTokenExpiresAt: Date
-}
+export type CalcomToken = DbCalcomToken
 
 export interface CalcomTokenWithId extends CalcomToken {
   userId: string
@@ -167,53 +155,11 @@ export type BookingStatus =
   | 'no_show'
   | 'rescheduled'
 
-export interface BookingAttendee {
-  id: number
-  bookingId: number
-  userId?: string | null // User ID used for logged in mentees
-  name: string
-  email: string
-  timeZone: string
-  createdAt: Date
-  updatedAt: Date | null
-  deletedAt: Date | null
-}
+export type BookingAttendee = DbBookingAttendee
 
-export interface BookingOrganizer {
-  id: number
-  bookingId: number
-  userId: string
-  name: string
-  email: string
-  username: string
-  createdAt: Date
-  updatedAt: Date | null
-  deletedAt: Date | null
-}
+export type BookingOrganizer = DbBookingOrganizer
 
-export interface Booking {
-  id: number
-  calcomBookingId: number
-  calcomUid: string
-  calcomEventTypeId: number
-  title: string
-  description: string | null
-  additionalNotes: string | null
-  startTime: Date
-  endTime: Date
-  duration: number
-  price: number | null
-  currency: string
-  status: BookingStatus
-  requiresConfirmation: boolean
-  customResponses: Record<string, unknown>
-  confirmedAt: Date | null
-  completedAt: Date | null
-  cancelledAt: Date | null
-  cancellationReason: string | null
-  createdAt: Date
-  updatedAt: Date | null
-  deletedAt: Date | null
+export interface Booking extends DbBooking {
   attendees: BookingAttendee[]
   organizers: BookingOrganizer[]
 }

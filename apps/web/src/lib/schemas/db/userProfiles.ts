@@ -1,6 +1,7 @@
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod'
-import type { z } from 'zod/v4'
+import { z } from 'zod/v4'
 import { excludeFields } from '~/lib/schemas/db/helpers'
+import { updateUserSchema } from '~/lib/schemas/db/users'
 import { userProfiles } from '~/server/db/schema'
 
 const insertExcludedFields = {
@@ -15,6 +16,13 @@ const updateExcludedFields = {
 export const selectUserProfileSchema = createSelectSchema(userProfiles)
 export const insertUserProfileSchema = createInsertSchema(userProfiles, insertExcludedFields)
 export const updateUserProfileSchema = createUpdateSchema(userProfiles, updateExcludedFields)
+
+export const updateCompleteProfileSchema = updateUserProfileSchema
+  .extend(updateUserSchema.shape)
+  .extend({
+    school: z.string().optional(),
+    major: z.string().optional(),
+  })
 
 export type UserProfile = z.infer<typeof selectUserProfileSchema>
 export type NewUserProfile = Omit<
