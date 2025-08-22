@@ -221,9 +221,9 @@ export const majors = pgTable('discuno_major', {
 
 export const schools = pgTable('discuno_school', {
   id: integer().primaryKey().generatedByDefaultAsIdentity(),
-  name: varchar({ length: 255 }).unique(),
-  domain: varchar({ length: 255 }).unique(),
-  location: varchar({ length: 255 }),
+  name: varchar({ length: 255 }).unique().notNull(),
+  domain: varchar({ length: 255 }).unique().notNull(),
+  location: varchar({ length: 255 }).notNull(),
   image: varchar({ length: 255 }),
   ...timestamps,
 })
