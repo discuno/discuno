@@ -19,6 +19,7 @@ import { Alert, AlertDescription } from '~/components/ui/alert'
 import { Card, CardContent } from '~/components/ui/card'
 import { Skeleton } from '~/components/ui/skeleton'
 import { env } from '~/env'
+import { type UpdateMentorEventType } from '~/lib/schemas/db'
 import { darkVariables, lightVariables } from '~/lib/stripe/appearance'
 
 interface EventTypePreference {
@@ -73,7 +74,8 @@ export const EventTypeToggleSection = () => {
 
   // Update event type preferences
   const updateEventTypeMutation = useMutation({
-    mutationFn: updateMentorEventTypePreferences,
+    mutationFn: ({ eventTypeId, data }: { eventTypeId: number; data: UpdateMentorEventType }) =>
+      updateMentorEventTypePreferences(eventTypeId, data),
     onSuccess: () => {
       toast.success('Event type preferences updated!')
       void refetchEventTypes()
@@ -124,8 +126,6 @@ export const EventTypeToggleSection = () => {
     retry: 1,
   })
 
-  console.log(sessionData)
-
   // Initialize Stripe Connect instance when session data is available
   const initializeConnectMutation = useMutation({
     mutationFn: async (clientSecret: string) => {
@@ -160,15 +160,11 @@ export const EventTypeToggleSection = () => {
   }, [effectiveAccountId])
 
   const handleToggleEventType = async (eventType: EventTypePreference, checked: boolean) => {
-    // Use the checked parameter directly instead of toggling based on current state
     await updateEventTypeMutation.mutateAsync({
-      calcomEventTypeId: eventType.id,
-      isEnabled: checked,
-      customPrice: eventType.customPrice ?? undefined,
-      currency: eventType.currency,
-      title: eventType.title,
-      description: eventType.description ?? null,
-      duration: eventType.length,
+      eventTypeId: eventType.id,
+      data: {
+        isEnabled: checked,
+      },
     })
   }
 
@@ -190,13 +186,11 @@ export const EventTypeToggleSection = () => {
     }
 
     await updateEventTypeMutation.mutateAsync({
-      calcomEventTypeId: selectedEventType.id,
-      isEnabled: selectedEventType.isEnabled,
-      customPrice: priceInCents ?? undefined,
-      currency: 'USD',
-      title: selectedEventType.title,
-      description: selectedEventType.description ?? null,
-      duration: selectedEventType.length,
+      eventTypeId: selectedEventType.id,
+      data: {
+        customPrice: priceInCents,
+        currency: 'USD',
+      },
     })
 
     setShowPricingDialog(false)

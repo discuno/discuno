@@ -8,7 +8,7 @@ export const getAllowedDomains = async (): Promise<Set<string>> => {
   try {
     const allSchools = await db.query.schools.findMany()
     cachedDomains = new Set(
-      allSchools.map(s => s.domain?.toLowerCase()).filter((d): d is string => !!d)
+      allSchools.map(s => s.domain.toLowerCase()).filter((d): d is string => !!d)
     )
     console.log(`[auth] Loaded ${cachedDomains.size} allowed domains`)
     return cachedDomains

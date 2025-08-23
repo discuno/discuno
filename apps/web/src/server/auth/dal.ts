@@ -206,13 +206,11 @@ export const syncMentorEventTypesForUser = async (
         { title: string; description: string | null; duration: number }
       >()
       for (const row of existing) {
-        if (row.calcomEventTypeId !== null) {
-          existingMap.set(row.calcomEventTypeId, {
-            title: row.title,
-            description: row.description ?? null,
-            duration: row.duration,
-          })
-        }
+        existingMap.set(row.calcomEventTypeId, {
+          title: row.title,
+          description: row.description ?? null,
+          duration: row.duration,
+        })
       }
 
       const createIdSet = new Set<number>(toCreateIds)

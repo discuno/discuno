@@ -14,7 +14,6 @@ import {
   userProfiles,
   users,
   userSchools,
-  waitlist,
 } from '~/server/db/schema'
 
 /**
@@ -29,7 +28,6 @@ import {
  * - All users create posts with engaging titles and descriptions
  * - All users are mentors with realistic reviews (2-8 reviews each)
  * - Realistic mentor review ratings (70% 5-star, 20% 4-star, 10% lower)
- * - 30 waitlist entries with varied email domains
  * - Smart graduation year calculation based on current school year
  * - Diverse, realistic user bios covering different academic paths
  * - Cal.com managed user accounts and tokens for all users
@@ -483,39 +481,6 @@ const mentorReviewComments = [
   'Very knowledgeable about the nonprofit sector. Their advice helped me find meaningful volunteer opportunities and career paths.',
 ]
 
-const waitlistEmails = [
-  'sarah.chen@gmail.com',
-  'michael.rodriguez@yahoo.com',
-  'amanda.johnson@outlook.com',
-  'david.kim@gmail.com',
-  'jessica.martinez@hotmail.com',
-  'ryan.thompson@gmail.com',
-  'emily.wilson@yahoo.com',
-  'jonathan.lee@outlook.com',
-  'samantha.brown@gmail.com',
-  'kevin.garcia@yahoo.com',
-  'michelle.davis@gmail.com',
-  'brandon.miller@outlook.com',
-  'nicole.anderson@gmail.com',
-  'tyler.moore@yahoo.com',
-  'stephanie.taylor@gmail.com',
-  'joshua.jackson@outlook.com',
-  'rachel.white@gmail.com',
-  'nathan.harris@yahoo.com',
-  'lauren.clark@gmail.com',
-  'austin.lewis@outlook.com',
-  'megan.walker@gmail.com',
-  'sean.hall@yahoo.com',
-  'brittany.young@gmail.com',
-  'connor.allen@outlook.com',
-  'vanessa.king@gmail.com',
-  'student.prospect1@university.edu',
-  'future.mentee@college.edu',
-  'aspiring.engineer@tech.edu',
-  'pre.med.student@medical.edu',
-  'business.student@commerce.edu',
-]
-
 // Helper functions
 const getRandomElement = <T>(array: readonly T[]): T => {
   const index = Math.floor(Math.random() * array.length)
@@ -598,7 +563,6 @@ export const seedDatabase = async (environment?: Environment) => {
       calcomTokens: false,
       stripeAccounts: false,
       mentorEventTypes: false,
-      waitlist: false,
       // Note: bookings, attendees, organizers, and payments will be created via webhooks/API, not seeded
     }
 
@@ -1049,17 +1013,6 @@ export const seedDatabase = async (environment?: Environment) => {
       }
     }
 
-    // Step 12: Insert waitlist entries
-    try {
-      console.log('📧 Inserting waitlist entries...')
-      const waitlistData = waitlistEmails.map(email => ({ email }))
-      await db.insert(waitlist).values(waitlistData)
-      seedResults.waitlist = true
-      console.log('✅ Waitlist entries seeded successfully')
-    } catch (error) {
-      console.error('❌ Failed to seed waitlist:', error)
-    }
-
     console.log('🎉 Database seeding completed!')
     console.log('📊 Seeding Results:')
     Object.entries(seedResults).forEach(([key, success]) => {
@@ -1070,7 +1023,6 @@ export const seedDatabase = async (environment?: Environment) => {
     console.log(`  - Posts with engaging content for all users`)
     console.log(`  - ${majorNames.length} majors and ${schoolData.length} schools`)
     console.log(`  - Mentor reviews with ratings for all users`)
-    console.log(`  - Waitlist entries`)
     console.log('  - Complete relationship mappings between all entities')
     console.log('  - Realistic graduation years based on school year')
     console.log('  - Diverse bio content and user backgrounds')

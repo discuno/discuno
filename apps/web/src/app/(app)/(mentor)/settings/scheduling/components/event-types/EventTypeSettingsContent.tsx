@@ -48,9 +48,12 @@ interface EventTypeSettingsContentProps {
   showPricingDialog: boolean
   tempPrice: string
   updateEventTypeMutation: UseMutationResult<
-    unknown,
+    { success: boolean; error?: string },
     Error,
-    Parameters<typeof updateMentorEventTypePreferences>[0],
+    {
+      eventTypeId: number
+      data: Parameters<typeof updateMentorEventTypePreferences>[1]
+    },
     unknown
   >
   createStripeAccountMutation: UseMutationResult<unknown, Error, void, unknown>

@@ -14,7 +14,7 @@ export const PostCard = ({ card }: { card: Card; index: number }) => {
     const fingerprint = sessionStorage.getItem('fingerprint') ?? undefined
     void logAnalyticsEvent({
       eventType: 'profile_view',
-      targetUserId: card.createdById ?? '',
+      targetUserId: card.createdById,
       postId: card.id,
       fingerprint,
     })
@@ -109,7 +109,7 @@ export const PostCard = ({ card }: { card: Card; index: number }) => {
 
           <div className="text-muted-foreground flex items-center gap-1">
             <Calendar className="h-3 w-3" />
-            <span className="text-xs">{new Date(card.createdAt ?? '').toLocaleDateString()}</span>
+            <span className="text-xs">{new Date(card.createdAt).toLocaleDateString()}</span>
           </div>
         </div>
 

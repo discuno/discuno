@@ -9,7 +9,13 @@ const insertExcludedFields = {
 
 const updateExcludedFields = {
   ...insertExcludedFields,
-  ...excludeFields(mentorEventTypes, ['title', 'description', 'duration', 'calcomEventTypeId']),
+  ...excludeFields(mentorEventTypes, [
+    'title',
+    'description',
+    'duration',
+    'calcomEventTypeId',
+    'mentorUserId',
+  ]),
 }
 
 export const selectMentorEventTypeSchema = createSelectSchema(mentorEventTypes)
@@ -28,6 +34,6 @@ export type NewMentorEventType = Omit<
   keyof typeof insertExcludedFields
 >
 export type UpdateMentorEventType = Omit<
-  z.infer<typeof selectMentorEventTypeSchema>,
+  z.infer<typeof updateMentorEventTypeSchema>,
   keyof typeof updateExcludedFields
 >

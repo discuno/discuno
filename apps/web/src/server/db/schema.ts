@@ -156,24 +156,14 @@ export const userProfiles = pgTable(
     rankingScore: real('ranking_score').default(0).notNull(),
     ...softDeleteTimestamps,
   },
-  table => ({
-    graduationYearSchoolYearIdx: index('graduation_school_year_idx').on(
-      table.graduationYear,
-      table.schoolYear
-    ),
-    checkConstraint: check(
-      'grad_year_check',
-      sql`${table.graduationYear} >= EXTRACT(YEAR FROM CURRENT_DATE)`
-    ),
-    userProfilesCompoundIdx: index('user_profiles_compound_idx').on(
-      table.userId,
-      table.graduationYear,
-      table.schoolYear
-    ),
-    partialGradYearIdx: index('user_profiles_grad_year_partial_idx')
+  table => [
+    index('graduation_school_year_idx').on(table.graduationYear, table.schoolYear),
+    check('grad_year_check', sql`${table.graduationYear} >= EXTRACT(YEAR FROM CURRENT_DATE)`),
+    index('user_profiles_compound_idx').on(table.userId, table.graduationYear, table.schoolYear),
+    index('user_profiles_grad_year_partial_idx')
       .on(table.graduationYear)
       .where(sql`deleted_at IS NULL`),
-  })
+  ]
 )
 
 export const userProfilesRelations = relations(userProfiles, ({ one }) => ({
@@ -324,7 +314,7 @@ export const mentorEventTypes = pgTable(
     mentorUserId: varchar({ length: 255 })
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
-    calcomEventTypeId: integer().unique(), // The mentor's individual Cal.com event type ID
+    calcomEventTypeId: integer().unique().notNull(), // The mentor's individual Cal.com event type ID
     isEnabled: boolean().notNull().default(false), // Whether this mentor has enabled this event type
     customPrice: integer(), // Price in cents (e.g., 2500 = $25.00)
     currency: varchar({ length: 3 }).notNull().default('USD'),

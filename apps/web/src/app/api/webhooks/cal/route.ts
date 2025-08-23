@@ -78,25 +78,33 @@ async function storeBooking(event: CalcomBookingPayload) {
 
     const [attendee] = attendees
 
+    const start = new Date(startTime)
+
     const booking = await createLocalBooking({
       calcomBookingId: bookingId,
       calcomUid: uid,
       title,
-      startTime: new Date(startTime),
+      startTime: start,
       duration: length,
-      organizerUserId: metadata.mentorUserId,
-      calcomOrganizerEmail: organizer.email,
-      calcomOrganizerUsername: organizer.username,
-      calcomOrganizerName: organizer.name,
-      attendeeName: attendee.name,
-      attendeeEmail: attendee.email,
-      attendeePhone: attendee.phoneNumber,
-      attendeeTimeZone: attendee.timeZone,
+      endTime: new Date(start.getTime() + length * 60000),
       price: price ?? 0,
       currency: currency ?? 'USD',
       calcomEventTypeId: eventTypeId,
       paymentId: metadata.paymentId ? Number(metadata.paymentId) : undefined,
       requiresPayment: !!price,
+      organizer: {
+        userId: metadata.mentorUserId,
+        email: organizer.email,
+        username: organizer.username,
+        name: organizer.name,
+      },
+      attendee: {
+        name: attendee.name,
+        email: attendee.email,
+        phoneNumber: attendee.phoneNumber,
+        timeZone: attendee.timeZone,
+      },
+      webhookPayload: event,
     })
 
     console.log(`✅ Successfully stored booking ${booking.id} for Cal.com event ${uid}`)

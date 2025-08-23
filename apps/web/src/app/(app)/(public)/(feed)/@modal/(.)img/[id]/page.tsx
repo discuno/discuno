@@ -108,7 +108,7 @@ const PostModal = async ({ params }: { params: Promise<{ id: string }> }) => {
               <Clock className="h-4 w-4" />
               <span>
                 Joined{' '}
-                {new Date(post.createdAt ?? '').toLocaleDateString('en-US', {
+                {new Date(post.createdAt).toLocaleDateString('en-US', {
                   month: 'short',
                   year: 'numeric',
                 })}

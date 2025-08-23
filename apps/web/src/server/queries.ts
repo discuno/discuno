@@ -15,10 +15,10 @@ import type {
   NewBookingAttendee,
   NewBookingOrganizer,
   NewCalcomToken,
-  NewMentorEventType,
   NewMentorReview,
   NewMentorStripeAccount,
   UpdateCalcomToken,
+  UpdateMentorEventType,
   UpdateUser,
   UpdateUserProfile,
   UserProfile,
@@ -26,13 +26,13 @@ import type {
 import {
   insertAnalyticsEventSchema,
   insertCalcomTokenSchema,
-  insertMentorEventTypeSchema,
   insertMentorReviewSchema,
   insertMentorStripeAccountSchema,
   selectMajorSchema,
   selectSchoolSchema,
   updateCalcomTokenSchema,
   updateCompleteProfileSchema,
+  updateMentorEventTypeSchema,
   updateUserSchema,
 } from '~/lib/schemas/db'
 import { db } from '~/server/db'
@@ -319,10 +319,7 @@ export const getProfileWithImageCached = cache(getProfileWithImage)
 /**
  * Store Cal.com tokens for a specific user ID (used during authentication flow)
  */
-export const storeCalcomTokensForUser = async (
-  userId: string,
-  data: NewCalcomToken
-): Promise<void> => {
+export const storeCalcomTokensForUser = async (data: NewCalcomToken): Promise<void> => {
   const validData = insertCalcomTokenSchema.parse(data)
 
   const accessExpiry = new Date(validData.accessTokenExpiresAt)
@@ -333,7 +330,7 @@ export const storeCalcomTokensForUser = async (
     .insert(calcomTokens)
     .values({
       ...validData,
-      userId,
+      userId: validData.userId,
       accessTokenExpiresAt: accessExpiry,
       refreshTokenExpiresAt: refreshExpiry,
     })
@@ -685,33 +682,31 @@ export const getMentorEventTypes = cache(async (): Promise<MentorEventType[]> =>
     where: eq(mentorEventTypes.mentorUserId, currentUserId),
   })
 
-  return result
-    .filter(
-      (item): item is MentorEventType & { calcomEventTypeId: number } =>
-        item.calcomEventTypeId !== null
-    )
-    .map(item => ({
-      ...item,
-      isEnabled: item.isEnabled,
-    }))
+  return result.map(item => ({
+    ...item,
+    isEnabled: item.isEnabled,
+  }))
 })
 
 /**
- * Upsert mentor event type preference
+ * Update mentor event type preference
  */
-export const upsertMentorEventType = async (data: NewMentorEventType): Promise<void> => {
-  const validData = insertMentorEventTypeSchema.parse(data)
+export const updateMentorEventType = async (
+  eventTypeId: number,
+  data: UpdateMentorEventType
+): Promise<void> => {
+  await requireAuth()
+  const validData = updateMentorEventTypeSchema.parse(data)
 
-  await db
-    .insert(mentorEventTypes)
-    .values(validData)
-    .onConflictDoUpdate({
-      target: [mentorEventTypes.calcomEventTypeId],
-      set: {
-        ...validData,
-        updatedAt: new Date(),
-      },
-    })
+  const res = await db
+    .update(mentorEventTypes)
+    .set(validData)
+    .where(eq(mentorEventTypes.calcomEventTypeId, eventTypeId))
+    .returning({ id: mentorEventTypes.id })
+
+  if (res.length === 0) {
+    throw new NotFoundError(`Mentor event type with Cal.com ID ${eventTypeId} not found`)
+  }
 }
 
 /**
@@ -748,14 +743,9 @@ export const getMentorEnabledEventTypes = cache(
         )
       )
 
-    return result
-      .filter(
-        (item): item is typeof item & { calcomEventTypeId: number } =>
-          item.calcomEventTypeId !== null
-      )
-      .map(item => ({
-        ...item,
-      }))
+    return result.map(item => ({
+      ...item,
+    }))
   }
 )
 
@@ -858,15 +848,14 @@ export const getMentorBookings = cache(async (mentorId: string) => {
 /**
  * Helper function to create local booking record
  */
-type CreateLocalBooking = NewBooking &
-  NewBookingAttendee &
-  NewBookingOrganizer & {
-    duration: number
-    calcomEventTypeId: number
-  }
-export const createLocalBooking = async (input: CreateLocalBooking) => {
-  const endTime = new Date(input.startTime.getTime() + input.duration * 60000)
+type CreateLocalBooking = NewBooking & {
+  duration: number
+  calcomEventTypeId: number
+  organizer: Omit<NewBookingOrganizer, 'bookingId'>
+  attendee: Omit<NewBookingAttendee, 'bookingId'>
+}
 
+export const createLocalBooking = async (input: CreateLocalBooking) => {
   return await db.transaction(async tx => {
     // Look up the internal mentor event type ID from the Cal.com event type ID
     const mentorEventType = await tx.query.mentorEventTypes.findFirst({
@@ -887,7 +876,7 @@ export const createLocalBooking = async (input: CreateLocalBooking) => {
         calcomUid: input.calcomUid,
         title: input.title,
         startTime: input.startTime,
-        endTime,
+        endTime: input.endTime,
         status: 'ACCEPTED',
         price: input.price,
         currency: input.currency,
@@ -906,21 +895,14 @@ export const createLocalBooking = async (input: CreateLocalBooking) => {
 
     // Create the organizer record
     await tx.insert(bookingOrganizers).values({
+      ...input.organizer,
       bookingId: booking[0].id,
-      userId: input.userId,
-      name: input.name,
-      email: input.email,
-      username: input.username,
     })
 
     // Create the attendee record
     await tx.insert(bookingAttendees).values({
+      ...input.attendee,
       bookingId: booking[0].id,
-      userId: input.userId,
-      name: input.name,
-      email: input.email,
-      phoneNumber: input.phoneNumber,
-      timeZone: input.timeZone,
     })
 
     return booking[0]

@@ -11,14 +11,14 @@ import {
   createCalcomUser as createCalcomUserCore,
   updateCalcomUser as updateCalcomUserCore,
 } from '~/lib/calcom'
-import { type NewMentorEventType, type UpdateCalcomToken } from '~/lib/schemas/db'
+import { type UpdateCalcomToken, type UpdateMentorEventType } from '~/lib/schemas/db'
 import {
   getFullProfile,
   getMentorCalcomTokens,
   getMentorEventTypes,
   getMentorStripeAccount,
   updateCalcomTokensByUserId,
-  upsertMentorEventType,
+  updateMentorEventType,
   upsertMentorStripeAccount,
 } from '~/server/queries'
 
@@ -675,18 +675,16 @@ export const getMentorEventTypePreferences = async (): Promise<{
     const mentorPreferences = await getMentorEventTypes()
 
     // Transform the data to match the expected format
-    const combined = mentorPreferences
-      .filter(pref => pref.calcomEventTypeId !== null)
-      .map(pref => ({
-        id: pref.id,
-        calcomEventTypeId: pref.calcomEventTypeId as number,
-        title: pref.title,
-        length: pref.duration,
-        description: pref.description ?? undefined,
-        isEnabled: pref.isEnabled,
-        customPrice: pref.customPrice,
-        currency: pref.currency,
-      }))
+    const combined = mentorPreferences.map(pref => ({
+      id: pref.id,
+      calcomEventTypeId: pref.calcomEventTypeId,
+      title: pref.title,
+      length: pref.duration,
+      description: pref.description ?? undefined,
+      isEnabled: pref.isEnabled,
+      customPrice: pref.customPrice,
+      currency: pref.currency,
+    }))
 
     return {
       success: true,
@@ -705,17 +703,15 @@ export const getMentorEventTypePreferences = async (): Promise<{
  * Update mentor's event type preferences
  */
 export const updateMentorEventTypePreferences = async (
-  data: NewMentorEventType
+  eventTypeId: number,
+  data: UpdateMentorEventType
 ): Promise<{
   success: boolean
   error?: string
 }> => {
   try {
-    const { id: userId } = await requireAuth()
-
-    await upsertMentorEventType({
+    await updateMentorEventType(eventTypeId, {
       ...data,
-      mentorUserId: userId,
     })
 
     return {

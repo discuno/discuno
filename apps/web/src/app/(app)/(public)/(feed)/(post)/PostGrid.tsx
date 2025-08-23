@@ -48,7 +48,7 @@ const FilteredPosts = ({ posts, loading }: { posts: Card[]; loading: boolean }) 
   return (
     <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {posts.map(card => (
-        <PostCard key={card.id} card={card} index={card.id ?? 0} />
+        <PostCard key={card.id} card={card} index={card.id} />
       ))}
     </div>
   )
