@@ -47,6 +47,7 @@
     "db:push:preview": "drizzle-kit push --config=drizzle.preview.config.ts",
     "db:seed:local": "SKIP_ENV_VALIDATION=1 tsx scripts/db-seed.ts local",
     "db:seed:preview": "SKIP_ENV_VALIDATION=1 tsx scripts/db-seed.ts preview",
+    "db:seed:production": "SKIP_ENV_VALIDATION=1 ALLOW_PROD_SEEDING=true tsx scripts/db-seed.ts production",
     "db:reset:local": "SKIP_ENV_VALIDATION=1 tsx scripts/db-reset.ts local",
     "db:reset:preview": "SKIP_ENV_VALIDATION=1 tsx scripts/db-reset.ts preview",
     "db:studio": "drizzle-kit studio",
