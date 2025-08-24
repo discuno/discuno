@@ -31,7 +31,7 @@ export const darkVariables: StripeAppearanceVariables = {
 
 export const lightVariables: StripeAppearanceVariables = {
   colorSecondaryText: 'hsl(224, 10%, 45%)',
-  colorBackground: 'hsl(0, 0%, 99%)',
+  colorBackground: 'hsl(240, 6%, 97%)',
   colorText: 'hsl(224, 14%, 12%)',
   colorPrimary: 'hsl(212, 100%, 50%)',
   colorBorder: 'hsl(240, 6%, 90%)',
