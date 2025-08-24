@@ -345,12 +345,6 @@ const main = async () => {
     process.exit(1)
   }
 
-  if (!['local', 'preview'].includes(environment)) {
-    console.error('❌ Invalid environment. Valid options: local, preview')
-    console.error('   🚨 Production reset is disabled for safety')
-    process.exit(1)
-  }
-
   console.log(`🔄 Starting database reset for ${environment} environment`)
   console.log(`📅 Timestamp: ${new Date().toISOString()}`)
   console.log('⚠️  This will DESTROY ALL DATA in your database and recreate it')

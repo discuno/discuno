@@ -538,9 +538,13 @@ const generateGraduationYear = (schoolYear: string): number => {
 export const seedDatabase = async (environment?: Environment) => {
   const targetEnv = environment
 
-  // Safety check: don't allow seeding production
+  // Safety check: don't allow seeding production unless explicitly enabled
   if (targetEnv === 'production') {
-    throw new Error('❌ Seeding is not allowed in production environment for safety')
+    const allowProdSeeding = process.env.ALLOW_PROD_SEEDING === 'true'
+    if (!allowProdSeeding) {
+      throw new Error('❌ Production seeding is disabled. Set ALLOW_PROD_SEEDING=true to enable.')
+    }
+    console.log('⚠️  PRODUCTION SEEDING ENABLED - Proceeding with caution')
   }
 
   console.log(`🌱 Starting database seeding for environment: ${targetEnv}`)
