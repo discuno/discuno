@@ -810,7 +810,6 @@ export const getOrCreateUserTimezone = async (timezone: string): Promise<void> =
       .update(userProfiles)
       .set({ timezone: parsedTimezone })
       .where(eq(userProfiles.userId, userId))
-      .execute()
   }
 }
 
