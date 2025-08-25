@@ -50,6 +50,9 @@ export const env = createEnv({
     NEXT_PUBLIC_X_CAL_ID: z.string(),
     NEXT_PUBLIC_CALCOM_API_URL: z.string(),
     NEXT_PUBLIC_STRIPE_PUBLIC_KEY: z.string(),
+    NEXT_PUBLIC_POSTHOG_KEY: z.string(),
+    NEXT_PUBLIC_POSTHOG_HOST: z.string(),
+    NEXT_PUBLIC_POSTHOG_UI_HOST: z.string(),
   },
 
   /**
@@ -90,6 +93,9 @@ export const env = createEnv({
     CALCOM_WEBHOOK_SECRET: process.env.CALCOM_WEBHOOK_SECRET,
     CALCOM_COLLEGE_MENTORS_TEAM_SLUG: process.env.CALCOM_COLLEGE_MENTORS_TEAM_SLUG,
     CALCOM_ORG_SLUG: process.env.CALCOM_ORG_SLUG,
+    NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
+    NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,
+    NEXT_PUBLIC_POSTHOG_UI_HOST: process.env.NEXT_PUBLIC_POSTHOG_UI_HOST,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

@@ -3,6 +3,7 @@
 import { Calendar, GraduationCap, School, User } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
+import posthog from 'posthog-js'
 import { logAnalyticsEvent } from '~/app/(app)/(public)/(feed)/(post)/actions'
 import type { Card } from '~/app/types'
 import { AspectRatio } from '~/components/ui/aspect-ratio'
@@ -11,6 +12,11 @@ import { HoverCard, HoverCardContent, HoverCardTrigger } from '~/components/ui/h
 
 export const PostCard = ({ card }: { card: Card; index: number }) => {
   const handleProfileView = () => {
+    posthog.capture('profile_view', {
+      post_user_id: card.createdById,
+      post_id: card.id,
+      fingerprint: sessionStorage.getItem('fingerprint') ?? undefined,
+    })
     const fingerprint = sessionStorage.getItem('fingerprint') ?? undefined
     void logAnalyticsEvent({
       eventType: 'profile_view',
