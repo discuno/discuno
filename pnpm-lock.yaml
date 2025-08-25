@@ -260,6 +260,12 @@ importers:
       postgres:
         specifier: ^3.4.7
         version: 3.4.7
+      posthog-js:
+        specifier: ^1.260.2
+        version: 1.260.2
+      posthog-node:
+        specifier: ^5.7.0
+        version: 5.7.0
       react:
         specifier: ^19.1.0
         version: 19.1.0
@@ -2880,6 +2886,12 @@ packages:
     resolution:
       {
         integrity: sha512-wwQAWhWSuHaag8c4q/KN/vCoeOJYshAIvMQwD4GpSb3OiZklFfvAgmj0VCBBImRpuF/aFgIRzllXlVX93Jevww==,
+      }
+
+  '@posthog/core@1.0.0':
+    resolution:
+      {
+        integrity: sha512-gquQld+duT9DdzLIFoHZkUMW0DZOTSLCtSjuuC/zKFz65Qecbz9p37DHBJMkw0dCuB8Mgh2GtH8Ag3PznJrP3g==,
       }
 
   '@prisma/instrumentation@6.8.2':
@@ -6370,6 +6382,12 @@ packages:
         integrity: sha512-2GML2ZsCc5LR7hZYz4AXmjQw8zuy2T//2QntwdnpuYI7jteT6GVYJL7F6C2C57R7gSYrcqVW3lAALefdbhBLDA==,
       }
 
+  core-js@3.45.1:
+    resolution:
+      {
+        integrity: sha512-L4NPsJlCfZsPeXukyzHFlg/i7IIVwHSItR0wg0FLNqYClJ4MQYTYLbC7EkjKYRLZF2iof2MUgN0EGy7MdQFChg==,
+      }
+
   cosmiconfig-typescript-loader@6.1.0:
     resolution:
       {
@@ -7512,6 +7530,12 @@ packages:
     peerDependenciesMeta:
       picomatch:
         optional: true
+
+  fflate@0.4.8:
+    resolution:
+      {
+        integrity: sha512-FJqqoDBR00Mdj9ppamLa/Y7vxm+PRmNWA67N846RvsoYVMKB4q3y/de5PA7gUmRMYK/8CMz2GDZQmCRN1wBcWA==,
+      }
 
   fflate@0.8.2:
     resolution:
@@ -9648,6 +9672,27 @@ packages:
       }
     engines: { node: '>=12' }
 
+  posthog-js@1.260.2:
+    resolution:
+      {
+        integrity: sha512-2Q+QUz9j9+uG16wp0WcOEbezVsLZCobZyTX8NvWPMGKyPaf2lOsjbPjznsq5JiIt324B6NAqzpWYZTzvhn9k9Q==,
+      }
+    peerDependencies:
+      '@rrweb/types': 2.0.0-alpha.17
+      rrweb-snapshot: 2.0.0-alpha.17
+    peerDependenciesMeta:
+      '@rrweb/types':
+        optional: true
+      rrweb-snapshot:
+        optional: true
+
+  posthog-node@5.7.0:
+    resolution:
+      {
+        integrity: sha512-6J1AIZWtbr2lEbZOO2AzO/h1FPJjUZM4KWcdaL2UQw7FY8J7VNaH3NiaRockASFmglpID7zEY25gV/YwCtuXjg==,
+      }
+    engines: { node: '>=20' }
+
   preact-render-to-string@6.5.11:
     resolution:
       {
@@ -11424,6 +11469,12 @@ packages:
         integrity: sha512-c5EGNOiyxxV5qmTtAB7rbiXxi1ooX1pQKMLX/MIabJjRA0SJBQOjKF+KSVfHkr9U1cADPon0mRiVe/riyaiDUA==,
       }
     engines: { node: '>=10.13.0' }
+
+  web-vitals@4.2.4:
+    resolution:
+      {
+        integrity: sha512-r4DIlprAGwJ7YM11VZp4R884m0Vmgr6EAKe3P+kO0PPj3Unqyvv59rczf6UiGcb9Z8QxZVcqKNwv/g0WNdWwsw==,
+      }
 
   webidl-conversions@3.0.1:
     resolution:
@@ -13523,6 +13574,8 @@ snapshots:
     optional: true
 
   '@polka/url@1.0.0-next.29': {}
+
+  '@posthog/core@1.0.0': {}
 
   '@prisma/instrumentation@6.8.2(@opentelemetry/api@1.9.0)':
     dependencies:
@@ -15859,6 +15912,8 @@ snapshots:
     dependencies:
       browserslist: 4.25.0
 
+  core-js@3.45.1: {}
+
   cosmiconfig-typescript-loader@6.1.0(@types/node@24.0.1)(cosmiconfig@9.0.0(typescript@5.8.3))(typescript@5.8.3):
     dependencies:
       '@types/node': 24.0.1
@@ -16841,6 +16896,8 @@ snapshots:
   fdir@6.4.6(picomatch@4.0.2):
     optionalDependencies:
       picomatch: 4.0.2
+
+  fflate@0.4.8: {}
 
   fflate@0.8.2: {}
 
@@ -18016,6 +18073,17 @@ snapshots:
 
   postgres@3.4.7: {}
 
+  posthog-js@1.260.2:
+    dependencies:
+      core-js: 3.45.1
+      fflate: 0.4.8
+      preact: 10.24.3
+      web-vitals: 4.2.4
+
+  posthog-node@5.7.0:
+    dependencies:
+      '@posthog/core': 1.0.0
+
   preact-render-to-string@6.5.11(preact@10.24.3):
     dependencies:
       preact: 10.24.3
@@ -19170,6 +19238,8 @@ snapshots:
     dependencies:
       glob-to-regexp: 0.4.1
       graceful-fs: 4.2.11
+
+  web-vitals@4.2.4: {}
 
   webidl-conversions@3.0.1: {}
 
