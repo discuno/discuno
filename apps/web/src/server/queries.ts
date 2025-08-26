@@ -142,7 +142,7 @@ export const getPostsCursor = async (
 
   const result = await buildPostsQuery()
     .where(validCursor ? lt(posts.id, validCursor) : undefined)
-    .orderBy(desc(userProfiles.rankingScore), desc(posts.createdAt))
+    .orderBy(desc(userProfiles.rankingScore))
     .limit(validLimit + 1) // Fetch one extra to check if there are more
 
   const hasMore = result.length > validLimit
@@ -246,7 +246,7 @@ export const getPostsByFilters = async (
 
   const query = buildPostsQuery()
     .where(conditions.length > 0 ? and(...conditions) : undefined)
-    .orderBy(desc(userProfiles.rankingScore), desc(posts.createdAt))
+    .orderBy(desc(userProfiles.rankingScore))
     .limit(validLimit + 1) // Fetch one extra to check if there are more
 
   const result = await query
