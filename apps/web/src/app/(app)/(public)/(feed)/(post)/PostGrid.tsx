@@ -1,6 +1,8 @@
 'use client'
 
-import { Suspense, useEffect, useState } from 'react'
+'use client'
+
+import { useInfiniteQuery } from '@tanstack/react-query'
 import { PostCard } from '~/app/(app)/(public)/(feed)/(post)/PostCard'
 import {
   fetchPostsAction,
@@ -12,16 +14,9 @@ import { Skeleton } from '~/components/ui/skeleton'
 
 // Define the PostGridProps interface
 interface PostGridProps {
-  posts: Card[]
   schoolId: number | null
   majorId: number | null
   graduationYear: number | null
-}
-
-interface PostsResponse {
-  posts: Card[]
-  nextCursor?: number
-  hasMore: boolean
 }
 
 const PostGridSkeleton = () => {
@@ -42,79 +37,52 @@ const PostGridSkeleton = () => {
   )
 }
 
-const FilteredPosts = ({ posts, loading }: { posts: Card[]; loading: boolean }) => {
-  if (loading) return <PostGridSkeleton />
-
+const PostsDisplay = ({ posts }: { posts: Card[] }) => {
   return (
     <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      {posts.map(card => (
-        <PostCard key={card.id} card={card} index={card.id} />
+      {posts.map((card, index) => (
+        <PostCard key={`${card.id}-${index}`} card={card} index={index} />
       ))}
     </div>
   )
 }
 
 // PostGrid component
-export const PostGrid = ({ posts, schoolId, majorId, graduationYear }: PostGridProps) => {
-  // State to manage all posts
-  const [allPosts, setAllPosts] = useState<Card[]>(posts)
-  // State to manage loading status
-  const [loading, setLoading] = useState<boolean>(false)
-  // State to manage cursor for pagination
-  const [nextCursor, setNextCursor] = useState<number | undefined>(undefined)
-  // State to track if there are more posts
-  const [hasMore, setHasMore] = useState<boolean>(true)
-  // Limit for the number of posts to fetch at a time
+export const PostGrid = ({ schoolId, majorId, graduationYear }: PostGridProps) => {
   const limit = 12
 
-  useEffect(() => {
-    // Effect to fetch posts when filter parameters change
-    const fetchFilteredPosts = async () => {
-      try {
-        setLoading(true)
-        const result: PostsResponse =
-          schoolId || majorId || graduationYear
-            ? await fetchPostsByFilterAction(schoolId, majorId, graduationYear, limit)
-            : await fetchPostsAction(limit)
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isError } =
+    useInfiniteQuery({
+      queryKey: ['posts', { schoolId, majorId, graduationYear }],
+      queryFn: async ({ pageParam = undefined }) => {
+        if (schoolId || majorId || graduationYear) {
+          return fetchPostsByFilterAction(schoolId, majorId, graduationYear, limit, pageParam)
+        }
+        return fetchPostsAction(limit, pageParam)
+      },
+      initialPageParam: undefined as number | undefined,
+      getNextPageParam: lastPage => lastPage.nextCursor,
+    })
 
-        setAllPosts(result.posts)
-        setNextCursor(result.nextCursor)
-        setHasMore(result.hasMore)
-      } catch (error) {
-        console.error('Error fetching filtered posts:', error)
-        setHasMore(false)
-      } finally {
-        setLoading(false)
-      }
-    }
+  const allPosts = data?.pages.flatMap(page => page.posts) ?? []
 
-    void fetchFilteredPosts()
-  }, [schoolId, majorId, graduationYear])
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-foreground mb-8 text-center text-3xl font-bold">
+          Find Your College Mentor
+        </h1>
+        <PostGridSkeleton />
+      </div>
+    )
+  }
 
-  // Function to load more posts
-  const loadMorePosts = async () => {
-    if (!hasMore || loading) return
-
-    setLoading(true)
-    try {
-      const result: PostsResponse =
-        schoolId || majorId || graduationYear
-          ? await fetchPostsByFilterAction(schoolId, majorId, graduationYear, limit, nextCursor)
-          : await fetchPostsAction(limit, nextCursor)
-
-      // Filter out duplicates using Set for better performance
-      const existingIds = new Set(allPosts.map(post => post.id))
-      const uniqueNewPosts = result.posts.filter(post => !existingIds.has(post.id))
-
-      setAllPosts(prevPosts => [...prevPosts, ...uniqueNewPosts])
-      setNextCursor(result.nextCursor)
-      setHasMore(result.hasMore)
-    } catch (error) {
-      console.error('Error loading more posts:', error)
-      setHasMore(false)
-    } finally {
-      setLoading(false)
-    }
+  if (isError) {
+    return (
+      <div className="container mx-auto px-4 py-8 text-center text-red-500">
+        Error loading posts. Please try again later.
+      </div>
+    )
   }
 
   return (
@@ -122,18 +90,16 @@ export const PostGrid = ({ posts, schoolId, majorId, graduationYear }: PostGridP
       <h1 className="text-foreground mb-8 text-center text-3xl font-bold">
         Find Your College Mentor
       </h1>
-      <Suspense fallback={<PostGridSkeleton />}>
-        <FilteredPosts posts={allPosts} loading={loading} />
-      </Suspense>
-      {allPosts.length > 0 && hasMore && (
+      <PostsDisplay posts={allPosts} />
+      {hasNextPage && (
         <div className="mt-12 flex justify-center">
           <button
             className="bg-primary text-primary-foreground hover:bg-primary/90 focus:ring-primary rounded-full px-8 py-3 transition-all duration-300 focus:ring-2 focus:ring-offset-2 disabled:opacity-50 dark:focus:ring-offset-gray-900"
-            onClick={loadMorePosts}
-            disabled={loading}
-            aria-label={loading ? 'Loading more mentors...' : 'Load more mentors'}
+            onClick={() => fetchNextPage()}
+            disabled={isFetchingNextPage}
+            aria-label={isFetchingNextPage ? 'Loading more mentors...' : 'Load more mentors'}
           >
-            {loading ? (
+            {isFetchingNextPage ? (
               <span className="flex items-center">
                 <svg className="mr-2 h-4 w-4 animate-spin" viewBox="0 0 24 24" aria-hidden="true">
                   <circle

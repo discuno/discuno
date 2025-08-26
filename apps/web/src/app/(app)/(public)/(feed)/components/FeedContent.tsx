@@ -3,7 +3,7 @@ import { PostGrid } from '~/app/(app)/(public)/(feed)/(post)/PostGrid'
 import { FilterButton } from '~/app/(app)/(public)/(feed)/components/FilterButton'
 import { Button } from '~/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '~/components/ui/popover'
-import { getMajors, getPostsByFilters, getPostsCursor, getSchools } from '~/server/queries'
+import { getMajors, getSchools } from '~/server/queries'
 
 interface DashboardContentProps {
   searchParams: { school?: string; major?: string; gradYear?: string }
@@ -34,11 +34,6 @@ export const DashboardContent = async ({ searchParams }: DashboardContentProps) 
   const graduationYear = searchParams.gradYear
     ? (gradYears.find(g => g.label === searchParams.gradYear)?.id ?? null)
     : null
-
-  const initialPostsResponse =
-    schoolId || majorId || graduationYear
-      ? await getPostsByFilters(schoolId, majorId, graduationYear)
-      : await getPostsCursor()
 
   return (
     <>
@@ -86,12 +81,7 @@ export const DashboardContent = async ({ searchParams }: DashboardContentProps) 
       </div>
 
       {/* Post Grid */}
-      <PostGrid
-        posts={initialPostsResponse.posts}
-        schoolId={schoolId}
-        majorId={majorId}
-        graduationYear={graduationYear}
-      />
+      <PostGrid schoolId={schoolId} majorId={majorId} graduationYear={graduationYear} />
     </>
   )
 }
