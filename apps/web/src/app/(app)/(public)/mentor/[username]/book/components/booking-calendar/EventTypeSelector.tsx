@@ -1,4 +1,3 @@
-import type { EventType } from '~/app/(app)/(public)/mentor/[username]/book/actions'
 import { Badge } from '~/components/ui/badge'
 import {
   Select,
@@ -7,6 +6,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '~/components/ui/select'
+import type { MentorEventType } from '~/lib/schemas/db'
 
 export const EventTypeSelector = ({
   selectedEventType,
@@ -15,9 +15,9 @@ export const EventTypeSelector = ({
   onSelectTimeSlot,
   className = '',
 }: {
-  selectedEventType: EventType | null
-  eventTypes: EventType[]
-  onSelectEventType: (eventType: EventType | null) => void
+  selectedEventType: MentorEventType | null
+  eventTypes: MentorEventType[]
+  onSelectEventType: (eventType: MentorEventType | null) => void
   onSelectTimeSlot: (timeSlot: string | null) => void
   className?: string
 }) => (
@@ -40,11 +40,11 @@ export const EventTypeSelector = ({
           <div className="flex w-full items-center justify-between">
             <div className="flex flex-col items-start">
               <span className="font-medium">{eventType.title}</span>
-              <span className="text-muted-foreground text-xs">{eventType.length} minutes</span>
+              <span className="text-muted-foreground text-xs">{eventType.duration} minutes</span>
             </div>
-            {eventType.price && eventType.price > 0 ? (
+            {eventType.customPrice && eventType.customPrice > 0 ? (
               <Badge variant="secondary">
-                ${(eventType.price / 100).toFixed(2)} {eventType.currency}
+                ${(eventType.customPrice / 100).toFixed(2)} {eventType.currency}
               </Badge>
             ) : (
               <Badge variant="outline">Free</Badge>

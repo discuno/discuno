@@ -1,6 +1,6 @@
 'server only'
 
-import { and, desc, eq, isNotNull, lt } from 'drizzle-orm'
+import { and, desc, eq, gt, isNotNull, lt, or } from 'drizzle-orm'
 import { cache } from 'react'
 import { z } from 'zod'
 import type { Card, FullUserProfile } from '~/app/types'
@@ -75,7 +75,7 @@ const filterSchema = z.object({
 
 // Shared query builder for posts with all necessary joins
 const buildPostsQuery = () => {
-  return db
+  const baseQuery = db
     .select({
       post: {
         id: posts.id,
@@ -107,6 +107,10 @@ const buildPostsQuery = () => {
     .leftJoin(schools, eq(userSchools.schoolId, schools.id))
     .leftJoin(userMajors, eq(users.id, userMajors.userId))
     .leftJoin(majors, eq(userMajors.majorId, majors.id))
+    .leftJoin(mentorEventTypes, eq(users.id, mentorEventTypes.mentorUserId))
+    .leftJoin(mentorStripeAccounts, eq(users.id, mentorStripeAccounts.userId))
+
+  return baseQuery
 }
 
 type PostQueryResult = Awaited<ReturnType<typeof buildPostsQuery>>[number]
@@ -141,7 +145,22 @@ export const getPostsCursor = async (
   const { limit: validLimit, cursor: validCursor } = cursorPaginationSchema.parse({ limit, cursor })
 
   const result = await buildPostsQuery()
-    .where(validCursor ? lt(posts.id, validCursor) : undefined)
+    .where(
+      and(
+        validCursor ? lt(posts.id, validCursor) : undefined,
+        isNotNull(userProfiles.id), // Ensure the user has a profile
+        or(
+          // Allow mentors with free event types
+          eq(mentorEventTypes.customPrice, 0),
+          // Allow mentors with paid event types if their Stripe account is active
+          and(
+            gt(mentorEventTypes.customPrice, 0),
+            eq(mentorStripeAccounts.stripeAccountStatus, 'active'),
+            eq(mentorStripeAccounts.payoutsEnabled, true)
+          )
+        )
+      )
+    )
     .orderBy(desc(userProfiles.rankingScore))
     .limit(validLimit + 1) // Fetch one extra to check if there are more
 
@@ -159,7 +178,24 @@ export const getPostsCursor = async (
 export const getPostById = async (id: number): Promise<Card> => {
   const { id: validId } = postIdSchema.parse({ id })
 
-  const post = await buildPostsQuery().where(eq(posts.id, validId)).limit(1)
+  const post = await buildPostsQuery()
+    .where(
+      and(
+        eq(posts.id, validId),
+        isNotNull(userProfiles.id), // Ensure the user has a profile
+        or(
+          // Allow mentors with free event types
+          eq(mentorEventTypes.customPrice, 0),
+          // Allow mentors with paid event types if their Stripe account is active
+          and(
+            gt(mentorEventTypes.customPrice, 0),
+            eq(mentorStripeAccounts.stripeAccountStatus, 'active'),
+            eq(mentorStripeAccounts.payoutsEnabled, true)
+          )
+        )
+      )
+    )
+    .limit(1)
 
   if (post.length === 0) {
     throw new NotFoundError('Post not found')
@@ -245,7 +281,22 @@ export const getPostsByFilters = async (
   }
 
   const query = buildPostsQuery()
-    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .where(
+      and(
+        ...(conditions.length > 0 ? conditions : [undefined]),
+        isNotNull(userProfiles.id), // Ensure the user has a profile
+        or(
+          // Allow mentors with free event types
+          eq(mentorEventTypes.customPrice, 0),
+          // Allow mentors with paid event types if their Stripe account is active
+          and(
+            gt(mentorEventTypes.customPrice, 0),
+            eq(mentorStripeAccounts.stripeAccountStatus, 'active'),
+            eq(mentorStripeAccounts.payoutsEnabled, true)
+          )
+        )
+      )
+    )
     .orderBy(desc(userProfiles.rankingScore))
     .limit(validLimit + 1) // Fetch one extra to check if there are more
 
@@ -725,27 +776,63 @@ export const getMentorEnabledEventTypes = cache(
       currency: string
     }>
   > => {
+    const eventTypes = await getMentorEnabledEventTypesWithStripeStatus(userId)
+    return eventTypes
+  }
+)
+
+export const getMentorEnabledEventTypesWithStripeStatus = cache(
+  async (
+    userId: string
+  ): Promise<
+    Array<{
+      calcomEventTypeId: number
+      title: string
+      description: string | null
+      duration: number
+      customPrice: number | null
+      currency: string
+    }>
+  > => {
     const result = await db
       .select({
-        calcomEventTypeId: mentorEventTypes.calcomEventTypeId, // Use individual event type ID
+        calcomEventTypeId: mentorEventTypes.calcomEventTypeId,
         title: mentorEventTypes.title,
         description: mentorEventTypes.description,
         duration: mentorEventTypes.duration,
         customPrice: mentorEventTypes.customPrice,
         currency: mentorEventTypes.currency,
+        stripeAccountStatus: mentorStripeAccounts.stripeAccountStatus,
+        payoutsEnabled: mentorStripeAccounts.payoutsEnabled,
       })
       .from(mentorEventTypes)
+      .leftJoin(
+        mentorStripeAccounts,
+        eq(mentorEventTypes.mentorUserId, mentorStripeAccounts.userId)
+      )
       .where(
         and(
           eq(mentorEventTypes.mentorUserId, userId),
           eq(mentorEventTypes.isEnabled, true),
-          isNotNull(mentorEventTypes.calcomEventTypeId) // Only return mentors with individual event type IDs
+          isNotNull(mentorEventTypes.calcomEventTypeId)
         )
       )
 
-    return result.map(item => ({
-      ...item,
-    }))
+    return result
+      .filter(item => {
+        if (item.customPrice && item.customPrice > 0) {
+          return item.stripeAccountStatus === 'active' && item.payoutsEnabled
+        }
+        return true
+      })
+      .map(item => ({
+        calcomEventTypeId: item.calcomEventTypeId,
+        title: item.title,
+        description: item.description,
+        duration: item.duration,
+        customPrice: item.customPrice,
+        currency: item.currency,
+      }))
   }
 )
 
