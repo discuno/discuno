@@ -1,11 +1,21 @@
 import { CheckCircle, GraduationCap, User } from 'lucide-react'
 import Link from 'next/link'
+import { ProfileCard } from '~/app/(app)/(mentor)/profile/components/ProfileCard'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
-import { Label } from '~/components/ui/label'
+import { Card, CardContent } from '~/components/ui/card'
 import { getFullProfile } from '~/server/queries'
+
+const ProfileInfoRow = ({ label, value }: { label: string; value: string | number | null }) => {
+  if (!value) return null
+  return (
+    <div className="grid grid-cols-3 gap-4">
+      <span className="text-muted-foreground text-sm font-medium">{label}</span>
+      <span className="text-foreground col-span-2">{value}</span>
+    </div>
+  )
+}
 
 export const ViewProfileContent = async () => {
   const profile = await getFullProfile()
@@ -27,125 +37,60 @@ export const ViewProfileContent = async () => {
   }
 
   return (
-    <div className="space-y-8">
-      {/* Profile Header */}
-      <Card>
-        <CardContent className="p-8">
-          <div className="flex flex-col items-start gap-6 md:flex-row">
-            {/* Large Profile Avatar */}
-            <div className="flex-shrink-0">
-              <Avatar className="h-32 w-32">
-                <AvatarImage
-                  src={profile.image ?? undefined}
-                  alt={profile.name ?? 'Profile Picture'}
-                />
-                <AvatarFallback className="text-2xl">
-                  <User className="h-16 w-16" />
-                </AvatarFallback>
-              </Avatar>
+    <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+      {/* Left Column */}
+      <div className="space-y-8 lg:col-span-1">
+        <Card className="text-center">
+          <CardContent className="p-8">
+            <Avatar className="mx-auto mb-4 h-32 w-32">
+              <AvatarImage
+                src={profile.image ?? undefined}
+                alt={profile.name ?? 'Profile Picture'}
+              />
+              <AvatarFallback className="text-4xl">
+                <User className="h-16 w-16" />
+              </AvatarFallback>
+            </Avatar>
+            <h2 className="text-2xl font-bold">{profile.name}</h2>
+            <div className="mt-2 flex flex-wrap justify-center gap-2">
+              <Badge variant="secondary">{profile.schoolYear}</Badge>
+              <Badge variant="outline">Class of {profile.graduationYear}</Badge>
             </div>
-            <div className="flex-1">
-              <h2 className="mb-2 text-2xl font-bold">{profile.name}</h2>
-              <div className="mb-4 flex flex-wrap gap-2">
-                {profile.school && <Badge variant="secondary">{profile.school}</Badge>}
-                {profile.major && <Badge variant="secondary">{profile.major}</Badge>}
-                <Badge variant="outline">Class of {profile.graduationYear}</Badge>
-                <Badge variant="outline">{profile.schoolYear}</Badge>
-              </div>
-              {profile.bio && (
-                <p className="text-muted-foreground leading-relaxed">{profile.bio}</p>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Main content grid */}
-      <div className="space-y-6">
-        {/* Personal Information */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
-              Personal Information
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {profile.bio && (
-              <div>
-                <Label className="text-muted-foreground text-sm font-medium">Biography</Label>
-                <p className="text-foreground">{profile.bio}</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Academic Information */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <GraduationCap className="h-5 w-5" />
-              Academic Information
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {profile.school && (
-              <div>
-                <Label className="text-muted-foreground text-sm font-medium">School</Label>
-                <p className="text-foreground">{profile.school}</p>
-              </div>
-            )}
-
-            {profile.major && (
-              <div>
-                <Label className="text-muted-foreground text-sm font-medium">Major</Label>
-                <p className="text-foreground">{profile.major}</p>
-              </div>
-            )}
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label className="text-muted-foreground text-sm font-medium">Academic Level</Label>
-                <p className="text-foreground">{profile.schoolYear}</p>
-              </div>
-              <div>
-                <Label className="text-muted-foreground text-sm font-medium">Graduation Year</Label>
-                <p className="text-foreground">{profile.graduationYear}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Mentor Status */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CheckCircle className="h-5 w-5" />
-              Mentor Status
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="bg-green-100 text-green-800">
-                <CheckCircle className="mr-1 h-3 w-3" />
-                Verified Mentor
-              </Badge>
-              <span className="text-muted-foreground text-sm">Verified college student mentor</span>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Actions */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex flex-col gap-4 sm:flex-row">
-            <Button asChild>
+            <Button asChild className="mt-6 w-full">
               <Link href="/profile/edit">Edit Profile</Link>
             </Button>
+          </CardContent>
+        </Card>
+        <ProfileCard title="Mentor Status" icon={CheckCircle}>
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary" className="bg-green-100 text-green-800">
+              <CheckCircle className="mr-1 h-3 w-3" />
+              Verified Mentor
+            </Badge>
           </div>
-        </CardContent>
-      </Card>
+          <p className="text-muted-foreground mt-2 text-sm">
+            This user is a verified college student mentor.
+          </p>
+        </ProfileCard>
+      </div>
+
+      {/* Right Column */}
+      <div className="space-y-8 lg:col-span-2">
+        {profile.bio && (
+          <ProfileCard title="Biography" icon={User}>
+            <p className="text-foreground leading-relaxed">{profile.bio}</p>
+          </ProfileCard>
+        )}
+
+        <ProfileCard title="Academic Information" icon={GraduationCap}>
+          <div className="space-y-4">
+            <ProfileInfoRow label="School" value={profile.school} />
+            <ProfileInfoRow label="Major" value={profile.major} />
+            <ProfileInfoRow label="Academic Level" value={profile.schoolYear} />
+            <ProfileInfoRow label="Graduation Year" value={profile.graduationYear} />
+          </div>
+        </ProfileCard>
+      </div>
     </div>
   )
 }

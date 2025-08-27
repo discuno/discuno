@@ -9,11 +9,11 @@ interface ProfileShellProps {
 
 export const ProfileShell = ({ title, description, children }: ProfileShellProps) => {
   return (
-    <div className="container mx-auto max-w-4xl p-6">
+    <>
       {/* Static header that renders immediately */}
       <div className="mb-8">
-        <h1 className="text-foreground text-3xl font-bold">{title}</h1>
-        <p className="text-muted-foreground mt-2">{description}</p>
+        <h1 className="text-foreground text-4xl font-bold tracking-tight">{title}</h1>
+        <p className="text-muted-foreground mt-2 text-lg">{description}</p>
       </div>
 
       {/* Dynamic content wrapped in Suspense */}
@@ -26,6 +26,6 @@ export const ProfileShell = ({ title, description, children }: ProfileShellProps
       >
         {children}
       </Suspense>
-    </div>
+    </>
   )
 }
