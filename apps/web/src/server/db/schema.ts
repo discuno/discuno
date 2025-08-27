@@ -47,7 +47,7 @@ export const posts = pgTable(
     createdById: varchar({ length: 255 })
       .notNull()
       .unique()
-      .references(() => users.id),
+      .references(() => users.id, { onDelete: 'cascade' }),
     ...softDeleteTimestamps,
   },
   example => [
@@ -316,7 +316,7 @@ export const mentorEventTypes = pgTable(
       .references(() => users.id, { onDelete: 'cascade' }),
     calcomEventTypeId: integer().unique().notNull(), // The mentor's individual Cal.com event type ID
     isEnabled: boolean().notNull().default(false), // Whether this mentor has enabled this event type
-    customPrice: integer(), // Price in cents (e.g., 2500 = $25.00)
+    customPrice: integer().default(0).notNull(), // Price in cents (e.g., 2500 = $25.00)
     currency: varchar({ length: 3 }).notNull().default('USD'),
     title: varchar({ length: 255 }).notNull(),
     description: text(),
