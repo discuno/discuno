@@ -177,7 +177,7 @@ export const EventTypeToggleSection = () => {
   const handleSavePricing = async () => {
     if (!selectedEventType) return
 
-    const priceInCents = tempPrice ? Math.round(parseFloat(tempPrice) * 100) : null
+    const priceInCents = tempPrice ? Math.round(parseFloat(tempPrice) * 100) : 0
 
     // If user is trying to set a price but doesn't have Stripe connected
     if (priceInCents && priceInCents > 0 && !stripeStatus?.isActive) {

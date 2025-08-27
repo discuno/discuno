@@ -1,16 +1,17 @@
 import { format } from 'date-fns'
 import Image from 'next/image'
 import { useCallback, useMemo } from 'react'
-import type { EventType, TimeSlot } from '~/app/(app)/(public)/mentor/[username]/book/actions'
+import type { TimeSlot } from '~/app/(app)/(public)/mentor/[username]/book/actions'
 import { EventTypeSelector } from '~/app/(app)/(public)/mentor/[username]/book/components/booking-calendar/EventTypeSelector'
 import { TimeSlotsList } from '~/app/(app)/(public)/mentor/[username]/book/components/booking-calendar/TimeSlotsList'
 import type { BookingData } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingModal'
 import { Calendar } from '~/components/ui/calendar'
 import { Label } from '~/components/ui/label'
+import type { MentorEventType } from '~/lib/schemas/db'
 
 interface BookingCalendarProps {
-  selectedEventType: EventType | null
-  eventTypes: EventType[]
+  selectedEventType: MentorEventType | null
+  eventTypes: MentorEventType[]
   selectedDate?: Date
   today: Date
   bookingData: BookingData
@@ -18,7 +19,7 @@ interface BookingCalendarProps {
   endMonth: Date
   monthlyAvailability: Record<string, TimeSlot[]>
   isFetchingSlots: boolean
-  onSelectEventType: (eventType: EventType | null) => void
+  onSelectEventType: (eventType: MentorEventType | null) => void
   onChangeMonth: (month: Date) => void
   onSelectDate: (date?: Date) => void
   onSelectTimeSlot: (timeSlot: string | null) => void
