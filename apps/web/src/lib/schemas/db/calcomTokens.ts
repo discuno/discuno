@@ -1,5 +1,5 @@
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod'
-import { type z } from 'zod/v4'
+import { z } from 'zod/v4'
 import { excludeFields } from '~/lib/schemas/db/helpers'
 import { calcomTokens } from '~/server/db/schema'
 
@@ -13,7 +13,17 @@ const updateExcludedFields = {
 }
 
 export const selectCalcomTokenSchema = createSelectSchema(calcomTokens)
-export const insertCalcomTokenSchema = createInsertSchema(calcomTokens, insertExcludedFields)
+export const insertCalcomTokenSchema = createInsertSchema(calcomTokens, {
+  ...insertExcludedFields,
+  accessTokenExpiresAt: z.preprocess(
+    arg => (typeof arg === 'number' ? new Date(arg) : arg),
+    z.date()
+  ),
+  refreshTokenExpiresAt: z.preprocess(
+    arg => (typeof arg === 'number' ? new Date(arg) : arg),
+    z.date()
+  ),
+})
 export const updateCalcomTokenSchema = createUpdateSchema(calcomTokens, updateExcludedFields)
 
 export type CalcomToken = z.infer<typeof selectCalcomTokenSchema>
