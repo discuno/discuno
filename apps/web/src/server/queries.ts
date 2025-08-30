@@ -149,6 +149,7 @@ export const getPostsCursor = async (
       and(
         validCursor ? lt(posts.id, validCursor) : undefined,
         isNotNull(userProfiles.id), // Ensure the user has a profile
+        eq(mentorEventTypes.isEnabled, true), // Ensure the mentor has an active event type
         or(
           // Allow mentors with free event types
           eq(mentorEventTypes.customPrice, 0),
@@ -183,6 +184,7 @@ export const getPostById = async (id: number): Promise<Card> => {
       and(
         eq(posts.id, validId),
         isNotNull(userProfiles.id), // Ensure the user has a profile
+        eq(mentorEventTypes.isEnabled, true), // Ensure the mentor has an active event type
         or(
           // Allow mentors with free event types
           eq(mentorEventTypes.customPrice, 0),
@@ -285,6 +287,7 @@ export const getPostsByFilters = async (
       and(
         ...(conditions.length > 0 ? conditions : [undefined]),
         isNotNull(userProfiles.id), // Ensure the user has a profile
+        eq(mentorEventTypes.isEnabled, true), // Ensure the mentor has an active event type
         or(
           // Allow mentors with free event types
           eq(mentorEventTypes.customPrice, 0),
