@@ -3,6 +3,7 @@
 import { Menu } from 'lucide-react'
 import Link from 'next/link'
 import * as React from 'react'
+import { ThemeAwareIconLogo } from '~/components/shared/ThemeAwareIconLogo'
 import { AvatarIcon } from '~/components/shared/UserAvatar'
 import { Button } from '~/components/ui/button'
 import {
@@ -48,7 +49,9 @@ export function NavBarBase({ profilePic, isAuthenticated }: NavBarBaseProps) {
       <div className="flex items-center gap-2">
         {/* Mobile menu trigger */}
         <MobileMenu className="md:hidden" isAuthenticated={isAuthenticated} />
-
+        <Link href="/">
+          <ThemeAwareIconLogo />
+        </Link>
         {/* Desktop navigation */}
         <NavigationMenu className="hidden md:block">
           <NavigationMenuList>
