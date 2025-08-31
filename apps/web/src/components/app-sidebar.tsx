@@ -1,8 +1,8 @@
-import { Command } from 'lucide-react'
 import Link from 'next/link'
 import * as React from 'react'
 import { NavMain, type NavMainProps } from '~/components/nav-main'
 import { NavUser } from '~/components/nav-user'
+import { ThemeAwareIconLogo } from '~/components/shared/ThemeAwareIconLogo'
 import {
   Sidebar,
   SidebarContent,
@@ -68,8 +68,8 @@ export const AppSidebar = async ({ ...props }: React.ComponentProps<typeof Sideb
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
               <Link href="/">
-                <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                  <Command className="size-4" />
+                <div className="bg-background text-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
+                  <ThemeAwareIconLogo />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-semibold">Discuno</span>
