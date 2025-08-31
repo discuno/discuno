@@ -34,7 +34,7 @@ export const PostPage = async ({ id }: { id: string }) => {
   const post: Card = await getPostById(postId)
 
   return (
-    <div className="from-background via-muted/10 to-background min-h-screen bg-gradient-to-br">
+    <div className="min-h-screen">
       {/* Navigation */}
       <div className="bg-background/80 border/50 sticky top-0 z-40 border-b backdrop-blur-lg">
         <div className="container mx-auto px-6 py-4">
