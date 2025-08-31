@@ -94,6 +94,7 @@ export const EventTypeToggleSection = () => {
       if (result.success && result.accountId) {
         setStripeAccountId(result.accountId)
         setStripeModalOpen(true)
+        void refetchStripeStatus()
       } else {
         toast.error(result.error ?? 'Failed to create Stripe account')
       }
@@ -108,32 +109,23 @@ export const EventTypeToggleSection = () => {
   const stripeStatus = stripeStatusData?.data
   const effectiveAccountId = stripeAccountId ?? stripeStatus?.accountId
 
-  // Fetch account session when effectiveAccountId is available
-  const { data: sessionData } = useQuery({
-    queryKey: ['stripe-account-session', effectiveAccountId],
-    queryFn: () => {
-      if (!effectiveAccountId) {
-        // Should not happen due to the `enabled` flag, but satisfies TypeScript
-        throw new Error('effectiveAccountId is not available')
-      }
-      return createStripeAccountSession({
-        accountId: effectiveAccountId,
-        notificationBanner: true,
-        accountManagement: true,
-        accountOnboarding: true,
-      })
-    },
-    enabled: !!effectiveAccountId,
-    staleTime: 0, // Account sessions expire quickly, don't cache
-    retry: 1,
-  })
-
   // Initialize Stripe Connect instance when session data is available
   const initializeConnectMutation = useMutation({
-    mutationFn: async (clientSecret: string) => {
+    mutationFn: async (accountId: string) => {
       const connectInstance = loadConnectAndInitialize({
         publishableKey: env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY,
-        fetchClientSecret: async () => clientSecret,
+        fetchClientSecret: async () => {
+          const session = await createStripeAccountSession({
+            accountId,
+            notificationBanner: true,
+            accountManagement: true,
+            accountOnboarding: true,
+          })
+          if (!session.success || !session.client_secret) {
+            throw new Error('Failed to create Stripe Account Session')
+          }
+          return session.client_secret
+        },
         appearance,
       })
       return connectInstance
@@ -149,10 +141,10 @@ export const EventTypeToggleSection = () => {
 
   // Initialize Connect when session data becomes available
   useEffect(() => {
-    if (sessionData?.success && sessionData.client_secret && !stripeConnectInstance) {
-      initializeConnectMutation.mutate(sessionData.client_secret)
+    if (effectiveAccountId && !stripeConnectInstance) {
+      initializeConnectMutation.mutate(effectiveAccountId)
     }
-  }, [sessionData, stripeConnectInstance, initializeConnectMutation])
+  }, [effectiveAccountId, stripeConnectInstance, initializeConnectMutation])
 
   // Reset connect instance when effectiveAccountId changes
   useEffect(() => {
