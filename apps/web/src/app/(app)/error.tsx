@@ -38,7 +38,7 @@ export default function DefaultError({ error, reset }: ErrorProps) {
   // Handle authentication errors
   if (error.name === 'UnauthenticatedError') {
     return (
-      <div className="bg-background flex min-h-screen items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-orange-100">
@@ -64,7 +64,7 @@ export default function DefaultError({ error, reset }: ErrorProps) {
   // Handle not found errors
   if (error.name === 'NotFoundError') {
     return (
-      <div className="bg-background flex min-h-screen items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
@@ -93,7 +93,7 @@ export default function DefaultError({ error, reset }: ErrorProps) {
   // Handle authorization errors
   if (error.name === 'UnauthorizedError') {
     return (
-      <div className="bg-background flex min-h-screen items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
