@@ -49,7 +49,7 @@ const coreConfig = {
       },
       {
         protocol: 'https',
-        hostname: '*.public.blob.vercel-storage.com',
+        hostname: '**.public.blob.vercel-storage.com',
         port: '',
         pathname: '/**',
       },

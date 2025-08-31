@@ -136,7 +136,7 @@ export const EventTypeSettingsContent = ({
           ) : (
             <Button
               onClick={() => createStripeAccountMutation.mutate()}
-              disabled={createStripeAccountMutation.isPending || !connectInstance}
+              disabled={createStripeAccountMutation.isPending}
               size="sm"
             >
               {createStripeAccountMutation.isPending ? 'Connecting...' : 'Connect Stripe'}
