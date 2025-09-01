@@ -1,22 +1,36 @@
+import Link from 'next/link'
 import { getMentorStripeStatus } from '~/app/(app)/(mentor)/settings/actions'
 import { StripeDashboard } from '~/app/(app)/(mentor)/settings/billing/StripeDashboard'
+import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
 
 export default async function DashboardPage() {
   const stripeStatus = await getMentorStripeStatus()
 
-  if (!stripeStatus.success || !stripeStatus.data?.hasAccount) {
+  if (
+    !stripeStatus.success ||
+    !stripeStatus.data ||
+    !stripeStatus.data.isActive ||
+    !stripeStatus.data.onboardingCompleted
+  ) {
     return (
       <div className="flex-1 space-y-4 p-8 pt-6">
         <Card>
           <CardHeader>
-            <CardTitle>Stripe Account Not Connected</CardTitle>
+            <CardTitle>Complete Stripe Setup Required</CardTitle>
             <CardDescription>
-              Please connect your Stripe account to view your dashboard.
+              You need to complete your Stripe account setup and verification before accessing
+              billing settings.
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <p>Navigate to settings to connect your Stripe account and start accepting payments.</p>
+          <CardContent className="space-y-4">
+            <p className="text-muted-foreground">
+              To access billing settings and accept payments, you&apos;ll need to complete your
+              Stripe account setup through the Event Types settings page.
+            </p>
+            <Button asChild>
+              <Link href="/settings/event-types">Complete Stripe Setup</Link>
+            </Button>
           </CardContent>
         </Card>
       </div>

@@ -23,10 +23,12 @@ export type NavMainProps = {
     title: string
     url: string
     icon: keyof typeof iconMap
+    disabled?: boolean
     items?: {
       title: string
       url: string
       icon: keyof typeof iconMap
+      disabled?: boolean
     }[]
   }[]
 }
@@ -62,12 +64,23 @@ export function NavMain({ items }: NavMainProps) {
               const SubIcon = iconMap[subItem.icon]
               return (
                 <SidebarMenuItem key={subItem.title}>
-                  <SidebarMenuButton asChild tooltip={subItem.title}>
-                    <a href={subItem.url}>
+                  {subItem.disabled ? (
+                    <SidebarMenuButton
+                      tooltip={`${subItem.title} - Complete Stripe setup to access`}
+                      className="cursor-not-allowed opacity-50"
+                      disabled
+                    >
                       <SubIcon />
                       <span>{subItem.title}</span>
-                    </a>
-                  </SidebarMenuButton>
+                    </SidebarMenuButton>
+                  ) : (
+                    <SidebarMenuButton asChild tooltip={subItem.title}>
+                      <a href={subItem.url}>
+                        <SubIcon />
+                        <span>{subItem.title}</span>
+                      </a>
+                    </SidebarMenuButton>
+                  )}
                 </SidebarMenuItem>
               )
             })}
