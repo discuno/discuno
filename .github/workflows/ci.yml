@@ -160,13 +160,17 @@ jobs:
       - name: Build packages
         env:
           SKIP_ENV_VALIDATION: true
-          # Sentry token is optional for builds - will skip upload if not present
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          # These are required build-time secrets but will be handled gracefully if missing
-          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY || 'sk_test_placeholder' }}
-          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET || 'dev-secret-placeholder' }}
+          CI: true
+          # Core required environment variables
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET || 'ci-test-secret' }}
+          NEXTAUTH_URL: 'http://localhost:3000'
           DATABASE_URL: 'postgresql://localhost:5432/test'
           NEXT_PUBLIC_BASE_URL: 'http://localhost:3000'
+          NEXT_PUBLIC_X_CAL_ID: 'test'
+          # Optional for builds - will skip upload if not present
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          # Stripe keys with fallbacks for CI
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY || 'sk_test_placeholder' }}
         run: pnpm build
 
       - name: Upload build artifacts
