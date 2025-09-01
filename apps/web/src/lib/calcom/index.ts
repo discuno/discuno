@@ -184,7 +184,6 @@ export const createCalcomBooking = async (input: {
   const response = await fetch(`${env.NEXT_PUBLIC_CALCOM_API_URL}/bookings`, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${env.X_CAL_SECRET_KEY}`,
       'Content-Type': 'application/json',
       'cal-api-version': '2024-08-13',
     },
