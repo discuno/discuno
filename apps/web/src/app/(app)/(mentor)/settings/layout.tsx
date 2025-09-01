@@ -1,6 +1,6 @@
+import { SettingsHeader } from '~/app/(app)/(mentor)/settings/components/SettingsHeader'
 import { AppSidebar } from '~/components/app-sidebar'
 import { SidebarInset, SidebarProvider } from '~/components/ui/sidebar'
-import { SettingsHeader } from './components/SettingsHeader'
 
 export const SettingsLayout = ({ children }: { children: React.ReactNode }) => {
   return (
