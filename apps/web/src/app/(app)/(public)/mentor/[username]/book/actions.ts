@@ -322,13 +322,20 @@ export const createStripeCheckoutSession = async (
       payment_intent_data: {
         application_fee_amount: mentorFee,
         capture_method: 'automatic_async',
-        on_behalf_of: stripeAccountData.stripeAccountId,
         transfer_data: {
           destination: stripeAccountData.stripeAccountId,
         },
         receipt_email: attendeeEmail,
         setup_future_usage: 'on_session',
         statement_descriptor_suffix: `MENTOR SESSION`,
+      },
+      invoice_creation: {
+        enabled: true,
+        invoice_data: {
+          issuer: {
+            type: 'self',
+          },
+        },
       },
       payment_method_options: {
         card: {},
