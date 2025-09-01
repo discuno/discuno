@@ -1,4 +1,5 @@
 import crypto from 'crypto'
+import { refundStripePaymentIntent } from '~/app/(app)/(public)/mentor/[username]/book/actions'
 import { env } from '~/env'
 import {
   CalcomBookingPayloadSchema,
@@ -39,7 +40,46 @@ export async function POST(req: Request) {
     switch (triggerEvent) {
       case 'BOOKING_CREATED':
         return await storeBooking(payload)
-      // Add other event types here in the future
+      // Attempt to refund no show
+      case 'AFTER_HOSTS_CAL_VIDEO_NO_SHOW':
+        // Handle AFTER_HOSTS_CAL_VIDEO_NO_SHOW event
+        if (!payload.metadata.paymentId) {
+          console.error('❌ Missing paymentId in AFTER_HOSTS_CAL_VIDEO_NO_SHOW event')
+          return Response.json({ error: 'Missing paymentId' }, { status: 400 })
+        }
+        // Attempt to refund the payment
+        try {
+          await refundStripePaymentIntent(payload.metadata.paymentId)
+        } catch (err) {
+          console.error(
+            '❌ Failed to process refund for paymentId:',
+            payload.metadata.paymentId,
+            err
+          )
+          return Response.json({ error: 'Failed to process refund' }, { status: 500 })
+        }
+        break
+      // TODO: Handle events
+      case 'RECORDING_TRANSCRIPTION_GENERATED':
+        console.log(`✅ Transcription generated for event: ${triggerEvent}`)
+        console.log(`✅ Transcription text: ${JSON.stringify(payload)}`)
+        break
+      case 'RECORDING_READY':
+        console.log(`✅ Recording is ready for event: ${triggerEvent}`)
+        console.log(`✅ Recording details: ${JSON.stringify(payload)}`)
+        break
+      case 'MEETING_STARTED':
+        console.log(`✅ Meeting started for event: ${triggerEvent}`)
+        console.log(`✅ Meeting details: ${JSON.stringify(payload)}`)
+        break
+      case 'MEETING_ENDED':
+        console.log(`✅ Meeting ended for event: ${triggerEvent}`)
+        console.log(`✅ Meeting details: ${JSON.stringify(payload)}`)
+        break
+      case 'BOOKING_CANCELED':
+        console.log(`✅ Booking canceled for event: ${triggerEvent}`)
+        console.log(`✅ Booking details: ${JSON.stringify(payload)}`)
+        break
       default:
         console.log(`ℹ️ Unhandled webhook event type: ${triggerEvent}`)
         break

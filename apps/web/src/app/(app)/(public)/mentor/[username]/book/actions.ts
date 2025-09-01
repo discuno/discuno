@@ -248,7 +248,7 @@ export const createStripeCheckoutSession = async (
       timeZone,
     } = validatedInput
 
-    console.log('Creating Stripe Payment Intent for:', { mentorUsername, attendeeEmail, price })
+    console.log('Creating Stripe checkout session for:', { mentorUsername, attendeeEmail, price })
 
     if (price === 0) {
       console.log('Skipping Stripe for free booking.')
@@ -467,7 +467,7 @@ export const handleCheckoutSessionWebhook = async (
       error
     )
 
-    await refundStripePaymentIntent(paymentIntentId, 'Error booking with cal.com')
+    await refundStripePaymentIntent(paymentIntentId)
 
     await db
       .update(payments)
@@ -482,13 +482,14 @@ export const handleCheckoutSessionWebhook = async (
  * Refund a Stripe payment intent
  */
 export const refundStripePaymentIntent = async (
-  paymentIntentId: string,
-  reason?: string
+  paymentIntentId: string
 ): Promise<{ success: boolean; error?: string }> => {
   try {
     const refund = await stripe.refunds.create({
       payment_intent: paymentIntentId,
-      reason: reason as Stripe.RefundCreateParams.Reason,
+      // refund full amount
+      refund_application_fee: true,
+      reverse_transfer: true,
     })
 
     console.log(`Successfully created refund ${refund.id} for payment intent ${paymentIntentId}`)
