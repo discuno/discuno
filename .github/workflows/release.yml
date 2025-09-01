@@ -29,21 +29,22 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           persist-credentials: false
 
-      # Node.js version management: consider using node-version-file: .nvmrc or package.json#engines.node
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version-file: .nvmrc
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          cache: true
 
       - name: Install dependencies
         run: pnpm install --prefer-offline --frozen-lockfile
 
       - name: Build packages
+        env:
+          SKIP_ENV_VALIDATION: true
+          # Optional for releases - will skip if not present
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: pnpm build
 
       - name: Create Release Pull Request or Publish
@@ -69,16 +70,13 @@ jobs:
         with:
           persist-credentials: false
 
-      # Node.js version management: consider using node-version-file: .nvmrc or package.json#engines.node
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version-file: .nvmrc
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          cache: true
 
       - name: Install dependencies
         run: pnpm install --prefer-offline --frozen-lockfile

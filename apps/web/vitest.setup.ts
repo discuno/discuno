@@ -47,7 +47,31 @@ vi.mock('next/dynamic', () => ({
   },
 }))
 
-vi.mock('next/server', () => ({}))
+// Mock Next.js server components
+vi.mock('next/server', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('next/server')>()
+  
+  class MockNextRequest extends Request {
+    public nextUrl: URL
+    public geo: any
+    public ip: string
+    public cookies: Map<string, string>
+
+    constructor(url: string, init?: RequestInit) {
+      super(url, init)
+      this.nextUrl = new URL(url)
+      this.geo = {}
+      this.ip = '127.0.0.1'
+      this.cookies = new Map()
+    }
+  }
+
+  return {
+    ...actual,
+    NextRequest: MockNextRequest,
+    NextResponse: actual.NextResponse,
+  }
+})
 
 vi.mock('next-auth', () => ({
   getServerSession: vi.fn(),

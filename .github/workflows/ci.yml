@@ -55,16 +55,13 @@ jobs:
         with:
           persist-credentials: false
 
-      # Node.js version management: consider using node-version-file: .nvmrc or package.json#engines.node
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version-file: .nvmrc
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          cache: true
 
       - name: Install dependencies
         run: pnpm install --prefer-offline --frozen-lockfile
@@ -87,16 +84,13 @@ jobs:
         with:
           persist-credentials: false
 
-      # Node.js version management: consider using node-version-file: .nvmrc or package.json#engines.node
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version-file: .nvmrc
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          cache: true
 
       - name: Install dependencies
         run: pnpm install --prefer-offline --frozen-lockfile
@@ -116,30 +110,29 @@ jobs:
         with:
           persist-credentials: false
 
-      # Node.js version management: consider using node-version-file: .nvmrc or package.json#engines.node
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version-file: .nvmrc
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          cache: true
 
       - name: Install dependencies
         run: pnpm install --prefer-offline --frozen-lockfile
 
-      - name: Run tests
-        run: pnpm test:run
+      - name: Run tests with coverage
+        run: pnpm test:run --coverage
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4
         if: always()
         with:
-          files: ./coverage/lcov.info
+          files: ./apps/web/coverage/lcov.info
           flags: unittests
           name: codecov-umbrella
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
 
   build:
     name: Build
@@ -153,16 +146,13 @@ jobs:
         with:
           persist-credentials: false
 
-      # Node.js version management: consider using node-version-file: .nvmrc or package.json#engines.node
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version-file: .nvmrc
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          cache: true
 
       - name: Install dependencies
         run: pnpm install --prefer-offline --frozen-lockfile
@@ -170,8 +160,13 @@ jobs:
       - name: Build packages
         env:
           SKIP_ENV_VALIDATION: true
+          # Sentry token is optional for builds - will skip upload if not present
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          # These are required build-time secrets but will be handled gracefully if missing
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY || 'sk_test_placeholder' }}
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET || 'dev-secret-placeholder' }}
+          DATABASE_URL: 'postgresql://localhost:5432/test'
+          NEXT_PUBLIC_BASE_URL: 'http://localhost:3000'
         run: pnpm build
 
       - name: Upload build artifacts

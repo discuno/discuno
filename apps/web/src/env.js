@@ -2,6 +2,10 @@ import { createEnv } from '@t3-oss/env-nextjs'
 import { z } from 'zod'
 
 const isProd = process.env.NODE_ENV === 'production'
+const isCI = process.env.CI === 'true'
+
+// In CI, allow optional values for most secrets except database and core auth
+const optionalInCI = (schema) => isCI ? schema.optional() : schema
 
 export const env = createEnv({
   /**
@@ -9,35 +13,35 @@ export const env = createEnv({
    * isn't built with invalid env vars.
    */
   server: {
-    NEXTAUTH_SECRET: isProd ? z.string() : z.string().optional(),
-    AUTH_DISCORD_ID: z.string(),
-    AUTH_DISCORD_SECRET: z.string(),
-    AUTH_GOOGLE_ID: z.string(),
-    AUTH_GOOGLE_SECRET: z.string(),
-    AUTH_EMAIL_FROM: z.string(),
+    NEXTAUTH_SECRET: isProd ? z.string() : optionalInCI(z.string()),
+    AUTH_DISCORD_ID: optionalInCI(z.string()),
+    AUTH_DISCORD_SECRET: optionalInCI(z.string()),
+    AUTH_GOOGLE_ID: optionalInCI(z.string()),
+    AUTH_GOOGLE_SECRET: optionalInCI(z.string()),
+    AUTH_EMAIL_FROM: optionalInCI(z.string()),
     DATABASE_URL: z.string().url(),
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
-    JWT_SECRET: z.string(),
-    SENDGRID_API_KEY: z.string(),
-    STRIPE_SECRET_KEY: z.string(),
-    STRIPE_WEBHOOK_SECRET: z.string(),
-    STRIPE_CONNECT_WEBHOOK_SECRET: z.string(),
-    CRON_SECRET: z.string(),
+    JWT_SECRET: optionalInCI(z.string()),
+    SENDGRID_API_KEY: optionalInCI(z.string()),
+    STRIPE_SECRET_KEY: optionalInCI(z.string()),
+    STRIPE_WEBHOOK_SECRET: optionalInCI(z.string()),
+    STRIPE_CONNECT_WEBHOOK_SECRET: optionalInCI(z.string()),
+    CRON_SECRET: optionalInCI(z.string()),
     NEXTAUTH_URL: z.string(),
-    SENTRY_AUTH_TOKEN: z.string(),
-    AUTH_EMAIL_SERVER: z.string(),
-    X_CAL_SECRET_KEY: z.string(),
-    SENTRY_DSN: z.string(),
-    SENTRY_ENVIRONMENT: z.string(),
-    AUTH_MICROSOFT_ENTRA_ID_ISSUER: z.string(),
-    AUTH_MICROSOFT_ENTRA_ID_ID: z.string(),
-    AUTH_MICROSOFT_ENTRA_ID_SECRET: z.string(),
-    BLOB_READ_WRITE_TOKEN: z.string(),
-    COLLEGE_MENTOR_TEAM_ID: z.string(),
-    CALCOM_ORG_ID: z.string(),
-    CALCOM_WEBHOOK_SECRET: z.string(),
-    CALCOM_COLLEGE_MENTORS_TEAM_SLUG: z.string(),
-    CALCOM_ORG_SLUG: z.string(),
+    SENTRY_AUTH_TOKEN: optionalInCI(z.string()),
+    AUTH_EMAIL_SERVER: optionalInCI(z.string()),
+    X_CAL_SECRET_KEY: optionalInCI(z.string()),
+    SENTRY_DSN: optionalInCI(z.string()),
+    SENTRY_ENVIRONMENT: optionalInCI(z.string()),
+    AUTH_MICROSOFT_ENTRA_ID_ISSUER: optionalInCI(z.string()),
+    AUTH_MICROSOFT_ENTRA_ID_ID: optionalInCI(z.string()),
+    AUTH_MICROSOFT_ENTRA_ID_SECRET: optionalInCI(z.string()),
+    BLOB_READ_WRITE_TOKEN: optionalInCI(z.string()),
+    COLLEGE_MENTOR_TEAM_ID: optionalInCI(z.string()),
+    CALCOM_ORG_ID: optionalInCI(z.string()),
+    CALCOM_WEBHOOK_SECRET: optionalInCI(z.string()),
+    CALCOM_COLLEGE_MENTORS_TEAM_SLUG: optionalInCI(z.string()),
+    CALCOM_ORG_SLUG: optionalInCI(z.string()),
   },
 
   /**
@@ -48,8 +52,8 @@ export const env = createEnv({
   client: {
     NEXT_PUBLIC_BASE_URL: z.string(),
     NEXT_PUBLIC_X_CAL_ID: z.string(),
-    NEXT_PUBLIC_CALCOM_API_URL: z.string(),
-    NEXT_PUBLIC_STRIPE_PUBLIC_KEY: z.string(),
+    NEXT_PUBLIC_CALCOM_API_URL: optionalInCI(z.string()),
+    NEXT_PUBLIC_STRIPE_PUBLIC_KEY: optionalInCI(z.string()),
   },
 
   /**

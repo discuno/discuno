@@ -82,7 +82,10 @@ const coreConfig = {
 
 import { withSentryConfig } from '@sentry/nextjs'
 
-const config = withSentryConfig(coreConfig, {
+// Only use Sentry in production or when auth token is available
+const useSentry = process.env.NODE_ENV === 'production' || process.env.SENTRY_AUTH_TOKEN
+
+const config = useSentry ? withSentryConfig(coreConfig, {
   // For all available options, see:
   // https://www.npmjs.com/package/@sentry/webpack-plugin#options
 
@@ -112,6 +115,6 @@ const config = withSentryConfig(coreConfig, {
   // https://docs.sentry.io/product/crons/
   // https://vercel.com/docs/cron-jobs
   automaticVercelMonitors: true,
-})
+}) : coreConfig
 
 export default config
