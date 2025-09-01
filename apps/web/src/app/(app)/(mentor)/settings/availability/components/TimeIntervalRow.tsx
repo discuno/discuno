@@ -22,9 +22,9 @@ export const TimeIntervalRow = ({ interval, onIntervalChange, onRemove }: TimeIn
 
   return (
     <div className="flex items-center gap-2">
-      <Input type="time" value={interval.start} onChange={handleStartChange} className="w-32" />
+      <Input type="time" value={interval.start} onChange={handleStartChange} className="w-full" />
       <span>-</span>
-      <Input type="time" value={interval.end} onChange={handleEndChange} className="w-32" />
+      <Input type="time" value={interval.end} onChange={handleEndChange} className="w-full" />
       <Button variant="ghost" size="icon" onClick={onRemove} aria-label="Remove interval">
         <Trash2 className="h-4 w-4" />
       </Button>

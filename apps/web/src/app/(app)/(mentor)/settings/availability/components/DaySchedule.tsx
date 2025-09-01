@@ -43,7 +43,7 @@ export const DaySchedule = ({
   }
 
   return (
-    <div className="grid grid-cols-[150px_1fr] items-start gap-4">
+    <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-[150px_1fr]">
       <div className="flex items-center space-x-3">
         <Checkbox id={`check-${day}`} checked={isEnabled} onCheckedChange={handleCheckboxChange} />
         <label htmlFor={`check-${day}`} className="font-semibold capitalize">

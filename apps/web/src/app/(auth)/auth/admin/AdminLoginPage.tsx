@@ -28,7 +28,7 @@ export function AdminLoginPage() {
   }
 
   return (
-    <div className="bg-background flex min-h-screen items-center justify-center px-4">
+    <div className="flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-md">
         {/* Development Badge */}
         <div className="mb-6 text-center">
