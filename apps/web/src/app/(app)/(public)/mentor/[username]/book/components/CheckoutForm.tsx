@@ -40,7 +40,6 @@ export const CheckoutForm = ({
     try {
       const confirmResult = await checkout.confirm({
         redirect: 'if_required',
-        phoneNumber: formData.phone,
       })
 
       if (confirmResult.type === 'error') {

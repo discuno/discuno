@@ -243,14 +243,18 @@ export const createStripeCheckoutSession = async (
       attendeePhone,
       mentorUsername,
       mentorUserId,
-      price,
+      price: subtotal,
       currency,
       timeZone,
     } = validatedInput
 
-    console.log('Creating Stripe checkout session for:', { mentorUsername, attendeeEmail, price })
+    console.log('Creating Stripe checkout session for:', {
+      mentorUsername,
+      attendeeEmail,
+      price: subtotal,
+    })
 
-    if (price === 0) {
+    if (subtotal === 0) {
       console.log('Skipping Stripe for free booking.')
       return { success: false, error: 'Free bookings should use direct booking flow' }
     }
@@ -267,8 +271,8 @@ export const createStripeCheckoutSession = async (
     }
 
     const stripeAccountData = stripeAccount[0]
-    const menteeFee = Math.round(price * 0.05)
-    const mentorFee = Math.round(price * 0.15)
+    const menteeFee = Math.round(subtotal * 0.05)
+    const mentorFee = Math.round(subtotal * 0.15)
 
     const existingCustomer = await stripe.customers.list({
       email: attendeeEmail,
@@ -292,7 +296,7 @@ export const createStripeCheckoutSession = async (
                 attendeeName: attendeeName,
               },
             },
-            unit_amount: price,
+            unit_amount: subtotal,
           },
           quantity: 1,
         },
@@ -316,14 +320,15 @@ export const createStripeCheckoutSession = async (
             },
           }
         : {
+            customer_email: attendeeEmail,
             customer_creation: 'if_required',
           }),
       // TODO: discounts
       payment_intent_data: {
-        application_fee_amount: mentorFee,
         capture_method: 'automatic_async',
         transfer_data: {
           destination: stripeAccountData.stripeAccountId,
+          amount: subtotal - mentorFee,
         },
         receipt_email: attendeeEmail,
         setup_future_usage: 'on_session',
@@ -340,9 +345,6 @@ export const createStripeCheckoutSession = async (
       payment_method_options: {
         card: {},
         paypal: {},
-      },
-      phone_number_collection: {
-        enabled: true,
       },
       saved_payment_method_options: {
         allow_redisplay_filters: ['always'],
@@ -362,7 +364,7 @@ export const createStripeCheckoutSession = async (
         mentorUsername: mentorUsername,
         mentorFee: mentorFee.toString(),
         menteeFee: menteeFee.toString(),
-        mentorAmount: (price - mentorFee).toString(),
+        mentorAmount: (subtotal - mentorFee).toString(),
         mentorStripeAccountId: stripeAccountData.stripeAccountId,
       },
     }
