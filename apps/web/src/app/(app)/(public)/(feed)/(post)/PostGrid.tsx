@@ -68,7 +68,7 @@ export const PostGrid = ({ schoolId, majorId, graduationYear }: PostGridProps) =
 
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto min-h-[calc(100vh-4rem)] px-4 py-8">
         <h1 className="text-foreground mb-8 text-center text-3xl font-bold">
           Find Your College Mentor
         </h1>
@@ -79,20 +79,20 @@ export const PostGrid = ({ schoolId, majorId, graduationYear }: PostGridProps) =
 
   if (isError) {
     return (
-      <div className="container mx-auto px-4 py-8 text-center text-red-500">
+      <div className="container mx-auto min-h-[calc(100vh-4rem)] px-4 py-8 text-center text-red-500">
         Error loading posts. Please try again later.
       </div>
     )
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto min-h-[calc(100vh-4rem)] px-4 py-8">
       <h1 className="text-foreground mb-8 text-center text-3xl font-bold">
         Find Your College Mentor
       </h1>
       <PostsDisplay posts={allPosts} />
       {hasNextPage && (
-        <div className="mt-12 flex justify-center">
+        <div className="flex justify-center">
           <button
             className="bg-primary text-primary-foreground hover:bg-primary/90 focus:ring-primary rounded-full px-8 py-3 transition-all duration-300 focus:ring-2 focus:ring-offset-2 disabled:opacity-50 dark:focus:ring-offset-gray-900"
             onClick={() => fetchNextPage()}

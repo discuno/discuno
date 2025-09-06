@@ -11,8 +11,8 @@ const PublicLayout = ({ children }: Readonly<{ children: React.ReactNode }>) => 
         <NavBar />
       </Suspense>
 
-      <main className="flex-1 pt-16">
-        <div className="min-h-full">
+      <main className="flex-1 pt-[var(--navbar-height)]">
+        <div className="min-h-[calc(100vh-var(--navbar-height))]">
           <FingerprintProvider>{children}</FingerprintProvider>
         </div>
       </main>

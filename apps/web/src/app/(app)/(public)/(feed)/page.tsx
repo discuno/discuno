@@ -1,4 +1,4 @@
-import { DashboardShell } from './components/FeedShell'
+import { DashboardShell } from '~/app/(app)/(public)/(feed)/components/FeedShell'
 
 const HomePage = async ({
   searchParams,

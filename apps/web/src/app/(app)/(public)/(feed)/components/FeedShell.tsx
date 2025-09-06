@@ -8,13 +8,13 @@ interface DashboardShellProps {
 
 export const DashboardShell = ({ searchParams }: DashboardShellProps) => {
   return (
-    <main className="text-foreground min-h-screen pt-16">
+    <main className="text-foreground min-h-screen">
       {/* Static layout that renders immediately */}
       <div className="relative">
         {/* Suspense boundary for dynamic content */}
         <Suspense
           fallback={
-            <div className="flex items-center justify-center py-16">
+            <div className="flex items-center justify-center">
               <LoadingSpinner />
             </div>
           }
