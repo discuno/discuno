@@ -18,6 +18,7 @@ const pathMap: Record<string, string> = {
   settings: 'Settings',
   availability: 'Availability',
   'event-types': 'Event Types',
+  bookings: 'Bookings',
   profile: 'Profile',
   edit: 'Edit Profile',
   view: 'View Profile',

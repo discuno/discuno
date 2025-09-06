@@ -44,6 +44,11 @@ export const AppSidebar = async ({ ...props }: React.ComponentProps<typeof Sideb
           icon: 'BookOpen',
         },
         {
+          title: 'Bookings',
+          url: '/settings/bookings',
+          icon: 'CalendarCheck',
+        },
+        {
           title: 'Billing',
           url: '/settings/billing',
           icon: 'CreditCard',

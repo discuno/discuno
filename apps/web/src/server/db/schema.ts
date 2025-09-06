@@ -353,6 +353,7 @@ export const bookings = pgTable(
 
     // Booking details snapshot
     title: varchar({ length: 500 }).notNull(),
+    description: text(),
     startTime: timestamp({
       mode: 'date',
       withTimezone: true,
@@ -362,10 +363,7 @@ export const bookings = pgTable(
       withTimezone: true,
     }).notNull(),
     status: bookingStatusEnum().notNull().default('PENDING'),
-
-    // Pricing snapshot (from our database at time of booking)
-    price: integer(), // Price in cents
-    currency: varchar({ length: 3 }).default('USD'),
+    meetingUrl: varchar({ length: 255 }),
 
     // Event type reference
     mentorEventTypeId: integer().references(() => mentorEventTypes.id, {
@@ -374,7 +372,6 @@ export const bookings = pgTable(
 
     // Payment reference (will be set after payment is processed)
     paymentId: integer().references(() => payments.id, { onDelete: 'set null' }),
-    requiresPayment: boolean().notNull().default(true),
 
     // Response data (name, email, location, notes, etc.)
     responses: jsonb().default('{}'),

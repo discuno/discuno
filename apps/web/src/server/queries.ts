@@ -915,14 +915,14 @@ export const getMentorBookings = cache(async (mentorId: string) => {
       calcomBookingId: bookings.calcomBookingId,
       calcomUid: bookings.calcomUid,
       title: bookings.title,
+      description: bookings.description,
       startTime: bookings.startTime,
       endTime: bookings.endTime,
       status: bookings.status,
+      meetingUrl: bookings.meetingUrl,
       attendeeName: bookingAttendees.name,
       attendeeEmail: bookingAttendees.email,
       attendeeTimeZone: bookingAttendees.timeZone,
-      price: bookings.price,
-      currency: bookings.currency,
       createdAt: bookings.createdAt,
     })
     .from(bookings)
@@ -942,6 +942,7 @@ type CreateLocalBooking = NewBooking & {
   calcomEventTypeId: number
   organizer: Omit<NewBookingOrganizer, 'bookingId'>
   attendee: Omit<NewBookingAttendee, 'bookingId'>
+  meetingUrl?: string
 }
 
 export const createLocalBooking = async (input: CreateLocalBooking) => {
@@ -964,15 +965,14 @@ export const createLocalBooking = async (input: CreateLocalBooking) => {
         calcomBookingId: input.calcomBookingId,
         calcomUid: input.calcomUid,
         title: input.title,
+        description: input.description,
         startTime: input.startTime,
         endTime: input.endTime,
         status: 'ACCEPTED',
-        price: input.price,
-        currency: input.currency,
         mentorEventTypeId: mentorEventType.id,
         paymentId: input.paymentId,
-        requiresPayment: input.requiresPayment,
         webhookPayload: {},
+        meetingUrl: input.meetingUrl,
       })
       .returning()
 

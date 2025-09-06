@@ -1,6 +1,6 @@
 'use client'
 
-import { BookOpen, Calendar, CreditCard, Home, Settings2, User } from 'lucide-react'
+import { BookOpen, Calendar, CalendarCheck, CreditCard, Home, Settings2, User } from 'lucide-react'
 import {
   SidebarGroup,
   SidebarGroupLabel,
@@ -16,6 +16,7 @@ const iconMap = {
   Calendar,
   BookOpen,
   CreditCard,
+  CalendarCheck,
 }
 
 export type NavMainProps = {
