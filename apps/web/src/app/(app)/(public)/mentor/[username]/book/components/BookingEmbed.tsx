@@ -232,8 +232,8 @@ export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
                   }
 
                   const response = await createStripeCheckoutSession(bookingPayload)
-                  if (!response.success || !response.clientSecret) {
-                    throw new Error(response.error ?? 'Failed to create checkout session')
+                  if (!response.clientSecret) {
+                    throw new Error('Failed to create checkout session')
                   }
                   return response.clientSecret
                 },

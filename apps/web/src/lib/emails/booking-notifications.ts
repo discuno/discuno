@@ -245,3 +245,48 @@ export const sendAdminAlert = async ({
     console.error('Failed to send admin alert email:', error)
   }
 }
+
+/**
+ * Send booking failure email to the attendee
+ */
+export const sendBookingFailureEmail = async ({
+  attendeeEmail,
+  attendeeName,
+  mentorName,
+  reason,
+}: {
+  attendeeEmail: string
+  attendeeName: string
+  mentorName: string
+  reason: string
+}) => {
+  try {
+    console.log('Sending booking failure email:', {
+      attendeeEmail,
+      attendeeName,
+      mentorName,
+      reason,
+    })
+
+    await sgMail.send({
+      from: env.AUTH_EMAIL_FROM,
+      to: attendeeEmail,
+      subject: 'Booking Failed - Action Required',
+      html: `
+      <div style="font-family: var(--font-sans); color: var(--color-foreground); background-color: var(--color-background); padding: 2rem;">
+        <div style="max-width: 600px; margin: auto; background-color: var(--color-card); border-radius: var(--radius); padding: 2rem; border: 1px solid var(--color-border);">
+          <h2 style="font-size: 1.5rem; font-weight: 600; color: var(--color-destructive);">Booking Failed</h2>
+          <p>Hi ${attendeeName},</p>
+          <p>Unfortunately, we were unable to complete your booking with ${mentorName}.</p>
+          <p><strong>Reason:</strong> ${reason}</p>
+          <p>Your payment has been automatically refunded and should appear in your account within 5-10 business days.</p>
+          <p>We apologize for the inconvenience. Please try booking again or contact support if the issue persists.</p>
+          <p>Best regards,<br>The Discuno Team</p>
+        </div>
+      </div>
+      `,
+    })
+  } catch (error) {
+    console.error('Failed to send booking failure email:', error)
+  }
+}

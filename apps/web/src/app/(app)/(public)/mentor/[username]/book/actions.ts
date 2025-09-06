@@ -5,7 +5,8 @@ import type Stripe from 'stripe'
 import { z } from 'zod'
 import { env } from '~/env'
 import { createCalcomBooking } from '~/lib/calcom'
-import { ExternalApiError } from '~/lib/errors'
+import { sendBookingFailureEmail } from '~/lib/emails/booking-notifications'
+import { BadRequestError, ExternalApiError, StripeError } from '~/lib/errors'
 import { stripe } from '~/lib/stripe'
 import { db } from '~/server/db'
 import { mentorStripeAccounts, payments } from '~/server/db/schema'
@@ -231,7 +232,6 @@ export const createStripeCheckoutSession = async (
   success: boolean
   clientSecret?: string
   checkoutSessionId?: string
-  error?: string
 }> => {
   try {
     const validatedInput = BookingFormInputSchema.parse(input)
@@ -256,7 +256,7 @@ export const createStripeCheckoutSession = async (
 
     if (subtotal === 0) {
       console.log('Skipping Stripe for free booking.')
-      return { success: false, error: 'Free bookings should use direct booking flow' }
+      throw new BadRequestError('Free bookings should use direct booking flow')
     }
 
     const stripeAccount = await db
@@ -267,7 +267,7 @@ export const createStripeCheckoutSession = async (
 
     if (!stripeAccount.length || !stripeAccount[0]?.stripeAccountId) {
       console.error(`Mentor ${mentorUsername} has not set up a Stripe account.`)
-      return { success: false, error: 'Mentor has not set up payments' }
+      throw new BadRequestError('Mentor has not set up payments')
     }
 
     const stripeAccountData = stripeAccount[0]
@@ -351,7 +351,7 @@ export const createStripeCheckoutSession = async (
         payment_method_remove: 'enabled',
         payment_method_save: 'enabled',
       },
-      return_url: `${env.NEXT_PUBLIC_BASE_URL}/bookings/success?session_id={CHECKOUT_SESSION_ID}`,
+      return_url: `${env.NEXT_PUBLIC_BASE_URL}/bookings/success`,
 
       metadata: {
         mentorUserId: mentorUserId.toString(),
@@ -380,9 +380,28 @@ export const createStripeCheckoutSession = async (
   } catch (error) {
     console.error('Stripe checkout session creation failed:', error)
     if (error instanceof z.ZodError) {
-      return { success: false, error: 'Invalid input data.' }
+      throw new BadRequestError('Invalid input data.')
     }
-    return { success: false, error: 'Failed to create checkout session.' }
+
+    // Handle specific Stripe errors
+    if (error && typeof error === 'object' && 'type' in error) {
+      const stripeError = error as { type: string; code?: string; message?: string }
+
+      // Handle insufficient capabilities error specifically
+      if (stripeError.code === 'insufficient_capabilities_for_transfer') {
+        throw new StripeError(
+          "The mentor's payment account needs additional capabilities to receive transfers. Please contact the mentor to complete their payment setup."
+        )
+      }
+
+      // Handle other specific Stripe errors
+      if (stripeError.type === 'StripeInvalidRequestError') {
+        throw new StripeError(stripeError.message ?? 'Invalid request to Stripe')
+      }
+    }
+
+    // Generic fallback for other errors
+    throw new ExternalApiError('Failed to create checkout session.')
   }
 }
 
@@ -482,6 +501,14 @@ export const handleCheckoutSessionWebhook = async (
       .update(payments)
       .set({ platformStatus: 'FAILED' })
       .where(eq(payments.stripePaymentIntentId, paymentIntentId))
+
+    // Send failure email
+    await sendBookingFailureEmail({
+      attendeeEmail: metadata.attendeeEmail,
+      attendeeName: metadata.attendeeName,
+      mentorName: metadata.mentorUsername,
+      reason: 'An unexpected error occurred while creating your booking.',
+    })
 
     return { success: false, error: 'Failed to create booking, payment has been refunded.' }
   }
