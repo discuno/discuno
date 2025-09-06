@@ -33,6 +33,11 @@ export async function POST(req: Request) {
     return Response.json({ error: 'Invalid payload' }, { status: 400 })
   }
 
+  console.log('Received Cal.com webhook event:', {
+    triggerEvent: event.triggerEvent,
+    payload: event.payload,
+  })
+
   const { triggerEvent, payload } = event
   console.log(`✅ Received Cal.com webhook event: ${triggerEvent}`)
 
@@ -111,8 +116,6 @@ async function storeBooking(event: CalcomBookingPayload) {
       length,
       organizer,
       eventTypeId,
-      price,
-      currency,
       metadata,
     } = validation.data
 
@@ -124,14 +127,13 @@ async function storeBooking(event: CalcomBookingPayload) {
       calcomBookingId: bookingId,
       calcomUid: uid,
       title,
+      description: validation.data.description,
       startTime: start,
       duration: length,
       endTime: new Date(start.getTime() + length * 60000),
-      price: price ?? 0,
-      currency: currency ?? 'USD',
+      meetingUrl: validation.data.metadata.videoCallUrl,
       calcomEventTypeId: eventTypeId,
       paymentId: metadata.paymentId ? Number(metadata.paymentId) : undefined,
-      requiresPayment: !!price,
       organizer: {
         userId: metadata.mentorUserId,
         email: organizer.email,

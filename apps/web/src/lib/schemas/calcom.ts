@@ -84,6 +84,7 @@ export const CalcomBookingPayloadSchema = z.object({
     .max(60, 'Length cannot exceed 60 minutes'),
   bookingId: z.number(),
   metadata: z.object({
+    videoCallUrl: z.string().url().optional(),
     paymentId: z.string().optional(),
     mentorUserId: z.string().uuid('Mentor user ID must be a valid UUID'),
   }),

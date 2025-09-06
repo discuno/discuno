@@ -14,6 +14,7 @@ import {
 import { type UpdateCalcomToken, type UpdateMentorEventType } from '~/lib/schemas/db'
 import {
   getFullProfile,
+  getMentorBookings,
   getMentorCalcomTokens,
   getMentorEventTypes,
   getMentorStripeAccount,
@@ -844,7 +845,7 @@ export const getMentorStripeStatus = async (): Promise<{
       data: {
         hasAccount: true,
         isActive: stripeAccount.stripeAccountStatus === 'active',
-        onboardingCompleted: !!stripeAccount.onboardingCompleted,
+        onboardingCompleted: stripeAccount.chargesEnabled,
         payoutsEnabled: stripeAccount.payoutsEnabled,
         chargesEnabled: stripeAccount.chargesEnabled,
         accountId: stripeAccount.stripeAccountId,
@@ -962,6 +963,32 @@ export const createStripeAccountSession = async ({
     return {
       success: false,
       error: 'Failed to create Account Session',
+    }
+  }
+}
+/**
+ * Fetches all bookings for the current user from Cal.com.
+ * @see https://cal.com/docs/enterprise/api-reference/v2/openapi#/paths/~1bookings/get
+ */
+
+export const getBookings = async (): Promise<{
+  success: boolean
+  data?: Awaited<ReturnType<typeof getMentorBookings>>
+  error?: string
+}> => {
+  try {
+    const { id: userId } = await requireAuth()
+    const bookings = await getMentorBookings(userId)
+
+    return {
+      success: true,
+      data: bookings,
+    }
+  } catch (error) {
+    console.error('Error fetching bookings:', error)
+    return {
+      success: false,
+      error: 'An unexpected error occurred while fetching bookings',
     }
   }
 }
