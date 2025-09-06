@@ -100,6 +100,8 @@
 
     --radius: 0.75rem;
 
+    --navbar-height: 4rem;
+
     /* Keep charts harmonious with new palette */
     --chart-1: 212 100% 50%;
     --chart-2: 224 10% 45%;
