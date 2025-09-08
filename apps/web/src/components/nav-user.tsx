@@ -1,6 +1,8 @@
 'use client'
 
-import { BadgeCheck, Bell, ChevronsUpDown, CreditCard, LogOut, Sparkles } from 'lucide-react'
+import { ChevronsUpDown, HelpCircle, LogOut, Moon, Sun } from 'lucide-react'
+import { useTheme } from 'next-themes'
+import Link from 'next/link'
 
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import {
@@ -29,6 +31,7 @@ export function NavUser({
   }
 }) {
   const { isMobile } = useSidebar()
+  const { setTheme, resolvedTheme } = useTheme()
 
   return (
     <SidebarMenu>
@@ -69,25 +72,29 @@ export function NavUser({
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuGroup>
+            {/* <DropdownMenuGroup>
               <DropdownMenuItem>
                 <Sparkles />
                 Upgrade to Pro
               </DropdownMenuItem>
             </DropdownMenuGroup>
-            <DropdownMenuSeparator />
+            <DropdownMenuSeparator /> */}
             <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <BadgeCheck />
-                Account
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <CreditCard />
-                Billing
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Bell />
-                Notifications
+              <Link href="/help">
+                <DropdownMenuItem>
+                  <HelpCircle className="mr-2 size-4" />
+                  Help Center
+                </DropdownMenuItem>
+              </Link>
+              <DropdownMenuItem
+                onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+              >
+                {resolvedTheme === 'dark' ? (
+                  <Sun className="mr-2 size-4" />
+                ) : (
+                  <Moon className="mr-2 size-4" />
+                )}
+                <span>Theme</span>
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />

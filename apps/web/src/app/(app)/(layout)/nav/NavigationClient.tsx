@@ -132,9 +132,6 @@ export function NavBarBase({ profilePic, isAuthenticated }: NavBarBaseProps) {
                   <ListItem href="/settings" title="Settings">
                     Adjust your account preferences
                   </ListItem>
-                  <ListItem href="/email-verification" title="Become a Mentor">
-                    Join as a mentor and help other students
-                  </ListItem>
                 </ul>
               </NavigationMenuContent>
             </NavigationMenuItem>
@@ -264,9 +261,6 @@ function MobileMenu({ className, isAuthenticated }: MobileMenuProps) {
             <DropdownMenuItem>Sign In</DropdownMenuItem>
           </Link>
         )}
-        <Link href="/email-verification">
-          <DropdownMenuItem>Become a Mentor</DropdownMenuItem>
-        </Link>
       </DropdownMenuContent>
     </DropdownMenu>
   )
