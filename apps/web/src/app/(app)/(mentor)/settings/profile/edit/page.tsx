@@ -1,19 +1,29 @@
+import { getFullProfile, getMajors, getSchools } from '~/server/queries'
 import { EditProfileContent } from '../components/EditProfileContent'
 import { ProfileShell } from '../components/ProfileShell'
 
-const EditProfilePage = async ({
-  searchParams,
-}: {
-  searchParams: Promise<{ status?: string }>
-}) => {
-  const params = await searchParams
+const getEditProfileData = async () => {
+  const [profile, schools, majors] = await Promise.all([
+    getFullProfile(),
+    getSchools(),
+    getMajors(),
+  ])
+  return { profile, schools, majors }
+}
+
+const EditProfilePage = async () => {
+  const { profile, schools, majors } = await getEditProfileData()
+
+  if (!profile) {
+    return <div>User not found</div>
+  }
 
   return (
     <ProfileShell
       title="Edit Profile"
       description="Update your profile information and academic details"
     >
-      <EditProfileContent searchParams={params} />
+      <EditProfileContent profile={profile} schools={schools} majors={majors} />
     </ProfileShell>
   )
 }
