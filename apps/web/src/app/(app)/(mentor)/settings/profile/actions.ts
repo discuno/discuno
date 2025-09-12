@@ -1,7 +1,6 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { redirect } from 'next/navigation'
 import { deleteProfileImage, extractPathnameFromBlobUrl } from '~/lib/blob'
 import {
   getCurrentUserImage,
@@ -93,15 +92,19 @@ export const updateUserProfile = async (formData: FormData) => {
     ...(major && major !== 'default' && { major: major.trim() }),
   }
 
-  // Update complete user profile using the query function
-  await updateCompleteProfile(updateData)
+  try {
+    // Update complete user profile using the query function
+    await updateCompleteProfile(updateData)
 
-  // Revalidate profile pages
-  revalidatePath('/profile')
-  revalidatePath('/profile/view')
-  revalidatePath('/profile/edit')
+    // Revalidate profile pages
+    revalidatePath('/profile')
+    revalidatePath('/profile/edit')
 
-  redirect('/profile/edit?status=success')
+    return { success: true }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred.'
+    return { success: false, message: errorMessage }
+  }
 }
 
 export const getOrCreateUserTimezoneAction = async (timezone: string) => {
