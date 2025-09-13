@@ -57,7 +57,11 @@ export const PostCard = ({ card }: { card: Card; index: number }) => {
       {/* Content Section */}
       <div className="space-y-3 p-4">
         {/* Name */}
-        <h2 className="text-foreground text-xl font-bold">{card.name ?? 'Student Name'}</h2>
+        <div className="h-14">
+          <h2 className="text-foreground truncate text-xl font-bold">
+            {card.name ?? 'Student Name'}
+          </h2>
+        </div>
 
         {/* School & Major Row */}
         <div className="flex items-start justify-between gap-3">

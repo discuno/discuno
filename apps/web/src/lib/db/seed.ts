@@ -276,49 +276,6 @@ const userBios = [
   'Architecture major passionate about sustainable design and urban planning. Part of design competition teams and volunteer with Habitat for Humanity. Dream of creating equitable housing.',
 ]
 
-const postTitles = [
-  'From Community College to Ivy League: My Transfer Journey',
-  'Landing My Dream Internship at a Fortune 500 Company',
-  "How I Built a Successful Study Group That Raised Everyone's GPA",
-  'Dealing with Imposter Syndrome in STEM Fields',
-  'My Experience as a First-Generation College Student',
-  'How to Network Effectively as an Introvert',
-  'Balancing Pre-Med Requirements with Mental Health',
-  'Starting a Successful Campus Organization from Scratch',
-  'How Study Abroad Changed My Career Perspective',
-  'The Reality of Being a Student Entrepreneur',
-  'Transitioning from Online to In-Person Learning',
-  'How to Make the Most of Research Opportunities',
-  "Finding Your Passion When You're Undecided",
-  'The Importance of Mentorship in College Success',
-  'How I Overcame Academic Probation and Graduated Magna Cum Laude',
-  'Building Meaningful Relationships with Professors',
-  'My Experience with Diversity and Inclusion on Campus',
-  'How to Prepare for Graduate School Applications',
-  'The Art of Effective Time Management in College',
-  'How I Found My Voice Through Campus Activism',
-  'Navigating Roommate Conflicts and Building Friendships',
-  'The Financial Reality of College: Budgeting Tips That Work',
-  'How to Turn Your Hobby into a Career',
-  'Dealing with Family Expectations vs. Personal Goals',
-  'My Journey Through Multiple Major Changes',
-  'How to Build a Professional Network Before Graduation',
-  'The Power of Failure: What My Biggest Setbacks Taught Me',
-  'How to Excel in Group Projects and Team Environments',
-  'Finding Work-Life Balance as a High Achiever',
-  'How I Used Campus Resources to Land My Dream Job',
-  'The Reality of Being a Minority in STEM',
-  'How to Make College Affordable: Scholarships and Financial Aid',
-  'Building Confidence Through Public Speaking',
-  'How to Choose Between Graduate School and Job Opportunities',
-  'The Importance of Self-Care During Finals Season',
-  'How I Started a Successful Tutoring Business',
-  'Navigating Internship Applications and Interviews',
-  'The Benefits of Taking Gap Years',
-  'How to Build a Portfolio That Stands Out',
-  'My Experience with Alternative Learning Styles',
-]
-
 const postDescriptions = [
   "The path from community college to an Ivy League school taught me resilience, determination, and the value of every opportunity. Here's my complete strategy and timeline.",
   'After 50+ applications and countless rejections, I finally landed my dream internship. Here are the exact steps I took and what I learned from each failure.',
@@ -590,11 +547,10 @@ export const seedDatabase = async (environment?: Environment) => {
       try {
         console.log('📝 Inserting posts...')
         const postingUsers = insertedUsers // All users get exactly one post
-        const selectedTitles = getRandomElements(postTitles, postingUsers.length)
         const selectedDescriptions = getRandomElements(postDescriptions, postingUsers.length)
 
         const postData = postingUsers.map((user, index) => ({
-          name: selectedTitles[index],
+          name: user.name ?? 'Untitled Post',
           description: selectedDescriptions[index],
           createdById: user.id,
         }))
@@ -827,9 +783,9 @@ export const seedDatabase = async (environment?: Environment) => {
               stripeAccountStatus: 'active',
               onboardingCompleted: acct.created ? new Date(acct.created * 1000) : undefined,
               payoutsEnabled: true,
-              chargesEnabled: acct.charges_enabled,
-              detailsSubmitted: acct.details_submitted,
-              requirements: acct.requirements ?? {},
+              chargesEnabled: true,
+              detailsSubmitted: true,
+              requirements: {},
             })
           } catch (err) {
             console.error(`Failed to create Stripe account for user ${user.id}:`, err)
