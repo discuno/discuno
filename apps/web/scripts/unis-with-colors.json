@@ -1,0 +1,122 @@
+[
+  {
+    "name": "Stanford University",
+    "domain": "stanford.edu",
+    "location": "Stanford, CA",
+    "image": "https://images.unsplash.com/photo-1562774053-701939374585?w=400&h=300&fit=crop",
+    "primaryColor": "#8C1515",
+    "secondaryColor": "#2E2D29"
+  },
+  {
+    "name": "Harvard University",
+    "domain": "harvard.edu",
+    "location": "Cambridge, MA",
+    "image": "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=400&h=300&fit=crop",
+    "primaryColor": "#A51C30",
+    "secondaryColor": "#000000"
+  },
+  {
+    "name": "MIT",
+    "domain": "mit.edu",
+    "location": "Cambridge, MA",
+    "image": "https://images.unsplash.com/photo-1607237138185-eedd9c632b0b?w=400&h=300&fit=crop",
+    "primaryColor": "#A31F34",
+    "secondaryColor": "#8A8B8C"
+  },
+  {
+    "name": "UC Berkeley",
+    "domain": "berkeley.edu",
+    "location": "Berkeley, CA",
+    "image": "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=300&fit=crop",
+    "primaryColor": "#003262",
+    "secondaryColor": "#FDB515"
+  },
+  {
+    "name": "Yale University",
+    "domain": "yale.edu",
+    "location": "New Haven, CT",
+    "image": "https://images.unsplash.com/photo-1564981797816-1043664bf78d?w=400&h=300&fit=crop",
+    "primaryColor": "#00356B",
+    "secondaryColor": "#FFFFFF"
+  },
+  {
+    "name": "Princeton University",
+    "domain": "princeton.edu",
+    "location": "Princeton, NJ",
+    "image": "https://images.unsplash.com/photo-1567168544813-cc03465b4fa8?w=400&h=300&fit=crop",
+    "primaryColor": "#FF6000",
+    "secondaryColor": "#000000"
+  },
+  {
+    "name": "Columbia University",
+    "domain": "columbia.edu",
+    "location": "New York, NY",
+    "image": "https://images.unsplash.com/photo-1596496050827-8299e0220de1?w=400&h=300&fit=crop",
+    "primaryColor": "#B9D9EB",
+    "secondaryColor": "#FFFFFF"
+  },
+  {
+    "name": "University of Chicago",
+    "domain": "uchicago.edu",
+    "location": "Chicago, IL",
+    "image": "https://images.unsplash.com/photo-1564981797816-1043664bf78d?w=400&h=300&fit=crop",
+    "primaryColor": "#800000",
+    "secondaryColor": "#FFFFFF"
+  },
+  {
+    "name": "New York University",
+    "domain": "nyu.edu",
+    "location": "New York, NY",
+    "image": "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=400&h=300&fit=crop",
+    "primaryColor": "#57068C",
+    "secondaryColor": "#FFFFFF"
+  },
+  {
+    "name": "UCLA",
+    "domain": "ucla.edu",
+    "location": "Los Angeles, CA",
+    "image": "https://images.unsplash.com/photo-1562774053-701939374585?w=400&h=300&fit=crop",
+    "primaryColor": "#2774AE",
+    "secondaryColor": "#FFD100"
+  },
+  {
+    "name": "University of Michigan",
+    "domain": "umich.edu",
+    "location": "Ann Arbor, MI",
+    "image": "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=300&fit=crop",
+    "primaryColor": "#00274C",
+    "secondaryColor": "#FFCB05"
+  },
+  {
+    "name": "Carnegie Mellon University",
+    "domain": "cmu.edu",
+    "location": "Pittsburgh, PA",
+    "image": "https://images.unsplash.com/photo-1607237138185-eedd9c632b0b?w=400&h=300&fit=crop",
+    "primaryColor": "#C41230",
+    "secondaryColor": "#000000"
+  },
+  {
+    "name": "Georgia Institute of Technology",
+    "domain": "gatech.edu",
+    "location": "Atlanta, GA",
+    "image": "https://images.unsplash.com/photo-1567168544813-cc03465b4fa8?w=400&h=300&fit=crop",
+    "primaryColor": "#B3A369",
+    "secondaryColor": "#002D56"
+  },
+  {
+    "name": "University of Texas at Austin",
+    "domain": "utexas.edu",
+    "location": "Austin, TX",
+    "image": "https://images.unsplash.com/photo-1596496050827-8299e0220de1?w=400&h=300&fit=crop",
+    "primaryColor": "#BF5700",
+    "secondaryColor": "#333F48"
+  },
+  {
+    "name": "Duke University",
+    "domain": "duke.edu",
+    "location": "Durham, NC",
+    "image": "https://images.unsplash.com/photo-1564981797816-1043664bf78d?w=400&h=300&fit=crop",
+    "primaryColor": "#012169",
+    "secondaryColor": "#FFFFFF"
+  }
+]

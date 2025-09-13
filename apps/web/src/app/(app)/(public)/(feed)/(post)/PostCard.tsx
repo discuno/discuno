@@ -29,26 +29,36 @@ export const PostCard = ({ card }: { card: Card; index: number }) => {
   return (
     <div className="animate-in fade-in zoom-in-95 bg-card/90 hover:shadow-primary/10 dark:bg-card/90 dark:shadow-primary/5 dark:hover:bg-card/95 dark:hover:shadow-primary/15 group relative overflow-hidden rounded-xl p-0 shadow-lg transition-all duration-100 hover:scale-[1.02] hover:shadow-xl dark:shadow-lg">
       {/* Profile Image Section */}
-      <AspectRatio ratio={16 / 9} className="relative w-full overflow-hidden">
-        <Image
-          src={card.userImage ?? '/images/placeholder.jpg'}
-          alt={card.name ?? 'Student profile'}
-          fill
-          className="object-cover transition-transform duration-300 group-hover:scale-105"
-          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-        />
+      <AspectRatio
+        ratio={16 / 9}
+        className="relative flex w-full items-center justify-center overflow-hidden"
+        style={{
+          background: `radial-gradient(circle at center, ${
+            card.schoolSecondaryColor ?? '#4A5568'
+          } 0%, ${card.schoolPrimaryColor ?? '#1A202C'} 100%)`,
+        }}
+      >
+        {card.userImage ? (
+          <div className="relative h-32 w-32 overflow-hidden rounded-lg border-2 border-white/50 shadow-lg">
+            <Image
+              src={card.userImage}
+              alt={card.name ?? 'Student profile'}
+              fill
+              className="object-cover"
+              sizes="128px"
+            />
+          </div>
+        ) : (
+          <User className="h-16 w-16 text-white/80" />
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-
-        {/* Name overlay on image */}
-        <div className="absolute bottom-4 left-4 right-4">
-          <h2 className="text-xl font-bold text-white drop-shadow-lg">
-            {card.name ?? 'Student Name'}
-          </h2>
-        </div>
       </AspectRatio>
 
       {/* Content Section */}
       <div className="space-y-3 p-4">
+        {/* Name */}
+        <h2 className="text-foreground text-xl font-bold">{card.name ?? 'Student Name'}</h2>
+
         {/* School & Major Row */}
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
