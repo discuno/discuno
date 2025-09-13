@@ -215,6 +215,8 @@ export const schools = pgTable('discuno_school', {
   domain: varchar({ length: 255 }).unique().notNull(),
   location: varchar({ length: 255 }).notNull(),
   image: varchar({ length: 255 }),
+  primaryColor: varchar({ length: 7 }), // e.g., '#RRGGBB'
+  secondaryColor: varchar({ length: 7 }), // e.g., '#RRGGBB'
   ...timestamps,
 })
 

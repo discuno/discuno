@@ -95,6 +95,8 @@ const buildPostsQuery = () => {
       },
       school: {
         name: schools.name,
+        primaryColor: schools.primaryColor,
+        secondaryColor: schools.secondaryColor,
       },
       major: {
         name: majors.name,
@@ -127,6 +129,8 @@ const transformPostResult = (result: PostQueryResult[]): Card[] => {
         schoolYear: profile?.schoolYear ?? null,
         school: school?.name ?? null,
         major: major?.name ?? null,
+        schoolPrimaryColor: school?.primaryColor ?? null,
+        schoolSecondaryColor: school?.secondaryColor ?? null,
       })
     }
   }

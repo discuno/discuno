@@ -13,6 +13,8 @@ export interface Card extends Post {
   school?: string | null
   major?: string | null
   graduationYear?: number | null
+  schoolPrimaryColor?: string | null
+  schoolSecondaryColor?: string | null
 }
 
 export interface PostGridProps {
