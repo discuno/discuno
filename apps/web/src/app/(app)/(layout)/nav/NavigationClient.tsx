@@ -260,7 +260,7 @@ function MobileMenu({ className, isAuthenticated }: MobileMenuProps) {
         </Link>
         {!isAuthenticated && (
           <Link href="/auth">
-            <DropdownMenuItem>Sign In</DropdownMenuItem>
+            <DropdownMenuItem>Mentor Sign In</DropdownMenuItem>
           </Link>
         )}
       </DropdownMenuContent>

@@ -1,9 +1,9 @@
-import { AdminLoginPage } from './AdminLoginPage'
+import { LoginPage } from './LoginPage'
 
-export default async function AdminAuthPage() {
+export default async function AuthPage() {
   return (
     <main>
-      <AdminLoginPage />
+      <LoginPage />
     </main>
   )
 }

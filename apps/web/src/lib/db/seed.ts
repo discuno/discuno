@@ -21,7 +21,7 @@ import {
  * Only runs for development and preview environments for safety
  *
  * This seeder creates comprehensive, realistic data including:
- * - 30 mentor users with detailed profiles and diverse backgrounds (all with Cal.com accounts)
+ * - 50 mentor users with detailed profiles and diverse backgrounds (all with Cal.com accounts)
  * - 40+ majors across STEM, liberal arts, business, and other fields
  * - 15 prestigious schools with locations and images
  * - User-school and user-major relationships (30% double majors)
@@ -513,7 +513,7 @@ export const seedDatabase = async (environment?: Environment) => {
     // Step 3: Insert mentor users only (all users will have Cal.com accounts)
     try {
       console.log('👥 Inserting mentor users...')
-      const userData = generateUserData(30) // Only create mentors
+      const userData = generateUserData(50) // Only create mentors
       insertedUsers = await db.insert(users).values(userData).returning()
       seedResults.users = true
       console.log('✅ Users seeded successfully')
@@ -824,10 +824,9 @@ export const seedDatabase = async (environment?: Environment) => {
             stripeAccountData.push({
               userId: user.id,
               stripeAccountId: acct.id,
-              stripeAccountStatus:
-                acct.charges_enabled && acct.payouts_enabled ? 'active' : 'pending',
+              stripeAccountStatus: 'active',
               onboardingCompleted: acct.created ? new Date(acct.created * 1000) : undefined,
-              payoutsEnabled: acct.payouts_enabled,
+              payoutsEnabled: true,
               chargesEnabled: acct.charges_enabled,
               detailsSubmitted: acct.details_submitted,
               requirements: acct.requirements ?? {},
@@ -932,7 +931,7 @@ export const seedDatabase = async (environment?: Environment) => {
       console.log(`  ${success ? '✅' : '❌'} ${key}`)
     })
     console.log('📊 Generated comprehensive realistic data including:')
-    console.log(`  - 30 mentor users with detailed profiles (all added to college-mentors team)`)
+    console.log(`  - 50 mentor users with detailed profiles (all added to college-mentors team)`)
     console.log(`  - Posts with engaging content for all users`)
     console.log(`  - ${majorNames.length} majors and ${schoolData.length} schools`)
     console.log(`  - Mentor reviews with ratings for all users`)
