@@ -1,10 +1,9 @@
-import { Calendar, Clock, ExternalLink, GraduationCap, School, User } from 'lucide-react'
-import Link from 'next/link'
-import { Modal } from '~/app/(app)/(public)/(feed)/@modal/(.)img/[id]/modal'
+import { Calendar, Clock, GraduationCap, School, User } from 'lucide-react'
+import { Modal } from '~/app/(app)/(public)/(feed)/@modal/(.)post/[id]/modal'
+import { ViewFullProfileButton } from '~/app/(app)/(public)/(feed)/@modal/(.)post/[id]/ViewFullProfileButton'
 import { BookingInterface } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingInterface'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { Badge } from '~/components/ui/badge'
-import { Button } from '~/components/ui/button'
 import { Separator } from '~/components/ui/separator'
 import { getPostById } from '~/server/queries'
 
@@ -27,13 +26,7 @@ const PostModal = async ({ params }: { params: Promise<{ id: string }> }) => {
           <span className="hidden sm:inline">Schedule Meeting</span>
         </BookingInterface>
       )}
-      <Button variant="secondary" asChild className="min-w-0 flex-1">
-        <Link href={`/img/${post.id}`} target="_blank" rel="noopener noreferrer">
-          <ExternalLink className="mr-2 h-4 w-4" />
-          <span className="inline sm:hidden">Full Profile</span>
-          <span className="hidden sm:inline">View Full Profile</span>
-        </Link>
-      </Button>
+      <ViewFullProfileButton postId={post.id} className="min-w-0 flex-1" />
     </div>
   )
 

@@ -136,7 +136,7 @@ export const PostCard = ({ card }: { card: Card; index: number }) => {
           className="mt-3 w-full hover:shadow-sm"
           onClick={handleProfileView}
         >
-          <Link href={`/img/${card.id}`} scroll={false}>
+          <Link href={`/post/${card.id}`} scroll={false}>
             View Profile
           </Link>
         </Button>
