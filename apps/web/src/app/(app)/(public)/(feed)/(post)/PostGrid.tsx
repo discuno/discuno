@@ -49,12 +49,11 @@ const PostsDisplay = ({ posts }: { posts: Card[] }) => {
 
 // PostGrid component
 export const PostGrid = ({ schoolId, majorId, graduationYear }: PostGridProps) => {
-  const limit = 12
-
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isError } =
     useInfiniteQuery({
       queryKey: ['posts', { schoolId, majorId, graduationYear }],
       queryFn: async ({ pageParam = undefined }) => {
+        const limit = 12
         if (schoolId || majorId || graduationYear) {
           return fetchPostsByFilterAction(schoolId, majorId, graduationYear, limit, pageParam)
         }
