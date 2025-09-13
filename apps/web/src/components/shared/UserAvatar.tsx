@@ -47,7 +47,7 @@ export const AvatarIcon = ({ profilePic, isAuthenticated = false }: AvatarIconPr
         <Button asChild variant="default" size="sm">
           <Link href="/auth" className="flex items-center gap-2">
             <LogIn className="h-4 w-4" />
-            Sign In
+            Mentor Sign In
           </Link>
         </Button>
       </div>
