@@ -59,12 +59,13 @@ export function NavBarBase({ profilePic, isAuthenticated }: NavBarBaseProps) {
             <NavigationMenuItem>
               <NavigationMenuTrigger>Find Mentors</NavigationMenuTrigger>
               <NavigationMenuContent>
+                <ComingSoonOverlay />
                 <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2">
                   <li className="row-span-3">
                     <NavigationMenuLink asChild>
                       <Link
                         className="from-primary/10 to-primary/5 hover:bg-primary/10 dark:from-primary/20 dark:to-primary/10 dark:hover:bg-primary/20 bg-linear-to-b outline-hidden flex h-full w-full select-none flex-col justify-end rounded-md p-6 no-underline transition-colors focus:shadow-md"
-                        href="/dashboard"
+                        href="/"
                       >
                         <div className="text-foreground mb-2 mt-4 text-lg font-medium">
                           Browse Mentors
@@ -75,13 +76,13 @@ export function NavBarBase({ profilePic, isAuthenticated }: NavBarBaseProps) {
                       </Link>
                     </NavigationMenuLink>
                   </li>
-                  <ListItem href="/dashboard?filter=school" title="Search by School">
+                  <ListItem title="Search by School">
                     Find mentors from specific colleges and universities
                   </ListItem>
-                  <ListItem href="/dashboard?filter=major" title="Search by Major">
+                  <ListItem title="Search by Major">
                     Connect with students in your intended field of study
                   </ListItem>
-                  <ListItem href="/dashboard?filter=interests" title="Search by Interests">
+                  <ListItem title="Search by Interests">
                     Discover mentors who share your passions
                   </ListItem>
                 </ul>
@@ -92,17 +93,16 @@ export function NavBarBase({ profilePic, isAuthenticated }: NavBarBaseProps) {
             <NavigationMenuItem>
               <NavigationMenuTrigger>Resources</NavigationMenuTrigger>
               <NavigationMenuContent>
+                <ComingSoonOverlay />
                 <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2">
-                  <ListItem href="/guides/application" title="Application Guide">
+                  <ListItem title="Application Guide">
                     Step-by-step guide to college applications
                   </ListItem>
-                  <ListItem href="/guides/essays" title="Essay Writing">
+                  <ListItem title="Essay Writing">
                     Tips for writing compelling college essays
                   </ListItem>
-                  <ListItem href="/guides/interviews" title="Interview Prep">
-                    Prepare for college interviews
-                  </ListItem>
-                  <ListItem href="/guides/financial-aid" title="Financial Aid">
+                  <ListItem title="Interview Prep">Prepare for college interviews</ListItem>
+                  <ListItem title="Financial Aid">
                     Understanding scholarships and aid options
                   </ListItem>
                 </ul>
@@ -113,6 +113,7 @@ export function NavBarBase({ profilePic, isAuthenticated }: NavBarBaseProps) {
             <NavigationMenuItem>
               <NavigationMenuTrigger>My Account</NavigationMenuTrigger>
               <NavigationMenuContent>
+                <ComingSoonOverlay />
                 <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2">
                   <ListItem href="/dashboard" title="Dashboard">
                     View your mentorship connections and messages
@@ -204,6 +205,7 @@ function MobileMenu({ className, isAuthenticated }: MobileMenuProps) {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" sideOffset={8} className="w-64">
+        <ComingSoonOverlay />
         <DropdownMenuLabel>Find Mentors</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <Link href="/dashboard">
@@ -263,5 +265,15 @@ function MobileMenu({ className, isAuthenticated }: MobileMenuProps) {
         )}
       </DropdownMenuContent>
     </DropdownMenu>
+  )
+}
+
+function ComingSoonOverlay() {
+  return (
+    <div className="bg-background/80 absolute inset-0 z-10 flex items-center justify-center">
+      <div className="text-foreground rounded-full bg-gray-400/60 px-4 py-2 text-lg font-semibold">
+        Coming Soon!
+      </div>
+    </div>
   )
 }

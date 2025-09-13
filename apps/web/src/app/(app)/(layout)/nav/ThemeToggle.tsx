@@ -3,6 +3,7 @@
 import { Moon, Sun } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useEffect, useState } from 'react'
+import { Button } from '~/components/ui/button'
 
 export const ModeToggle = () => {
   const { setTheme, resolvedTheme } = useTheme()
@@ -18,14 +19,13 @@ export const ModeToggle = () => {
   // Avoid hydration mismatch by waiting until mounted
   if (!mounted) {
     return (
-      <button
-        type="button"
+      <Button
         aria-label="Toggle theme"
         className="text-muted-foreground hover:text-foreground focus-visible:ring-primary inline-flex h-10 w-10 items-center justify-center rounded-full p-0 transition-colors focus-visible:outline-none focus-visible:ring-2"
         disabled
       >
         <Sun className="h-5 w-5 opacity-0" />
-      </button>
+      </Button>
     )
   }
 
