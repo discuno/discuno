@@ -38,6 +38,8 @@ export const env = createEnv({
     CALCOM_WEBHOOK_SECRET: z.string(),
     CALCOM_COLLEGE_MENTORS_TEAM_SLUG: z.string(),
     CALCOM_ORG_SLUG: z.string(),
+    KV_REST_API_URL: z.string().url(),
+    KV_REST_API_TOKEN: z.string(),
   },
 
   /**
@@ -96,6 +98,8 @@ export const env = createEnv({
     NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
     NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,
     NEXT_PUBLIC_POSTHOG_UI_HOST: process.env.NEXT_PUBLIC_POSTHOG_UI_HOST,
+    KV_REST_API_URL: process.env.KV_REST_API_URL,
+    KV_REST_API_TOKEN: process.env.KV_REST_API_TOKEN,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially
