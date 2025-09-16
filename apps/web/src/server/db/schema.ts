@@ -48,6 +48,7 @@ export const posts = pgTable(
       .notNull()
       .unique()
       .references(() => users.id, { onDelete: 'cascade' }),
+    random_sort_key: real('random_sort_key').default(Math.random()).notNull(),
     ...softDeleteTimestamps,
   },
   example => [

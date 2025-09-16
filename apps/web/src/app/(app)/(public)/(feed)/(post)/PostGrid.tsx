@@ -1,8 +1,8 @@
 'use client'
 
-'use client'
-
 import { useInfiniteQuery } from '@tanstack/react-query'
+import { useEffect, useMemo } from 'react'
+import { useInView } from 'react-intersection-observer'
 import { PostCard } from '~/app/(app)/(public)/(feed)/(post)/PostCard'
 import {
   fetchPostsAction,
@@ -49,21 +49,40 @@ const PostsDisplay = ({ posts }: { posts: Card[] }) => {
 
 // PostGrid component
 export const PostGrid = ({ schoolId, majorId, graduationYear }: PostGridProps) => {
+  const { ref, inView } = useInView()
+
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isError } =
     useInfiniteQuery({
       queryKey: ['posts', { schoolId, majorId, graduationYear }],
-      queryFn: async ({ pageParam = undefined }) => {
+      queryFn: async ({ pageParam }: { pageParam?: string }) => {
         const limit = 12
         if (schoolId || majorId || graduationYear) {
           return fetchPostsByFilterAction(schoolId, majorId, graduationYear, limit, pageParam)
         }
         return fetchPostsAction(limit, pageParam)
       },
-      initialPageParam: undefined as number | undefined,
+      initialPageParam: undefined,
       getNextPageParam: lastPage => lastPage.nextCursor,
     })
 
-  const allPosts = data?.pages.flatMap(page => page.posts) ?? []
+  useEffect(() => {
+    if (inView && hasNextPage && !isFetchingNextPage) {
+      void fetchNextPage()
+    }
+  }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage])
+
+  // Deduplicate posts across pages to prevent duplicates from cursor pagination overlaps
+  const allPosts = useMemo(() => {
+    if (!data?.pages) return []
+
+    const uniquePostsMap = new Map<number, Card>()
+    for (const page of data.pages) {
+      for (const post of page.posts) {
+        uniquePostsMap.set(post.id, post)
+      }
+    }
+    return Array.from(uniquePostsMap.values())
+  }, [data?.pages])
 
   if (isLoading) {
     return (
@@ -90,37 +109,27 @@ export const PostGrid = ({ schoolId, majorId, graduationYear }: PostGridProps) =
         Find Your College Mentor
       </h1>
       <PostsDisplay posts={allPosts} />
-      {hasNextPage && (
+      <div ref={ref} />
+      {isFetchingNextPage && (
         <div className="flex justify-center">
-          <button
-            className="bg-primary text-primary-foreground hover:bg-primary/90 focus:ring-primary rounded-full px-8 py-3 transition-all duration-300 focus:ring-2 focus:ring-offset-2 disabled:opacity-50 dark:focus:ring-offset-gray-900"
-            onClick={() => fetchNextPage()}
-            disabled={isFetchingNextPage}
-            aria-label={isFetchingNextPage ? 'Loading more mentors...' : 'Load more mentors'}
-          >
-            {isFetchingNextPage ? (
-              <span className="flex items-center">
-                <svg className="mr-2 h-4 w-4 animate-spin" viewBox="0 0 24 24" aria-hidden="true">
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                  />
-                </svg>
-                Loading...
-              </span>
-            ) : (
-              'Load More Mentors'
-            )}
-          </button>
+          <span className="flex items-center">
+            <svg className="mr-2 h-4 w-4 animate-spin" viewBox="0 0 24 24" aria-hidden="true">
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+              />
+            </svg>
+            Loading...
+          </span>
         </div>
       )}
     </div>
