@@ -9,7 +9,6 @@ import { getCalcomUsernameByUserId } from '~/server/queries'
 
 /**
  * Data Access Layer for authentication operations
- * Following Next.js 2025 best practices for centralized auth logic
  */
 
 /**
@@ -65,9 +64,9 @@ export const createCalcomUserForNewUser = async ({
 
   try {
     const calcomResult = await createCalcomUser({
-      userId, // Pass the userId to avoid authentication check
+      userId,
       email,
-      name: name ?? email.split('@')[0] ?? 'Mentor', // Fallback name
+      name: name ?? email.split('@')[0] ?? 'Mentor',
       timeZone: 'America/New_York', // Default timezone
       avatarUrl: image ?? undefined,
       bio: 'Mentor on Discuno - helping students navigate college life',
@@ -173,19 +172,15 @@ export const syncMentorEventTypesForUser = async (
   | { success: false; error: string }
 > => {
   try {
-    // 1) Lightweight username lookup
     const calUser = await getCalcomUsernameByUserId(userId)
     if (!calUser) {
       return { success: false, error: 'CALCOM_USERNAME_NOT_FOUND' }
     }
 
-    // 2) Fetch remote event types from Cal.com
     const remote = await fetchCalcomEventTypesByUsername(calUser.calcomUsername)
 
-    // 3) Single timestamp for consistency
     const now = new Date()
 
-    // 4-6) Transaction: compute diff, batch upsert, batch delete
     return await db.transaction(async tx => {
       // Fetch existing event types for this mentor (include metadata for change detection)
       const existing = await tx
@@ -200,7 +195,6 @@ export const syncMentorEventTypesForUser = async (
 
       const { toCreateIds, toUpdateIds, toDeleteIds } = computeEventTypeSyncPlan(existing, remote)
 
-      // Build map of existing metadata for quick comparison
       const existingMap = new Map<
         number,
         { title: string; description: string | null; duration: number }
@@ -216,7 +210,6 @@ export const syncMentorEventTypesForUser = async (
       const createIdSet = new Set<number>(toCreateIds)
       const updateIdSet = new Set<number>(toUpdateIds)
 
-      // Prepare values only for rows that need insert or metadata update
       const valuesToUpsert: Array<{
         mentorUserId: string
         calcomEventTypeId: number
@@ -270,7 +263,6 @@ export const syncMentorEventTypesForUser = async (
         }
       }
 
-      // Batch upsert: update only metadata fields (title, description, duration, updatedAt)
       if (valuesToUpsert.length > 0) {
         await tx
           .insert(mentorEventTypes)
@@ -286,7 +278,6 @@ export const syncMentorEventTypesForUser = async (
           })
       }
 
-      // Batch delete missing event types for this mentor
       if (toDeleteIds.length > 0) {
         await tx
           .delete(mentorEventTypes)

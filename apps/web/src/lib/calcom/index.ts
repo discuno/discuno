@@ -1,5 +1,6 @@
 'use server'
 import 'server-only'
+import { getValidCalcomToken } from '~/app/(app)/(mentor)/settings/actions'
 
 import type { CreateCalcomUserInput, UpdateCalcomUserInput } from '~/app/types'
 import { env } from '~/env'
@@ -142,6 +143,28 @@ export const updateCalcomUser = async (data: UpdateCalcomUserInput): Promise<voi
 }
 
 /**
+ * Delete Cal.com user (core implementation)
+ */
+export const deleteCalcomUser = async (calcomUserId: number): Promise<void> => {
+  const response = await fetch(
+    `${env.NEXT_PUBLIC_CALCOM_API_URL}/oauth-clients/${env.NEXT_PUBLIC_X_CAL_ID}/users/${calcomUserId}`,
+    {
+      method: 'DELETE',
+      headers: {
+        'x-cal-secret-key': env.X_CAL_SECRET_KEY,
+      },
+    }
+  )
+
+  if (!response.ok) {
+    const errorText = await response.text()
+    console.error(`Cal.com user deletion failed: ${response.status} ${errorText}`)
+    throw new ExternalApiError(`Cal.com API error: ${response.status} - ${errorText}`)
+  }
+
+  console.log(`Successfully deleted Cal.com user ${calcomUserId}`)
+}
+/**
  * Create a booking via Cal.com API
  */
 export const createCalcomBooking = async (input: {
@@ -217,11 +240,16 @@ export const fetchCalcomEventTypesByUsername = async (
     description?: string
   }>
 > => {
+  const calcomToken = await getValidCalcomToken()
+  if (calcomToken.success == false) {
+    throw new ExternalApiError(`Failed to retrieve Cal.com access token: ${calcomToken.error}`)
+  }
+
   const response = await fetch(
     `${env.NEXT_PUBLIC_CALCOM_API_URL}/event-types?username=${encodeURIComponent(username)}`,
     {
       headers: {
-        Authorization: `Bearer ${env.X_CAL_SECRET_KEY}`,
+        Authorization: `Bearer ${calcomToken.accessToken}`,
         'cal-api-version': '2024-06-14',
       },
     }

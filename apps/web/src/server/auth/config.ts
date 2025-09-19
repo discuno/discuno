@@ -105,6 +105,10 @@ export const authConfig = {
       },
     }),
     async signIn({ user }) {
+      if (!user.email || !user.id) {
+        console.error('Sign-in failed: missing user email or ID')
+        return '/auth/error?error=MissingEmailOrID'
+      }
       try {
         // Ensure the user has a valid .edu email format
         const eduEmailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.edu$/
@@ -114,7 +118,7 @@ export const authConfig = {
         }
 
         // Check if email domain matches a known school domain (in-memory check)
-        const emailDomain = user.email?.split('@')[1]?.toLowerCase()
+        const emailDomain = user.email.split('@')[1]?.toLowerCase()
         const allowedDomains = await getAllowedDomains()
         if (!emailDomain || !allowedDomains.has(emailDomain)) return '/auth/rejected'
         console.log(`Sign-in approved for recognized school domain: ${emailDomain}`)

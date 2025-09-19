@@ -27,7 +27,7 @@ export const PostCard = ({ card }: { card: Card; index: number }) => {
   }
 
   return (
-    <div className="animate-in fade-in zoom-in-95 bg-card/90 hover:shadow-primary/10 dark:bg-card/90 dark:shadow-primary/5 dark:hover:bg-card/95 dark:hover:shadow-primary/15 group relative overflow-hidden rounded-xl p-0 shadow-lg transition-all duration-100 hover:scale-[1.02] hover:shadow-xl dark:shadow-lg">
+    <div className="animate-in fade-in-50 zoom-in-95 bg-card/90 hover:shadow-primary/10 dark:bg-card/90 dark:shadow-primary/5 dark:hover:bg-card/95 dark:hover:shadow-primary/15 group relative overflow-hidden rounded-xl p-0 shadow-lg transition-all duration-100 hover:scale-[1.02] hover:shadow-xl dark:shadow-lg">
       {/* Profile Image Section */}
       <AspectRatio
         ratio={16 / 9}
