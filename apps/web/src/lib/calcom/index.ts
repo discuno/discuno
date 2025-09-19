@@ -2,9 +2,14 @@
 import 'server-only'
 import { getValidCalcomToken } from '~/app/(app)/(mentor)/settings/actions'
 
-import type { CreateCalcomUserInput, UpdateCalcomUserInput } from '~/app/types'
 import { env } from '~/env'
 import { ExternalApiError } from '~/lib/auth/auth-utils'
+import {
+  CreateCalcomUserResponseSchema,
+  type CreateCalcomUserInput,
+  type CreateCalcomUserResponse,
+  type UpdateCalcomUserInput,
+} from '~/lib/calcom/schemas'
 import { storeCalcomTokensForUser } from '~/server/queries'
 
 /**
@@ -44,16 +49,16 @@ export const createCalcomUser = async (
       throw new ExternalApiError(`Cal.com API error: ${userResponse.status} - ${errorText}`)
     }
 
-    const userResponseData = await userResponse.json()
+    const userResponseData: CreateCalcomUserResponse = await userResponse.json()
 
-    if (userResponseData.status !== 'success') {
-      console.error('Cal.com user creation response error:', userResponseData)
-      throw new ExternalApiError(
-        `Cal.com user creation failed: ${JSON.stringify(userResponseData)}`
-      )
+    const parsedResponse = CreateCalcomUserResponseSchema.safeParse(userResponseData)
+
+    if (!parsedResponse.success) {
+      console.error('Invalid Cal.com user creation response:', parsedResponse.error.flatten())
+      throw new ExternalApiError('Invalid Cal.com user creation response')
     }
 
-    const calcomUser = userResponseData.data
+    const calcomUser = parsedResponse.data.data
 
     // Step 2: Add user to college-mentors team
     console.log(`Adding user ${calcomUser.user.id} to college-mentors team...`)
@@ -98,8 +103,8 @@ export const createCalcomUser = async (
         calcomUsername: calcomUser.user.username,
         accessToken: calcomUser.accessToken,
         refreshToken: calcomUser.refreshToken,
-        accessTokenExpiresAt: calcomUser.accessTokenExpiresAt,
-        refreshTokenExpiresAt: calcomUser.refreshTokenExpiresAt,
+        accessTokenExpiresAt: new Date(calcomUser.accessTokenExpiresAt),
+        refreshTokenExpiresAt: new Date(calcomUser.refreshTokenExpiresAt),
       })
 
       console.log(`Stored Cal.com tokens for user ${userId}`)

@@ -2,7 +2,6 @@
 
 import { revalidatePath } from 'next/cache'
 import Stripe from 'stripe'
-import type { CreateCalcomUserInput, UpdateCalcomUserInput } from '~/app/types'
 import type { Availability, DateOverride, WeeklySchedule } from '~/app/types/availability'
 import { availabilitySchema, dateOverrideSchema } from '~/app/types/availability'
 import { env } from '~/env'
@@ -11,6 +10,7 @@ import {
   createCalcomUser as createCalcomUserCore,
   updateCalcomUser as updateCalcomUserCore,
 } from '~/lib/calcom'
+import type { CreateCalcomUserInput, UpdateCalcomUserInput } from '~/lib/calcom/schemas'
 import { type UpdateCalcomToken, type UpdateMentorEventType } from '~/lib/schemas/db'
 import {
   getFullProfile,
