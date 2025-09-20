@@ -163,7 +163,7 @@ export const authConfig = {
 
           if (isNewUser) {
             try {
-              const syncResult = await syncMentorEventTypesForUser(user.id)
+              const syncResult = await syncMentorEventTypesForUser(user.id, result.accessToken)
               if (syncResult.success) {
                 console.log(
                   `Synced Cal.com event types for user ${user.email ?? 'unknown'}: ` +

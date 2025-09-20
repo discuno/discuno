@@ -41,7 +41,7 @@ export const createCalcomUserForNewUser = async ({
   email: string
   name: string | null
   image: string | null
-}): Promise<{ calcomUserId: number; username: string }> => {
+}): Promise<{ calcomUserId: number; username: string; accessToken: string }> => {
   // Check if user already has Cal.com integration
   const hasIntegration = await hasCalcomIntegration(userId)
   if (hasIntegration) {
@@ -56,6 +56,7 @@ export const createCalcomUserForNewUser = async ({
     return {
       calcomUserId: token.calcomUserId,
       username: token.calcomUsername,
+      accessToken: token.accessToken,
     }
   }
 
@@ -96,16 +97,20 @@ export const createCalcomUserForNewUser = async ({
  * This function attempts to create Cal.com integration and logs results
  * Note: When called from events.signIn, this cannot prevent authentication
  */
+type EnforceCalcomResult =
+  | { success: true; accessToken: string }
+  | { success: false; error: string }
+
 export const enforceCalcomIntegration = async (userData: {
   userId: string
   email: string
   name: string | null
   image: string | null
-}): Promise<{ success: boolean; error?: string }> => {
+}): Promise<EnforceCalcomResult> => {
   try {
-    await createCalcomUserForNewUser(userData)
+    const { accessToken } = await createCalcomUserForNewUser(userData)
     console.log(`Cal.com integration enforced successfully for ${userData.email}`)
-    return { success: true }
+    return { accessToken, success: true }
   } catch (error) {
     console.error(`Cal.com integration enforcement failed for ${userData.email}:`, error)
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
@@ -166,7 +171,8 @@ export function computeEventTypeSyncPlan(
  * Intended to be called on first login after Cal.com integration is created
  */
 export const syncMentorEventTypesForUser = async (
-  userId: string
+  userId: string,
+  accessToken: string
 ): Promise<
   | { success: true; created: number; updated: number; deleted: number }
   | { success: false; error: string }
@@ -177,7 +183,7 @@ export const syncMentorEventTypesForUser = async (
       return { success: false, error: 'CALCOM_USERNAME_NOT_FOUND' }
     }
 
-    const remote = await fetchCalcomEventTypesByUsername(calUser.calcomUsername)
+    const remote = await fetchCalcomEventTypesByUsername(calUser.calcomUsername, accessToken)
 
     const now = new Date()
 

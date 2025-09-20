@@ -1,6 +1,5 @@
 'use server'
 import 'server-only'
-import { getValidCalcomToken } from '~/app/(app)/(mentor)/settings/actions'
 
 import { env } from '~/env'
 import { ExternalApiError } from '~/lib/auth/auth-utils'
@@ -20,6 +19,7 @@ export const createCalcomUser = async (
 ): Promise<{
   calcomUserId: number
   username: string
+  accessToken: string
 }> => {
   try {
     const { email, name, timeZone, userId } = data
@@ -113,6 +113,7 @@ export const createCalcomUser = async (
     return {
       calcomUserId: calcomUser.user.id,
       username: calcomUser.user.username,
+      accessToken: calcomUser.accessToken,
     }
   } catch (error) {
     console.error('Error in createCalcomUser:', error)
@@ -236,7 +237,8 @@ export const createCalcomBooking = async (input: {
  * Fetch Cal.com event types for any username
  */
 export const fetchCalcomEventTypesByUsername = async (
-  username: string
+  username: string,
+  accessToken: string
 ): Promise<
   Array<{
     id: number
@@ -245,16 +247,11 @@ export const fetchCalcomEventTypesByUsername = async (
     description?: string
   }>
 > => {
-  const calcomToken = await getValidCalcomToken()
-  if (calcomToken.success == false) {
-    throw new ExternalApiError(`Failed to retrieve Cal.com access token: ${calcomToken.error}`)
-  }
-
   const response = await fetch(
     `${env.NEXT_PUBLIC_CALCOM_API_URL}/event-types?username=${encodeURIComponent(username)}`,
     {
       headers: {
-        Authorization: `Bearer ${calcomToken.accessToken}`,
+        Authorization: `Bearer ${accessToken}`,
         'cal-api-version': '2024-06-14',
       },
     }
