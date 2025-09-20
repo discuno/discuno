@@ -17,7 +17,7 @@
  */
 
 import { createInterface } from 'readline'
-import { seedDatabase } from '../src/lib/db/seed'
+import { seedDatabase, seedProductionData } from '../src/lib/db/seed'
 
 type Environment = 'local' | 'preview' | 'production'
 
@@ -27,32 +27,17 @@ const main = async () => {
   if (!environment) {
     console.error('❌ Environment is required. Usage: tsx scripts/db-seed.ts <environment>')
     console.error('   Valid environments: local, preview, production')
-    console.error('   🚨 Production seeding requires ALLOW_PROD_SEEDING=true environment variable')
     process.exit(1)
   }
 
   if (!['local', 'preview', 'production'].includes(environment)) {
     console.error('❌ Invalid environment. Valid options: local, preview, production')
-    console.error('   🚨 Production seeding requires ALLOW_PROD_SEEDING=true environment variable')
     process.exit(1)
   }
 
-  // Production safety checks
   if (environment === 'production') {
-    const allowProdSeeding = process.env.ALLOW_PROD_SEEDING === 'true'
-
-    if (!allowProdSeeding) {
-      console.error('🚨 PRODUCTION SEEDING BLOCKED')
-      console.error('   Production seeding is disabled for safety.')
-      console.error('   To enable, set environment variable: ALLOW_PROD_SEEDING=true')
-      console.error('')
-      console.error('   Example: ALLOW_PROD_SEEDING=true pnpm db:seed:production')
-      process.exit(1)
-    }
-
-    console.log('🚨 DANGER: PRODUCTION SEEDING ENABLED')
-    console.log('   You are about to seed the PRODUCTION database!')
-    console.log('   This will add sample data to your live environment.')
+    console.log('🚨 DANGER: You are about to seed the PRODUCTION database!')
+    console.log('   This will add essential data like schools and majors.')
     console.log('')
     console.log('   Type "I UNDERSTAND THE RISKS" to continue:')
 
@@ -79,26 +64,16 @@ const main = async () => {
 
   console.log(`🌱 Starting seeding process for ${environment} environment`)
   console.log(`📅 Timestamp: ${new Date().toISOString()}`)
-  console.log('🚨 This will add sample data to your database')
   console.log('─'.repeat(50))
 
-  // Additional safety prompt for preview
-  if (environment === 'preview') {
-    console.log('⚠️  You are about to seed the PREVIEW environment')
-    console.log('   This will add sample data to your staging database')
-    console.log('   Make sure this is intended!')
-    console.log('─'.repeat(50))
-  }
-
   try {
-    await seedDatabase(environment)
+    if (environment === 'production') {
+      await seedProductionData()
+    } else {
+      await seedDatabase(environment)
+    }
     console.log('─'.repeat(50))
     console.log(`🎉 Seeding completed successfully for ${environment}`)
-    console.log('📊 Your database now contains sample data for development/testing')
-    console.log('   - 30 mentor users added to college-mentors team')
-    console.log('   - Posts, reviews, and complete relationship mappings')
-    console.log('   - Schools, majors, and waitlist entries')
-    console.log('   - Event types managed at team level (not per-user)')
   } catch (error) {
     console.log('─'.repeat(50))
     console.error(`💥 Seeding failed for ${environment}:`, error)
