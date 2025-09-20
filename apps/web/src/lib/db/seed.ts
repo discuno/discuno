@@ -905,6 +905,30 @@ export const seedDatabase = async (environment?: Environment) => {
   }
 }
 
+export const seedProductionData = async () => {
+  console.log('🌱 Starting production database seeding...')
+  const { client, db } = createSeedConnection('production')
+
+  try {
+    console.log('📚 Inserting majors...')
+    await db
+      .insert(majors)
+      .values(majorNames.map(name => ({ name })))
+      .onConflictDoNothing()
+
+    console.log('🏫 Inserting schools...')
+    await db.insert(schools).values(schoolData).onConflictDoNothing()
+
+    console.log('✅ Production data seeded successfully')
+  } catch (error) {
+    console.error('❌ Failed to seed production data:', error)
+    throw error
+  } finally {
+    await client.end()
+    console.log('🔌 Database connection closed for production')
+  }
+}
+
 // CLI support
 if (import.meta.url === `file://${process.argv[1]}`) {
   const environment = process.argv[2] as Environment | undefined
