@@ -19,7 +19,7 @@ export const PostCard = ({ card }: { card: Card; index: number }) => {
     })
     const fingerprint = sessionStorage.getItem('fingerprint') ?? undefined
     void logAnalyticsEvent({
-      eventType: 'profile_view',
+      eventType: 'PROFILE_VIEW',
       targetUserId: card.createdById,
       postId: card.id,
       fingerprint,
