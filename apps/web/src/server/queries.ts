@@ -206,7 +206,19 @@ export const getInfiniteScrollPosts = async (
             )
           : undefined,
         isNotNull(userProfiles.id), // Ensure the user has a profile
-        isNull(posts.deletedAt) // Exclude deleted posts
+        isNull(posts.deletedAt), // Exclude deleted posts
+        // Ensure the mentor has an active event type
+        eq(mentorEventTypes.isEnabled, true),
+        or(
+          // Allow mentors with free event types
+          eq(mentorEventTypes.customPrice, 0),
+          // Allow mentors with paid event types if their Stripe account is active
+          and(
+            gt(mentorEventTypes.customPrice, 0),
+            eq(mentorStripeAccounts.stripeAccountStatus, 'active'),
+            eq(mentorStripeAccounts.payoutsEnabled, true)
+          )
+        )
       )
     )
     .orderBy(desc(userProfiles.rankingScore), desc(posts.random_sort_key), desc(posts.id))
@@ -348,7 +360,19 @@ export const getPostsByFilters = async (
       and(
         ...(conditions.length > 0 ? conditions : [undefined]),
         isNotNull(userProfiles.id), // Ensure the user has a profile
-        isNull(posts.deletedAt) // Exclude deleted posts
+        isNull(posts.deletedAt), // Exclude deleted posts
+        // Ensure the mentor has an active event type
+        eq(mentorEventTypes.isEnabled, true),
+        or(
+          // Allow mentors with free event types
+          eq(mentorEventTypes.customPrice, 0),
+          // Allow mentors with paid event types if their Stripe account is active
+          and(
+            gt(mentorEventTypes.customPrice, 0),
+            eq(mentorStripeAccounts.stripeAccountStatus, 'active'),
+            eq(mentorStripeAccounts.payoutsEnabled, true)
+          )
+        )
       )
     )
     .orderBy(desc(userProfiles.rankingScore), desc(posts.id))
