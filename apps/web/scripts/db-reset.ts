@@ -21,12 +21,13 @@ import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 import Stripe from 'stripe'
 import { seedDatabase } from '~/lib/db/seed'
-type Environment = 'local' | 'preview'
+type Environment = 'local' | 'preview' | 'test'
 
 const loadEnvironmentConfig = (environment: Environment) => {
   const envFiles = {
     local: '.env.local',
     preview: '.env.preview',
+    test: '.env.test',
   }
 
   const envFile = envFiles[environment]
@@ -70,134 +71,136 @@ const dropAllTables = async (environment: Environment) => {
   const { client, db } = createResetConnection(environment)
 
   try {
-    // Step 0: Clean up Cal.com team memberships for existing local tokens
-    console.log('🌐 Cleaning up Cal.com team memberships...')
-    const calcomApiBase = process.env.NEXT_PUBLIC_CALCOM_API_URL
-    const calcomClientId = process.env.NEXT_PUBLIC_X_CAL_ID
-    const calcomSecretKey = process.env.X_CAL_SECRET_KEY
-    const calcomOrgId = process.env.CALCOM_ORG_ID
-    const collegeMentorTeamId = process.env.COLLEGE_MENTOR_TEAM_ID
-    if (!calcomClientId || !calcomSecretKey || !calcomOrgId || !collegeMentorTeamId) {
-      console.warn('⚠️ Missing Cal.com credentials. Skipping Cal.com cleanup.')
-    } else {
-      try {
-        // Step 0a: Fetch all team memberships to get membership IDs
-        console.log('📋 Fetching team memberships...')
-        const membershipsResponse = await fetch(
-          `${calcomApiBase}/organizations/${calcomOrgId}/teams/${collegeMentorTeamId}/memberships`,
-          {
-            method: 'GET',
-            headers: {
-              'x-cal-secret-key': calcomSecretKey,
-              'x-cal-client-id': calcomClientId,
-            },
-          }
-        )
-
-        if (!membershipsResponse.ok) {
-          const errorText = await membershipsResponse.text()
-          console.error(
-            `Failed to fetch team memberships: ${membershipsResponse.status} ${errorText}`
+    if (environment !== 'test') {
+      // Step 0: Clean up Cal.com team memberships for existing local tokens
+      console.log('🌐 Cleaning up Cal.com team memberships...')
+      const calcomApiBase = process.env.NEXT_PUBLIC_CALCOM_API_URL
+      const calcomClientId = process.env.NEXT_PUBLIC_X_CAL_ID
+      const calcomSecretKey = process.env.X_CAL_SECRET_KEY
+      const calcomOrgId = process.env.CALCOM_ORG_ID
+      const collegeMentorTeamId = process.env.COLLEGE_MENTOR_TEAM_ID
+      if (!calcomClientId || !calcomSecretKey || !calcomOrgId || !collegeMentorTeamId) {
+        console.warn('⚠️ Missing Cal.com credentials. Skipping Cal.com cleanup.')
+      } else {
+        try {
+          // Step 0a: Fetch all team memberships to get membership IDs
+          console.log('📋 Fetching team memberships...')
+          const membershipsResponse = await fetch(
+            `${calcomApiBase}/organizations/${calcomOrgId}/teams/${collegeMentorTeamId}/memberships`,
+            {
+              method: 'GET',
+              headers: {
+                'x-cal-secret-key': calcomSecretKey,
+                'x-cal-client-id': calcomClientId,
+              },
+            }
           )
-        } else {
-          const membershipsData = await membershipsResponse.json()
 
-          if (membershipsData.status === 'success' && Array.isArray(membershipsData.data)) {
-            const memberships = membershipsData.data
-            console.log(`Found ${memberships.length} team memberships to clean up`)
+          if (!membershipsResponse.ok) {
+            const errorText = await membershipsResponse.text()
+            console.error(
+              `Failed to fetch team memberships: ${membershipsResponse.status} ${errorText}`
+            )
+          } else {
+            const membershipsData = await membershipsResponse.json()
 
-            // Step 0b: Delete each membership (except OWNER role to avoid breaking the team)
-            for (const membership of memberships) {
-              try {
-                // Skip OWNER memberships to avoid breaking the team
-                if (membership.role === 'OWNER') {
-                  console.log(`Skipping OWNER membership for user ${membership.user.email}`)
-                  continue
-                }
+            if (membershipsData.status === 'success' && Array.isArray(membershipsData.data)) {
+              const memberships = membershipsData.data
+              console.log(`Found ${memberships.length} team memberships to clean up`)
 
-                console.log(
-                  `Removing membership ${membership.id} for user ${membership.user.email}`
-                )
-
-                const deleteMembershipResponse = await fetch(
-                  `${calcomApiBase}/organizations/${calcomOrgId}/teams/${collegeMentorTeamId}/memberships/${membership.id}`,
-                  {
-                    method: 'DELETE',
-                    headers: {
-                      'x-cal-secret-key': calcomSecretKey,
-                      'x-cal-client-id': calcomClientId,
-                    },
-                  }
-                )
-
-                if (!deleteMembershipResponse.ok) {
-                  const deleteErrorText = await deleteMembershipResponse.text()
-                  console.error(
-                    `Failed to delete membership ${membership.id}: ${deleteMembershipResponse.status} ${deleteErrorText}`
-                  )
-                } else {
-                  console.log(`Successfully deleted membership ${membership.id}`)
-                }
-
-                // Step 0c: Also delete the Cal.com user if possible
+              // Step 0b: Delete each membership (except OWNER role to avoid breaking the team)
+              for (const membership of memberships) {
                 try {
-                  const userResponse = await fetch(
-                    `${calcomApiBase}/oauth-clients/${calcomClientId}/users/${membership.userId}`,
+                  // Skip OWNER memberships to avoid breaking the team
+                  if (membership.role === 'OWNER') {
+                    console.log(`Skipping OWNER membership for user ${membership.user.email}`)
+                    continue
+                  }
+
+                  console.log(
+                    `Removing membership ${membership.id} for user ${membership.user.email}`
+                  )
+
+                  const deleteMembershipResponse = await fetch(
+                    `${calcomApiBase}/organizations/${calcomOrgId}/teams/${collegeMentorTeamId}/memberships/${membership.id}`,
                     {
                       method: 'DELETE',
                       headers: {
                         'x-cal-secret-key': calcomSecretKey,
+                        'x-cal-client-id': calcomClientId,
                       },
                     }
                   )
 
-                  if (!userResponse.ok) {
-                    const userErrorText = await userResponse.text()
+                  if (!deleteMembershipResponse.ok) {
+                    const deleteErrorText = await deleteMembershipResponse.text()
                     console.error(
-                      `Failed to delete Cal.com user ${membership.userId}: ${userResponse.status} ${userErrorText}`
+                      `Failed to delete membership ${membership.id}: ${deleteMembershipResponse.status} ${deleteErrorText}`
                     )
                   } else {
-                    console.log(`Successfully deleted Cal.com user ${membership.userId}`)
+                    console.log(`Successfully deleted membership ${membership.id}`)
                   }
-                } catch (userError) {
-                  console.error(`Error deleting Cal.com user ${membership.userId}:`, userError)
+
+                  // Step 0c: Also delete the Cal.com user if possible
+                  try {
+                    const userResponse = await fetch(
+                      `${calcomApiBase}/oauth-clients/${calcomClientId}/users/${membership.userId}`,
+                      {
+                        method: 'DELETE',
+                        headers: {
+                          'x-cal-secret-key': calcomSecretKey,
+                        },
+                      }
+                    )
+
+                    if (!userResponse.ok) {
+                      const userErrorText = await userResponse.text()
+                      console.error(
+                        `Failed to delete Cal.com user ${membership.userId}: ${userResponse.status} ${userErrorText}`
+                      )
+                    } else {
+                      console.log(`Successfully deleted Cal.com user ${membership.userId}`)
+                    }
+                  } catch (userError) {
+                    console.error(`Error deleting Cal.com user ${membership.userId}:`, userError)
+                  }
+                } catch (membershipError) {
+                  console.error(`Error processing membership ${membership.id}:`, membershipError)
                 }
-              } catch (membershipError) {
-                console.error(`Error processing membership ${membership.id}:`, membershipError)
               }
+            } else {
+              console.warn('Unexpected memberships response format:', membershipsData)
             }
-          } else {
-            console.warn('Unexpected memberships response format:', membershipsData)
+          }
+        } catch (error) {
+          console.error('Error during Cal.com cleanup:', error)
+        }
+      }
+      // Step 0a: Cleanup Stripe Connect test accounts
+      const stripeSecretKey = process.env.STRIPE_SECRET_KEY
+      if (!stripeSecretKey) {
+        throw new Error('STRIPE_SECRET_KEY environment variable is not set')
+      }
+      const stripe = new Stripe(stripeSecretKey)
+      console.log('💳 Cleaning up Stripe Connect test accounts...')
+      try {
+        // Fetch Stripe account IDs from DB
+        const accounts = await db.execute(
+          sql`SELECT stripe_account_id FROM discuno_mentor_stripe_account`
+        )
+        for (const row of accounts) {
+          const acctId = row.stripe_account_id
+          try {
+            console.log(`Deleting Stripe account ${acctId}`)
+            await stripe.accounts.del(acctId as string)
+            console.log(`Deleted Stripe account ${acctId}`)
+          } catch (err) {
+            console.error(`Error deleting Stripe account ${acctId}:`, err)
           }
         }
-      } catch (error) {
-        console.error('Error during Cal.com cleanup:', error)
+      } catch (err) {
+        console.error('Error fetching Stripe Connect accounts for cleanup:', err)
       }
-    }
-    // Step 0a: Cleanup Stripe Connect test accounts
-    const stripeSecretKey = process.env.STRIPE_SECRET_KEY
-    if (!stripeSecretKey) {
-      throw new Error('STRIPE_SECRET_KEY environment variable is not set')
-    }
-    const stripe = new Stripe(stripeSecretKey)
-    console.log('💳 Cleaning up Stripe Connect test accounts...')
-    try {
-      // Fetch Stripe account IDs from DB
-      const accounts = await db.execute(
-        sql`SELECT stripe_account_id FROM discuno_mentor_stripe_account`
-      )
-      for (const row of accounts) {
-        const acctId = row.stripe_account_id
-        try {
-          console.log(`Deleting Stripe account ${acctId}`)
-          await stripe.accounts.del(acctId as string)
-          console.log(`Deleted Stripe account ${acctId}`)
-        } catch (err) {
-          console.error(`Error deleting Stripe account ${acctId}:`, err)
-        }
-      }
-    } catch (err) {
-      console.error('Error fetching Stripe Connect accounts for cleanup:', err)
     }
     // First, disable foreign key checks temporarily to avoid dependency issues
     await db.execute(sql`SET session_replication_role = replica;`)
@@ -286,7 +289,11 @@ const pushSchema = async (environment: Environment) => {
 
     // Determine config file based on environment
     const configFile =
-      environment === 'local' ? 'drizzle.local.config.ts' : 'drizzle.preview.config.ts'
+      environment === 'local'
+        ? 'drizzle.local.config.ts'
+        : environment === 'preview'
+          ? 'drizzle.preview.config.ts'
+          : 'drizzle.test.config.ts'
 
     console.log(`📂 Using config file: ${configFile}`)
 
@@ -296,11 +303,15 @@ const pushSchema = async (environment: Environment) => {
     // Use spawn to run drizzle-kit push with proper stdio handling
     const result = await new Promise<{ code: number; stdout: string; stderr: string }>(
       (resolve, reject) => {
-        const childProcess = spawn('pnpm', ['drizzle-kit', 'push', `--config=${configFile}`], {
-          stdio: ['inherit', 'pipe', 'pipe'],
-          cwd: process.cwd(),
-          env,
-        })
+        const childProcess = spawn(
+          'pnpm',
+          ['drizzle-kit', 'push', `--config=${configFile}`, '--force'],
+          {
+            stdio: ['inherit', 'pipe', 'pipe'],
+            cwd: process.cwd(),
+            env,
+          }
+        )
 
         let stdout = ''
         let stderr = ''
@@ -341,7 +352,7 @@ const main = async () => {
 
   if (!environment) {
     console.error('❌ Environment is required. Usage: tsx scripts/db-reset.ts <environment>')
-    console.error('   Valid environments: local, preview')
+    console.error('   Valid environments: local, preview, test')
     console.error('   🚨 Production reset is disabled for safety')
     process.exit(1)
   }

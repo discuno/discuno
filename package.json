@@ -58,6 +58,7 @@
     "db:studio:local": "pnpm --filter @discuno/web db:studio:local",
     "db:studio:preview": "pnpm --filter @discuno/web db:studio:preview",
     "db:studio:prod": "pnpm --filter @discuno/web db:studio:prod",
+    "db:studio:test": "pnpm --filter @discuno/web db:studio:test",
     "db:test:local": "pnpm --filter @discuno/web db:test:local",
     "db:test:preview": "pnpm --filter @discuno/web db:test:preview",
     "db:test:prod": "pnpm --filter @discuno/web db:test:prod",
