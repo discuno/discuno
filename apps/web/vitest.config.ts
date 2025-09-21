@@ -10,7 +10,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
-    setupFiles: ['./vitest.setup.ts'],
+    setupFiles: ['./src/server/__tests__/setup.ts'],
     typecheck: {
       tsconfig: './tsconfig.test.json',
     },

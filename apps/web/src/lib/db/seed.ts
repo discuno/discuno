@@ -33,7 +33,7 @@ import {
  * - Cal.com managed user accounts and tokens for all users
  */
 
-type Environment = 'local' | 'preview' | 'production'
+type Environment = 'local' | 'preview' | 'production' | 'test'
 
 const loadEnvironmentConfig = (environment?: Environment) => {
   if (!environment) {
@@ -46,6 +46,7 @@ const loadEnvironmentConfig = (environment?: Environment) => {
     local: '.env.local',
     preview: '.env.preview',
     production: '.env.production',
+    test: '.env.test',
   }
 
   const envFile = envFiles[environment]
@@ -403,6 +404,11 @@ const generateGraduationYear = (schoolYear: string): number => {
 
 export const seedDatabase = async (environment?: Environment) => {
   const targetEnv = environment
+
+  if (targetEnv === 'test') {
+    console.log('🌱 Skipping database seeding for test environment')
+    return
+  }
 
   // Safety check: don't allow seeding production unless explicitly enabled
   if (targetEnv === 'production') {
