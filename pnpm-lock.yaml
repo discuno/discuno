@@ -167,9 +167,9 @@ importers:
       '@radix-ui/react-tooltip':
         specifier: ^1.2.7
         version: 1.2.7(@types/react-dom@19.1.6(@types/react@19.1.8))(@types/react@19.1.8)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
-      '@sendgrid/mail':
-        specifier: ^8.1.5
-        version: 8.1.5
+      '@react-email/render':
+        specifier: ^1.2.3
+        version: 1.2.3(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       '@sentry/nextjs':
         specifier: ^9.29.0
         version: 9.29.0(@opentelemetry/context-async-hooks@1.30.1(@opentelemetry/api@1.9.0))(@opentelemetry/core@1.30.1(@opentelemetry/api@1.9.0))(@opentelemetry/instrumentation@0.57.2(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@1.30.1(@opentelemetry/api@1.9.0))(next@15.3.3(@babel/core@7.27.4)(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0)(webpack@5.99.9(esbuild@0.25.5))
@@ -299,6 +299,9 @@ importers:
       recharts:
         specifier: 2.15.4
         version: 2.15.4(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      resend:
+        specifier: ^6.1.0
+        version: 6.1.0(@react-email/render@1.2.3(react-dom@19.1.0(react@19.1.0))(react@19.1.0))
       server-only:
         specifier: ^0.0.1
         version: 0.0.1
@@ -3633,6 +3636,16 @@ packages:
         integrity: sha512-HPwpGIzkl28mWyZqG52jiqDJ12waP11Pa1lGoiyUkIEuMLBP0oeK/C89esbXrxsky5we7dfd8U58nm0SgAWpVw==,
       }
 
+  '@react-email/render@1.2.3':
+    resolution:
+      {
+        integrity: sha512-qu3XYNkHGao3teJexVD5CrcgFkNLrzbZvpZN17a7EyQYUN3kHkTkE9saqY4VbvGx6QoNU3p8rsk/Xm++D/+pTw==,
+      }
+    engines: { node: '>=18.0.0' }
+    peerDependencies:
+      react: ^18.0 || ^19.0 || ^19.0.0-rc
+      react-dom: ^18.0 || ^19.0 || ^19.0.0-rc
+
   '@rolldown/pluginutils@1.0.0-beta.11':
     resolution:
       {
@@ -3993,26 +4006,11 @@ packages:
         integrity: sha512-5EwMtOqvJMMa3HbmxLlF74e+3/HhwBTMcvt3nqVJgGCozO6hzIPOBlwm8mGVNR9SN2IJpxSnlxczyDjcn7qIyw==,
       }
 
-  '@sendgrid/client@8.1.5':
+  '@selderee/plugin-htmlparser2@0.11.0':
     resolution:
       {
-        integrity: sha512-Jqt8aAuGIpWGa15ZorTWI46q9gbaIdQFA21HIPQQl60rCjzAko75l3D1z7EyjFrNr4MfQ0StusivWh8Rjh10Cg==,
+        integrity: sha512-P33hHGdldxGabLFjPPpaTxVolMrzrcegejx+0GxjrIb9Zv48D8yAIA/QTDR2dFl7Uz7urX8aX6+5bCZslr+gWQ==,
       }
-    engines: { node: '>=12.*' }
-
-  '@sendgrid/helpers@8.0.0':
-    resolution:
-      {
-        integrity: sha512-Ze7WuW2Xzy5GT5WRx+yEv89fsg/pgy3T1E3FS0QEx0/VvRmigMZ5qyVGhJz4SxomegDkzXv/i0aFPpHKN8qdAA==,
-      }
-    engines: { node: '>= 12.0.0' }
-
-  '@sendgrid/mail@8.1.5':
-    resolution:
-      {
-        integrity: sha512-W+YuMnkVs4+HA/bgfto4VHKcPKLc7NiZ50/NH2pzO6UHCCFuq8/GNB98YJlLEr/ESDyzAaDr7lVE7hoBwFTT3Q==,
-      }
-    engines: { node: '>=12.*' }
 
   '@sentry-internal/browser-utils@9.29.0':
     resolution:
@@ -5982,12 +5980,6 @@ packages:
       }
     engines: { node: '>=4' }
 
-  axios@1.10.0:
-    resolution:
-      {
-        integrity: sha512-/1xYAC4MP/HEG+3duIhFr4ZQXR4sQXOIe+o6sdqzeykGLx6Upp/1p8MHqhINOvGeP7xyNHe7tsiJByc4SSVUxw==,
-      }
-
   axios@1.8.2:
     resolution:
       {
@@ -7550,6 +7542,12 @@ packages:
       }
     engines: { node: '>=4' }
 
+  fast-deep-equal@2.0.1:
+    resolution:
+      {
+        integrity: sha512-bCK/2Z4zLidyB4ReuIsvALH6w31YfAQDmXMqMx6FyfHqvBxtjC0eRumeSu4Bs3XtXwpyIywtSTrVT99BxY1f9w==,
+      }
+
   fast-deep-equal@3.1.3:
     resolution:
       {
@@ -8016,6 +8014,19 @@ packages:
     resolution:
       {
         integrity: sha512-H2iMtd0I4Mt5eYiapRdIDjp+XzelXQ0tFE4JS7YFwFevXXMmOp9myNrUvCg0D6ws8iqkRPBfKHgbwig1SmlLfg==,
+      }
+
+  html-to-text@9.0.5:
+    resolution:
+      {
+        integrity: sha512-qY60FjREgVZL03vJU6IfMV4GDjGBIoOyvuFdpBDIX9yTlDw0TjxVBQp+P8NvpdIXNJvfWBTNul7fsAQJq2FNpg==,
+      }
+    engines: { node: '>=14' }
+
+  htmlparser2@8.0.2:
+    resolution:
+      {
+        integrity: sha512-GYdjWKDkbRLkZ5geuHs5NY1puJ+PXwP7+fHPRz06Eirsb9ugf6d8kkXav6ADhcODhFFPMIXyxkxSuMf3D6NCFA==,
       }
 
   http-proxy-agent@7.0.2:
@@ -8689,6 +8700,12 @@ packages:
         integrity: sha512-MbjN408fEndfiQXbFQ1vnd+1NoLDsnQW41410oQBXiyXDMYH5z505juWa4KUE1LqxRC7DgOgZDbKLxHIwm27hA==,
       }
     engines: { node: '>=0.10' }
+
+  leac@0.6.0:
+    resolution:
+      {
+        integrity: sha512-y+SqErxb8h7nE/fiEX07jsbuhrpO9lL8eca7/Y1nuWV2moNlXhyd59iDGcRf6moVyDMbmTNzL40SUyrFU/yDpg==,
+      }
 
   levn@0.4.1:
     resolution:
@@ -9581,6 +9598,12 @@ packages:
         integrity: sha512-IInvU7fabl34qmi9gY8XOVxhYyMyuH2xUNpb2q8/Y+7552KlejkRvqvD19nMoUW/uQGGbqNpA6Tufu5FL5BZgw==,
       }
 
+  parseley@0.12.1:
+    resolution:
+      {
+        integrity: sha512-e6qHKe3a9HWr0oMRVDTRhKce+bRO8VGQR3NyVwcjwrbhMmFCX9KszEV35+rn4AdilFAq9VPxP/Fe1wC9Qjd2lw==,
+      }
+
   path-exists@4.0.0:
     resolution:
       {
@@ -9634,6 +9657,12 @@ packages:
         integrity: sha512-vE7JKRyES09KiunauX7nd2Q9/L7lhok4smP9RZTDeD4MVs72Dp2qNFVz39Nz5a0FVEW0BJR6C0DYrq6unoziZA==,
       }
     engines: { node: '>= 14.16' }
+
+  peberminta@0.9.0:
+    resolution:
+      {
+        integrity: sha512-XIxfHpEuSJbITd1H3EeQwpcZbTLHc+VVr8ANI9t5sit565tsI4/xK3KWTUFE2e6QiangUkh3B0jihzmGnNrRsQ==,
+      }
 
   pg-int8@1.0.1:
     resolution:
@@ -10057,6 +10086,12 @@ packages:
       react: '>=16.8'
       react-dom: '>=16.8'
 
+  react-promise-suspense@0.3.4:
+    resolution:
+      {
+        integrity: sha512-I42jl7L3Ze6kZaq+7zXWSunBa3b1on5yfvUW6Eo/3fFOj6dZ5Bqmcd264nJbTK/gn1HjjILAjSwnZbV4RpSaNQ==,
+      }
+
   react-refresh@0.17.0:
     resolution:
       {
@@ -10246,6 +10281,18 @@ packages:
       }
     engines: { node: '>=8.6.0' }
 
+  resend@6.1.0:
+    resolution:
+      {
+        integrity: sha512-H0cJI2pcLk5/dGwyvZUHu+O7X/q6arvc40EWm+pRPuy+PSWojH5utZtmDBUZ2L0+gVwYZiWs6y2lw6GQA1z1rg==,
+      }
+    engines: { node: '>=18' }
+    peerDependencies:
+      '@react-email/render': ^1.1.0
+    peerDependenciesMeta:
+      '@react-email/render':
+        optional: true
+
   resolve-from@4.0.0:
     resolution:
       {
@@ -10422,6 +10469,12 @@ packages:
         integrity: sha512-Gn/JaSk/Mt9gYubxTtSn/QCV4em9mpAPiR1rqy/Ocu19u/G9J5WWdNoUT4SiV6mFC3y6cxyFcFwdzPM3FgxGAQ==,
       }
     engines: { node: '>= 10.13.0' }
+
+  selderee@0.11.0:
+    resolution:
+      {
+        integrity: sha512-5TF+l7p4+OsnP8BCCvSyZiSPc4x4//p5uPwK8TCnVPJYRmU2aYKMpOXvw8zM5a5JvuuCGN1jmsMwuU2W02ukfA==,
+      }
 
   semver@6.3.1:
     resolution:
@@ -12873,7 +12926,7 @@ snapshots:
       '@commitlint/types': 19.8.1
       chalk: 5.4.1
       cosmiconfig: 9.0.0(typescript@5.8.3)
-      cosmiconfig-typescript-loader: 6.1.0(@types/node@24.0.1)(cosmiconfig@9.0.0(typescript@5.9.2))(typescript@5.8.3)
+      cosmiconfig-typescript-loader: 6.1.0(@types/node@24.0.1)(cosmiconfig@9.0.0(typescript@5.8.3))(typescript@5.8.3)
       lodash.isplainobject: 4.0.6
       lodash.merge: 4.6.2
       lodash.uniq: 4.5.0
@@ -14270,6 +14323,14 @@ snapshots:
 
   '@radix-ui/rect@1.1.1': {}
 
+  '@react-email/render@1.2.3(react-dom@19.1.0(react@19.1.0))(react@19.1.0)':
+    dependencies:
+      html-to-text: 9.0.5
+      prettier: 3.6.2
+      react: 19.1.0
+      react-dom: 19.1.0(react@19.1.0)
+      react-promise-suspense: 0.3.4
+
   '@rolldown/pluginutils@1.0.0-beta.11': {}
 
   '@rollup/plugin-commonjs@28.0.1(rollup@4.35.0)':
@@ -14415,23 +14476,10 @@ snapshots:
 
   '@rushstack/eslint-patch@1.12.0': {}
 
-  '@sendgrid/client@8.1.5':
+  '@selderee/plugin-htmlparser2@0.11.0':
     dependencies:
-      '@sendgrid/helpers': 8.0.0
-      axios: 1.10.0
-    transitivePeerDependencies:
-      - debug
-
-  '@sendgrid/helpers@8.0.0':
-    dependencies:
-      deepmerge: 4.3.1
-
-  '@sendgrid/mail@8.1.5':
-    dependencies:
-      '@sendgrid/client': 8.1.5
-      '@sendgrid/helpers': 8.0.0
-    transitivePeerDependencies:
-      - debug
+      domhandler: 5.0.3
+      selderee: 0.11.0
 
   '@sentry-internal/browser-utils@9.29.0':
     dependencies:
@@ -15778,14 +15826,6 @@ snapshots:
 
   axe-core@4.10.3: {}
 
-  axios@1.10.0:
-    dependencies:
-      follow-redirects: 1.15.9
-      form-data: 4.0.3
-      proxy-from-env: 1.1.0
-    transitivePeerDependencies:
-      - debug
-
   axios@1.8.2:
     dependencies:
       follow-redirects: 1.15.9
@@ -16066,10 +16106,10 @@ snapshots:
 
   core-js@3.45.1: {}
 
-  cosmiconfig-typescript-loader@6.1.0(@types/node@24.0.1)(cosmiconfig@9.0.0(typescript@5.9.2))(typescript@5.8.3):
+  cosmiconfig-typescript-loader@6.1.0(@types/node@24.0.1)(cosmiconfig@9.0.0(typescript@5.8.3))(typescript@5.8.3):
     dependencies:
       '@types/node': 24.0.1
-      cosmiconfig: 9.0.0(typescript@5.9.2)
+      cosmiconfig: 9.0.0(typescript@5.8.3)
       jiti: 2.4.2
       typescript: 5.8.3
 
@@ -17025,6 +17065,8 @@ snapshots:
       iconv-lite: 0.4.24
       tmp: 0.0.33
 
+  fast-deep-equal@2.0.1: {}
+
   fast-deep-equal@3.1.3: {}
 
   fast-equals@5.2.2: {}
@@ -17288,6 +17330,21 @@ snapshots:
       whatwg-encoding: 3.1.1
 
   html-escaper@2.0.2: {}
+
+  html-to-text@9.0.5:
+    dependencies:
+      '@selderee/plugin-htmlparser2': 0.11.0
+      deepmerge: 4.3.1
+      dom-serializer: 2.0.0
+      htmlparser2: 8.0.2
+      selderee: 0.11.0
+
+  htmlparser2@8.0.2:
+    dependencies:
+      domelementtype: 2.3.0
+      domhandler: 5.0.3
+      domutils: 3.2.2
+      entities: 4.5.0
 
   http-proxy-agent@7.0.2:
     dependencies:
@@ -17693,6 +17750,8 @@ snapshots:
   language-tags@1.0.9:
     dependencies:
       language-subtag-registry: 0.3.23
+
+  leac@0.6.0: {}
 
   levn@0.4.1:
     dependencies:
@@ -18162,6 +18221,11 @@ snapshots:
     dependencies:
       entities: 6.0.1
 
+  parseley@0.12.1:
+    dependencies:
+      leac: 0.6.0
+      peberminta: 0.9.0
+
   path-exists@4.0.0: {}
 
   path-exists@5.0.0: {}
@@ -18180,6 +18244,8 @@ snapshots:
   pathe@2.0.3: {}
 
   pathval@2.0.0: {}
+
+  peberminta@0.9.0: {}
 
   pg-int8@1.0.1: {}
 
@@ -18334,6 +18400,10 @@ snapshots:
       react: 19.1.0
       react-dom: 19.1.0(react@19.1.0)
 
+  react-promise-suspense@0.3.4:
+    dependencies:
+      fast-deep-equal: 2.0.1
+
   react-refresh@0.17.0: {}
 
   react-remove-scroll-bar@2.3.8(@types/react@19.1.8)(react@19.1.0):
@@ -18480,6 +18550,10 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  resend@6.1.0(@react-email/render@1.2.3(react-dom@19.1.0(react@19.1.0))(react@19.1.0)):
+    optionalDependencies:
+      '@react-email/render': 1.2.3(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+
   resolve-from@4.0.0: {}
 
   resolve-from@5.0.0: {}
@@ -18620,6 +18694,10 @@ snapshots:
       ajv: 8.17.1
       ajv-formats: 2.1.1(ajv@8.17.1)
       ajv-keywords: 5.1.0(ajv@8.17.1)
+
+  selderee@0.11.0:
+    dependencies:
+      parseley: 0.12.1
 
   semver@6.3.1: {}
 
