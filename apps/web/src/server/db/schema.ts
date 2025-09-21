@@ -532,10 +532,11 @@ export const paymentsRelations = relations(payments, ({ one }) => ({
 }))
 
 export const analyticsEventEnum = pgEnum('analytics_event_type', [
-  'profile_view',
-  'post_like',
-  'discord_activity',
-  'chat_reply',
+  'PROFILE_VIEW',
+  'POST_LIKE',
+  'DISCORD_ACTIVITY',
+  'CHAT_REPLY',
+  'COMPLETED_BOOKING',
 ])
 
 export const analyticsEvents = pgTable(
@@ -553,6 +554,7 @@ export const analyticsEvents = pgTable(
       }), // User being acted upon
     postId: integer().references(() => posts.id, { onDelete: 'set null' }),
     fingerprint: varchar({ length: 255 }), // Browser fingerprint for anonymous users
+    processed: boolean('processed').default(false).notNull(),
     ...softDeleteTimestamps,
   },
   table => [
