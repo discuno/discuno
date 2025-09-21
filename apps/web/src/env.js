@@ -17,8 +17,6 @@ export const env = createEnv({
     AUTH_EMAIL_FROM: z.string(),
     DATABASE_URL: z.string().url(),
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
-    JWT_SECRET: z.string(),
-    SENDGRID_API_KEY: z.string(),
     STRIPE_SECRET_KEY: z.string(),
     STRIPE_WEBHOOK_SECRET: z.string(),
     STRIPE_CONNECT_WEBHOOK_SECRET: z.string(),
@@ -40,6 +38,7 @@ export const env = createEnv({
     CALCOM_ORG_SLUG: z.string(),
     UPSTASH_REDIS_REST_URL: z.string().url(),
     UPSTASH_REDIS_REST_TOKEN: z.string(),
+    RESEND_API_KEY: z.string(),
   },
 
   /**
@@ -70,9 +69,7 @@ export const env = createEnv({
     DATABASE_URL: process.env.DATABASE_URL,
     NODE_ENV: process.env.NODE_ENV,
     AUTH_EMAIL_FROM: process.env.AUTH_EMAIL_FROM,
-    JWT_SECRET: process.env.JWT_SECRET,
     NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL,
-    SENDGRID_API_KEY: process.env.SENDGRID_API_KEY,
     STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
     CRON_SECRET: process.env.CRON_SECRET,
     STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
@@ -100,6 +97,7 @@ export const env = createEnv({
     NEXT_PUBLIC_POSTHOG_UI_HOST: process.env.NEXT_PUBLIC_POSTHOG_UI_HOST,
     UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
     UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
+    RESEND_API_KEY: process.env.RESEND_API_KEY,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

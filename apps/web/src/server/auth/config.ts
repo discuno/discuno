@@ -3,10 +3,12 @@ import { type DefaultSession, type NextAuthConfig } from 'next-auth'
 import GoogleProvider from 'next-auth/providers/google'
 import MicrosoftEntraID from 'next-auth/providers/microsoft-entra-id'
 
-// import EmailProvider from "next-auth/providers/nodemailer";
 import { eq } from 'drizzle-orm'
+import Nodemailer from 'next-auth/providers/nodemailer'
 import { env } from '~/env'
 import { downloadAndUploadProfileImage } from '~/lib/blob'
+import { resend } from '~/lib/emails'
+import { SignInEmail } from '~/lib/emails/templates/SignInEmail'
 import { enforceCalcomIntegration, syncMentorEventTypesForUser } from '~/server/auth/dal'
 import { db } from '~/server/db'
 import {
@@ -61,17 +63,19 @@ export const authConfig = {
     }),
 
     // Email provider cannot run in edge runtime in middleware
-    /*EmailProvider({
-      server: {
-        host: env.SMTP_HOST,
-        port: env.SMTP_PORT,
-        auth: {
-          user: env.SMTP_USER,
-          pass: env.SENDGRID_API_KEY,
-        },
-      },
+    Nodemailer({
+      server: env.AUTH_EMAIL_SERVER,
       from: env.AUTH_EMAIL_FROM,
-    }),*/
+      sendVerificationRequest: async ({ identifier: email, url }) => {
+        const { host } = new URL(url)
+        await resend.emails.send({
+          from: env.AUTH_EMAIL_FROM,
+          to: email,
+          subject: `Sign in to ${host}`,
+          react: SignInEmail({ url, host }),
+        })
+      },
+    }),
     /**
      * ...add more providers here.
      *
@@ -146,7 +150,7 @@ export const authConfig = {
       }
 
       // This event is called AFTER the user record is created in the database
-      if (user.id && user.email) {
+      if (user.id && user.email && isNewUser) {
         console.log(
           `Creating Cal.com integration for user: ${user.email ?? 'unknown'} (isNewUser: ${isNewUser})`
         )
@@ -161,22 +165,20 @@ export const authConfig = {
         if (result.success) {
           console.log(`Cal.com integration created successfully for: ${user.email ?? 'unknown'}`)
 
-          if (isNewUser) {
-            try {
-              const syncResult = await syncMentorEventTypesForUser(user.id, result.accessToken)
-              if (syncResult.success) {
-                console.log(
-                  `Synced Cal.com event types for user ${user.email ?? 'unknown'}: ` +
-                    `created=${syncResult.created}, updated=${syncResult.updated}, deleted=${syncResult.deleted}`
-                )
-              } else {
-                console.error(
-                  `Failed to sync event types for ${user.email ?? 'unknown'}: ${syncResult.error}`
-                )
-              }
-            } catch (err) {
-              console.error('Unexpected error syncing mentor event types:', err)
+          try {
+            const syncResult = await syncMentorEventTypesForUser(user.id, result.accessToken)
+            if (syncResult.success) {
+              console.log(
+                `Synced Cal.com event types for user ${user.email ?? 'unknown'}: ` +
+                  `created=${syncResult.created}, updated=${syncResult.updated}, deleted=${syncResult.deleted}`
+              )
+            } else {
+              console.error(
+                `Failed to sync event types for ${user.email ?? 'unknown'}: ${syncResult.error}`
+              )
             }
+          } catch (err) {
+            console.error('Unexpected error syncing mentor event types:', err)
           }
         } else {
           console.error(

@@ -148,10 +148,6 @@ CAL_ACCESS_TOKEN="cal_live_..."
 STRIPE_SECRET_KEY="sk_test_..."
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="pk_test_..."
 
-# Email (optional)
-SENDGRID_API_KEY="SG...."
-SMTP_HOST="smtp.gmail.com"
-
 # Monitoring (optional)
 SENTRY_DSN="https://..."
 ```
