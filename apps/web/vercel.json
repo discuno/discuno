@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/cleanup-auth",
       "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/decay-ranking-scores",
+      "schedule": "0 0 * * 0"
     }
   ],
   "headers": [

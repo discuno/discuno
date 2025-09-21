@@ -87,6 +87,7 @@ export const CalcomBookingPayloadSchema = z.object({
     videoCallUrl: z.string().url().optional(),
     paymentId: z.string().optional(),
     mentorUserId: z.string().uuid('Mentor user ID must be a valid UUID'),
+    actorUserId: z.string().uuid('Actor user ID must be a valid UUID').optional(),
   }),
   status: z.enum(['ACCEPTED', 'PENDING', 'CANCELLED', 'REJECTED']),
 })
