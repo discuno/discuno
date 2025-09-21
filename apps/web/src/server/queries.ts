@@ -1081,6 +1081,20 @@ export const createLocalBooking = async (input: CreateLocalBooking) => {
   })
 }
 
+export const cancelLocalBooking = async (calcomBookingUid: string) => {
+  const result = await db
+    .update(bookings)
+    .set({ status: 'CANCELLED' })
+    .where(eq(bookings.calcomUid, calcomBookingUid))
+    .returning({ id: bookings.id })
+
+  if (result.length === 0) {
+    throw new NotFoundError(`Booking with Cal.com UID ${calcomBookingUid} not found`)
+  }
+
+  return result[0]
+}
+
 export const createMentorReview = async (data: NewMentorReview) => {
   const validatedData = insertMentorReviewSchema.parse(data)
   return await db.insert(mentorReviews).values(validatedData).returning()

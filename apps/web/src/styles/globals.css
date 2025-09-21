@@ -94,6 +94,9 @@
     --destructive: 3 100% 60%; /* system red */
     --destructive-foreground: 0 0% 100%;
 
+    --error: 0 84.2% 60.2%;
+    --error-foreground: 210 40% 98%;
+
     --border: 240 6% 90%; /* subtle hairline */
     --input: 240 6% 90%;
     --ring: 212 100% 50%; /* focus ring matches primary */
@@ -136,6 +139,9 @@
 
     --destructive: 3 100% 60%; /* system red */
     --destructive-foreground: 210 40% 98%;
+
+    --error: 0 62.8% 30.6%;
+    --error-foreground: 210 40% 98%;
 
     --border: 240 6% 23%;
     --input: 240 6% 23%;

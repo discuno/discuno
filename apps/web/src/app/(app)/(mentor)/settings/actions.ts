@@ -993,6 +993,61 @@ export const getBookings = async (): Promise<{
   }
 }
 
+export const cancelBooking = async ({
+  bookingUid,
+  cancellationReason,
+}: {
+  bookingUid: string
+  cancellationReason: string
+}): Promise<{
+  success: boolean
+  error?: string
+}> => {
+  try {
+    const tokenResult = await getValidCalcomToken()
+
+    if (!tokenResult.success || !tokenResult.accessToken) {
+      return {
+        success: false,
+        error: 'Failed to get valid Cal.com token',
+      }
+    }
+
+    const response = await fetch(
+      `${env.NEXT_PUBLIC_CALCOM_API_URL}/bookings/${bookingUid}/cancel`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${tokenResult.accessToken}`,
+          'cal-api-version': '2024-08-13',
+        },
+        body: JSON.stringify({ cancellationReason }),
+      }
+    )
+
+    if (!response.ok) {
+      const errorBody = await response.text()
+      return {
+        success: false,
+        error: `Failed to cancel booking: ${errorBody}`,
+      }
+    }
+
+    revalidatePath('/settings/bookings')
+
+    return {
+      success: true,
+    }
+  } catch (error) {
+    console.error('Error cancelling booking:', error)
+    return {
+      success: false,
+      error: 'An unexpected error occurred while cancelling the booking',
+    }
+  }
+}
+
 export {
   createCalcomUser,
   forceRefreshCalcomToken,
