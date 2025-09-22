@@ -1,4 +1,5 @@
 'use server'
+import 'server-only'
 
 import { revalidatePath } from 'next/cache'
 import { deleteProfileImage, extractPathnameFromBlobUrl } from '~/lib/blob'
