@@ -5,6 +5,7 @@ import { analyticsEvents, userProfiles } from '~/server/db/schema'
 export const RANKING_EVENT_WEIGHTS = {
   PROFILE_VIEW: 0.3,
   COMPLETED_BOOKING: 10,
+  CANCELLED_BOOKING: -5,
   WEEKLY_DECAY_PERCENTAGE: 0.05, // 5%
 }
 

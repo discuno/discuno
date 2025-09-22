@@ -6,7 +6,12 @@ import {
   type CalcomBookingPayload,
   type CalcomWebhookEvent,
 } from '~/lib/schemas/calcom'
-import { cancelLocalBooking, createAnalyticsEvent, createLocalBooking } from '~/server/queries'
+import {
+  cancelLocalBooking,
+  createAnalyticsEvent,
+  createLocalBooking,
+  getUserIdByCalcomUserId,
+} from '~/server/queries'
 
 export async function POST(req: Request) {
   const signature = req.headers.get('x-cal-signature-256') ?? ''
@@ -88,10 +93,19 @@ export async function POST(req: Request) {
           })
         }
         break
-      case 'BOOKING_CANCELLED':
+      case 'BOOKING_CANCELLED': {
         console.log(`✅ Booking canceled for event: ${triggerEvent}`)
         await cancelLocalBooking(payload.uid)
+        const mentorUserId = await getUserIdByCalcomUserId(payload.organizer.id)
+        if (mentorUserId) {
+          await createAnalyticsEvent({
+            eventType: 'CANCELLED_BOOKING',
+            targetUserId: mentorUserId,
+            actorUserId: mentorUserId,
+          })
+        }
         break
+      }
       default:
         console.log(`ℹ️ Unhandled webhook event type: ${triggerEvent}`)
         break
