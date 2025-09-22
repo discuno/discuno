@@ -537,6 +537,7 @@ export const analyticsEventEnum = pgEnum('analytics_event_type', [
   'DISCORD_ACTIVITY',
   'CHAT_REPLY',
   'COMPLETED_BOOKING',
+  'CANCELLED_BOOKING',
 ])
 
 export const analyticsEvents = pgTable(

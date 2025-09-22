@@ -1104,3 +1104,15 @@ export const createAnalyticsEvent = async (data: NewAnalyticsEvent) => {
   const validatedData = insertAnalyticsEventSchema.parse(data)
   return await db.insert(analyticsEvents).values(validatedData).returning()
 }
+
+export const getUserIdByCalcomUserId = async (calcomUserId: number): Promise<string | null> => {
+  const result = await db
+    .select({
+      userId: calcomTokens.userId,
+    })
+    .from(calcomTokens)
+    .where(eq(calcomTokens.calcomUserId, calcomUserId))
+    .limit(1)
+
+  return result[0]?.userId ?? null
+}
