@@ -13,6 +13,7 @@ import type {
   TimeSlot,
 } from '~/app/(app)/(public)/mentor/[username]/book/actions'
 import {
+  createBooking as createBookingAction,
   createStripeCheckoutSession,
   fetchEventTypes as fetchEventTypesAction,
   fetchAvailableSlots as fetchSlotsAction,
@@ -139,9 +140,7 @@ export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
         throw new Error('Missing required booking data')
       }
 
-      const [hours, minutes] = selectedTimeSlot.split(':')
-      const startTime = new Date(selectedDate)
-      startTime.setHours(parseInt(hours ?? '0'), parseInt(minutes ?? '0'), 0, 0)
+      const startTime = parse(selectedTimeSlot, 'h:mm a', selectedDate)
 
       // For paid sessions, proceed to the embedded Checkout step
       if ((selectedEventType.price ?? 0) > 0) {
@@ -149,8 +148,26 @@ export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
         return
       }
 
-      // TODO: Implement free booking flow (direct Cal.com booking without Stripe)
-      throw new Error('Free bookings are not supported yet')
+      // For free bookings, create the booking directly
+      await createBookingAction({
+        username: calcomUsername,
+        eventTypeId: selectedEventType.id,
+        startTime: startTime.toISOString(),
+        attendee: {
+          name: formData.name,
+          email: formData.email,
+          timeZone,
+        },
+        mentorUserId: bookingData.userId,
+      })
+
+      toast.success('Booking successful! You will receive a confirmation email shortly.')
+
+      // Reset form
+      setCurrentStep('calendar')
+      setSelectedEventType(null)
+      setSelectedTimeSlot(null)
+      setFormData({ name: '', email: '', phone: '' })
     },
   })
 

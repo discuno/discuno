@@ -1,4 +1,4 @@
-'server only'
+import 'server-only'
 
 import { del, type PutBlobResult } from '@vercel/blob'
 import { env } from '~/env'

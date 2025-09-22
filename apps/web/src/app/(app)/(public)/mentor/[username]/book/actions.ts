@@ -1,4 +1,5 @@
 'use server'
+import 'server-only'
 
 import { eq } from 'drizzle-orm'
 import type Stripe from 'stripe'
@@ -12,6 +13,35 @@ import { db } from '~/server/db'
 import { mentorStripeAccounts, payments } from '~/server/db/schema'
 import { getMentorCalcomTokensByUsername, getMentorEnabledEventTypes } from '~/server/queries'
 
+interface BookingData {
+  name: string
+  email: string
+  timeZone?: string
+}
+
+export interface CreateBookingInput {
+  username: string
+  eventTypeId: number
+  startTime: string // ISO string
+  attendee: BookingData
+  mentorUserId: string
+}
+
+export const createBooking = async (input: CreateBookingInput): Promise<string> => {
+  const { eventTypeId, startTime, attendee, mentorUserId } = input
+
+  const booking = await createCalcomBooking({
+    calcomEventTypeId: eventTypeId,
+    start: startTime,
+    attendeeName: attendee.name,
+    attendeeEmail: attendee.email,
+    timeZone: attendee.timeZone ?? 'America/New_York',
+    mentorUserId,
+  })
+
+  return booking.uid
+}
+
 export interface TimeSlot {
   time: string
   available: boolean
@@ -24,22 +54,6 @@ export interface EventType {
   description?: string
   price?: number
   currency?: string
-}
-
-interface BookingData {
-  name: string
-  email: string
-  timeZone?: string
-}
-
-interface CreateBookingInput {
-  username: string
-  eventTypeId: number
-  startTime: string // ISO string
-  attendee: BookingData
-  metadata?: {
-    stripePaymentIntentId?: string
-  }
 }
 
 // Enhanced interface for payment bookings
@@ -176,51 +190,6 @@ export const fetchAvailableSlots = async (
   }
 
   return availableSlots
-}
-
-/**
- * Create a booking via Cal.com API and store it locally
- */
-export const createBooking = async (input: CreateBookingInput): Promise<string> => {
-  // Transform input to match Cal.com v2 API format
-  const calcomPayload = {
-    start: input.startTime, // ISO string in UTC
-    attendee: {
-      name: input.attendee.name,
-      email: input.attendee.email,
-      timeZone: input.attendee.timeZone ?? 'America/New_York',
-      language: 'en', // Default language
-    },
-    eventTypeId: input.eventTypeId,
-    username: input.username,
-    metadata: { stripePaymentIntentId: input.metadata?.stripePaymentIntentId ?? '' },
-  }
-
-  // Create booking via Cal.com API
-  const response = await fetch(`${env.NEXT_PUBLIC_CALCOM_API_URL}/bookings`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${env.X_CAL_SECRET_KEY}`,
-      'Content-Type': 'application/json',
-      'cal-api-version': '2024-08-13',
-    },
-    body: JSON.stringify(calcomPayload),
-  })
-
-  if (!response.ok) {
-    const err = await response.text()
-    throw new ExternalApiError(`Failed to create booking: ${response.status} ${err}`)
-  }
-
-  const data = await response.json()
-
-  if (data.status === 'success' && data.data?.uid) {
-    // Booking successfully created in Cal.com
-    // The webhook will handle storing the booking in our database
-    return data.data.uid
-  }
-
-  throw new ExternalApiError(data.error ?? 'Unknown booking error')
 }
 
 /**
