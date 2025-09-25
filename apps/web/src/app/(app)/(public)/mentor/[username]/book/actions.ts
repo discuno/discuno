@@ -150,8 +150,8 @@ export const fetchAvailableSlots = async (
 ): Promise<Record<string, TimeSlot[]>> => {
   const url = new URL(`${env.NEXT_PUBLIC_CALCOM_API_URL}/slots`)
   url.searchParams.append('eventTypeId', eventTypeId.toString())
-  url.searchParams.append('start', startDate.toISOString())
-  url.searchParams.append('end', endDate.toISOString())
+  url.searchParams.append('start', new Date(startDate).toISOString())
+  url.searchParams.append('end', new Date(endDate).toISOString())
   if (timeZone) url.searchParams.append('timeZone', timeZone)
 
   const response = await fetch(url.toString(), {
@@ -178,12 +178,7 @@ export const fetchAvailableSlots = async (
     const slots = data.data[dateKey]
     if (slots) {
       availableSlots[dateKey] = slots.map(s => ({
-        time: new Date(s.start).toLocaleTimeString('en-US', {
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: true,
-          timeZone: timeZone ?? 'America/New_York',
-        }),
+        time: s.start,
         available: true,
       }))
     }

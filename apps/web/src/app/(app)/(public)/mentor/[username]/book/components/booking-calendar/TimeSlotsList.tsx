@@ -1,3 +1,4 @@
+import { format } from 'date-fns'
 import { CalendarIcon, Clock } from 'lucide-react'
 
 import type { TimeSlot } from '~/app/(app)/(public)/mentor/[username]/book/actions'
@@ -36,7 +37,7 @@ export const TimeSlotsList = ({
             onClick={() => onSelectTimeSlot(slot.time)}
           >
             <Clock className="mr-2 h-4 w-4" />
-            {slot.time}
+            {format(new Date(slot.time), 'p')}
           </Button>
         ))}
       </div>

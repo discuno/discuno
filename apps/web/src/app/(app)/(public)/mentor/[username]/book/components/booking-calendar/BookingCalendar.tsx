@@ -1,17 +1,17 @@
+import { TZDate } from '@date-fns/tz'
 import { format } from 'date-fns'
 import Image from 'next/image'
 import { useCallback, useMemo } from 'react'
-import type { TimeSlot } from '~/app/(app)/(public)/mentor/[username]/book/actions'
+import type { EventType, TimeSlot } from '~/app/(app)/(public)/mentor/[username]/book/actions'
 import { EventTypeSelector } from '~/app/(app)/(public)/mentor/[username]/book/components/booking-calendar/EventTypeSelector'
 import { TimeSlotsList } from '~/app/(app)/(public)/mentor/[username]/book/components/booking-calendar/TimeSlotsList'
 import type { BookingData } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingModal'
 import { Calendar } from '~/components/ui/calendar'
 import { Label } from '~/components/ui/label'
-import type { MentorEventType } from '~/lib/schemas/db'
 
 interface BookingCalendarProps {
-  selectedEventType: MentorEventType | null
-  eventTypes: MentorEventType[]
+  selectedEventType: EventType | null
+  eventTypes: EventType[]
   selectedDate?: Date
   today: Date
   bookingData: BookingData
@@ -19,10 +19,11 @@ interface BookingCalendarProps {
   endMonth: Date
   monthlyAvailability: Record<string, TimeSlot[]>
   isFetchingSlots: boolean
-  onSelectEventType: (eventType: MentorEventType | null) => void
+  onSelectEventType: (eventType: EventType | null) => void
   onChangeMonth: (month: Date) => void
   onSelectDate: (date?: Date) => void
   onSelectTimeSlot: (timeSlot: string | null) => void
+  timeZone: string
 }
 
 export const BookingCalendar = ({
@@ -39,12 +40,13 @@ export const BookingCalendar = ({
   onChangeMonth,
   onSelectDate,
   onSelectTimeSlot,
+  timeZone,
 }: BookingCalendarProps) => {
   const slotsForSelectedDate = useMemo(() => {
     if (!selectedDate) return []
-    const dateKey = format(selectedDate, 'yyyy-MM-dd')
+    const dateKey = format(new TZDate(selectedDate, timeZone), 'yyyy-MM-dd')
     return monthlyAvailability[dateKey] ?? []
-  }, [monthlyAvailability, selectedDate])
+  }, [monthlyAvailability, selectedDate, timeZone])
 
   // Event handlers
   const handleDateSelect = useCallback(
@@ -68,10 +70,10 @@ export const BookingCalendar = ({
 
   const isDateDisabled = useCallback(
     (date: Date) => {
-      const dateKey = format(date, 'yyyy-MM-dd')
+      const dateKey = format(new TZDate(date, timeZone), 'yyyy-MM-dd')
       return date < today || !monthlyAvailability[dateKey]?.length
     },
-    [today, monthlyAvailability]
+    [today, monthlyAvailability, timeZone]
   )
 
   return (
