@@ -1,3 +1,4 @@
+import { TZDate } from '@date-fns/tz'
 import { AddressElement, PaymentElement, useCheckout } from '@stripe/react-stripe-js'
 import { format } from 'date-fns'
 import { ArrowLeft, CreditCard, Receipt } from 'lucide-react'
@@ -16,6 +17,7 @@ interface CheckoutFormProps {
   onBack: () => void
   onPaymentConfirmed: () => void
   onPaymentError: (error: string) => void
+  timeZone: string
 }
 
 export const CheckoutForm = ({
@@ -26,6 +28,7 @@ export const CheckoutForm = ({
   onBack,
   onPaymentConfirmed,
   onPaymentError,
+  timeZone,
 }: CheckoutFormProps) => {
   const checkout = useCheckout()
   const [isLoading, setIsLoading] = useState(false)
@@ -87,7 +90,8 @@ export const CheckoutForm = ({
               <div className="flex-1">
                 <h3 className="text-sm font-medium">{eventType.title}</h3>
                 <p className="text-muted-foreground text-xs">
-                  {format(selectedDate, 'MMM d, yyyy')} • {selectedTimeSlot} • {eventType.length}min
+                  {format(new TZDate(selectedDate, timeZone), 'MMM d, yyyy')} • {selectedTimeSlot} •{' '}
+                  {eventType.length}min
                 </p>
                 <p className="text-muted-foreground text-xs">with {formData.name}</p>
               </div>

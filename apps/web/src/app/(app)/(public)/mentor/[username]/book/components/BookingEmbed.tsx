@@ -1,8 +1,9 @@
 'use client'
 
+import { TZDate } from '@date-fns/tz'
 import { CheckoutProvider } from '@stripe/react-stripe-js'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { addDays, endOfMonth, endOfWeek, format, parse, startOfMonth, startOfWeek } from 'date-fns'
+import { addDays, endOfMonth, endOfWeek, format, startOfMonth, startOfWeek } from 'date-fns'
 import { CalendarIcon } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -20,7 +21,7 @@ import {
   type EventType,
 } from '~/app/(app)/(public)/mentor/[username]/book/actions'
 import { AttendeeDetailsStep } from '~/app/(app)/(public)/mentor/[username]/book/components/AttendeeDetailsStep'
-import { BookingCalendar } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingCalendar'
+import { BookingCalendar } from '~/app/(app)/(public)/mentor/[username]/book/components/booking-calendar/BookingCalendar'
 import { BookingEmbedSkeleton } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingEmbedSkeleton'
 import type { BookingData } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingModal'
 import { CheckoutForm } from '~/app/(app)/(public)/mentor/[username]/book/components/CheckoutForm'
@@ -38,8 +39,8 @@ type BookingStep = 'calendar' | 'booking' | 'payment'
 export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
   const { resolvedTheme } = useTheme()
   const { calcomUsername } = bookingData
-  const today = useMemo(() => new Date(), [])
   const timeZone = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC', [])
+  const today = useMemo(() => new TZDate(new Date(), timeZone), [timeZone])
 
   // State management
   const [selectedEventType, setSelectedEventType] = useState<EventType | null>(null)
@@ -93,6 +94,11 @@ export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
       const monthEnd = endOfMonth(currentMonth)
       const startDate = startOfWeek(monthStart)
       const endDate = endOfWeek(monthEnd)
+
+      console.log('Client TimeZone:', timeZone)
+      console.log('Fetching slots from (client):', startDate.toISOString())
+      console.log('Fetching slots to (client):', endDate.toISOString())
+
       return fetchSlotsAction(currentEventId, startDate, endDate, timeZone)
     },
     staleTime: 1000 * 60, // 1 minute
@@ -140,7 +146,8 @@ export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
         throw new Error('Missing required booking data')
       }
 
-      const startTime = parse(selectedTimeSlot, 'h:mm a', selectedDate)
+      const startTime = new TZDate(selectedTimeSlot, timeZone)
+      console.log('Booking startTime:', startTime.toISOString())
 
       // For paid sessions, proceed to the embedded Checkout step
       if ((selectedEventType.price ?? 0) > 0) {
@@ -160,14 +167,17 @@ export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
         },
         mentorUserId: bookingData.userId,
       })
-
+    },
+    onSuccess: () => {
       toast.success('Booking successful! You will receive a confirmation email shortly.')
-
       // Reset form
       setCurrentStep('calendar')
       setSelectedEventType(null)
       setSelectedTimeSlot(null)
       setFormData({ name: '', email: '', phone: '' })
+    },
+    onError: error => {
+      toast.error(error.message || 'An unexpected error occurred.')
     },
   })
 
@@ -209,9 +219,10 @@ export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
           monthlyAvailability={monthlyAvailability}
           isFetchingSlots={isFetching}
           onSelectEventType={handleEventTypeSelect}
-          onChangeMonth={setCurrentMonth}
+          onChangeMonth={month => setCurrentMonth(new TZDate(month, timeZone))}
           onSelectDate={setSelectedDate}
           onSelectTimeSlot={handleTimeSlotSelect}
+          timeZone={timeZone}
         />
       ) : currentStep === 'booking' ? (
         <AttendeeDetailsStep
@@ -232,7 +243,7 @@ export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
               options={{
                 fetchClientSecret: async () => {
                   if (!selectedTimeSlot) throw new Error('Missing selected time slot')
-                  const startTime = parse(selectedTimeSlot, 'h:mm a', selectedDate)
+                  const startTime = new TZDate(selectedTimeSlot, timeZone)
                   if (isNaN(startTime.getTime())) throw new Error('Invalid time slot')
 
                   const bookingPayload: BookingFormInput = {
@@ -269,6 +280,7 @@ export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
                 onBack={() => setCurrentStep('booking')}
                 onPaymentConfirmed={handlePaymentConfirmed}
                 onPaymentError={handlePaymentError}
+                timeZone={timeZone}
               />
             </CheckoutProvider>
           </div>

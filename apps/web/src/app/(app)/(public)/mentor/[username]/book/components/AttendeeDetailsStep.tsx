@@ -111,7 +111,9 @@ export const AttendeeDetailsStep = ({
             Back
           </Button>
           <Button
-            onClick={() => createBookingMutation.mutate()}
+            onClick={() => {
+              createBookingMutation.mutate()
+            }}
             disabled={!formData.name || !formData.email || createBookingMutation.isPending}
             className="flex-1"
           >
