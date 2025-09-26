@@ -3,11 +3,8 @@ import pluginReact from 'eslint-plugin-react'
 import pluginReactHooks from 'eslint-plugin-react-hooks'
 // @ts-expect-error - plugin has no types
 import pluginImport from 'eslint-plugin-import'
-// @ts-expect-error - plugin has no types
 import globals from 'globals'
 import tseslint from 'typescript-eslint'
-// @ts-expect-error - plugin has no types
-import drizzle from 'eslint-plugin-drizzle'
 // @ts-expect-error - plugin has no types
 import pluginNext from '@next/eslint-plugin-next'
 
@@ -174,20 +171,6 @@ const PATTERNS = {
     'apps/web/src/app/global-error.tsx',
   ],
   ENV: ['**/env.js', '**/env.ts'],
-  DISCUNO_ATOMS: {
-    MAIN: ['packages/discuno-atoms/src/**/*.{ts,tsx}'],
-    TESTS: [
-      'packages/discuno-atoms/**/*.test.{ts,tsx}',
-      'packages/discuno-atoms/**/*.spec.{ts,tsx}',
-      'packages/discuno-atoms/**/__tests__/**/*.{ts,tsx}',
-    ],
-    CONFIGS: [
-      'packages/discuno-atoms/*.config.{ts,js}',
-      'packages/discuno-atoms/tsup.config.ts',
-      'packages/discuno-atoms/vitest.config.ts',
-      'packages/discuno-atoms/tailwind.config.ts',
-    ],
-  },
 }
 
 /** @type {import('eslint').Linter.Config[]} */
@@ -259,35 +242,25 @@ export default [
   {
     files: ['apps/web/**/*.{js,jsx,ts,tsx}'],
     plugins: {
-      drizzle,
       import: pluginImport,
       '@next/next': pluginNext,
     },
     rules: {
+      'import/no-default-export': 'error',
       ...pluginNext.configs.recommended.rules,
       ...pluginNext.configs['core-web-vitals'].rules,
-      'import/no-default-export': 'error',
-      // Drizzle ORM safety rules
-      'drizzle/enforce-delete-with-where': [
-        'error',
-        {
-          drizzleObjectName: ['db', 'ctx.db'],
-        },
-      ],
-      'drizzle/enforce-update-with-where': [
-        'error',
-        {
-          drizzleObjectName: ['db', 'ctx.db'],
-        },
-      ],
+      // Override Next.js rules for App Router
+      '@next/next/no-html-link-for-pages': ['error', 'apps/web/src/app'],
     },
   },
+
+  // =============================================================================
 
   // =============================================================================
   // SPECIAL FILES (Allow default exports)
   // =============================================================================
   {
-    files: [...PATTERNS.NEXTJS_SPECIAL, ...PATTERNS.DISCUNO_ATOMS.MAIN],
+    files: [...PATTERNS.NEXTJS_SPECIAL],
     rules: {
       'import/no-default-export': 'off',
     },
@@ -297,7 +270,7 @@ export default [
   // TEST FILES
   // =============================================================================
   {
-    files: [...PATTERNS.TESTS, ...PATTERNS.DISCUNO_ATOMS.TESTS],
+    files: [...PATTERNS.TESTS],
     rules: TEST_RELAXED_RULES,
   },
 
@@ -305,7 +278,7 @@ export default [
   // CONFIGURATION FILES
   // =============================================================================
   {
-    files: [...PATTERNS.CONFIGS, ...PATTERNS.DISCUNO_ATOMS.CONFIGS, ...PATTERNS.ENV],
+    files: [...PATTERNS.CONFIGS, ...PATTERNS.ENV],
     languageOptions: NODE_LANGUAGE_OPTIONS,
     rules: {
       ...RELAXED_TYPESCRIPT_RULES,
