@@ -2,7 +2,7 @@
 
 import { Menu } from 'lucide-react'
 import Link from 'next/link'
-import * as React from 'react'
+import { forwardRef } from 'react'
 import { ThemeAwareIconLogo } from '~/components/shared/ThemeAwareIconLogo'
 import { AvatarIcon } from '~/components/shared/UserAvatar'
 import { Button } from '~/components/ui/button'
@@ -166,7 +166,7 @@ interface ListItemProps extends React.ComponentPropsWithoutRef<'a'> {
   className?: string
 }
 
-const ListItem = React.forwardRef<React.ComponentRef<'a'>, ListItemProps>(
+const ListItem = forwardRef<React.ComponentRef<'a'>, ListItemProps>(
   ({ className, title, children, ...props }, ref) => {
     return (
       <li>
