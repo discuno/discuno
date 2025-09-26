@@ -1,6 +1,6 @@
 'use client'
 
-import { loadConnectAndInitialize, type StripeConnectInstance } from '@stripe/connect-js'
+import { loadConnectAndInitialize, type StripeConnectInstance } from '@stripe/connect-js/pure'
 import {
   ConnectAccountManagement,
   ConnectComponentsProvider,
