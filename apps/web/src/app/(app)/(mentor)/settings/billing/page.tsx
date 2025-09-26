@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import Link from 'next/link'
 import { getMentorStripeStatus } from '~/app/(app)/(mentor)/settings/actions'
 import { StripeDashboard } from '~/app/(app)/(mentor)/settings/billing/StripeDashboard'
