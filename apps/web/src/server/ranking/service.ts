@@ -22,7 +22,6 @@ type RankingEvent = keyof typeof RANKING_EVENT_WEIGHTS
  * Decays all mentor ranking scores by a percentage.
  */
 export async function decayRankingScores() {
-  // eslint-disable-next-line drizzle/enforce-update-with-where
   await db.update(userProfiles).set({
     rankingScore: sql`"ranking_score" * (1 - ${RANKING_EVENT_WEIGHTS.WEEKLY_DECAY_PERCENTAGE})`,
   })
