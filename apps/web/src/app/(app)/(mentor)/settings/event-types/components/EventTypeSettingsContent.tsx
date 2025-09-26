@@ -1,6 +1,6 @@
 'use client'
 
-import { type StripeConnectInstance } from '@stripe/connect-js'
+import { type StripeConnectInstance } from '@stripe/connect-js/pure'
 import type { UseMutationResult } from '@tanstack/react-query'
 import { CreditCard, DollarSign, Settings, Timer } from 'lucide-react'
 import type { updateMentorEventTypePreferences } from '~/app/(app)/(mentor)/settings/actions'

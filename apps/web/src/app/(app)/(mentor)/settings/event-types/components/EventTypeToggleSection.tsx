@@ -1,6 +1,6 @@
 'use client'
 
-import { loadConnectAndInitialize, type StripeConnectInstance } from '@stripe/connect-js'
+import { loadConnectAndInitialize, type StripeConnectInstance } from '@stripe/connect-js/pure'
 import { ConnectComponentsProvider } from '@stripe/react-connect-js'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useTheme } from 'next-themes'
