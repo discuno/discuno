@@ -4,68 +4,12 @@ import Image from 'next/image'
 import { useCallback, useMemo } from 'react'
 
 import type { EventType, TimeSlot } from '~/app/(app)/(public)/mentor/[username]/book/actions'
+import { EventTypeSelector } from '~/app/(app)/(public)/mentor/[username]/book/components/booking-calendar/EventTypeSelector'
 import type { BookingData } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingModal'
-import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { Calendar } from '~/components/ui/calendar'
 import { Label } from '~/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '~/components/ui/select'
 import { Skeleton } from '~/components/ui/skeleton'
-
-// Helper components
-const EventTypeSelector = ({
-  selectedEventType,
-  eventTypes,
-  onSelectEventType,
-  onSelectTimeSlot,
-  className = '',
-}: {
-  selectedEventType: EventType | null
-  eventTypes: EventType[]
-  onSelectEventType: (eventType: EventType | null) => void
-  onSelectTimeSlot: (timeSlot: string | null) => void
-  className?: string
-}) => (
-  <Select
-    value={selectedEventType?.id.toString() ?? ''}
-    onValueChange={value => {
-      const eventType = eventTypes.find(et => et.id.toString() === value)
-      onSelectEventType(eventType ?? null)
-      onSelectTimeSlot(null)
-    }}
-  >
-    <SelectTrigger className={className}>
-      <SelectValue
-        placeholder={className.includes('h-10') ? 'Session Type' : 'Select a session type'}
-      />
-    </SelectTrigger>
-    <SelectContent>
-      {eventTypes.map(eventType => (
-        <SelectItem key={eventType.id} value={eventType.id.toString()}>
-          <div className="flex w-full items-center justify-between">
-            <div className="flex flex-col items-start">
-              <span className="font-medium">{eventType.title}</span>
-              <span className="text-muted-foreground text-xs">{eventType.length} minutes</span>
-            </div>
-            {eventType.price && eventType.price > 0 ? (
-              <Badge variant="secondary">
-                ${(eventType.price / 100).toFixed(2)} {eventType.currency}
-              </Badge>
-            ) : (
-              <Badge variant="outline">Free</Badge>
-            )}
-          </div>
-        </SelectItem>
-      ))}
-    </SelectContent>
-  </Select>
-)
 
 const TimeSlotsList = ({
   slots,
@@ -247,7 +191,7 @@ export const BookingCalendar = ({
           {/* Time Slots */}
           <div className="flex min-h-0 flex-col">
             <Label className="mb-2 hidden text-sm font-medium md:block">Available Times</Label>
-            <div className="flex-1 overflow-y-auto pr-1 md:pl-3">
+            <div className="flex-1 overflow-y-scroll md:pl-3">
               <TimeSlotsList
                 slots={slotsForSelectedDate}
                 isFetchingSlots={isFetchingSlots}

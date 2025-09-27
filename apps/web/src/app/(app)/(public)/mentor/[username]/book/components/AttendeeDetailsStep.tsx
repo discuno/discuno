@@ -1,4 +1,5 @@
 import type { UseMutationResult } from '@tanstack/react-query'
+import { format } from 'date-fns'
 import PhoneInput from 'react-phone-number-input'
 import 'react-phone-number-input/style.css'
 import type { EventType } from '~/app/(app)/(public)/mentor/[username]/book/actions'
@@ -87,7 +88,7 @@ export const AttendeeDetailsStep = ({
                 </div>
                 <div className="flex justify-between">
                   <span>Time:</span>
-                  <span>{selectedTimeSlot}</span>
+                  <span>{format(new Date(selectedTimeSlot), 'p')}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Duration:</span>

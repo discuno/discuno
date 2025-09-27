@@ -169,12 +169,14 @@ export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
       })
     },
     onSuccess: () => {
-      toast.success('Booking successful! You will receive a confirmation email shortly.')
-      // Reset form
-      setCurrentStep('calendar')
-      setSelectedEventType(null)
-      setSelectedTimeSlot(null)
-      setFormData({ name: '', email: '', phone: '' })
+      if ((selectedEventType?.price ?? 0) === 0) {
+        toast.success('Booking successful! You will receive a confirmation email shortly.')
+        // Reset form for free bookings
+        setCurrentStep('calendar')
+        setSelectedEventType(null)
+        setSelectedTimeSlot(null)
+        setFormData({ name: '', email: '', phone: '' })
+      }
     },
     onError: error => {
       toast.error(error.message || 'An unexpected error occurred.')
