@@ -90,8 +90,9 @@ export const CheckoutForm = ({
               <div className="flex-1">
                 <h3 className="text-sm font-medium">{eventType.title}</h3>
                 <p className="text-muted-foreground text-xs">
-                  {format(new TZDate(selectedDate, timeZone), 'MMM d, yyyy')} • {selectedTimeSlot} •{' '}
-                  {eventType.length}min
+                  {format(new TZDate(selectedDate, timeZone), 'MMM d, yyyy')} •{' '}
+                  {format(new TZDate(selectedTimeSlot, timeZone), 'h:mm a')} • {eventType.length}
+                  min
                 </p>
                 <p className="text-muted-foreground text-xs">with {formData.name}</p>
               </div>
