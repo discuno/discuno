@@ -2,6 +2,7 @@ import '~/styles/globals.css'
 
 import { GeistSans } from 'geist/font/sans'
 import { type Metadata } from 'next'
+import { cookies } from 'next/headers'
 import { Toaster } from 'sonner'
 import { PostHogProvider } from '~/lib/providers/PostHogProvider'
 import { ThemeProvider } from '~/lib/providers/ThemeProvider'
@@ -21,7 +22,9 @@ export const metadata: Metadata = {
   },
 }
 
-const RootLayout = ({ children }: Readonly<{ children: React.ReactNode }>) => {
+const RootLayout = async ({ children }: Readonly<{ children: React.ReactNode }>) => {
+  const anonymousId = (await cookies()).get('anonymous_id')?.value
+
   return (
     <html
       lang="en"
@@ -36,7 +39,7 @@ const RootLayout = ({ children }: Readonly<{ children: React.ReactNode }>) => {
           enableSystem
           disableTransitionOnChange={false}
         >
-          <PostHogProvider>
+          <PostHogProvider anonymousId={anonymousId}>
             <QueryProvider>
               {children}
               <Toaster

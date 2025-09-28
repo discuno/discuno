@@ -558,7 +558,7 @@ export const analyticsEvents = pgTable(
         onDelete: 'no action',
       }), // User being acted upon
     postId: integer().references(() => posts.id, { onDelete: 'set null' }),
-    fingerprint: varchar({ length: 255 }), // Browser fingerprint for anonymous users
+    anonymousId: varchar({ length: 255 }), // Cookie for anonymous users
     processed: boolean('processed').default(false).notNull(),
     ...softDeleteTimestamps,
   },
@@ -567,6 +567,6 @@ export const analyticsEvents = pgTable(
     index('analytics_events_actor_user_id_idx').on(table.actorUserId),
     index('analytics_events_target_user_id_idx').on(table.targetUserId),
     index('analytics_events_post_id_idx').on(table.postId),
-    index('analytics_events_fingerprint_idx').on(table.fingerprint),
+    index('analytics_events_anonymous_id_idx').on(table.anonymousId),
   ]
 )
