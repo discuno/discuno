@@ -1,11 +1,12 @@
 'use client'
 
-import { Chrome, Computer, Loader2 } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { signIn } from 'next-auth/react'
+import Image from 'next/image'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { EmailSignInForm } from '~/app/(auth)/auth/EmailSignInForm'
-import { Button } from '~/components/ui/button'
+import { ThemeAwareFullLogo } from '~/components/shared/ThemeAwareFullLogo'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
 export function LoginPage() {
   const [isLoading, setIsLoading] = useState<string | null>(null)
@@ -33,40 +34,47 @@ export function LoginPage() {
         <div className="absolute -inset-0.5 animate-pulse rounded-lg bg-gradient-to-r from-blue-600 to-cyan-400 opacity-75 blur"></div>
         <Card className="border-border bg-card relative shadow-xl">
           <CardHeader className="text-center">
-            <CardTitle className="text-foreground text-2xl font-bold">Welcome Back</CardTitle>
+            <div className="mb-4 flex justify-center">
+              <ThemeAwareFullLogo />
+            </div>
+            <CardTitle className="text-foreground text-2xl font-bold">Get Started</CardTitle>
             <CardDescription className="text-muted-foreground">
-              Sign in to continue to Discuno
+              Sign in or create an account to continue
             </CardDescription>
           </CardHeader>
 
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <Button
+            <div className="grid grid-cols-2 items-center justify-center gap-4">
+              <div
                 onClick={() => handleOAuthSignIn('google')}
-                disabled={isLoading !== null}
-                variant="outline"
-                className="w-full"
+                className="flex cursor-pointer items-center justify-center"
               >
                 {isLoading === 'google' ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
-                  <Chrome className="mr-2 h-4 w-4" />
+                  <Image
+                    src={'/logos/web_light_sq_SI.svg'}
+                    alt="Sign in with Google"
+                    width={175}
+                    height={40}
+                  />
                 )}
-                Google
-              </Button>
-              <Button
+              </div>
+              <div
                 onClick={() => handleOAuthSignIn('microsoft-entra-id')}
-                disabled={isLoading !== null}
-                variant="outline"
-                className="w-full"
+                className="flex cursor-pointer items-center justify-center"
               >
                 {isLoading === 'microsoft-entra-id' ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
-                  <Computer className="mr-2 h-4 w-4" />
+                  <Image
+                    src={'/logos/ms-symbollockup_signin_light.svg'}
+                    alt="Sign in with Microsoft"
+                    width={190}
+                    height={40}
+                  />
                 )}
-                Microsoft
-              </Button>
+              </div>
             </div>
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
