@@ -15,14 +15,11 @@ export const PostCard = ({ card }: { card: Card; index: number }) => {
     posthog.capture('profile_view', {
       post_user_id: card.createdById,
       post_id: card.id,
-      fingerprint: sessionStorage.getItem('fingerprint') ?? undefined,
     })
-    const fingerprint = sessionStorage.getItem('fingerprint') ?? undefined
     void logAnalyticsEvent({
       eventType: 'PROFILE_VIEW',
       targetUserId: card.createdById,
       postId: card.id,
-      fingerprint,
     })
   }
 

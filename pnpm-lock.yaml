@@ -209,9 +209,6 @@ importers:
       '@tanstack/react-table':
         specifier: ^8.21.3
         version: 8.21.3(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
-      '@thumbmarkjs/thumbmarkjs':
-        specifier: ^1.1.2
-        version: 1.3.0
       '@upstash/ratelimit':
         specifier: ^2.0.6
         version: 2.0.6(@upstash/redis@1.35.4)
@@ -4986,12 +4983,6 @@ packages:
     engines: { node: '>=12', npm: '>=6' }
     peerDependencies:
       '@testing-library/dom': '>=7.21.4'
-
-  '@thumbmarkjs/thumbmarkjs@1.3.0':
-    resolution:
-      {
-        integrity: sha512-OCzIAZPT9FBDuOnXsFpfVn4VFXcFCk9UGdUXXsR92q8ZkB4ifLsZFVNviAjD2SX2bn7E6zPFci/lhGHjBzJb7A==,
-      }
 
   '@trysound/sax@0.2.0':
     resolution:
@@ -15314,8 +15305,6 @@ snapshots:
   '@testing-library/user-event@14.6.1(@testing-library/dom@10.4.1)':
     dependencies:
       '@testing-library/dom': 10.4.1
-
-  '@thumbmarkjs/thumbmarkjs@1.3.0': {}
 
   '@trysound/sax@0.2.0': {}
 
