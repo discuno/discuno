@@ -31,19 +31,21 @@ export function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
       <div className="relative w-full max-w-md">
-        <div className="absolute -inset-0.5 animate-pulse rounded-lg bg-gradient-to-r from-blue-600 to-cyan-400 opacity-75 blur"></div>
-        <Card className="border-border bg-card relative shadow-xl">
+        <div className="absolute -inset-1 animate-pulse rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 opacity-50 blur-lg"></div>
+        <Card className="border-border bg-card relative rounded-2xl shadow-2xl">
           <CardHeader className="text-center">
             <div className="mb-4 flex justify-center">
               <ThemeAwareFullLogo />
             </div>
-            <CardTitle className="text-foreground text-2xl font-bold">Get Started</CardTitle>
+            <CardTitle className="text-foreground text-2xl font-bold tracking-tight">
+              Get Started
+            </CardTitle>
             <CardDescription className="text-muted-foreground">
               Sign in or create an account to continue
             </CardDescription>
           </CardHeader>
 
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-6">
             <div className="grid grid-cols-2 items-center justify-center gap-4">
               <div
                 onClick={() => handleOAuthSignIn('google')}
@@ -70,7 +72,7 @@ export function LoginPage() {
                   <Image
                     src={'/logos/ms-symbollockup_signin_light.svg'}
                     alt="Sign in with Microsoft"
-                    width={190}
+                    width={200}
                     height={40}
                   />
                 )}
