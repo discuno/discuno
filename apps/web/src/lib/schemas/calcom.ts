@@ -94,10 +94,74 @@ export const CalcomBookingPayloadSchema = z.object({
 
 export type CalcomBookingPayload = z.infer<typeof CalcomBookingPayloadSchema>
 
-export const CalcomWebhookSchema = z.object({
-  triggerEvent: z.string(),
-  createdAt: z.string(),
-  payload: CalcomBookingPayloadSchema,
+export const CalcomNoShowPayloadSchema = z.object({
+  title: z.string(),
+  bookingId: z.number(),
+  bookingUid: z.string(),
+  startTime: z.string().datetime(),
+  attendees: z.array(z.object({ email: z.string().email(), name: z.string() })),
+  endTime: z.string().datetime(),
+  participants: z.array(z.object({ email: z.string().email(), name: z.string() })),
+  hostEmail: z.string().email(),
+  eventType: z.object({
+    id: z.number(),
+    teamId: z.number().nullable(),
+    parentId: z.number().nullable(),
+  }),
+  webhook: z.object({
+    id: z.string(),
+    subscriberUrl: z.string().url(),
+    appId: z.string().nullable(),
+    time: z.number(),
+    timeUnit: z.string(),
+    eventTriggers: z.array(z.string()),
+    payloadTemplate: z.string().nullable(),
+  }),
+  message: z.string(),
 })
+export const CalcomBookingCancelledPayloadSchema = CalcomBookingPayloadSchema.extend({
+  cancellationReason: z.string().optional(),
+})
+
+// Generic payload for events we haven't strictly typed yet
+const CalcomUnknownPayloadSchema = z.record(z.any())
+
+export const CalcomWebhookSchema = z.discriminatedUnion('triggerEvent', [
+  z.object({
+    triggerEvent: z.literal('BOOKING_CREATED'),
+    createdAt: z.string(),
+    payload: CalcomBookingPayloadSchema,
+  }),
+  z.object({
+    triggerEvent: z.literal('AFTER_HOSTS_CAL_VIDEO_NO_SHOW'),
+    createdAt: z.string(),
+    payload: CalcomNoShowPayloadSchema,
+  }),
+  z.object({
+    triggerEvent: z.literal('BOOKING_CANCELLED'),
+    createdAt: z.string(),
+    payload: CalcomBookingCancelledPayloadSchema,
+  }),
+  z.object({
+    triggerEvent: z.literal('RECORDING_TRANSCRIPTION_GENERATED'),
+    createdAt: z.string(),
+    payload: CalcomUnknownPayloadSchema,
+  }),
+  z.object({
+    triggerEvent: z.literal('RECORDING_READY'),
+    createdAt: z.string(),
+    payload: CalcomUnknownPayloadSchema,
+  }),
+  z.object({
+    triggerEvent: z.literal('MEETING_STARTED'),
+    createdAt: z.string(),
+    payload: CalcomUnknownPayloadSchema,
+  }),
+  z.object({
+    triggerEvent: z.literal('MEETING_ENDED'),
+    createdAt: z.string(),
+    payload: CalcomBookingPayloadSchema, // Assuming it's similar to booking created
+  }),
+])
 
 export type CalcomWebhookEvent = z.infer<typeof CalcomWebhookSchema>
