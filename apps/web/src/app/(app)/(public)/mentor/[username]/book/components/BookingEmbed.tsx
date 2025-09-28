@@ -22,6 +22,7 @@ import {
 } from '~/app/(app)/(public)/mentor/[username]/book/actions'
 import { AttendeeDetailsStep } from '~/app/(app)/(public)/mentor/[username]/book/components/AttendeeDetailsStep'
 import { BookingCalendar } from '~/app/(app)/(public)/mentor/[username]/book/components/booking-calendar/BookingCalendar'
+import { BookingConfirmationStep } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingConfirmationStep'
 import { BookingEmbedSkeleton } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingEmbedSkeleton'
 import type { BookingData } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingModal'
 import { CheckoutForm } from '~/app/(app)/(public)/mentor/[username]/book/components/CheckoutForm'
@@ -34,7 +35,7 @@ export interface BookingFormData {
   phone?: string
 }
 
-type BookingStep = 'calendar' | 'booking' | 'payment'
+type BookingStep = 'calendar' | 'booking' | 'payment' | 'confirmation'
 
 export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
   const { resolvedTheme } = useTheme()
@@ -127,12 +128,7 @@ export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
 
   const handlePaymentConfirmed = useCallback(() => {
     toast.success('Payment successful! Your booking will be confirmed via email shortly.')
-
-    // Reset form
-    setCurrentStep('calendar')
-    setSelectedEventType(null)
-    setSelectedTimeSlot(null)
-    setFormData({ name: '', email: '', phone: '' })
+    setCurrentStep('confirmation')
   }, [])
 
   const handlePaymentError = useCallback((error: string) => {
@@ -171,11 +167,7 @@ export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
     onSuccess: () => {
       if ((selectedEventType?.price ?? 0) === 0) {
         toast.success('Booking successful! You will receive a confirmation email shortly.')
-        // Reset form for free bookings
-        setCurrentStep('calendar')
-        setSelectedEventType(null)
-        setSelectedTimeSlot(null)
-        setFormData({ name: '', email: '', phone: '' })
+        setCurrentStep('confirmation')
       }
     },
     onError: error => {
@@ -236,6 +228,8 @@ export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
           setCurrentStep={setCurrentStep}
           createBookingMutation={createBookingMutation}
         />
+      ) : currentStep === 'confirmation' ? (
+        <BookingConfirmationStep />
       ) : (
         selectedEventType &&
         selectedDate && (
