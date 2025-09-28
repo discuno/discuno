@@ -154,7 +154,7 @@ export const EditProfileContent = ({ profile, schools, majors }: EditProfileCont
                 </div>
 
                 <div>
-                  <Label htmlFor="graduationYear">Graduation Year</Label>
+                  <Label htmlFor="graduationYear">Expected Graduation Year</Label>
                   <Select name="graduationYear" defaultValue={profile.graduationYear.toString()}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select year" />
