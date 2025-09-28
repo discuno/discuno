@@ -1,6 +1,6 @@
 import crypto from 'crypto'
-import { refundStripePaymentIntent } from '~/app/(app)/(public)/mentor/[username]/book/actions'
 import { env } from '~/env'
+import { markAsNoShow } from '~/lib/calcom'
 import {
   CalcomBookingPayloadSchema,
   type CalcomBookingPayload,
@@ -11,6 +11,7 @@ import {
   createAnalyticsEvent,
   createLocalBooking,
   getUserIdByCalcomUserId,
+  updateLocalBookingStatus,
 } from '~/server/queries'
 
 export async function POST(req: Request) {
@@ -52,24 +53,23 @@ export async function POST(req: Request) {
         return await storeBooking(payload)
       // Attempt to refund no show
       case 'AFTER_HOSTS_CAL_VIDEO_NO_SHOW':
-        // Handle AFTER_HOSTS_CAL_VIDEO_NO_SHOW event
-        if (!payload.metadata.paymentId) {
-          console.error('❌ Missing paymentId in AFTER_HOSTS_CAL_VIDEO_NO_SHOW event')
-          return Response.json({ error: 'Missing paymentId' }, { status: 400 })
-        }
-        // Attempt to refund the payment
-        try {
-          await refundStripePaymentIntent(payload.metadata.paymentId)
-        } catch (err) {
-          console.error(
-            '❌ Failed to process refund for paymentId:',
-            payload.metadata.paymentId,
-            err
+        {
+          const { bookingUid, attendees } = event.payload
+          // Mark the booking as a no-show in both our local database and Cal.com
+          await markAsNoShow(
+            bookingUid,
+            attendees.map(attendee => ({
+              email: attendee.email,
+              absent: true,
+            })),
+            true // Mark the host as absent
           )
-          return Response.json({ error: 'Failed to process refund' }, { status: 500 })
+          await updateLocalBookingStatus(bookingUid, 'NO_SHOW', {
+            hostNoShow: true,
+            attendeeNoShow: true,
+          })
         }
         break
-      // TODO: Handle events
       case 'RECORDING_TRANSCRIPTION_GENERATED':
         console.log(`✅ Transcription generated for event: ${triggerEvent}`)
         console.log(`✅ Transcription text: ${JSON.stringify(payload)}`)
@@ -93,19 +93,20 @@ export async function POST(req: Request) {
           })
         }
         break
-      case 'BOOKING_CANCELLED': {
-        console.log(`✅ Booking canceled for event: ${triggerEvent}`)
-        await cancelLocalBooking(payload.uid)
-        const mentorUserId = await getUserIdByCalcomUserId(payload.organizer.id)
-        if (mentorUserId) {
-          await createAnalyticsEvent({
-            eventType: 'CANCELLED_BOOKING',
-            targetUserId: mentorUserId,
-            actorUserId: mentorUserId,
-          })
+      case 'BOOKING_CANCELLED':
+        {
+          console.log(`✅ Booking canceled for event: ${triggerEvent}`)
+          await cancelLocalBooking(event.payload.uid)
+          const mentorUserId = await getUserIdByCalcomUserId(event.payload.organizer.id)
+          if (mentorUserId) {
+            await createAnalyticsEvent({
+              eventType: 'CANCELLED_BOOKING',
+              targetUserId: mentorUserId,
+              actorUserId: mentorUserId,
+            })
+          }
         }
         break
-      }
       default:
         console.log(`ℹ️ Unhandled webhook event type: ${triggerEvent}`)
         break

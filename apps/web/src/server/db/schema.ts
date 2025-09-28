@@ -343,6 +343,8 @@ export const bookingStatusEnum = pgEnum('booking_status', [
   'PENDING',
   'CANCELLED',
   'REJECTED',
+  'COMPLETED',
+  'NO_SHOW',
 ] as const)
 
 // Bookings table to store Cal.com booking data
@@ -367,6 +369,8 @@ export const bookings = pgTable(
     }).notNull(),
     status: bookingStatusEnum().notNull().default('PENDING'),
     meetingUrl: varchar({ length: 255 }),
+    hostNoShow: boolean('host_no_show').default(false),
+    attendeeNoShow: boolean('attendee_no_show').default(false),
 
     // Event type reference
     mentorEventTypeId: integer().references(() => mentorEventTypes.id, {

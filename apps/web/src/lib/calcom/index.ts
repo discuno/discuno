@@ -276,3 +276,36 @@ export const fetchCalcomEventTypesByUsername = async (
     description?: string
   }>
 }
+
+/**
+ * Mark a booking as a no-show in Cal.com
+ */
+export const markAsNoShow = async (
+  bookingUid: string,
+  attendees: { email: string; absent: boolean }[],
+  host: boolean
+): Promise<void> => {
+  const response = await fetch(
+    `${env.NEXT_PUBLIC_CALCOM_API_URL}/bookings/${bookingUid}/mark-absent`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'cal-api-version': '2024-08-13',
+        Authorization: `Bearer ${env.X_CAL_SECRET_KEY}`,
+      },
+      body: JSON.stringify({
+        attendees,
+        host,
+      }),
+    }
+  )
+
+  if (!response.ok) {
+    const errorText = await response.text()
+    console.error(`Cal.com mark as no-show failed: ${response.status} ${errorText}`)
+    throw new ExternalApiError(`Cal.com API error: ${response.status} - ${errorText}`)
+  }
+
+  console.log(`Successfully marked booking ${bookingUid} as no-show in Cal.com`)
+}
