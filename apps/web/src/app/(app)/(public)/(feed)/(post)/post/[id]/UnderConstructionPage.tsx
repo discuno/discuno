@@ -19,7 +19,7 @@ export const UnderConstructionPage = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Link href="/" passHref>
+          <Link href="/">
             <Button variant="outline" className="w-full">
               <Home className="mr-2 h-4 w-4" />
               Go Home

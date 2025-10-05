@@ -1,6 +1,5 @@
 'use client'
 
-import * as Sentry from '@sentry/nextjs'
 import { AlertCircle, ArrowLeft, Home, RefreshCw, Search } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
@@ -16,19 +15,6 @@ export default function PostError({ error, reset }: PostErrorProps) {
   const router = useRouter()
 
   useEffect(() => {
-    // Log error to Sentry for monitoring
-    Sentry.captureException(error, {
-      tags: {
-        component: 'error-boundary',
-        section: 'post-page',
-      },
-      extra: {
-        digest: error.digest,
-        statusCode: error.statusCode,
-        code: error.code,
-      },
-    })
-
     // Log error for debugging in development
     if (process.env.NODE_ENV === 'development') {
       console.error('Post page error:', error)

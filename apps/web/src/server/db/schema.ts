@@ -11,6 +11,7 @@ import {
   real,
   text,
   timestamp,
+  uuid,
   varchar,
 } from 'drizzle-orm/pg-core'
 import { type AdapterAccount } from 'next-auth/adapters'
@@ -24,10 +25,7 @@ import { softDeleteTimestamps, timestamps } from '~/server/db/columns.helpers'
  */
 
 export const users = pgTable('discuno_user', {
-  id: varchar({ length: 255 })
-    .notNull()
-    .primaryKey()
-    .$defaultFn(() => crypto.randomUUID()),
+  id: uuid().defaultRandom().primaryKey(),
   name: varchar({ length: 255 }),
   email: varchar({ length: 255 }).unique(),
   emailVerified: timestamp({
@@ -44,9 +42,8 @@ export const posts = pgTable(
     id: integer().primaryKey().generatedByDefaultAsIdentity(),
     name: varchar({ length: 256 }),
     description: text(),
-    createdById: varchar({ length: 255 })
+    createdById: uuid('created_by_id')
       .notNull()
-      .unique()
       .references(() => users.id, { onDelete: 'cascade' }),
     random_sort_key: real('random_sort_key').default(Math.random()).notNull(),
     ...softDeleteTimestamps,
@@ -75,7 +72,7 @@ export const usersRelations = relations(users, ({ many, one }) => ({
 export const accounts = pgTable(
   'discuno_account',
   {
-    userId: varchar({ length: 255 })
+    userId: uuid('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     type: varchar({ length: 255 }).$type<AdapterAccount['type']>().notNull(),
@@ -106,7 +103,7 @@ export const sessions = pgTable(
   'discuno_session',
   {
     sessionToken: varchar({ length: 255 }).notNull().primaryKey(),
-    userId: varchar({ length: 255 })
+    userId: uuid('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     expires: timestamp({
@@ -146,7 +143,7 @@ export const userProfiles = pgTable(
   'discuno_user_profile',
   {
     id: integer().primaryKey().generatedByDefaultAsIdentity(),
-    userId: varchar({ length: 255 })
+    userId: uuid('user_id')
       .notNull()
       .unique()
       .references(() => users.id, { onDelete: 'cascade' }),
@@ -175,7 +172,7 @@ export const userMajors = pgTable(
   'discuno_user_major',
   {
     id: integer().primaryKey().generatedByDefaultAsIdentity(),
-    userId: varchar({ length: 255 })
+    userId: uuid('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     majorId: integer()
@@ -190,7 +187,7 @@ export const userSchools = pgTable(
   'discuno_user_school',
   {
     id: integer().primaryKey().generatedByDefaultAsIdentity(),
-    userId: varchar({ length: 255 })
+    userId: uuid('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     schoolId: integer()
@@ -225,10 +222,10 @@ export const mentorReviews = pgTable(
   'discuno_mentor_review',
   {
     id: integer().primaryKey().generatedByDefaultAsIdentity(),
-    mentorId: varchar({ length: 255 })
+    mentorId: uuid('mentor_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
-    userId: varchar({ length: 255 })
+    userId: uuid('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     rating: integer().notNull(),
@@ -242,7 +239,7 @@ export const calcomTokens = pgTable(
   'discuno_calcom_token',
   {
     id: integer().primaryKey().generatedByDefaultAsIdentity(),
-    userId: varchar({ length: 255 })
+    userId: uuid('user_id')
       .notNull()
       .unique()
       .references(() => users.id, { onDelete: 'cascade' }),
@@ -283,7 +280,7 @@ export const mentorStripeAccounts = pgTable(
   'discuno_mentor_stripe_account',
   {
     id: integer().primaryKey().generatedByDefaultAsIdentity(),
-    userId: varchar({ length: 255 })
+    userId: uuid('user_id')
       .notNull()
       .unique()
       .references(() => users.id, { onDelete: 'cascade' }),
@@ -314,7 +311,7 @@ export const mentorEventTypes = pgTable(
   'discuno_mentor_event_type',
   {
     id: integer().primaryKey().generatedByDefaultAsIdentity(),
-    mentorUserId: varchar({ length: 255 })
+    mentorUserId: uuid('mentor_user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     calcomEventTypeId: integer().unique().notNull(), // The mentor's individual Cal.com event type ID
@@ -406,7 +403,7 @@ export const bookingAttendees = pgTable(
       .notNull()
       .references(() => bookings.id, { onDelete: 'cascade' }),
     // Future proofing for logged in users
-    userId: varchar({ length: 255 }).references(() => users.id, { onDelete: 'set null' }),
+    userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
     name: varchar({ length: 255 }).notNull(),
     email: varchar({ length: 255 }).notNull(),
     phoneNumber: varchar({ length: 255 }),
@@ -428,7 +425,7 @@ export const bookingOrganizers = pgTable(
     bookingId: integer()
       .notNull()
       .references(() => bookings.id, { onDelete: 'cascade' }),
-    userId: varchar({ length: 255 })
+    userId: uuid('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     name: varchar({ length: 255 }).notNull(),
@@ -490,7 +487,7 @@ export const payments = pgTable(
 
     stripeCheckoutSessionId: varchar({ length: 255 }).notNull().unique(),
 
-    mentorUserId: varchar({ length: 255 })
+    mentorUserId: uuid('mentor_user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
 
@@ -549,16 +546,16 @@ export const analyticsEvents = pgTable(
   {
     id: integer().primaryKey().generatedByDefaultAsIdentity(),
     eventType: analyticsEventEnum('event_type').notNull(),
-    actorUserId: varchar({ length: 255 }).references(() => users.id, {
+    actorUserId: uuid('actor_user_id').references(() => users.id, {
       onDelete: 'set null',
     }), // User performing the action (optional)
-    targetUserId: varchar({ length: 255 })
+    targetUserId: uuid('target_user_id')
       .notNull()
       .references(() => users.id, {
         onDelete: 'no action',
       }), // User being acted upon
     postId: integer().references(() => posts.id, { onDelete: 'set null' }),
-    anonymousId: varchar({ length: 255 }), // Cookie for anonymous users
+    distinctId: varchar({ length: 255 }), // PostHog distinct_id (anonymous or authenticated)
     processed: boolean('processed').default(false).notNull(),
     ...softDeleteTimestamps,
   },
@@ -567,6 +564,6 @@ export const analyticsEvents = pgTable(
     index('analytics_events_actor_user_id_idx').on(table.actorUserId),
     index('analytics_events_target_user_id_idx').on(table.targetUserId),
     index('analytics_events_post_id_idx').on(table.postId),
-    index('analytics_events_anonymous_id_idx').on(table.anonymousId),
+    index('analytics_events_distinct_id_idx').on(table.distinctId),
   ]
 )

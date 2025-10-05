@@ -1,6 +1,5 @@
 'use client'
 
-import * as Sentry from '@sentry/nextjs'
 import { AlertCircle, Home, RefreshCw } from 'lucide-react'
 import { useRouter } from 'next/router'
 import { useEffect } from 'react'
@@ -16,19 +15,6 @@ export default function DefaultError({ error, reset }: ErrorProps) {
   const router = useRouter()
 
   useEffect(() => {
-    // Log error to Sentry for monitoring
-    Sentry.captureException(error, {
-      tags: {
-        component: 'error-boundary',
-        section: 'default',
-      },
-      extra: {
-        digest: error.digest,
-        statusCode: error.statusCode,
-        code: error.code,
-      },
-    })
-
     // Log error for debugging in development
     if (process.env.NODE_ENV === 'development') {
       console.error('Page error:', error)

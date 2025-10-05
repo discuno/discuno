@@ -1,6 +1,7 @@
 import { eq, inArray, sql } from 'drizzle-orm'
 import { db } from '~/server/db'
 import { analyticsEvents, userProfiles } from '~/server/db/schema'
+import { revalidatePosts } from '~/server/queries'
 
 export const RANKING_EVENT_WEIGHTS = {
   PROFILE_VIEW: 0.3,
@@ -25,6 +26,8 @@ export async function decayRankingScores() {
   await db.update(userProfiles).set({
     rankingScore: sql`"ranking_score" * (1 - ${RANKING_EVENT_WEIGHTS.WEEKLY_DECAY_PERCENTAGE})`,
   })
+  console.log('DECAYING RANKING SCORES: Invalidating posts cache')
+  revalidatePosts()
 }
 
 /**
@@ -72,4 +75,7 @@ export async function processAnalyticsEvents() {
         events.map(e => e.id)
       )
     )
+
+  console.log('PROCESSING ANALYTICS EVENTS: Invalidating posts cache')
+  revalidatePosts()
 }

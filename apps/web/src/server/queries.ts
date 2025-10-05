@@ -1,6 +1,7 @@
 'server only'
 
 import { and, desc, eq, gt, isNotNull, isNull, lt, or, sql } from 'drizzle-orm'
+import { unstable_cacheTag as cacheTag, revalidateTag } from 'next/cache'
 import { cache } from 'react'
 import { z } from 'zod'
 import type { Card, FullUserProfile } from '~/app/types'
@@ -167,6 +168,9 @@ export const getInfiniteScrollPosts = async (
   nextCursor?: string
   hasMore: boolean
 }> => {
+  'use cache'
+  cacheTag('posts')
+  console.log('CACHE MISS: Executing getInfiniteScrollPosts with limit:', limit, 'cursor:', cursor)
   let rankingScore: number | undefined
   let randomSortKey: number | undefined
   let postId: number | undefined
@@ -316,6 +320,8 @@ export const getPostsByFilters = async (
   nextCursor?: string
   hasMore: boolean
 }> => {
+  'use cache'
+  cacheTag('posts')
   const {
     schoolId: validSchoolId,
     majorId: validMajorId,
@@ -375,7 +381,7 @@ export const getPostsByFilters = async (
         )
       )
     )
-    .orderBy(desc(userProfiles.rankingScore), desc(posts.id))
+    .orderBy(desc(userProfiles.rankingScore), desc(posts.random_sort_key), desc(posts.id))
     .limit(validLimit + 1) // Fetch one extra to check if there are more
 
   const result = await query
@@ -1139,4 +1145,9 @@ export const getUserIdByCalcomUserId = async (calcomUserId: number): Promise<str
     .limit(1)
 
   return result[0]?.userId ?? null
+}
+
+export const revalidatePosts = () => {
+  console.log('INVALIDATING POSTS CACHE')
+  revalidateTag('posts')
 }
