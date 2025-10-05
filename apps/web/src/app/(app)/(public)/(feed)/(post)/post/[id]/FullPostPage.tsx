@@ -1,3 +1,4 @@
+// TODO: make functional full post page
 import {
   ArrowLeft,
   Award,
@@ -16,13 +17,16 @@ import {
 import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { BookingInterface } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingInterface'
+import {
+  BookingInterface,
+  type BookingData,
+} from '~/app/(app)/(public)/mentor/[username]/book/components/BookingInterface'
 import type { Card } from '~/app/types'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { CardContent, CardHeader, CardTitle, Card as UICard } from '~/components/ui/card'
-import { getPostById } from '~/server/queries'
+import { getFullProfileByUserId, getPostById } from '~/server/queries'
 
 export const PostPage = async ({ id }: { id: string }) => {
   const postId = Number(id)
@@ -32,6 +36,22 @@ export const PostPage = async ({ id }: { id: string }) => {
   }
 
   const post: Card = await getPostById(postId)
+
+  let bookingData: BookingData | null = null
+  if (post.createdById) {
+    const profile = await getFullProfileByUserId(post.createdById)
+    if (profile) {
+      bookingData = {
+        userId: profile.userId,
+        calcomUsername: profile.calcomUsername ?? 'fake-username',
+        name: profile.name ?? 'Mentor',
+        image: profile.image ?? '',
+        bio: profile.bio ?? '',
+        school: profile.school ?? '',
+        major: profile.major ?? '',
+      }
+    }
+  }
 
   return (
     <div className="min-h-screen">
@@ -222,8 +242,8 @@ export const PostPage = async ({ id }: { id: string }) => {
                 <CardTitle className="text-xl">Connect with {post.name}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {post.createdById && (
-                  <BookingInterface variant="modal" className="w-full" userId={post.createdById}>
+                {bookingData && (
+                  <BookingInterface variant="modal" className="w-full" bookingData={bookingData}>
                     <Calendar className="mr-2 h-4 w-4" />
                     Schedule Meeting
                   </BookingInterface>

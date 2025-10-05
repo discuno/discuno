@@ -1,11 +1,12 @@
 import { Calendar, Clock, GraduationCap, School, User } from 'lucide-react'
 import { Modal } from '~/app/(app)/(public)/(feed)/@modal/(.)post/[id]/modal'
 import { ViewFullProfileButton } from '~/app/(app)/(public)/(feed)/@modal/(.)post/[id]/ViewFullProfileButton'
-import { BookingInterface } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingInterface'
+import type { BookingData } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingInterface'
+import { BookingModal } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingModal'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { Badge } from '~/components/ui/badge'
 import { Separator } from '~/components/ui/separator'
-import { getPostById } from '~/server/queries'
+import { getFullProfileByUserId, getPostById } from '~/server/queries'
 
 const PostModal = async ({ params }: { params: Promise<{ id: string }> }) => {
   const { id: postId } = await params
@@ -17,14 +18,31 @@ const PostModal = async ({ params }: { params: Promise<{ id: string }> }) => {
 
   const post = await getPostById(idAsNumber)
 
+  // Fetch booking data here instead of in BookingInterface
+  let bookingData: BookingData | null = null
+  if (post.createdById) {
+    const profile = await getFullProfileByUserId(post.createdById)
+    if (profile) {
+      bookingData = {
+        userId: profile.userId,
+        calcomUsername: profile.calcomUsername ?? 'fake-username',
+        name: profile.name ?? 'Mentor',
+        image: profile.image ?? '',
+        bio: profile.bio ?? '',
+        school: profile.school ?? '',
+        major: profile.major ?? '',
+      }
+    }
+  }
+
   const footer = (
     <div className="flex flex-row gap-2">
-      {post.createdById && (
-        <BookingInterface variant="modal" className="min-w-0 flex-1" userId={post.createdById}>
+      {bookingData && (
+        <BookingModal bookingData={bookingData} className="min-w-0 flex-1">
           <Calendar className="mr-2 h-4 w-4" />
           <span className="inline sm:hidden">Book</span>
           <span className="hidden sm:inline">Schedule Meeting</span>
-        </BookingInterface>
+        </BookingModal>
       )}
       <ViewFullProfileButton postId={post.id} className="min-w-0 flex-1" />
     </div>

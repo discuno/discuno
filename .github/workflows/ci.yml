@@ -174,10 +174,7 @@ jobs:
           # Email service (Resend)
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY || 're_placeholder' }}
           # Email provider for NextAuth (Nodemailer)
-          EMAIL_SERVER_HOST: ${{ secrets.EMAIL_SERVER_HOST || 'smtp.placeholder.com' }}
-          EMAIL_SERVER_PORT: ${{ secrets.EMAIL_SERVER_PORT || '587' }}
-          EMAIL_SERVER_USER: ${{ secrets.EMAIL_SERVER_USER || 'placeholder@example.com' }}
-          EMAIL_SERVER_PASSWORD: ${{ secrets.EMAIL_SERVER_PASSWORD || 'placeholder' }}
+          EMAIL_SERVER: ${{ secrets.EMAIL_SERVER || 'smtp://placeholder@example.com:password@smtp.placeholder.com:587' }}
           EMAIL_FROM: ${{ secrets.EMAIL_FROM || 'noreply@placeholder.com' }}
           # Other API keys that might be needed during build
           NEXTAUTH_SECRET: 'test-secret-for-build-only'

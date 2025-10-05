@@ -4,16 +4,15 @@ import { BookingButton } from '~/app/(app)/(public)/mentor/[username]/book/compo
 import { BookingEmbed } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingEmbed'
 import { BookingEmbedSkeleton } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingEmbedSkeleton'
 import { BookingModal } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingModal'
-import { getFullProfileByUserId } from '~/server/queries'
 
 interface BookingInterfaceProps {
   children?: React.ReactNode
   variant?: 'button' | 'modal' | 'inline'
   className?: string
-  userId: string
+  bookingData: BookingData
 }
 
-export interface BookingData {
+export type BookingData = {
   userId: string
   calcomUsername: string
   name: string
@@ -23,29 +22,12 @@ export interface BookingData {
   major: string
 }
 
-export const BookingInterface = async ({
+export const BookingInterface = ({
   children,
   variant = 'button',
   className,
-  userId,
+  bookingData,
 }: BookingInterfaceProps) => {
-  // Server-side data fetching for the specific user
-  const profile = await getFullProfileByUserId(userId)
-
-  if (!profile) {
-    return null
-  }
-
-  const bookingData: BookingData = {
-    userId: profile.userId, // use userId string from FullUserProfile
-    calcomUsername: profile.calcomUsername ?? 'fake-username',
-    name: profile.name ?? 'Mentor',
-    image: profile.image ?? '',
-    bio: profile.bio ?? '',
-    school: profile.school ?? '',
-    major: profile.major ?? '',
-  }
-
   return (
     <Suspense fallback={<BookingEmbedSkeleton />}>
       {variant === 'button' && (
