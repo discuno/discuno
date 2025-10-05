@@ -1,7 +1,11 @@
 'server only'
 
 import { and, desc, eq, gt, isNotNull, isNull, lt, or, sql } from 'drizzle-orm'
-import { unstable_cacheTag as cacheTag, revalidateTag } from 'next/cache'
+import {
+  unstable_cacheLife as cacheLife,
+  unstable_cacheTag as cacheTag,
+  revalidateTag,
+} from 'next/cache'
 import { cache } from 'react'
 import { z } from 'zod'
 import type { Card, FullUserProfile } from '~/app/types'
@@ -169,6 +173,7 @@ export const getInfiniteScrollPosts = async (
   hasMore: boolean
 }> => {
   'use cache'
+  cacheLife('max')
   cacheTag('posts')
   console.log('CACHE MISS: Executing getInfiniteScrollPosts with limit:', limit, 'cursor:', cursor)
   let rankingScore: number | undefined
@@ -321,6 +326,7 @@ export const getPostsByFilters = async (
   hasMore: boolean
 }> => {
   'use cache'
+  cacheLife('max')
   cacheTag('posts')
   const {
     schoolId: validSchoolId,
