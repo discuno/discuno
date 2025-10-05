@@ -5,11 +5,11 @@ import { Button } from '~/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '~/components/ui/popover'
 import { getMajors, getSchools } from '~/server/queries'
 
-interface DashboardContentProps {
+interface FeedContentProps {
   searchParams: { school?: string; major?: string; gradYear?: string }
 }
 
-export const DashboardContent = async ({ searchParams }: DashboardContentProps) => {
+export const FeedContent = async ({ searchParams }: FeedContentProps) => {
   const schools = await getSchools()
   const majors = await getMajors()
   const gradYears: {

@@ -1,4 +1,4 @@
-import { DashboardShell } from '~/app/(app)/(public)/(feed)/components/FeedShell'
+import { FeedShell } from '~/app/(app)/(public)/(feed)/components/FeedShell'
 
 const HomePage = async ({
   searchParams,
@@ -7,7 +7,7 @@ const HomePage = async ({
 }) => {
   const params = await searchParams
 
-  return <DashboardShell searchParams={params} />
+  return <FeedShell searchParams={params} />
 }
 
 export default HomePage
