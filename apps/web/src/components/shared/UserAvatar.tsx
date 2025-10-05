@@ -1,12 +1,11 @@
 'use client'
 
-import { HelpCircle, LogIn, Settings, User } from 'lucide-react'
+import { HelpCircle, Info, LayoutDashboard, LogIn, Moon, Settings, Sun, User } from 'lucide-react'
 import { signOut } from 'next-auth/react'
+import { useTheme } from 'next-themes'
 import Link from 'next/link'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { Button } from '~/components/ui/button'
-
-import { ModeToggle } from '~/app/(app)/(layout)/nav/ThemeToggle'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,7 +42,7 @@ export const AvatarIcon = ({ profilePic, isAuthenticated = false }: AvatarIconPr
   if (!isAuthenticated) {
     return (
       <div className="flex flex-row items-center justify-end space-x-4">
-        <ModeToggle />
+        <SettingsDropdown />
         <Button asChild variant="default" size="sm">
           <Link href="/auth" className="flex items-center gap-2">
             <LogIn className="h-4 w-4" />
@@ -56,7 +55,7 @@ export const AvatarIcon = ({ profilePic, isAuthenticated = false }: AvatarIconPr
 
   return (
     <div className="flex flex-row items-center justify-end space-x-4">
-      <ModeToggle />
+      <SettingsDropdown />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
@@ -73,8 +72,8 @@ export const AvatarIcon = ({ profilePic, isAuthenticated = false }: AvatarIconPr
           <DropdownMenuSeparator />
           <DropdownMenuSub>
             <DropdownMenuSubTrigger>
-              <Settings className="mr-2 h-4 w-4" />
-              <span>Settings</span>
+              <LayoutDashboard className="mr-2 h-4 w-4" />
+              <span>Dashboard</span>
             </DropdownMenuSubTrigger>
             <DropdownMenuPortal>
               <DropdownMenuSubContent>
@@ -106,10 +105,10 @@ export const AvatarIcon = ({ profilePic, isAuthenticated = false }: AvatarIconPr
               </DropdownMenuSubContent>
             </DropdownMenuPortal>
           </DropdownMenuSub>
-          <Link href="/help">
+          <Link href="/support">
             <DropdownMenuItem>
               <HelpCircle className="mr-2 h-4 w-4" />
-              Help Center
+              Support
             </DropdownMenuItem>
           </Link>
           <DropdownMenuSeparator />
@@ -130,5 +129,53 @@ export const AvatarIcon = ({ profilePic, isAuthenticated = false }: AvatarIconPr
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
+  )
+}
+
+const SettingsDropdown = () => {
+  const { theme, setTheme } = useTheme()
+
+  const toggleTheme = () => {
+    setTheme(theme === 'light' ? 'dark' : 'light')
+  }
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" aria-label="Settings" className="h-10 w-10">
+          <Settings className="h-6 w-6" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuLabel>Help</DropdownMenuLabel>
+        <Link href="/support">
+          <DropdownMenuItem>
+            <HelpCircle className="mr-2 h-4 w-4" />
+            <span>Support</span>
+          </DropdownMenuItem>
+        </Link>
+        <Link href="/about">
+          <DropdownMenuItem>
+            <Info className="mr-2 h-4 w-4" />
+            <span>About Us</span>
+          </DropdownMenuItem>
+        </Link>
+        <DropdownMenuSeparator />
+        <DropdownMenuLabel>Theme</DropdownMenuLabel>
+        <DropdownMenuItem onClick={toggleTheme}>
+          {theme === 'light' ? (
+            <>
+              <Moon className="mr-2 h-4 w-4" />
+              <span>Dark</span>
+            </>
+          ) : (
+            <>
+              <Sun className="mr-2 h-4 w-4" />
+              <span>Light</span>
+            </>
+          )}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
