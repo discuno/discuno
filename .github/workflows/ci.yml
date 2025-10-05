@@ -171,6 +171,8 @@ jobs:
           # Cal.com API credentials
           CALCOM_CLIENT_ID: ${{ secrets.CALCOM_CLIENT_ID || 'placeholder' }}
           CALCOM_CLIENT_SECRET: ${{ secrets.CALCOM_CLIENT_SECRET || 'placeholder' }}
+          # Email service (Resend)
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY || 're_placeholder' }}
           # Other API keys that might be needed during build
           NEXTAUTH_SECRET: 'test-secret-for-build-only'
           NEXTAUTH_URL: 'http://localhost:3000'
