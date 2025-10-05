@@ -225,6 +225,19 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 ---
 
+## ✨ Sponsorship
+
+We are proud to be sponsored by Cal.com, the scheduling infrastructure for everyone.
+
+<a href="https://cal.com/discuno/30min?utm_source=banner&utm_campaign=oss" target="_blank">
+  <picture>
+    <source srcSet="https://cal.com/book-with-cal-dark.svg" media="(prefers-color-scheme: dark)" />
+    <img alt="Book us with Cal.com" src="https://cal.com/book-with-cal-light.svg" />
+  </picture>
+</a>
+
+---
+
 <div align="center">
   <p>Made with ❤️ by the <strong>Discuno Team</strong></p>
   <p>⭐ Star us on GitHub if this project helped you!</p>
