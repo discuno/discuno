@@ -1,12 +1,12 @@
 import { Suspense } from 'react'
 import { LoadingSpinner } from '~/components/shared/LoadingSpinner'
-import { DashboardContent } from './FeedContent'
+import { FeedContent } from './FeedContent'
 
-interface DashboardShellProps {
+interface FeedShellProps {
   searchParams: { school?: string; major?: string; gradYear?: string }
 }
 
-export const DashboardShell = ({ searchParams }: DashboardShellProps) => {
+export const FeedShell = ({ searchParams }: FeedShellProps) => {
   return (
     <main className="text-foreground min-h-screen">
       {/* Static layout that renders immediately */}
@@ -19,7 +19,7 @@ export const DashboardShell = ({ searchParams }: DashboardShellProps) => {
             </div>
           }
         >
-          <DashboardContent searchParams={searchParams} />
+          <FeedContent searchParams={searchParams} />
         </Suspense>
       </div>
     </main>
