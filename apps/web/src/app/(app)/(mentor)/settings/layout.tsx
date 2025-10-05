@@ -2,7 +2,7 @@ import { SettingsHeader } from '~/app/(app)/(mentor)/settings/components/Setting
 import { AppSidebar } from '~/components/app-sidebar'
 import { SidebarInset, SidebarProvider } from '~/components/ui/sidebar'
 
-export const SettingsLayout = ({ children }: { children: React.ReactNode }) => {
+const SettingsLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <SidebarProvider>
       <AppSidebar />
