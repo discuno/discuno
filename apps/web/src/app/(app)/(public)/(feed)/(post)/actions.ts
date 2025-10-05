@@ -1,7 +1,7 @@
 'use server'
 import 'server-only'
 
-import { cookies, headers } from 'next/headers'
+import { headers } from 'next/headers'
 import { getAuthSession } from '~/lib/auth/auth-utils'
 import { ratelimit } from '~/lib/rate-limiter'
 import type { ClientAnalyticsEvent } from '~/lib/schemas/db/analyticsEvents'
@@ -10,12 +10,11 @@ import { createAnalyticsEvent, getInfiniteScrollPosts, getPostsByFilters } from 
 export const logAnalyticsEvent = async (input: ClientAnalyticsEvent) => {
   const session = await getAuthSession()
   const actorUserId = session?.id
-  const anonymousId = (await cookies()).get('anonymous_id')?.value
 
   await createAnalyticsEvent({
     ...input,
     actorUserId,
-    anonymousId: anonymousId,
+    distinctId: input.distinctId,
   })
 }
 
