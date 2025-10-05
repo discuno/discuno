@@ -104,6 +104,14 @@ jobs:
       - name: Build packages
         env:
           SKIP_ENV_VALIDATION: true
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY || 'sk_test_placeholder' }}
+          NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 'pk_test_placeholder' }}
+          CALCOM_CLIENT_ID: ${{ secrets.CALCOM_CLIENT_ID || 'placeholder' }}
+          CALCOM_CLIENT_SECRET: ${{ secrets.CALCOM_CLIENT_SECRET || 'placeholder' }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY || 're_placeholder' }}
+          NEXTAUTH_SECRET: 'test-secret-for-build-only'
+          NEXTAUTH_URL: 'http://localhost:3000'
         run: pnpm build
 
       - name: Perform CodeQL Analysis
