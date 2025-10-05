@@ -4,6 +4,7 @@ import { ChevronsUpDown, HelpCircle, LogOut, Moon, Sun } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import Link from 'next/link'
 
+import { type getFullProfileAction } from '~/app/(app)/(mentor)/settings/actions'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import {
   DropdownMenu,
@@ -21,17 +22,19 @@ import {
   useSidebar,
 } from '~/components/ui/sidebar'
 
-export function NavUser({
-  user,
-}: {
-  user: {
-    name: string
-    email: string
-    avatar?: string
-  }
-}) {
+type NavUserProps = {
+  user: Awaited<ReturnType<typeof getFullProfileAction>>
+}
+
+export const NavUser = ({ user: data }: NavUserProps) => {
   const { isMobile } = useSidebar()
   const { setTheme, resolvedTheme } = useTheme()
+
+  const user = {
+    name: data?.name ?? 'User',
+    email: data?.email ?? '',
+    avatar: data?.image ?? undefined,
+  }
 
   return (
     <SidebarMenu>
@@ -44,7 +47,7 @@ export function NavUser({
             >
               <Avatar className="h-8 w-8 rounded-lg">
                 <AvatarImage src={user.avatar} alt={user.name} />
-                <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                <AvatarFallback className="rounded-lg">{user.name[0] ?? 'U'}</AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-semibold">{user.name}</span>

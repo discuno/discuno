@@ -824,7 +824,6 @@ export const getMentorStripeStatus = async (): Promise<{
   }
   error?: string
 }> => {
-  console.log('getMentorStripeStatus called')
   try {
     const stripeAccount = await getMentorStripeAccount()
 
@@ -1047,6 +1046,10 @@ export const cancelBooking = async ({
       error: 'An unexpected error occurred while cancelling the booking',
     }
   }
+}
+
+export const getFullProfileAction = async () => {
+  return await getFullProfile()
 }
 
 export {

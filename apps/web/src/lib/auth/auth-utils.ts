@@ -1,5 +1,4 @@
 import type { Session, User } from 'next-auth'
-import { cache } from 'react'
 import { UnauthenticatedError } from '~/lib/errors'
 import { auth } from '~/server/auth'
 
@@ -23,7 +22,7 @@ export {
  * Require authentication for a page
  * Use this in Server Components that require authentication
  */
-export const requireAuth = cache(async (): Promise<AuthenticatedUser> => {
+export const requireAuth = async (): Promise<AuthenticatedUser> => {
   const session: Session | null = await auth()
 
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
@@ -35,13 +34,13 @@ export const requireAuth = cache(async (): Promise<AuthenticatedUser> => {
     ...session.user,
     id: session.user.id,
   }
-})
+}
 
 /**
  * Get auth session without throwing
  * Returns null if not authenticated, useful for optional auth
  */
-export const getAuthSession = cache(async (): Promise<AuthenticatedUser | null> => {
+export const getAuthSession = async (): Promise<AuthenticatedUser | null> => {
   const session: Session | null = await auth()
 
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
@@ -53,4 +52,4 @@ export const getAuthSession = cache(async (): Promise<AuthenticatedUser | null> 
     ...session.user,
     id: session.user.id,
   }
-})
+}
