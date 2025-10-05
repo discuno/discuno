@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import * as React from 'react'
+import { getFullProfileAction } from '~/app/(app)/(mentor)/settings/actions'
 import { NavMain, type NavMainProps } from '~/components/nav-main'
 import { NavUser } from '~/components/nav-user'
 import { ThemeAwareIconLogo } from '~/components/shared/ThemeAwareIconLogo'
@@ -12,11 +13,9 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '~/components/ui/sidebar'
-import { getFullProfile } from '~/server/queries'
 
 export const AppSidebar = async ({ ...props }: React.ComponentProps<typeof Sidebar>) => {
-  const user = await getFullProfile()
-
+  const user = await getFullProfileAction()
   const navMain: NavMainProps['items'] = [
     {
       title: 'Home',
@@ -57,15 +56,6 @@ export const AppSidebar = async ({ ...props }: React.ComponentProps<typeof Sideb
     },
   ]
 
-  const data = {
-    user: {
-      name: user?.name ?? 'User',
-      email: user?.email ?? '',
-      avatar: user?.image ?? undefined,
-    },
-    navMain,
-  }
-
   return (
     <Sidebar variant="inset" {...props}>
       <SidebarHeader>
@@ -86,10 +76,10 @@ export const AppSidebar = async ({ ...props }: React.ComponentProps<typeof Sideb
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain items={navMain} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={user} />
       </SidebarFooter>
     </Sidebar>
   )

@@ -1,5 +1,4 @@
-export const dynamic = 'force-dynamic'
-
+import { connection } from 'next/dist/server/request/connection'
 import Link from 'next/link'
 import { getMentorStripeStatus } from '~/app/(app)/(mentor)/settings/actions'
 import { StripeDashboard } from '~/app/(app)/(mentor)/settings/billing/StripeDashboard'
@@ -7,6 +6,7 @@ import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
 
 export default async function DashboardPage() {
+  await connection()
   const stripeStatus = await getMentorStripeStatus()
 
   if (
