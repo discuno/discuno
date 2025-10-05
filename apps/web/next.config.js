@@ -6,7 +6,6 @@ import './src/env.js'
 
 /** @type {import("next").NextConfig} */
 const coreConfig = {
-  transpilePackages: ['@discuno/atoms'],
   serverExternalPackages: ['drizzle-orm', '@neondatabase/serverless'],
   turbopack: {
     rules: {
