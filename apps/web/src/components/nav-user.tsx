@@ -83,10 +83,10 @@ export const NavUser = ({ user: data }: NavUserProps) => {
             </DropdownMenuGroup>
             <DropdownMenuSeparator /> */}
             <DropdownMenuGroup>
-              <Link href="/help">
+              <Link href="/support">
                 <DropdownMenuItem>
                   <HelpCircle className="mr-2 size-4" />
-                  Help Center
+                  Support
                 </DropdownMenuItem>
               </Link>
               <DropdownMenuItem
