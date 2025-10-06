@@ -25,8 +25,11 @@ type RankingEvent = keyof typeof RANKING_EVENT_WEIGHTS
  * Decays all mentor ranking scores by a percentage.
  */
 export async function decayRankingScores() {
+  console.log(
+    `typeof RANKING_EVENT_WEIGHTS.WEEKLY_DECAY_PERCENTAGE: ${typeof RANKING_EVENT_WEIGHTS.WEEKLY_DECAY_PERCENTAGE}`
+  )
   await db.update(userProfiles).set({
-    rankingScore: sql`"ranking_score" * (1 - ${RANKING_EVENT_WEIGHTS.WEEKLY_DECAY_PERCENTAGE})`,
+    rankingScore: sql`"ranking_score" * (1.0 - ${RANKING_EVENT_WEIGHTS.WEEKLY_DECAY_PERCENTAGE})`,
   })
   console.log('DECAYING RANKING SCORES: Invalidating posts cache')
   revalidatePosts()
