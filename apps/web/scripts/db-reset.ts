@@ -230,7 +230,7 @@ const dropAllTables = async (environment: Environment) => {
     await db.transaction(async tx => {
       // Drop all tables with CASCADE to handle dependencies
       for (const row of tableRows) {
-        const tableName = row.tablename
+        const tableName = String(row.tablename)
         // Validate tablename to prevent SQL injection
         if (!/^[a-zA-Z0-9_]+$/.test(tableName)) {
           console.warn(`   ⚠️  Skipping invalid table name: ${tableName}`)
@@ -249,7 +249,7 @@ const dropAllTables = async (environment: Environment) => {
       `)
 
       for (const seqRow of sequences) {
-        const sequenceName = seqRow.sequence_name
+        const sequenceName = String(seqRow.sequence_name)
         // Validate sequence name to prevent SQL injection
         if (!/^[a-zA-Z0-9_]+$/.test(sequenceName)) {
           console.warn(`   ⚠️  Skipping invalid sequence name: ${sequenceName}`)
