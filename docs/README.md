@@ -1,18 +1,25 @@
 # Documentation
 
-Welcome to the Discuno documentation! This directory will contain comprehensive guides and documentation for the platform.
+Welcome to the Discuno documentation!
 
-## 📚 Coming Soon
+## 📖 Available Documentation
 
-- **Deployment Guide** - Production deployment instructions
-- **Architecture Guide** - System design and patterns
-- **Development Guide** - Advanced development workflows
+- **[Main README](../README.md)** - Project overview, quick start, and features
+- **[Contributing Guide](../CONTRIBUTING.md)** - How to contribute to the project
+- **[Code of Conduct](../CODE_OF_CONDUCT.md)** - Community guidelines
+- **[Security Policy](../SECURITY.md)** - Security reporting and guidelines
+- **[Web App README](../apps/web/README.md)** - Web application documentation
 
-## 🔗 Quick Links
+## 🚀 Getting Started
 
-- [Main README](../README.md) - Project overview
-- [Contributing Guide](../CONTRIBUTING.md) - How to contribute
-- [API Reference](./api/) - Coming soon
-- [Components](./components/) - Coming soon
+New to Discuno? Start here:
 
-Stay tuned for comprehensive documentation!
+1. Read the [Main README](../README.md) for an overview
+2. Follow the [Quick Start Guide](../README.md#-quick-start) to set up your development environment
+3. Review the [Contributing Guide](../CONTRIBUTING.md) if you plan to contribute
+
+## 💡 Need Help?
+
+- **Issues**: Check [GitHub Issues](https://github.com/discuno-dev/discuno/issues)
+- **Discussions**: Use [GitHub Discussions](https://github.com/discuno-dev/discuno/discussions)
+- **Security**: See our [Security Policy](../SECURITY.md)

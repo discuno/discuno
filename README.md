@@ -24,7 +24,7 @@
 - 📱 **Mobile-First Design** - Responsive UI built with Tailwind CSS & Radix UI
 - 🧪 **Full Test Coverage** - Comprehensive testing with Vitest & Testing Library
 - 🚀 **Performance Optimized** - Turbo builds, server components, and edge functions
-- 🎨 **Component Library** - Reusable UI components with @discuno/atoms
+- 🎨 **Modern UI** - Beautiful and responsive interface with Tailwind CSS & Radix UI
 - 📊 **Database Integration** - Type-safe queries with Drizzle ORM
 
 ## 🏗️ Monorepo Structure
@@ -32,7 +32,7 @@
 ```
 discuno/
 ├── apps/
-│   └── web/                 # Main Next.js application (@discuno/web)
+│   └── web/                 # Main Next.js application
 │       ├── src/
 │       │   ├── app/         # Next.js App Router
 │       │   ├── components/  # React components
@@ -40,16 +40,8 @@ discuno/
 │       │   └── server/      # Server-side code
 │       ├── drizzle/         # Database migrations
 │       └── public/          # Static assets
-├── packages/
-│   └── discuno-atoms/       # Shared UI components (@discuno/atoms)
-│       ├── src/
-│       │   ├── components/  # Reusable components
-│       │   ├── hooks/       # Custom React hooks
-│       │   ├── lib/         # Utilities
-│       │   └── types/       # TypeScript definitions
-│       └── dist/            # Built package
 ├── .github/                 # GitHub Actions & templates
-├── docs/                    # Documentation (coming soon)
+├── docs/                    # Documentation
 └── [config files]          # Monorepo configuration
 ```
 
@@ -78,11 +70,7 @@ pnpm dev
 ### Development Workflow
 
 ```bash
-# Start specific packages
-pnpm dev:web      # Web app only
-pnpm dev:atoms    # Component library only
-
-# Build all packages
+# Build the application
 pnpm build
 
 # Run quality checks
@@ -97,9 +85,9 @@ pnpm db:migrate   # Run migrations
 pnpm db:studio    # Open Drizzle Studio
 ```
 
-## 📦 Packages
+## 📦 Application
 
-### [@discuno/web](./apps/web)
+### [Web App](./apps/web)
 
 **Main Application** - Full-featured Next.js app with:
 
@@ -109,16 +97,6 @@ pnpm db:studio    # Open Drizzle Studio
 - 🎨 Tailwind CSS + Radix UI
 - 📱 Responsive design system
 - 🔍 Advanced search & filtering
-
-### [@discuno/atoms](./packages/discuno-atoms)
-
-**Component Library** - Reusable components featuring:
-
-- 🧩 Cal.com integration components
-- 🎨 Consistent design tokens
-- 📱 Mobile-responsive primitives
-- 🔧 TypeScript support
-- 📚 Storybook documentation (coming soon)
 
 ## 🛠️ Tech Stack
 
@@ -131,8 +109,7 @@ pnpm db:studio    # Open Drizzle Studio
 - **Styling**: Tailwind CSS 4, Radix UI primitives
 - **Database**: Drizzle ORM, PostgreSQL (Neon)
 - **Authentication**: NextAuth.js v5
-- **State Management**: Zustand, React Query/TanStack Query
-- **Build System**: Turbo, tsup (for packages)
+- **Build System**: Turbo
 
 </details>
 
@@ -207,7 +184,6 @@ We welcome contributions from the community! Please see our [Contributing Guide]
 ## 📊 Project Stats
 
 - **Languages**: TypeScript, JavaScript, CSS
-- **Packages**: 2 workspace packages
 - **Dependencies**: Modern, well-maintained libraries
 - **Test Coverage**: Comprehensive test suites
 - **Bundle Size**: Optimized for performance

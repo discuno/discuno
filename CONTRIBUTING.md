@@ -136,12 +136,6 @@ apps/web/src/
 │   └── shared/             # Shared business components
 ├── lib/                    # Utilities and configurations
 └── server/                 # Server-side code
-
-packages/discuno-atoms/src/
-├── components/             # Reusable components
-├── hooks/                  # Custom hooks
-├── lib/                    # Utilities
-└── types/                  # Type definitions
 ```
 
 ### Code Style
@@ -161,17 +155,14 @@ packages/discuno-atoms/src/
 
 ## Project Structure
 
-This is a monorepo with the following packages:
-
-- **`@discuno/web`**: Main Next.js application
-- **`@discuno/atoms`**: Shared component library
+This is a monorepo containing the main Next.js application.
 
 ### Key Technologies
 
 - **Frontend**: Next.js 15, React 19, TypeScript
 - **Styling**: Tailwind CSS, Radix UI
 - **Database**: Drizzle ORM
-- **Build**: Turbo, tsup
+- **Build**: Turbo
 - **Testing**: Vitest, Testing Library
 
 ## Testing

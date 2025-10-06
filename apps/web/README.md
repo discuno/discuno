@@ -256,10 +256,11 @@ We welcome contributions! Please see our [Contributing Guide](../../CONTRIBUTING
 
 ## 📚 Documentation
 
-- **[API Documentation](./docs/api.md)** - Backend API reference
-- **[Component Guide](./docs/components.md)** - UI component documentation
-- **[Database Schema](./docs/database.md)** - Database structure
-- **[Deployment Guide](./docs/deployment.md)** - Production deployment
+For more information, see:
+
+- **[Main README](../../README.md)** - Project overview and quick start
+- **[Contributing Guide](../../CONTRIBUTING.md)** - How to contribute
+- **[Security Policy](../../SECURITY.md)** - Security guidelines
 
 ---
 
