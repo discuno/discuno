@@ -1,0 +1,12 @@
+# Trivy Configuration File
+# This file configures Trivy security scanning behavior
+# See: https://aquasecurity.github.io/trivy/latest/docs/references/configuration/config-file/
+
+# Files to skip during scanning
+# These workflow files contain placeholder values for environment variables
+# which are not real secrets but fallback values when GitHub secrets are not set
+scan:
+  skip-files:
+    - .github/workflows/ci.yml
+    - .github/workflows/release.yml
+    - .github/workflows/security.yml
