@@ -1,7 +1,7 @@
 name: 🐛 Bug Report
 description: Create a report to help us improve
 title: '[Bug]: '
-labels: ['bug', 'triage']
+labels: ['bug', 'needs-triage']
 assignees: []
 
 body:
@@ -71,12 +71,34 @@ body:
       required: true
 
   - type: textarea
+    id: possible-solution
+    attributes:
+      label: Possible Solution
+      description: If you have a suggestion for fixing the bug, please describe it here.
+      placeholder: A possible solution could be...
+
+  - type: textarea
     id: additional-context
     attributes:
       label: Additional context
       description: |
         Add any other context about the problem here. Include screenshots, error logs, or any other relevant information.
       placeholder: Any additional information that might help...
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      description: Please review the following checklist before submitting.
+      options:
+        - label: I have searched existing issues to ensure this is not a duplicate.
+          required: true
+        - label: I have provided a clear and descriptive title.
+          required: true
+        - label: I have provided steps to reproduce the issue.
+          required: true
+        - label: I have tested this on the latest version.
+          required: false
 
   - type: checkboxes
     id: terms

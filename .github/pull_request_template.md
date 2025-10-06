@@ -1,3 +1,10 @@
+## Related Issue
+
+<!--
+Please link the issue that this PR addresses. For example:
+Closes #123
+-->
+
 ## Description
 
 Brief description of the changes in this PR.

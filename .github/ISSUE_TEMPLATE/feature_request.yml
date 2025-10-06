@@ -1,14 +1,14 @@
 name: 🚀 Feature Request
 description: Suggest an idea for this project
 title: '[Feature]: '
-labels: ['feature', 'enhancement']
+labels: ['feature', 'needs-triage']
 assignees: []
 
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for suggesting a new feature! Please provide as much detail as possible.
+        Thanks for suggesting a new feature! Please provide as much detail as possible to help us understand and prioritize your request.
 
   - type: textarea
     id: problem
@@ -17,7 +17,16 @@ body:
       description: A clear and concise description of what the problem is.
       placeholder: I'm always frustrated when...
     validations:
-      required: false
+      required: true
+
+  - type: textarea
+    id: user-story
+    attributes:
+      label: User Story
+      description: 'Describe the feature from a user''s perspective: "As a [type of user], I want [goal] so that [benefit]."'
+      placeholder: 'As a user, I want to...'
+    validations:
+      required: true
 
   - type: textarea
     id: solution
@@ -25,6 +34,18 @@ body:
       label: Describe the solution you'd like
       description: A clear and concise description of what you want to happen.
       placeholder: I would like to see...
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: Provide a list of criteria that must be met for this feature to be considered complete.
+      placeholder: |
+        - [ ] Criteria 1
+        - [ ] Criteria 2
+        - [ ] Criteria 3
     validations:
       required: true
 
@@ -51,35 +72,27 @@ body:
     validations:
       required: true
 
-  - type: dropdown
-    id: priority
-    attributes:
-      label: Priority
-      description: How important is this feature to you?
-      options:
-        - 'Low - Nice to have'
-        - 'Medium - Would be helpful'
-        - 'High - Important for my use case'
-        - 'Critical - Blocking my project'
-    validations:
-      required: true
-
-  - type: checkboxes
-    id: implementation
-    attributes:
-      label: Implementation
-      description: Are you willing to help implement this feature?
-      options:
-        - label: I'd be willing to submit a PR for this feature
-        - label: I'd be willing to help test this feature
-        - label: I'd be willing to help with documentation
-
   - type: textarea
     id: additional-context
     attributes:
       label: Additional context
       description: Add any other context, mockups, or examples about the feature request here.
       placeholder: Any additional information that might help...
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      description: Please review the following checklist before submitting.
+      options:
+        - label: I have searched existing issues to ensure this is not a duplicate.
+          required: true
+        - label: I have provided a clear and descriptive title.
+          required: true
+        - label: I have provided clear acceptance criteria.
+          required: true
+        - label: I have considered the impact on existing functionality.
+          required: false
 
   - type: checkboxes
     id: terms
