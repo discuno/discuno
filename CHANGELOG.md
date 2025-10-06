@@ -37,7 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Cal.com integration for scheduling
 - User authentication and profile management
 - Mentorship booking system
-- Modern UI components library (@discuno/atoms)
+- Modern UI components
 - Professional development environment setup
 
 ### Features

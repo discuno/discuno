@@ -39,10 +39,6 @@ The root `package.json` contains lint-staged configuration for:
       "pnpm --filter @discuno/web lint:fix",
       "pnpm --filter @discuno/web format:write"
     ],
-    "packages/discuno-atoms/**/*.{ts,tsx,js,jsx}": [
-      "pnpm --filter @discuno/atoms lint:fix",
-      "pnpm --filter @discuno/atoms format:write"
-    ],
     "*.{json,md,yml,yaml}": ["prettier --write"]
   }
 }

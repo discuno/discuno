@@ -1,8 +1,10 @@
+<div align="center">
+
 # Discuno
 
-<div align="center">
-  <h3>🚀 Modern Scheduling & Mentorship Platform</h3>
-  <p>A professional monorepo built with Next.js, pnpm workspaces, and Cal.com integration</p>
+### 🚀 Modern Scheduling & Mentorship Platform
+
+A professional monorepo built with Next.js, pnpm workspaces, and Cal.com integration
 
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
 [![CI](https://github.com/discuno/discuno/actions/workflows/ci.yml/badge.svg)](https://github.com/discuno/discuno/actions/workflows/ci.yml)
@@ -11,6 +13,8 @@
 [![React](https://img.shields.io/badge/React-19-blue?logo=react)](https://reactjs.org/)
 [![pnpm](https://img.shields.io/badge/pnpm-workspace-orange?logo=pnpm)](https://pnpm.io/)
 [![Turborepo](https://img.shields.io/badge/Turborepo-enabled-red?logo=turborepo)](https://turbo.build/)
+
+[Features](#-features) • [Quick Start](#-quick-start) • [Tech Stack](#️-tech-stack) • [Contributing](#-contributing) • [Documentation](#-documentation)
 
 </div>
 
