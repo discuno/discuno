@@ -1,3 +1,5 @@
+import 'server-only'
+
 import { eq, inArray, sql } from 'drizzle-orm'
 import { db } from '~/server/db'
 import { analyticsEvents, userProfiles } from '~/server/db/schema'
