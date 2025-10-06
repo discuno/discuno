@@ -9,7 +9,7 @@ vi.mock('~/server/db', () => ({
 
 beforeAll(() => {
   execSync('pnpm db:reset:test', { stdio: 'inherit' })
-})
+}, 30000)
 
 afterAll(async () => {
   await clearDatabase()

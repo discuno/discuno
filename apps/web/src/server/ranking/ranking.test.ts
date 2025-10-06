@@ -29,7 +29,7 @@ describe('Ranking System', () => {
       graduationYear: 2025,
       rankingScore: 0,
     })
-  }, 30000)
+  })
 
   afterEach(async () => {
     // Clean up analytics events and reset ranking score
