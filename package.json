@@ -4,14 +4,10 @@
   "private": true,
   "description": "A modern, professional monorepo for building scheduling and mentorship platforms with Cal.com integration",
   "keywords": [
-    "monorepo",
-    "scheduling",
     "mentorship",
-    "cal.com",
+    "education",
     "nextjs",
-    "react",
-    "typescript",
-    "education"
+    "typescript"
   ],
   "homepage": "https://github.com/discuno/discuno#readme",
   "repository": {
