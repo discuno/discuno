@@ -36,6 +36,7 @@ pnpm-debug.log*
 .drizzle
 drizzle
 migrations
+next-env.d.ts
 
 # Coverage reports
 coverage
