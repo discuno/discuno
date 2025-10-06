@@ -110,12 +110,9 @@ jobs:
           CALCOM_CLIENT_ID: ${{ secrets.CALCOM_CLIENT_ID || 'placeholder' }}
           CALCOM_CLIENT_SECRET: ${{ secrets.CALCOM_CLIENT_SECRET || 'placeholder' }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY || 're_placeholder' }}
-          # Email provider for NextAuth (Nodemailer)
-          EMAIL_SERVER_HOST: ${{ secrets.EMAIL_SERVER_HOST || 'smtp.placeholder.com' }}
-          EMAIL_SERVER_PORT: ${{ secrets.EMAIL_SERVER_PORT || '587' }}
-          EMAIL_SERVER_USER: ${{ secrets.EMAIL_SERVER_USER || 'placeholder@example.com' }}
-          EMAIL_SERVER_PASSWORD: ${{ secrets.EMAIL_SERVER_PASSWORD || 'placeholder' }}
-          EMAIL_FROM: ${{ secrets.EMAIL_FROM || 'noreply@placeholder.com' }}
+          # Email provider for NextAuth (Nodemailer) - formatted as connection string
+          AUTH_EMAIL_SERVER: ${{ secrets.AUTH_EMAIL_SERVER || 'smtp://placeholder:placeholder@smtp.placeholder.com:587' }}
+          AUTH_EMAIL_FROM: ${{ secrets.AUTH_EMAIL_FROM || 'noreply@placeholder.com' }}
           NEXTAUTH_SECRET: 'test-secret-for-build-only'
           NEXTAUTH_URL: 'http://localhost:3000'
         run: pnpm build
@@ -129,6 +126,9 @@ jobs:
     name: Trivy Security Scan
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: read
+      security-events: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
