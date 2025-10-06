@@ -8,6 +8,7 @@ A professional monorepo built with Next.js, pnpm workspaces, and Cal.com integra
 
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
 [![CI](https://github.com/discuno/discuno/actions/workflows/ci.yml/badge.svg)](https://github.com/discuno/discuno/actions/workflows/ci.yml)
+[![Code Scanning](https://github.com/discuno/discuno/actions/workflows/code-scanning.yml/badge.svg)](https://github.com/discuno/discuno/actions/workflows/code-scanning.yml)
 [![TypeScript](https://img.shields.io/badge/%3C%2F%3E-TypeScript-%230074c1.svg)](http://www.typescriptlang.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19-blue?logo=react)](https://reactjs.org/)
@@ -30,6 +31,7 @@ A professional monorepo built with Next.js, pnpm workspaces, and Cal.com integra
 - 🚀 **Performance Optimized** - Turbo builds, server components, and edge functions
 - 🎨 **Modern UI** - Beautiful and responsive interface with Tailwind CSS & Radix UI
 - 📊 **Database Integration** - Type-safe queries with Drizzle ORM
+- 🛡️ **AI-Powered Security** - GitHub Copilot Autofix for automated vulnerability remediation
 
 ## 🏗️ Monorepo Structure
 

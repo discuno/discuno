@@ -54,6 +54,28 @@ When we receive a security bug report, we will:
 
 Security advisories will be published on the [GitHub Security Advisories page](https://github.com/discuno/discuno/security/advisories) for this repository.
 
+## Automated Security Features
+
+### GitHub Copilot Autofix
+
+This repository is configured with GitHub Copilot Autofix for code scanning:
+
+- **CodeQL Analysis**: Automated security vulnerability detection with AI-powered fix suggestions
+- **Trivy Scanning**: Container and dependency vulnerability scanning with autofix capabilities
+- **Pull Request Integration**: Automatic fix suggestions appear directly in pull request comments
+
+Copilot Autofix helps identify and resolve security issues automatically by:
+1. Detecting security vulnerabilities through CodeQL and other scanning tools
+2. Generating fix suggestions using AI-powered analysis
+3. Providing actionable recommendations in pull requests
+4. Enabling faster security remediation with less manual effort
+
+### Code Scanning Schedule
+
+- **On Push**: Scans run automatically on pushes to `main` and `develop` branches
+- **On Pull Requests**: All PRs are scanned before merge
+- **Daily Scans**: Scheduled security scans run daily at 3 AM UTC
+
 ## Comments on this Policy
 
 If you have suggestions on how this process could be improved please submit a pull request.

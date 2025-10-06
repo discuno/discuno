@@ -1,0 +1,30 @@
+# CodeQL Configuration for Discuno
+# Enables GitHub Copilot Autofix for code scanning alerts
+
+name: "Discuno CodeQL Config"
+
+# Query suites to run
+queries:
+  - uses: security-and-quality
+
+# Paths to analyze
+paths:
+  - apps
+  - packages
+
+# Paths to ignore
+paths-ignore:
+  - '**/node_modules'
+  - '**/dist'
+  - '**/build'
+  - '**/.next'
+  - '**/coverage'
+  - '**/*.test.ts'
+  - '**/*.test.tsx'
+  - '**/*.spec.ts'
+  - '**/*.spec.tsx'
+
+# Additional configuration for better analysis
+# This helps Copilot Autofix provide more accurate suggestions
+packs:
+  - codeql/javascript-queries
