@@ -8,6 +8,10 @@ vi.mock('~/server/queries', () => ({
   revalidatePosts: vi.fn(),
 }))
 
+vi.mock('server-only', () => {
+  return {}
+})
+
 describe('Ranking System', () => {
   let testUser: { id: string; name: string | null; email: string | null }
 
