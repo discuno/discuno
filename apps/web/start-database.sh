@@ -48,7 +48,9 @@ if [ "$DB_PASSWORD" = "password" ]; then
   fi
   # Generate a random URL-safe password
   DB_PASSWORD=$(openssl rand -base64 12 | tr '+/' '-_')
-  sed -i -e "s#:password@#:$DB_PASSWORD@#" .env
+  # Use printf %q to safely escape the password for sed
+  ESCAPED_PASSWORD=$(printf '%s' "$DB_PASSWORD" | sed 's/[&/\]/\\&/g')
+  sed -i -e "s#:password@#:$ESCAPED_PASSWORD@#" .env
 fi
 
 docker run -d \

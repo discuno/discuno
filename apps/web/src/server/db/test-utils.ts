@@ -18,7 +18,20 @@ export async function clearDatabase() {
     return
   }
 
-  const joinedTableNames = tableNames.map(name => `"${name}"`).join(', ')
+  // Validate all table names to prevent SQL injection
+  const validTableNames = tableNames.filter(name => {
+    if (!/^[a-zA-Z0-9_]+$/.test(name)) {
+      console.warn(`⚠️  Skipping invalid table name: ${name}`)
+      return false
+    }
+    return true
+  })
+
+  if (validTableNames.length === 0) {
+    return
+  }
+
+  const joinedTableNames = validTableNames.map(name => `"${name}"`).join(', ')
 
   await testDb.execute(sql.raw(`TRUNCATE TABLE ${joinedTableNames} RESTART IDENTITY CASCADE`))
 }
