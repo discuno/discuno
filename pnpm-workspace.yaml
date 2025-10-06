@@ -1,5 +1,2 @@
 packages:
   - 'apps/*'
-  - 'packages/*'
-  - 'packages/ui/*'
-  - 'packages/discuno-atoms'

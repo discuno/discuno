@@ -38,13 +38,12 @@ body:
       required: false
 
   - type: dropdown
-    id: package
+    id: area
     attributes:
-      label: Which package would this feature affect?
+      label: Which area would this feature affect?
       multiple: true
       options:
-        - '@discuno/web (main app)'
-        - '@discuno/atoms (component library)'
+        - 'Web Application (apps/web)'
         - 'Monorepo configuration'
         - 'Documentation'
         - 'Other'
