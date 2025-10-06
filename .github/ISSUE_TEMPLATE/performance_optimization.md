@@ -67,7 +67,7 @@ A clear description of the performance problem or optimization opportunity.
 - [ ] 🏠 **Landing Pages** - Marketing, public pages
 - [ ] 📊 **Dashboard** - User dashboard, analytics
 - [ ] 📱 **Mobile Experience** - Mobile-specific performance
-- [ ] 🧩 **Component Library** - @discuno/atoms performance
+- [ ] 🧩 **Component Library** - UI components performance
 
 ## Root Cause Analysis
 

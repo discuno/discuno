@@ -14,12 +14,12 @@ Brief description of the changes in this PR.
 - [ ] 🧪 Test updates
 - [ ] 🔧 Build/CI changes
 
-## Affected Packages
+## Affected Areas
 
-- [ ] `@discuno/web` (main app)
-- [ ] `@discuno/atoms` (component library)
+- [ ] Main application (apps/web)
 - [ ] Monorepo configuration
 - [ ] Documentation
+- [ ] CI/CD workflows
 
 ## Testing
 

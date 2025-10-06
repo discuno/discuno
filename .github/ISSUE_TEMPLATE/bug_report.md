@@ -12,8 +12,7 @@ A clear and concise description of what the bug is.
 
 ## Environment
 
-- **Affected Area**: [ ] Web App / [ ] Component Library / [ ] Database / [ ] Authentication / [ ] Scheduling / [ ] Mentorship
-- **Package**: [ ] @discuno/web / [ ] @discuno/atoms / [ ] Both
+- **Affected Area**: [ ] Web App / [ ] Database / [ ] Authentication / [ ] Scheduling / [ ] Mentorship / [ ] UI/Styling
 - **Browser**: [e.g. Chrome 120, Safari 17, Firefox 119]
 - **Device**: [e.g. Desktop, iPhone 15, Android]
 - **Environment**: [ ] Local / [ ] Preview / [ ] Production
@@ -52,12 +51,12 @@ Paste any relevant error messages or console logs here
 - [ ] Database migration related
 - [ ] Scheduling conflicts
 
-### Component Library Related (if applicable)
+### UI/Styling Related (if applicable)
 
-- [ ] Issue in shared component
 - [ ] Styling/Tailwind related
 - [ ] TypeScript type error
 - [ ] Mobile responsiveness
+- [ ] Component rendering issue
 
 ## Possible Solution
 
