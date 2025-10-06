@@ -8,6 +8,7 @@ Welcome to the Discuno documentation!
 - **[Contributing Guide](../CONTRIBUTING.md)** - How to contribute to the project
 - **[Code of Conduct](../CODE_OF_CONDUCT.md)** - Community guidelines
 - **[Security Policy](../SECURITY.md)** - Security reporting and guidelines
+- **[Copilot Autofix Guide](COPILOT_AUTOFIX.md)** - AI-powered security vulnerability remediation
 - **[Web App README](../apps/web/README.md)** - Web application documentation
 
 ## 🚀 Getting Started

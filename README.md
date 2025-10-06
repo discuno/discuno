@@ -184,6 +184,7 @@ We welcome contributions from the community! Please see our [Contributing Guide]
 - [📖 Contributing Guide](CONTRIBUTING.md)
 - [📜 Code of Conduct](CODE_OF_CONDUCT.md)
 - [🔒 Security Policy](SECURITY.md)
+- [🤖 Copilot Autofix Guide](docs/COPILOT_AUTOFIX.md)
 - [📋 Changelog](CHANGELOG.md)
 - [⚖️ License](LICENSE)
 
