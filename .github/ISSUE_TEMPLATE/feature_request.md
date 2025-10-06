@@ -32,7 +32,6 @@ Please select the primary area this feature affects:
 - [ ] 🧪 **Developer Experience** - Tooling, testing, build process
 - [ ] 📱 **Mobile** - Responsive design, mobile-specific features
 - [ ] 🔧 **Infrastructure** - Deployment, monitoring, performance
-- [ ] 📚 **Component Library** - @discuno/atoms package improvements
 
 ## Detailed Description
 
@@ -48,7 +47,6 @@ As a [type of user], I want [goal] so that [benefit].
 
 ### Technical Considerations
 
-- **Affected Packages**: [ ] @discuno/web / [ ] @discuno/atoms / [ ] Both
 - **Dependencies**: List any new dependencies or integrations needed
 - **Database Changes**: [ ] Yes / [ ] No - Describe any schema changes needed
 - **API Changes**: [ ] Yes / [ ] No - Describe any new endpoints or modifications
@@ -94,4 +92,3 @@ How will we know this feature is successful?
 - [ ] I have searched existing issues to ensure this is not a duplicate
 - [ ] I have provided clear acceptance criteria
 - [ ] I have considered the impact on existing functionality
-- [ ] I have specified which package(s) this affects

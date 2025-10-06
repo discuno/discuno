@@ -28,7 +28,7 @@ A clear and concise description of the task or improvement.
 - [ ] 👥 **Mentorship Platform** - Mentor/mentee features, matching
 - [ ] 🔐 **Authentication** - NextAuth.js, user management
 - [ ] 📊 **Database** - Drizzle ORM, queries, schema
-- [ ] 🎨 **UI Components** - @discuno/atoms, design system
+- [ ] 🎨 **UI Components** - UI components, design system
 - [ ] 🧪 **Testing Infrastructure** - Test setup, CI/CD
 - [ ] 🚀 **Build/Deploy** - Turborepo, deployment pipeline
 - [ ] 📚 **Documentation** - READMEs, guides, API docs

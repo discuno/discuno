@@ -11,7 +11,7 @@ assignees: ''
 - [ ] 📖 **Missing Documentation** - Documentation that doesn't exist but should
 - [ ] 🔄 **Update Existing** - Outdated or incorrect documentation
 - [ ] 🧪 **API Documentation** - REST APIs, GraphQL, server actions
-- [ ] 🧩 **Component Documentation** - @discuno/atoms component library
+- [ ] 🧩 **Component Documentation** - UI components component library
 - [ ] 🚀 **Setup/Installation** - Getting started, development setup
 - [ ] 🏗️ **Architecture** - System design, technical architecture
 - [ ] 📋 **User Guide** - End-user documentation, how-to guides
@@ -153,7 +153,7 @@ Describe what needs to be corrected:
 
 **How should this documentation integrate with existing systems?**
 
-- [ ] **Component library docs** - @discuno/atoms documentation
+- [ ] **Component library docs** - UI components documentation
 - [ ] **API documentation** - Server action and endpoint docs
 - [ ] **Type definitions** - TypeScript documentation
 - [ ] **Testing docs** - Test examples and guidelines
