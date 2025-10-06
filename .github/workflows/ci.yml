@@ -78,7 +78,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Lint
-        run: pnpm lint
+        run: pnpm lint:fix
 
       - name: Format check
         run: pnpm format:check
@@ -121,6 +121,7 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
+    environment: test
     timeout-minutes: 20
     needs: changes
     if: needs.changes.outputs.packages == 'true'
