@@ -1,8 +1,12 @@
 import { eq } from 'drizzle-orm'
-import { afterEach, beforeAll, describe, expect, it } from 'vitest'
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { analyticsEvents, userProfiles, users } from '~/server/db/schema'
 import { testDb } from '~/server/db/test-db'
 import { processAnalyticsEvents } from './service'
+
+vi.mock('~/server/queries', () => ({
+  revalidatePosts: vi.fn(),
+}))
 
 describe('Ranking System', () => {
   let testUser: { id: string; name: string | null; email: string | null }
