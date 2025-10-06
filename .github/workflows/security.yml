@@ -105,14 +105,18 @@ jobs:
         env:
           SKIP_ENV_VALIDATION: true
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          # Stripe keys (use placeholder if not set)
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY || 'sk_test_placeholder' }}
-          NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 'pk_test_placeholder' }}
-          CALCOM_CLIENT_ID: ${{ secrets.CALCOM_CLIENT_ID || 'placeholder' }}
-          CALCOM_CLIENT_SECRET: ${{ secrets.CALCOM_CLIENT_SECRET || 'placeholder' }}
+          NEXT_PUBLIC_STRIPE_PUBLIC_KEY: ${{ secrets.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 'pk_test_placeholder' }}
+          # Cal.com API credentials
+          NEXT_PUBLIC_X_CAL_ID: ${{ secrets.CALCOM_CLIENT_ID || 'placeholder' }}
+          X_CAL_SECRET_KEY: ${{ secrets.CALCOM_CLIENT_SECRET || 'placeholder' }}
+          # Email service (Resend)
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY || 're_placeholder' }}
-          # Email provider for NextAuth (Nodemailer) - formatted as connection string
-          AUTH_EMAIL_SERVER: ${{ secrets.AUTH_EMAIL_SERVER || 'smtp://placeholder:placeholder@smtp.placeholder.com:587' }}
+          # Email provider for NextAuth (Nodemailer)
+          AUTH_EMAIL_SERVER: ${{ secrets.AUTH_EMAIL_SERVER || 'smtp://placeholder@example.com:password@smtp.placeholder.com:587' }}
           AUTH_EMAIL_FROM: ${{ secrets.AUTH_EMAIL_FROM || 'noreply@placeholder.com' }}
+          # Other API keys that might be needed during build
           NEXTAUTH_SECRET: 'test-secret-for-build-only'
           NEXTAUTH_URL: 'http://localhost:3000'
         run: pnpm build
