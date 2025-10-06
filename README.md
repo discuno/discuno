@@ -4,15 +4,10 @@
 
 ### 🚀 Modern Scheduling & Mentorship Platform
 
-A professional monorepo built with Next.js, pnpm workspaces, and Cal.com integration
+A professional monorepo built with Next.js and pnpm workspaces
 
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
 [![CI](https://github.com/discuno/discuno/actions/workflows/ci.yml/badge.svg)](https://github.com/discuno/discuno/actions/workflows/ci.yml)
-[![TypeScript](https://img.shields.io/badge/%3C%2F%3E-TypeScript-%230074c1.svg)](http://www.typescriptlang.org/)
-[![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)](https://nextjs.org/)
-[![React](https://img.shields.io/badge/React-19-blue?logo=react)](https://reactjs.org/)
-[![pnpm](https://img.shields.io/badge/pnpm-workspace-orange?logo=pnpm)](https://pnpm.io/)
-[![Turborepo](https://img.shields.io/badge/Turborepo-enabled-red?logo=turborepo)](https://turbo.build/)
 
 [Features](#-features) • [Quick Start](#-quick-start) • [Tech Stack](#️-tech-stack) • [Contributing](#-contributing) • [Documentation](#-documentation)
 
@@ -202,19 +197,6 @@ We welcome contributions from the community! Please see our [Contributing Guide]
 ## 📄 License
 
 This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
-
----
-
-## ✨ Sponsorship
-
-We are proud to be sponsored by Cal.com, the scheduling infrastructure for everyone.
-
-<a href="https://cal.com/discuno/30min?utm_source=banner&utm_campaign=oss" target="_blank">
-  <picture>
-    <source srcSet="https://cal.com/book-with-cal-dark.svg" media="(prefers-color-scheme: dark)" />
-    <img alt="Book us with Cal.com" src="https://cal.com/book-with-cal-light.svg" />
-  </picture>
-</a>
 
 ---
 

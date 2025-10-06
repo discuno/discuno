@@ -1,11 +1,4 @@
-'use client'
-
-import { useTheme } from 'next-themes'
-import Image from 'next/image'
-import Link from 'next/link'
-
 const AboutPage = () => {
-  const { theme } = useTheme()
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -46,25 +39,6 @@ const AboutPage = () => {
               <p className="text-muted-foreground">Product Manager</p>
             </div>
           </div>
-        </section>
-
-        <section className="bg-card text-card-foreground rounded-lg p-8 text-center">
-          <h2 className="mb-4 text-3xl font-semibold">Thank You to Our Sponsors</h2>
-          <p className="mb-6 text-lg">
-            Our open-source journey is made possible by the generous support of our sponsors.
-          </p>
-          <Link
-            href="https://cal.com/discuno/30min?utm_source=banner&utm_campaign=oss"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              src={theme === 'dark' ? '/book-with-cal-dark.svg' : '/book-with-cal-light.svg'}
-              alt="Book us with Cal.com"
-              width={200}
-              height={50}
-            />
-          </Link>
         </section>
       </main>
     </div>
