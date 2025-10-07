@@ -2,7 +2,6 @@
 
 import { AlertCircle, ArrowLeft, Home, RefreshCw, Search } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
 
@@ -13,13 +12,6 @@ interface PostErrorProps {
 
 export default function PostError({ error, reset }: PostErrorProps) {
   const router = useRouter()
-
-  useEffect(() => {
-    // Log error for debugging in development
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Post page error:', error)
-    }
-  }, [error])
 
   // Handle post not found
   if (error.name === 'NotFoundError' && error.message.includes('Post')) {
