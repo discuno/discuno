@@ -2,7 +2,6 @@
 
 import { AlertCircle, Home, RefreshCw } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
 
@@ -13,13 +12,6 @@ interface ErrorProps {
 
 export default function DefaultError({ error, reset }: ErrorProps) {
   const router = useRouter()
-
-  useEffect(() => {
-    // Log error for debugging in development
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Page error:', error)
-    }
-  }, [error])
 
   // Handle authentication errors
   if (error.name === 'UnauthenticatedError') {
