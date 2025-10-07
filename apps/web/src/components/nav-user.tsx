@@ -4,6 +4,7 @@ import { ChevronsUpDown, HelpCircle, LogOut, Moon, Sun } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import Link from 'next/link'
 
+import { signOut } from 'next-auth/react'
 import { type getFullProfileAction } from '~/app/(app)/(mentor)/settings/actions'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import {
@@ -101,7 +102,17 @@ export const NavUser = ({ user: data }: NavUserProps) => {
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={async () => {
+                try {
+                  await signOut({ callbackUrl: '/' })
+                } catch (error) {
+                  console.error('Sign out error:', error)
+                  // Fallback redirect
+                  window.location.href = '/'
+                }
+              }}
+            >
               <LogOut />
               Log out
             </DropdownMenuItem>
