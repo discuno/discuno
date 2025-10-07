@@ -1,6 +1,14 @@
 'use client'
 
-import { BookOpen, Calendar, CalendarCheck, CreditCard, Home, Settings2, User } from 'lucide-react'
+import {
+  ArrowLeft,
+  BookOpen,
+  Calendar,
+  CalendarCheck,
+  CreditCard,
+  Settings2,
+  User,
+} from 'lucide-react'
 import {
   SidebarGroup,
   SidebarGroupLabel,
@@ -10,7 +18,7 @@ import {
 } from '~/components/ui/sidebar'
 
 const iconMap = {
-  Home,
+  ArrowLeft,
   Settings2,
   User,
   Calendar,
