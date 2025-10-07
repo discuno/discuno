@@ -71,10 +71,12 @@ export const AvatarIcon = ({ profilePic, isAuthenticated = false }: AvatarIconPr
           <DropdownMenuLabel>My Account</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuSub>
-            <DropdownMenuSubTrigger>
-              <LayoutDashboard className="mr-2 h-4 w-4" />
-              <span>Dashboard</span>
-            </DropdownMenuSubTrigger>
+            <Link href="/settings/event-types">
+              <DropdownMenuSubTrigger>
+                <LayoutDashboard className="mr-2 h-4 w-4" />
+                <span>Dashboard</span>
+              </DropdownMenuSubTrigger>
+            </Link>
             <DropdownMenuPortal>
               <DropdownMenuSubContent>
                 <Link href="/settings/profile/edit">

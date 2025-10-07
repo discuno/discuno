@@ -20,7 +20,7 @@ export const AppSidebar = async ({ ...props }: React.ComponentProps<typeof Sideb
     {
       title: 'Home',
       url: '/',
-      icon: 'Home',
+      icon: 'ArrowLeft',
     },
     {
       title: 'Settings',

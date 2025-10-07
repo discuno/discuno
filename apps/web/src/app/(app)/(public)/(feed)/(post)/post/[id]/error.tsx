@@ -2,7 +2,6 @@
 
 import { AlertCircle, ArrowLeft, Home, RefreshCw, Search } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
 
@@ -13,13 +12,6 @@ interface PostErrorProps {
 
 export default function PostError({ error, reset }: PostErrorProps) {
   const router = useRouter()
-
-  useEffect(() => {
-    // Log error for debugging in development
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Post page error:', error)
-    }
-  }, [error])
 
   // Handle post not found
   if (error.name === 'NotFoundError' && error.message.includes('Post')) {
@@ -38,9 +30,9 @@ export default function PostError({ error, reset }: PostErrorProps) {
           <CardContent className="space-y-4">
             <Button className="w-full" onClick={() => router.push('/')}>
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Dashboard
+              Back to home
             </Button>
-            <Button variant="outline" className="w-full" onClick={() => router.push('/browse')}>
+            <Button variant="outline" className="w-full" onClick={() => router.push('/')}>
               <Search className="mr-2 h-4 w-4" />
               Browse All Posts
             </Button>
@@ -71,7 +63,7 @@ export default function PostError({ error, reset }: PostErrorProps) {
           <CardContent className="space-y-4">
             <Button className="w-full" onClick={() => router.push('/')}>
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Dashboard
+              Back to home
             </Button>
             <Button variant="outline" className="w-full" onClick={reset}>
               <RefreshCw className="mr-2 h-4 w-4" />
@@ -133,7 +125,7 @@ export default function PostError({ error, reset }: PostErrorProps) {
             </Button>
             <Button variant="outline" className="w-full" onClick={() => router.push('/')}>
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Dashboard
+              Back to home
             </Button>
           </CardContent>
         </Card>
@@ -151,8 +143,8 @@ export default function PostError({ error, reset }: PostErrorProps) {
           </div>
           <CardTitle>Unable to Load Post</CardTitle>
           <CardDescription>
-            Something went wrong while loading this post. Please try again or return to the
-            dashboard.
+            Something went wrong while loading this post. Please try again or return to the home
+            page.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -162,7 +154,7 @@ export default function PostError({ error, reset }: PostErrorProps) {
           </Button>
           <Button variant="outline" className="w-full" onClick={() => router.push('/')}>
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Dashboard
+            Back to home
           </Button>
         </CardContent>
       </Card>

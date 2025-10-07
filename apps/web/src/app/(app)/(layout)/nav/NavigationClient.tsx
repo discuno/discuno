@@ -208,16 +208,16 @@ function MobileMenu({ className, isAuthenticated }: MobileMenuProps) {
         <ComingSoonOverlay />
         <DropdownMenuLabel>Find Mentors</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <Link href="/dashboard">
+        <Link href="/">
           <DropdownMenuItem>Browse Mentors</DropdownMenuItem>
         </Link>
-        <Link href="/dashboard?filter=school">
+        <Link href="/?filter=school">
           <DropdownMenuItem>Search by School</DropdownMenuItem>
         </Link>
-        <Link href="/dashboard?filter=major">
+        <Link href="/?filter=major">
           <DropdownMenuItem>Search by Major</DropdownMenuItem>
         </Link>
-        <Link href="/dashboard?filter=interests">
+        <Link href="/?filter=interests">
           <DropdownMenuItem>Search by Interests</DropdownMenuItem>
         </Link>
 
