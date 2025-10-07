@@ -6,7 +6,7 @@ import './src/env.js'
 
 /** @type {import("next").NextConfig} */
 const coreConfig = {
-  serverExternalPackages: ['drizzle-orm', '@neondatabase/serverless'],
+  serverExternalPackages: ['drizzle-orm'],
   turbopack: {
     rules: {
       '*.svg': {
