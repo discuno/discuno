@@ -218,6 +218,10 @@ export const createStripeCheckoutSession = async (
       price: subtotal,
     })
 
+    if (subtotal > 0 && subtotal < 100) {
+      throw new BadRequestError('The minimum price for a paid booking is $1.00.')
+    }
+
     if (subtotal === 0) {
       console.log('Skipping Stripe for free booking.')
       throw new BadRequestError('Free bookings should use direct booking flow')
