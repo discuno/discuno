@@ -226,7 +226,7 @@ export const EventTypeSettingsContent = ({
               </div>
               <p className="text-muted-foreground text-xs">
                 {stripeStatus?.isActive
-                  ? 'Leave empty for free sessions'
+                  ? 'Leave empty for free sessions. Minimum price is $1.00.'
                   : 'Complete Stripe setup to enable paid pricing'}
               </p>
             </div>
