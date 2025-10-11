@@ -12,6 +12,7 @@ import {
   updateCalcomUser as updateCalcomUserCore,
 } from '~/lib/calcom'
 import type { CreateCalcomUserInput, UpdateCalcomUserInput } from '~/lib/calcom/schemas'
+import { MINIMUM_PAID_BOOKING_PRICE } from '~/lib/constants'
 import { type UpdateCalcomToken, type UpdateMentorEventType } from '~/lib/schemas/db'
 import {
   getFullProfile,
@@ -718,7 +719,7 @@ export const updateMentorEventTypePreferences = async (
         error: 'Price cannot be negative.',
       }
     }
-    if (data.customPrice && data.customPrice > 0 && data.customPrice < 500) {
+    if (data.customPrice && data.customPrice > 0 && data.customPrice < MINIMUM_PAID_BOOKING_PRICE) {
       return {
         success: false,
         error: 'The minimum price for a paid booking is $5.00.',
