@@ -221,8 +221,8 @@ export const createStripeCheckoutSession = async (
       price: subtotal,
     })
 
-    if (subtotal > 0 && subtotal < 100) {
-      throw new BadRequestError('The minimum price for a paid booking is $1.00.')
+    if (subtotal > 0 && subtotal < 500) {
+      throw new BadRequestError('The minimum price for a paid booking is $5.00.')
     }
 
     if (subtotal === 0) {

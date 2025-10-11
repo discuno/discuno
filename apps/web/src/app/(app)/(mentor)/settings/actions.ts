@@ -712,6 +712,18 @@ export const updateMentorEventTypePreferences = async (
   error?: string
 }> => {
   try {
+    if (data.customPrice && data.customPrice < 0) {
+      return {
+        success: false,
+        error: 'Price cannot be negative.',
+      }
+    }
+    if (data.customPrice && data.customPrice > 0 && data.customPrice < 500) {
+      return {
+        success: false,
+        error: 'The minimum price for a paid booking is $5.00.',
+      }
+    }
     await updateMentorEventType(eventTypeId, {
       ...data,
     })
