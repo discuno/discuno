@@ -6,6 +6,7 @@ import type Stripe from 'stripe'
 import { z } from 'zod'
 import { env } from '~/env'
 import { createCalcomBooking } from '~/lib/calcom'
+import { MINIMUM_PAID_BOOKING_PRICE } from '~/lib/constants'
 import {
   alertAdminForManualRefund,
   sendBookingFailureEmail,
@@ -221,7 +222,7 @@ export const createStripeCheckoutSession = async (
       price: subtotal,
     })
 
-    if (subtotal > 0 && subtotal < 500) {
+    if (subtotal > 0 && subtotal < MINIMUM_PAID_BOOKING_PRICE) {
       throw new BadRequestError('The minimum price for a paid booking is $5.00.')
     }
 
