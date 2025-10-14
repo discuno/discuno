@@ -79,7 +79,6 @@ const buildPostsQuery = () => {
     .selectDistinct({
       post: {
         id: posts.id,
-        name: posts.name,
         createdById: posts.createdById,
         createdAt: posts.createdAt,
         updatedAt: posts.updatedAt,
@@ -87,6 +86,7 @@ const buildPostsQuery = () => {
         random_sort_key: posts.random_sort_key,
       },
       creator: {
+        name: users.name,
         image: users.image,
       },
       profile: {
@@ -149,6 +149,7 @@ const transformPostResult = (result: PostQueryResult[]): Card[] => {
     if (!uniquePosts.has(post.id)) {
       uniquePosts.set(post.id, {
         ...post,
+        name: creator?.name ?? 'Mentor',
         userImage: creator?.image ?? null,
         description: profile?.bio !== undefined ? profile.bio : null,
         graduationYear: profile?.graduationYear ?? null,
@@ -222,12 +223,8 @@ export const getInfiniteScrollPosts = async (
         or(
           // Allow mentors with free event types
           eq(mentorEventTypes.customPrice, 0),
-          // Allow mentors with paid event types if their Stripe account is active
-          and(
-            gt(mentorEventTypes.customPrice, 0),
-            eq(mentorStripeAccounts.stripeAccountStatus, 'active'),
-            eq(mentorStripeAccounts.payoutsEnabled, true)
-          )
+          // Allow mentors with paid event types if charges are enabled
+          and(gt(mentorEventTypes.customPrice, 0), eq(mentorStripeAccounts.chargesEnabled, true))
         )
       )
     )
@@ -379,12 +376,8 @@ export const getPostsByFilters = async (
         or(
           // Allow mentors with free event types
           eq(mentorEventTypes.customPrice, 0),
-          // Allow mentors with paid event types if their Stripe account is active
-          and(
-            gt(mentorEventTypes.customPrice, 0),
-            eq(mentorStripeAccounts.stripeAccountStatus, 'active'),
-            eq(mentorStripeAccounts.payoutsEnabled, true)
-          )
+          // Allow mentors with paid event types if charges are enabled
+          and(gt(mentorEventTypes.customPrice, 0), eq(mentorStripeAccounts.chargesEnabled, true))
         )
       )
     )
@@ -901,8 +894,7 @@ export const getMentorEnabledEventTypesWithStripeStatus = cache(
         duration: mentorEventTypes.duration,
         customPrice: mentorEventTypes.customPrice,
         currency: mentorEventTypes.currency,
-        stripeAccountStatus: mentorStripeAccounts.stripeAccountStatus,
-        payoutsEnabled: mentorStripeAccounts.payoutsEnabled,
+        chargesEnabled: mentorStripeAccounts.chargesEnabled,
       })
       .from(mentorEventTypes)
       .leftJoin(
@@ -920,7 +912,7 @@ export const getMentorEnabledEventTypesWithStripeStatus = cache(
     return result
       .filter(item => {
         if (item.customPrice && item.customPrice > 0) {
-          return item.stripeAccountStatus === 'active' && item.payoutsEnabled
+          return item.chargesEnabled === true
         }
         return true
       })

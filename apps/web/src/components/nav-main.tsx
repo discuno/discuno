@@ -6,6 +6,7 @@ import {
   Calendar,
   CalendarCheck,
   CreditCard,
+  Rocket,
   Settings2,
   User,
 } from 'lucide-react'
@@ -16,6 +17,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '~/components/ui/sidebar'
+import { Badge } from '~/components/ui/badge'
 
 const iconMap = {
   ArrowLeft,
@@ -25,6 +27,7 @@ const iconMap = {
   BookOpen,
   CreditCard,
   CalendarCheck,
+  Rocket,
 }
 
 export type NavMainProps = {
@@ -33,11 +36,17 @@ export type NavMainProps = {
     url: string
     icon: keyof typeof iconMap
     disabled?: boolean
+    badge?: string
+    badgeVariant?: 'default' | 'secondary' | 'destructive' | 'outline'
+    isOnboarding?: boolean
+    sectionLabel?: string
+    description?: string
     items?: {
       title: string
       url: string
       icon: keyof typeof iconMap
       disabled?: boolean
+      description?: string
     }[]
   }[]
 }
@@ -52,49 +61,74 @@ export function NavMain({ items }: NavMainProps) {
             const Icon = iconMap[item.icon]
             return (
               <SidebarMenuItem key={item.title}>
-                <SidebarMenuButton asChild tooltip={item.title}>
-                  <a href={item.url}>
-                    <Icon />
-                    <span>{item.title}</span>
+                <SidebarMenuButton
+                  asChild
+                  tooltip={item.title}
+                  className={item.isOnboarding && item.badge ? 'font-semibold' : ''}
+                >
+                  <a href={item.url} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Icon />
+                      <span>{item.title}</span>
+                    </div>
+                    {item.badge && (
+                      <Badge variant={item.badgeVariant ?? 'default'} className="ml-auto">
+                        {item.badge}
+                      </Badge>
+                    )}
                   </a>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             )
           })}
       </SidebarMenu>
-      <SidebarGroup>
-        <SidebarGroupLabel>Settings</SidebarGroupLabel>
-        <SidebarMenu>
-          {items
-            .filter(item => item.items)
-            .flatMap(item => item.items)
-            .map(subItem => {
-              if (!subItem) return null
-              const SubIcon = iconMap[subItem.icon]
-              return (
-                <SidebarMenuItem key={subItem.title}>
-                  {subItem.disabled ? (
-                    <SidebarMenuButton
-                      tooltip={`${subItem.title} - Complete Stripe setup to access`}
-                      className="cursor-not-allowed opacity-50"
-                      disabled
-                    >
-                      <SubIcon />
-                      <span>{subItem.title}</span>
-                    </SidebarMenuButton>
-                  ) : (
-                    <SidebarMenuButton asChild tooltip={subItem.title}>
-                      <a href={subItem.url}>
+      {items
+        .filter(item => item.items)
+        .map(parentItem => (
+          <SidebarGroup key={parentItem.title}>
+            <SidebarGroupLabel>{parentItem.sectionLabel ?? parentItem.title}</SidebarGroupLabel>
+            <SidebarMenu>
+              {parentItem.items?.map(subItem => {
+                const SubIcon = iconMap[subItem.icon]
+                return (
+                  <SidebarMenuItem key={subItem.title}>
+                    {subItem.disabled ? (
+                      <SidebarMenuButton
+                        tooltip={`${subItem.title} - Complete Stripe setup to access`}
+                        className="cursor-not-allowed opacity-50"
+                        disabled
+                      >
                         <SubIcon />
-                        <span>{subItem.title}</span>
-                      </a>
-                    </SidebarMenuButton>
-                  )}
-                </SidebarMenuItem>
-              )
-            })}
-        </SidebarMenu>
-      </SidebarGroup>
+                        <div className="flex flex-col items-start">
+                          <span>{subItem.title}</span>
+                          {subItem.description && (
+                            <span className="text-muted-foreground text-xs">
+                              {subItem.description}
+                            </span>
+                          )}
+                        </div>
+                      </SidebarMenuButton>
+                    ) : (
+                      <SidebarMenuButton asChild tooltip={subItem.title}>
+                        <a href={subItem.url}>
+                          <SubIcon />
+                          <div className="flex flex-col items-start">
+                            <span>{subItem.title}</span>
+                            {subItem.description && (
+                              <span className="text-muted-foreground text-xs">
+                                {subItem.description}
+                              </span>
+                            )}
+                          </div>
+                        </a>
+                      </SidebarMenuButton>
+                    )}
+                  </SidebarMenuItem>
+                )
+              })}
+            </SidebarMenu>
+          </SidebarGroup>
+        ))}
     </>
   )
 }

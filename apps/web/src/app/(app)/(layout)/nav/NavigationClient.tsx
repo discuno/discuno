@@ -1,10 +1,11 @@
 'use client'
 
-import { Menu } from 'lucide-react'
+import { Menu, Rocket } from 'lucide-react'
 import Link from 'next/link'
 import { forwardRef } from 'react'
 import { ThemeAwareIconLogo } from '~/components/shared/ThemeAwareIconLogo'
 import { AvatarIcon } from '~/components/shared/UserAvatar'
+import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import {
   DropdownMenu,
@@ -25,9 +26,25 @@ import {
 import { Skeleton } from '~/components/ui/skeleton'
 import { cn } from '~/lib/utils'
 
+interface OnboardingStatus {
+  isComplete: boolean
+  completedSteps: number
+  totalSteps: number
+  steps: Array<{
+    id: string
+    title: string
+    description: string
+    completed: boolean
+    actionUrl: string
+    actionLabel: string
+    iconName: string
+  }>
+}
+
 interface NavBarBaseProps {
   profilePic: string | null
   isAuthenticated: boolean
+  onboardingStatus: OnboardingStatus | null
 }
 
 /**
@@ -35,20 +52,29 @@ interface NavBarBaseProps {
  *
  * Features:
  * - Dynamic menu items based on mentor status
+ * - Onboarding progress indicator
  * - Proper authentication state handling
  * - Responsive design with modern UI
  * - Accessibility improvements
  * - Loading skeleton support
  *
  * @param profilePic - User's profile picture URL
+ * @param isAuthenticated - Whether user is authenticated
+ * @param onboardingStatus - Mentor onboarding completion status
  */
-export function NavBarBase({ profilePic, isAuthenticated }: NavBarBaseProps) {
+export function NavBarBase({ profilePic, isAuthenticated, onboardingStatus }: NavBarBaseProps) {
+  const showOnboardingCTA = onboardingStatus && !onboardingStatus.isComplete
+
   return (
     <div className="border/40 bg-background/80 text-foreground backdrop-blur-xs fixed left-0 right-0 top-0 z-20 flex items-center justify-between border-b p-4 transition-colors duration-300">
       {/* Left: Mobile hamburger + Desktop menu */}
       <div className="flex items-center gap-2">
         {/* Mobile menu trigger */}
-        <MobileMenu className="md:hidden" isAuthenticated={isAuthenticated} />
+        <MobileMenu
+          className="md:hidden"
+          isAuthenticated={isAuthenticated}
+          onboardingStatus={onboardingStatus}
+        />
         <Link href="/">
           <ThemeAwareIconLogo />
         </Link>
@@ -109,6 +135,62 @@ export function NavBarBase({ profilePic, isAuthenticated }: NavBarBaseProps) {
               </NavigationMenuContent>
             </NavigationMenuItem>
 
+            {/* Mentor Dashboard Menu */}
+            {isAuthenticated && (
+              <NavigationMenuItem>
+                <NavigationMenuTrigger>
+                  <div className="flex items-center gap-2">
+                    <span>Mentor Dashboard</span>
+                  </div>
+                </NavigationMenuTrigger>
+                <NavigationMenuContent>
+                  <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2">
+                    {showOnboardingCTA && (
+                      <li className="row-span-2">
+                        <NavigationMenuLink asChild>
+                          <Link
+                            className="bg-destructive/5 hover:bg-destructive/10 dark:bg-destructive/10 dark:hover:bg-destructive/15 outline-hidden border-destructive/20 flex h-full w-full select-none flex-col justify-end rounded-md border-2 p-6 no-underline transition-colors focus:shadow-md"
+                            href="/settings"
+                          >
+                            <Rocket className="text-destructive mb-2 h-8 w-8" />
+                            <div className="text-foreground mb-2 flex items-center gap-2 text-lg font-semibold">
+                              <span>Activate Profile</span>
+                              <Badge variant="destructive" className="text-xs">
+                                Inactive
+                              </Badge>
+                            </div>
+                            <p className="text-muted-foreground text-sm leading-tight">
+                              Your profile is inactive. Complete{' '}
+                              {onboardingStatus.totalSteps - onboardingStatus.completedSteps}{' '}
+                              {onboardingStatus.totalSteps - onboardingStatus.completedSteps === 1
+                                ? 'step'
+                                : 'steps'}{' '}
+                              to accept bookings
+                            </p>
+                          </Link>
+                        </NavigationMenuLink>
+                      </li>
+                    )}
+                    <ListItem href="/settings/availability" title="Availability">
+                      Set when you&apos;re available for sessions
+                    </ListItem>
+                    <ListItem href="/settings/event-types" title="Event Types & Pricing">
+                      Configure your session types and pricing
+                    </ListItem>
+                    <ListItem href="/settings/bookings" title="Bookings">
+                      View and manage your scheduled sessions
+                    </ListItem>
+                    <ListItem href="/settings/billing" title="Billing & Payouts">
+                      Manage payments and view earnings
+                    </ListItem>
+                    <ListItem href="/settings/profile/edit" title="Profile Settings">
+                      Update your mentor profile
+                    </ListItem>
+                  </ul>
+                </NavigationMenuContent>
+              </NavigationMenuItem>
+            )}
+
             {/* My Account Menu */}
             <NavigationMenuItem>
               <NavigationMenuTrigger>My Account</NavigationMenuTrigger>
@@ -121,17 +203,8 @@ export function NavBarBase({ profilePic, isAuthenticated }: NavBarBaseProps) {
                   <ListItem href="/scheduling" title="My Schedule">
                     Manage your scheduled video meetings
                   </ListItem>
-                  <ListItem href="/profile/edit" title="Edit Profile">
-                    Update your profile information
-                  </ListItem>
                   <ListItem href="/profile/view" title="View Profile">
                     See how others view your profile
-                  </ListItem>
-                  <ListItem href="/availability" title="Availability">
-                    Set your available times for mentoring sessions
-                  </ListItem>
-                  <ListItem href="/settings" title="Settings">
-                    Adjust your account preferences
                   </ListItem>
                 </ul>
               </NavigationMenuContent>
@@ -139,7 +212,22 @@ export function NavBarBase({ profilePic, isAuthenticated }: NavBarBaseProps) {
           </NavigationMenuList>
         </NavigationMenu>
       </div>
-      <AvatarIcon profilePic={profilePic} isAuthenticated={isAuthenticated} />
+
+      {/* Right side: Activate Profile CTA + Avatar */}
+      <div className="flex items-center gap-3">
+        {showOnboardingCTA && (
+          <Link href="/settings" className="hidden lg:block">
+            <Button variant="destructive" size="sm" className="gap-2">
+              <Rocket className="h-4 w-4" />
+              <span>Activate Profile</span>
+              <Badge variant="secondary" className="ml-1 bg-white/20 text-white hover:bg-white/30">
+                Inactive
+              </Badge>
+            </Button>
+          </Link>
+        )}
+        <AvatarIcon profilePic={profilePic} isAuthenticated={isAuthenticated} />
+      </div>
     </div>
   )
 }
@@ -194,9 +282,12 @@ ListItem.displayName = 'ListItem'
 interface MobileMenuProps {
   className?: string
   isAuthenticated: boolean
+  onboardingStatus: OnboardingStatus | null
 }
 
-function MobileMenu({ className, isAuthenticated }: MobileMenuProps) {
+function MobileMenu({ className, isAuthenticated, onboardingStatus }: MobileMenuProps) {
+  const showOnboardingCTA = onboardingStatus && !onboardingStatus.isComplete
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -206,6 +297,25 @@ function MobileMenu({ className, isAuthenticated }: MobileMenuProps) {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" sideOffset={8} className="w-64">
         <ComingSoonOverlay />
+
+        {/* Activate Profile CTA for Mobile */}
+        {showOnboardingCTA && (
+          <>
+            <Link href="/settings">
+              <DropdownMenuItem className="bg-destructive/5 hover:bg-destructive/10 flex items-center justify-between p-3">
+                <div className="flex items-center gap-2">
+                  <Rocket className="text-destructive h-4 w-4" />
+                  <span className="font-semibold">Activate Profile</span>
+                </div>
+                <Badge variant="destructive" className="text-xs">
+                  Inactive
+                </Badge>
+              </DropdownMenuItem>
+            </Link>
+            <DropdownMenuSeparator />
+          </>
+        )}
+
         <DropdownMenuLabel>Find Mentors</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <Link href="/">
@@ -237,6 +347,30 @@ function MobileMenu({ className, isAuthenticated }: MobileMenuProps) {
           <DropdownMenuItem>Financial Aid</DropdownMenuItem>
         </Link>
 
+        {/* Mentor Dashboard Section */}
+        {isAuthenticated && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel>Mentor Dashboard</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <Link href="/settings/availability">
+              <DropdownMenuItem>Availability</DropdownMenuItem>
+            </Link>
+            <Link href="/settings/event-types">
+              <DropdownMenuItem>Event Types & Pricing</DropdownMenuItem>
+            </Link>
+            <Link href="/settings/bookings">
+              <DropdownMenuItem>Bookings</DropdownMenuItem>
+            </Link>
+            <Link href="/settings/billing">
+              <DropdownMenuItem>Billing & Payouts</DropdownMenuItem>
+            </Link>
+            <Link href="/settings/profile/edit">
+              <DropdownMenuItem>Profile Settings</DropdownMenuItem>
+            </Link>
+          </>
+        )}
+
         <DropdownMenuSeparator />
         <DropdownMenuLabel>My Account</DropdownMenuLabel>
         <DropdownMenuSeparator />
@@ -246,17 +380,8 @@ function MobileMenu({ className, isAuthenticated }: MobileMenuProps) {
         <Link href="/scheduling">
           <DropdownMenuItem>My Schedule</DropdownMenuItem>
         </Link>
-        <Link href="/profile/edit">
-          <DropdownMenuItem>Edit Profile</DropdownMenuItem>
-        </Link>
         <Link href="/profile/view">
           <DropdownMenuItem>View Profile</DropdownMenuItem>
-        </Link>
-        <Link href="/availability">
-          <DropdownMenuItem>Availability</DropdownMenuItem>
-        </Link>
-        <Link href="/settings">
-          <DropdownMenuItem>Settings</DropdownMenuItem>
         </Link>
         {!isAuthenticated && (
           <Link href="/auth">
