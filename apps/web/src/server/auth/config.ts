@@ -14,6 +14,7 @@ import { getAllowedDomains } from '~/server/auth/domain-cache'
 import { db } from '~/server/db'
 import {
   accounts,
+  posts,
   schools,
   sessions,
   users,
@@ -202,6 +203,11 @@ export const authConfig = {
         } else {
           console.error(`Cannot assign school: invalid email ${user.email}`)
         }
+
+        // Create a new post for the user
+        await db.insert(posts).values({
+          createdById: user.id,
+        })
       }
     },
   },

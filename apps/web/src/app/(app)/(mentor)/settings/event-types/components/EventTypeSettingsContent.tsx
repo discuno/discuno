@@ -32,7 +32,6 @@ interface EventTypePreference {
 
 interface StripeStatus {
   hasAccount: boolean
-  isActive: boolean
   onboardingCompleted: boolean
   payoutsEnabled: boolean
   chargesEnabled: boolean
@@ -86,8 +85,79 @@ export const EventTypeSettingsContent = ({
   setShowPricingDialog,
   setTempPrice,
 }: EventTypeSettingsContentProps) => {
+  const isStripeActive = stripeStatus?.chargesEnabled === true
+  const hasStripeAccount = stripeStatus?.hasAccount === true
+  const needsStripeSetup = !hasStripeAccount || !isStripeActive
+
   return (
     <>
+      {/* Stripe Connection Banner - Only shown when setup needed */}
+      {needsStripeSetup && (
+        <Alert
+          className={
+            hasStripeAccount
+              ? 'border-yellow-500/50 bg-yellow-50/50 dark:bg-yellow-950/20'
+              : 'border-primary/50 bg-primary/5 dark:bg-primary/10'
+          }
+        >
+          <CreditCard
+            className={
+              hasStripeAccount
+                ? 'h-4 w-4 text-yellow-600 dark:text-yellow-400'
+                : 'text-primary h-4 w-4'
+            }
+          />
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <AlertDescription>
+                {hasStripeAccount ? (
+                  <div className="space-y-2">
+                    <p className="font-semibold">Complete Your Stripe Setup</p>
+                    <p className="text-muted-foreground text-sm">
+                      Your Stripe account needs additional verification before you can accept
+                      payments. Complete the setup process to enable paid event types.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <p className="font-semibold">Connect Stripe to Accept Payments</p>
+                    <p className="text-muted-foreground text-sm">
+                      To offer paid sessions, you need to connect your Stripe account. This allows
+                      you to securely receive payments from students who book your time.
+                    </p>
+                  </div>
+                )}
+              </AlertDescription>
+            </div>
+            <div className="ml-4">
+              {hasStripeAccount && connectInstance ? (
+                <Dialog open={isStripeModalOpen} onOpenChange={setStripeModalOpen}>
+                  <DialogTrigger asChild>
+                    <Button size="sm" variant="default">
+                      Continue Setup
+                    </Button>
+                  </DialogTrigger>
+                  <StripeModal
+                    connectInstance={connectInstance}
+                    accountId={stripeAccountId ?? undefined}
+                    stripeStatus={stripeStatus}
+                    onOnboardingComplete={onOnboardingComplete}
+                  />
+                </Dialog>
+              ) : (
+                <Button
+                  onClick={() => createStripeAccountMutation.mutate()}
+                  disabled={createStripeAccountMutation.isPending}
+                  size="sm"
+                >
+                  {createStripeAccountMutation.isPending ? 'Connecting...' : 'Connect Stripe'}
+                </Button>
+              )}
+            </div>
+          </div>
+        </Alert>
+      )}
+
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold">Event Type Settings</h3>
@@ -96,12 +166,12 @@ export const EventTypeSettingsContent = ({
           </p>
         </div>
 
-        {/* Stripe Status */}
-        <div className="flex items-center gap-2">
-          <CreditCard className="h-4 w-4" />
-          {stripeStatus?.hasAccount && stripeStatus.isActive && connectInstance ? (
-            <div className="flex items-center gap-2">
-              <Badge variant="default">Stripe Connected</Badge>
+        {/* Stripe Status Badge - Simple indicator */}
+        {isStripeActive && (
+          <div className="flex items-center gap-2">
+            <CreditCard className="h-4 w-4" />
+            <Badge variant="default">Stripe Connected</Badge>
+            {connectInstance && (
               <Dialog>
                 <DialogTrigger asChild>
                   <Button size="sm" variant="outline">
@@ -115,34 +185,9 @@ export const EventTypeSettingsContent = ({
                   onOnboardingComplete={onOnboardingComplete}
                 />
               </Dialog>
-            </div>
-          ) : stripeStatus?.hasAccount && connectInstance ? (
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary">Stripe Pending</Badge>
-              <Dialog open={isStripeModalOpen} onOpenChange={setStripeModalOpen}>
-                <DialogTrigger asChild>
-                  <Button size="sm" variant="outline">
-                    Continue Setup
-                  </Button>
-                </DialogTrigger>
-                <StripeModal
-                  connectInstance={connectInstance}
-                  accountId={stripeAccountId ?? undefined}
-                  stripeStatus={stripeStatus}
-                  onOnboardingComplete={onOnboardingComplete}
-                />
-              </Dialog>
-            </div>
-          ) : (
-            <Button
-              onClick={() => createStripeAccountMutation.mutate()}
-              disabled={createStripeAccountMutation.isPending}
-              size="sm"
-            >
-              {createStripeAccountMutation.isPending ? 'Connecting...' : 'Connect Stripe'}
-            </Button>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Event Types List */}
@@ -221,17 +266,17 @@ export const EventTypeSettingsContent = ({
                   value={tempPrice}
                   onChange={e => setTempPrice(e.target.value)}
                   className="pl-9"
-                  disabled={!stripeStatus?.isActive}
+                  disabled={!isStripeActive}
                 />
               </div>
               <p className="text-muted-foreground text-xs">
-                {stripeStatus?.isActive
+                {isStripeActive
                   ? 'Leave empty for free sessions. Minimum price is $5.00.'
                   : 'Complete Stripe setup to enable paid pricing'}
               </p>
             </div>
 
-            {!stripeStatus?.isActive && (
+            {!isStripeActive && (
               <Alert>
                 <AlertDescription>
                   You need to complete your Stripe setup before setting paid pricing.
@@ -247,7 +292,7 @@ export const EventTypeSettingsContent = ({
                 onClick={onSavePricing}
                 disabled={
                   updateEventTypeMutation.isPending ||
-                  !stripeStatus?.isActive ||
+                  !isStripeActive ||
                   parseFloat(tempPrice) < 0 ||
                   (parseFloat(tempPrice) > 0 && parseFloat(tempPrice) < 5)
                 }

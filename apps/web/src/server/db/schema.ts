@@ -40,7 +40,6 @@ export const posts = pgTable(
   'discuno_post',
   {
     id: integer().primaryKey().generatedByDefaultAsIdentity(),
-    name: varchar({ length: 256 }),
     createdById: uuid('created_by_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
@@ -49,7 +48,6 @@ export const posts = pgTable(
   },
   example => [
     index('created_by_idx').on(example.createdById),
-    index('name_idx').on(example.name),
     index('created_at_created_by_idx').on(example.createdAt, example.createdById),
     index('posts_created_at_partial_idx')
       .on(example.createdAt)

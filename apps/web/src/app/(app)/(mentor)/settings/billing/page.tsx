@@ -12,7 +12,7 @@ export default async function DashboardPage() {
   if (
     !stripeStatus.success ||
     !stripeStatus.data ||
-    !stripeStatus.data.isActive ||
+    !stripeStatus.data.chargesEnabled ||
     !stripeStatus.data.onboardingCompleted
   ) {
     return (

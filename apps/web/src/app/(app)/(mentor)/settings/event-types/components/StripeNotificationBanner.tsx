@@ -8,7 +8,6 @@ import { Alert, AlertTitle } from '~/components/ui/alert'
 // Based on the type definition in StripeOnboardingModal.tsx
 export interface StripeStatus {
   hasAccount: boolean
-  isActive: boolean
   onboardingCompleted: boolean
   payoutsEnabled: boolean
   chargesEnabled: boolean
@@ -29,7 +28,10 @@ export const StripeNotificationBanner = ({
   const [actionRequiredCount, setActionRequiredCount] = useState<number | undefined>(undefined)
   const [totalCount, setTotalCount] = useState<number | undefined>(undefined)
 
-  if (!stripeStatus.hasAccount || (stripeStatus.onboardingCompleted && stripeStatus.isActive)) {
+  if (
+    !stripeStatus.hasAccount ||
+    (stripeStatus.onboardingCompleted && stripeStatus.chargesEnabled)
+  ) {
     return null
   }
 

@@ -174,7 +174,7 @@ export const EventTypeToggleSection = () => {
     const priceInCents = tempPrice ? Math.round(parseFloat(tempPrice) * 100) : 0
 
     // If user is trying to set a price but doesn't have Stripe connected
-    if (priceInCents && priceInCents > 0 && !stripeStatus?.isActive) {
+    if (priceInCents && priceInCents > 0 && !stripeStatus?.chargesEnabled) {
       toast.error('Please complete your Stripe setup before setting paid pricing')
       return
     }

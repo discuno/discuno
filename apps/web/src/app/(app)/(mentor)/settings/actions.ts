@@ -829,7 +829,6 @@ export const getMentorStripeStatus = async (): Promise<{
   success: boolean
   data?: {
     hasAccount: boolean
-    isActive: boolean
     onboardingCompleted: boolean
     payoutsEnabled: boolean
     chargesEnabled: boolean
@@ -845,7 +844,6 @@ export const getMentorStripeStatus = async (): Promise<{
         success: true,
         data: {
           hasAccount: false,
-          isActive: false,
           onboardingCompleted: false,
           payoutsEnabled: false,
           chargesEnabled: false,
@@ -857,7 +855,6 @@ export const getMentorStripeStatus = async (): Promise<{
       success: true,
       data: {
         hasAccount: true,
-        isActive: stripeAccount.stripeAccountStatus === 'active',
         onboardingCompleted: stripeAccount.chargesEnabled,
         payoutsEnabled: stripeAccount.payoutsEnabled,
         chargesEnabled: stripeAccount.chargesEnabled,
@@ -1063,6 +1060,110 @@ export const cancelBooking = async ({
 
 export const getFullProfileAction = async () => {
   return await getFullProfile()
+}
+
+/**
+ * Get mentor's onboarding status - which steps have been completed
+ */
+export const getMentorOnboardingStatus = async (): Promise<{
+  isComplete: boolean
+  completedSteps: number
+  totalSteps: number
+  steps: Array<{
+    id: string
+    title: string
+    description: string
+    completed: boolean
+    actionUrl: string
+    actionLabel: string
+    iconName: string
+  }>
+}> => {
+  // Check profile completion
+  const profile = await getFullProfile()
+  const hasProfile = !!(profile?.bio && profile.image)
+
+  // Check Cal.com setup (availability)
+  const scheduleResult = await getSchedule()
+  const hasAvailability =
+    scheduleResult.success &&
+    !!scheduleResult.data &&
+    Object.values(scheduleResult.data.weeklySchedule).some(day => day.length > 0)
+
+  // Check Stripe setup
+  const stripeStatus = await getMentorStripeStatus()
+  const hasStripe = stripeStatus.success && !!stripeStatus.data?.chargesEnabled
+
+  // Check if any event types are enabled
+  const eventTypesResult = await getMentorEventTypePreferences()
+  const hasEnabledEventTypes =
+    eventTypesResult.success &&
+    !!eventTypesResult.data &&
+    eventTypesResult.data.some(et => et.isEnabled)
+
+  // Check if pricing is set for enabled event types
+  const hasPricing =
+    eventTypesResult.success &&
+    !!eventTypesResult.data &&
+    eventTypesResult.data.some(et => et.isEnabled && et.customPrice !== null)
+
+  const steps = [
+    {
+      id: 'profile',
+      title: 'Complete your profile',
+      description: 'Add a bio and profile photo to help students get to know you',
+      completed: hasProfile,
+      actionUrl: '/settings/profile/edit',
+      actionLabel: 'Complete Profile',
+      iconName: 'User',
+    },
+    {
+      id: 'availability',
+      title: 'Set your availability',
+      description: 'Configure when you&aposre available for mentorship sessions',
+      completed: hasAvailability,
+      actionUrl: '/settings/availability',
+      actionLabel: 'Set Availability',
+      iconName: 'CalendarDays',
+    },
+    {
+      id: 'stripe',
+      title: 'Connect Stripe account',
+      description: 'Set up payments to receive earnings from paid sessions',
+      completed: hasStripe,
+      actionUrl: '/settings/event-types',
+      actionLabel: 'Connect Stripe',
+      iconName: 'CreditCard',
+    },
+    {
+      id: 'event-types',
+      title: 'Enable event types',
+      description: 'Choose which session types students can book with you',
+      completed: hasEnabledEventTypes,
+      actionUrl: '/settings/event-types',
+      actionLabel: 'Enable Event Types',
+      iconName: 'BookOpen',
+    },
+    {
+      id: 'pricing',
+      title: 'Set pricing',
+      description: 'Configure pricing for your sessions (free or paid)',
+      completed: hasPricing,
+      actionUrl: '/settings/event-types',
+      actionLabel: 'Set Pricing',
+      iconName: 'DollarSign',
+    },
+  ]
+
+  const completedCount = steps.filter(s => s.completed).length
+  const isComplete = completedCount === steps.length
+
+  return {
+    isComplete,
+    completedSteps: completedCount,
+    totalSteps: steps.length,
+    steps,
+  }
 }
 
 export {

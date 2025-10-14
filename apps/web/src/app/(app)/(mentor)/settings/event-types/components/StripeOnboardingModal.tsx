@@ -14,7 +14,6 @@ interface StripeModalProps {
   accountId?: string
   stripeStatus?: {
     hasAccount: boolean
-    isActive: boolean
     onboardingCompleted: boolean
     payoutsEnabled: boolean
     chargesEnabled: boolean
@@ -29,8 +28,8 @@ export const StripeModal = ({
   stripeStatus,
   onOnboardingComplete,
 }: StripeModalProps) => {
-  // Determine mode based on Stripe status
-  const isManagementMode = stripeStatus?.isActive
+  // Determine mode based on Stripe status - use chargesEnabled for consistency
+  const isManagementMode = stripeStatus?.chargesEnabled === true
   const effectiveAccountId = accountId ?? stripeStatus?.accountId
 
   const handleExit = () => {

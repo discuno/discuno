@@ -512,7 +512,6 @@ export const seedDatabase = async (environment?: Environment) => {
         const postingUsers = insertedUsers // All users get exactly one post
 
         const postData = postingUsers.map(user => ({
-          name: user.name ?? 'Untitled Post',
           createdById: user.id,
         }))
         await db.insert(posts).values(postData)
