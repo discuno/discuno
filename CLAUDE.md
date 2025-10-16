@@ -375,3 +375,4 @@ When using Server Actions in Next.js:
 - Use shadcn ui reusable UI components when possible.
 - use global tailwind variables where possible.
 - use arrow function syntax when possible.
+- Use push-based schema sync "schema push" rather than migration based deployment
