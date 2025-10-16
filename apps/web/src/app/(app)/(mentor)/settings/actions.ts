@@ -1129,7 +1129,8 @@ export const getMentorOnboardingStatus = async (): Promise<{
     {
       id: 'stripe',
       title: 'Connect Stripe account',
-      description: 'Set up payments to receive earnings from paid sessions',
+      description:
+        'Required only if you want to charge for sessions. Skip if offering only free sessions.',
       completed: hasStripe,
       actionUrl: '/settings/event-types',
       actionLabel: 'Connect Stripe',

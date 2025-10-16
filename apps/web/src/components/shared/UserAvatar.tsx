@@ -11,11 +11,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuPortal,
   DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '~/components/ui/dropdown-menu'
 
@@ -70,43 +66,12 @@ export const AvatarIcon = ({ profilePic, isAuthenticated = false }: AvatarIconPr
         <DropdownMenuContent className="w-56" align="end">
           <DropdownMenuLabel>My Account</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuSub>
-            <Link href="/settings/event-types">
-              <DropdownMenuSubTrigger>
-                <LayoutDashboard className="mr-2 h-4 w-4" />
-                <span>Dashboard</span>
-              </DropdownMenuSubTrigger>
-            </Link>
-            <DropdownMenuPortal>
-              <DropdownMenuSubContent>
-                <Link href="/settings/profile/edit">
-                  <DropdownMenuItem>
-                    <span>Profile</span>
-                  </DropdownMenuItem>
-                </Link>
-                <Link href="/settings/availability">
-                  <DropdownMenuItem>
-                    <span>Availability</span>
-                  </DropdownMenuItem>
-                </Link>
-                <Link href="/settings/event-types">
-                  <DropdownMenuItem>
-                    <span>Event Types</span>
-                  </DropdownMenuItem>
-                </Link>
-                <Link href="/settings/bookings">
-                  <DropdownMenuItem>
-                    <span>Bookings</span>
-                  </DropdownMenuItem>
-                </Link>
-                <Link href="/settings/billing">
-                  <DropdownMenuItem>
-                    <span>Billing</span>
-                  </DropdownMenuItem>
-                </Link>
-              </DropdownMenuSubContent>
-            </DropdownMenuPortal>
-          </DropdownMenuSub>
+          <Link href="/settings">
+            <DropdownMenuItem>
+              <LayoutDashboard className="mr-2 h-4 w-4" />
+              <span>Dashboard</span>
+            </DropdownMenuItem>
+          </Link>
           <Link href="/support">
             <DropdownMenuItem>
               <HelpCircle className="mr-2 h-4 w-4" />

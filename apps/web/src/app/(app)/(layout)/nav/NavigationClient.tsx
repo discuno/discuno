@@ -22,6 +22,7 @@ import {
   NavigationMenuLink,
   NavigationMenuList,
   NavigationMenuTrigger,
+  navigationMenuTriggerStyle,
 } from '~/components/ui/navigation-menu'
 import { Skeleton } from '~/components/ui/skeleton'
 import { cn } from '~/lib/utils'
@@ -135,59 +136,21 @@ export function NavBarBase({ profilePic, isAuthenticated, onboardingStatus }: Na
               </NavigationMenuContent>
             </NavigationMenuItem>
 
-            {/* Mentor Dashboard Menu */}
+            {/* Dashboard Link */}
             {isAuthenticated && (
               <NavigationMenuItem>
-                <NavigationMenuTrigger>
-                  <div className="flex items-center gap-2">
-                    <span>Mentor Dashboard</span>
-                  </div>
-                </NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2">
-                    {showOnboardingCTA && (
-                      <li className="row-span-2">
-                        <NavigationMenuLink asChild>
-                          <Link
-                            className="bg-destructive/5 hover:bg-destructive/10 dark:bg-destructive/10 dark:hover:bg-destructive/15 outline-hidden border-destructive/20 flex h-full w-full select-none flex-col justify-end rounded-md border-2 p-6 no-underline transition-colors focus:shadow-md"
-                            href="/settings"
-                          >
-                            <Rocket className="text-destructive mb-2 h-8 w-8" />
-                            <div className="text-foreground mb-2 flex items-center gap-2 text-lg font-semibold">
-                              <span>Activate Profile</span>
-                              <Badge variant="destructive" className="text-xs">
-                                Inactive
-                              </Badge>
-                            </div>
-                            <p className="text-muted-foreground text-sm leading-tight">
-                              Your profile is inactive. Complete{' '}
-                              {onboardingStatus.totalSteps - onboardingStatus.completedSteps}{' '}
-                              {onboardingStatus.totalSteps - onboardingStatus.completedSteps === 1
-                                ? 'step'
-                                : 'steps'}{' '}
-                              to accept bookings
-                            </p>
-                          </Link>
-                        </NavigationMenuLink>
-                      </li>
-                    )}
-                    <ListItem href="/settings/availability" title="Availability">
-                      Set when you&apos;re available for sessions
-                    </ListItem>
-                    <ListItem href="/settings/event-types" title="Event Types & Pricing">
-                      Configure your session types and pricing
-                    </ListItem>
-                    <ListItem href="/settings/bookings" title="Bookings">
-                      View and manage your scheduled sessions
-                    </ListItem>
-                    <ListItem href="/settings/billing" title="Billing & Payouts">
-                      Manage payments and view earnings
-                    </ListItem>
-                    <ListItem href="/settings/profile/edit" title="Profile Settings">
-                      Update your mentor profile
-                    </ListItem>
-                  </ul>
-                </NavigationMenuContent>
+                <NavigationMenuLink asChild>
+                  <Link href="/settings" className={navigationMenuTriggerStyle()}>
+                    <div className="flex items-center gap-2">
+                      <span>Dashboard</span>
+                      {showOnboardingCTA && (
+                        <Badge variant="destructive" className="text-xs">
+                          Inactive
+                        </Badge>
+                      )}
+                    </div>
+                  </Link>
+                </NavigationMenuLink>
               </NavigationMenuItem>
             )}
 
@@ -347,26 +310,21 @@ function MobileMenu({ className, isAuthenticated, onboardingStatus }: MobileMenu
           <DropdownMenuItem>Financial Aid</DropdownMenuItem>
         </Link>
 
-        {/* Mentor Dashboard Section */}
+        {/* Dashboard Link */}
         {isAuthenticated && (
           <>
             <DropdownMenuSeparator />
-            <DropdownMenuLabel>Mentor Dashboard</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <Link href="/settings/availability">
-              <DropdownMenuItem>Availability</DropdownMenuItem>
-            </Link>
-            <Link href="/settings/event-types">
-              <DropdownMenuItem>Event Types & Pricing</DropdownMenuItem>
-            </Link>
-            <Link href="/settings/bookings">
-              <DropdownMenuItem>Bookings</DropdownMenuItem>
-            </Link>
-            <Link href="/settings/billing">
-              <DropdownMenuItem>Billing & Payouts</DropdownMenuItem>
-            </Link>
-            <Link href="/settings/profile/edit">
-              <DropdownMenuItem>Profile Settings</DropdownMenuItem>
+            <Link href="/settings">
+              <DropdownMenuItem>
+                <div className="flex w-full items-center justify-between">
+                  <span>Dashboard</span>
+                  {showOnboardingCTA && (
+                    <Badge variant="destructive" className="ml-2 text-xs">
+                      Inactive
+                    </Badge>
+                  )}
+                </div>
+              </DropdownMenuItem>
             </Link>
           </>
         )}
