@@ -14,16 +14,30 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '~/components/ui/dropdown-menu'
+import { StatusDot } from '~/components/ui/status-dot'
 
-const AvatarPic = ({ profilePic }: { profilePic: string | null }) => {
+const AvatarPic = ({
+  profilePic,
+  showStatusDot,
+  isActive,
+}: {
+  profilePic: string | null
+  showStatusDot?: boolean
+  isActive?: boolean
+}) => {
   return (
-    <div className="h-10 w-10">
+    <div className="relative h-10 w-10">
       <Avatar>
         <AvatarImage src={profilePic ?? undefined} alt="Profile Picture" width={40} height={40} />
         <AvatarFallback>
           <User className="h-5 w-5" />
         </AvatarFallback>
       </Avatar>
+      {showStatusDot && (
+        <div className="absolute -right-0.5 -top-1">
+          <StatusDot status={isActive ? 'active' : 'inactive'} size="md" />
+        </div>
+      )}
     </div>
   )
 }
@@ -31,9 +45,14 @@ const AvatarPic = ({ profilePic }: { profilePic: string | null }) => {
 interface AvatarIconProps {
   profilePic: string | null
   isAuthenticated?: boolean
+  onboardingStatus?: { isComplete: boolean } | null
 }
 
-export const AvatarIcon = ({ profilePic, isAuthenticated = false }: AvatarIconProps) => {
+export const AvatarIcon = ({
+  profilePic,
+  isAuthenticated = false,
+  onboardingStatus,
+}: AvatarIconProps) => {
   // Show login button for unauthenticated users
   if (!isAuthenticated) {
     return (
@@ -60,7 +79,11 @@ export const AvatarIcon = ({ profilePic, isAuthenticated = false }: AvatarIconPr
             className="focus:ring-primary h-10 w-10 rounded-full focus:ring-2"
             aria-label="User menu"
           >
-            <AvatarPic profilePic={profilePic} />
+            <AvatarPic
+              profilePic={profilePic}
+              showStatusDot={!!onboardingStatus}
+              isActive={onboardingStatus?.isComplete ?? false}
+            />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-56" align="end">
@@ -68,8 +91,15 @@ export const AvatarIcon = ({ profilePic, isAuthenticated = false }: AvatarIconPr
           <DropdownMenuSeparator />
           <Link href="/settings">
             <DropdownMenuItem>
-              <LayoutDashboard className="mr-2 h-4 w-4" />
-              <span>Dashboard</span>
+              <div className="flex w-full items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <LayoutDashboard className="h-4 w-4" />
+                  <span>Dashboard</span>
+                </div>
+                {onboardingStatus && !onboardingStatus.isComplete && (
+                  <StatusDot status="inactive" size="sm" />
+                )}
+              </div>
             </DropdownMenuItem>
           </Link>
           <Link href="/support">

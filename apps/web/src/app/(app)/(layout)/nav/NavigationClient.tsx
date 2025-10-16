@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { forwardRef } from 'react'
 import { ThemeAwareIconLogo } from '~/components/shared/ThemeAwareIconLogo'
 import { AvatarIcon } from '~/components/shared/UserAvatar'
-import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import {
   DropdownMenu,
@@ -64,10 +63,8 @@ interface NavBarBaseProps {
  * @param onboardingStatus - Mentor onboarding completion status
  */
 export function NavBarBase({ profilePic, isAuthenticated, onboardingStatus }: NavBarBaseProps) {
-  const showOnboardingCTA = onboardingStatus && !onboardingStatus.isComplete
-
   return (
-    <div className="border/40 bg-background/80 text-foreground backdrop-blur-xs fixed left-0 right-0 top-0 z-20 flex items-center justify-between border-b p-4 transition-colors duration-300">
+    <div className="border/40 bg-background/80 text-foreground backdrop-blur-xs fixed left-0 right-0 top-0 z-20 flex items-center justify-between border-b p-4 pr-6 transition-colors duration-300">
       {/* Left: Mobile hamburger + Desktop menu */}
       <div className="flex items-center gap-2">
         {/* Mobile menu trigger */}
@@ -141,14 +138,7 @@ export function NavBarBase({ profilePic, isAuthenticated, onboardingStatus }: Na
               <NavigationMenuItem>
                 <NavigationMenuLink asChild>
                   <Link href="/settings" className={navigationMenuTriggerStyle()}>
-                    <div className="flex items-center gap-2">
-                      <span>Dashboard</span>
-                      {showOnboardingCTA && (
-                        <Badge variant="destructive" className="text-xs">
-                          Inactive
-                        </Badge>
-                      )}
-                    </div>
+                    Dashboard
                   </Link>
                 </NavigationMenuLink>
               </NavigationMenuItem>
@@ -176,20 +166,13 @@ export function NavBarBase({ profilePic, isAuthenticated, onboardingStatus }: Na
         </NavigationMenu>
       </div>
 
-      {/* Right side: Activate Profile CTA + Avatar */}
+      {/* Right side: Avatar */}
       <div className="flex items-center gap-3">
-        {showOnboardingCTA && (
-          <Link href="/settings" className="hidden lg:block">
-            <Button variant="destructive" size="sm" className="gap-2">
-              <Rocket className="h-4 w-4" />
-              <span>Activate Profile</span>
-              <Badge variant="secondary" className="ml-1 bg-white/20 text-white hover:bg-white/30">
-                Inactive
-              </Badge>
-            </Button>
-          </Link>
-        )}
-        <AvatarIcon profilePic={profilePic} isAuthenticated={isAuthenticated} />
+        <AvatarIcon
+          profilePic={profilePic}
+          isAuthenticated={isAuthenticated}
+          onboardingStatus={onboardingStatus}
+        />
       </div>
     </div>
   )
@@ -265,14 +248,9 @@ function MobileMenu({ className, isAuthenticated, onboardingStatus }: MobileMenu
         {showOnboardingCTA && (
           <>
             <Link href="/settings">
-              <DropdownMenuItem className="bg-destructive/5 hover:bg-destructive/10 flex items-center justify-between p-3">
-                <div className="flex items-center gap-2">
-                  <Rocket className="text-destructive h-4 w-4" />
-                  <span className="font-semibold">Activate Profile</span>
-                </div>
-                <Badge variant="destructive" className="text-xs">
-                  Inactive
-                </Badge>
+              <DropdownMenuItem className="bg-destructive/5 hover:bg-destructive/10 flex items-center gap-2 p-3">
+                <Rocket className="text-destructive h-4 w-4" />
+                <span className="font-semibold">Activate Profile</span>
               </DropdownMenuItem>
             </Link>
             <DropdownMenuSeparator />
@@ -315,16 +293,7 @@ function MobileMenu({ className, isAuthenticated, onboardingStatus }: MobileMenu
           <>
             <DropdownMenuSeparator />
             <Link href="/settings">
-              <DropdownMenuItem>
-                <div className="flex w-full items-center justify-between">
-                  <span>Dashboard</span>
-                  {showOnboardingCTA && (
-                    <Badge variant="destructive" className="ml-2 text-xs">
-                      Inactive
-                    </Badge>
-                  )}
-                </div>
-              </DropdownMenuItem>
+              <DropdownMenuItem>Dashboard</DropdownMenuItem>
             </Link>
           </>
         )}

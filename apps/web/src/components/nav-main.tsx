@@ -18,6 +18,7 @@ import {
   SidebarMenuItem,
 } from '~/components/ui/sidebar'
 import { Badge } from '~/components/ui/badge'
+import { StatusDot } from '~/components/ui/status-dot'
 
 const iconMap = {
   ArrowLeft,
@@ -38,6 +39,7 @@ export type NavMainProps = {
     disabled?: boolean
     badge?: string
     badgeVariant?: 'default' | 'secondary' | 'destructive' | 'outline'
+    statusDot?: 'active' | 'inactive'
     isOnboarding?: boolean
     sectionLabel?: string
     description?: string
@@ -71,10 +73,16 @@ export function NavMain({ items }: NavMainProps) {
                       <Icon />
                       <span>{item.title}</span>
                     </div>
-                    {item.badge && (
-                      <Badge variant={item.badgeVariant ?? 'default'} className="ml-auto">
-                        {item.badge}
-                      </Badge>
+                    {item.statusDot ? (
+                      <span className="ml-auto p-1">
+                        <StatusDot status={item.statusDot} size="sm" />
+                      </span>
+                    ) : (
+                      item.badge && (
+                        <Badge variant={item.badgeVariant ?? 'default'} className="ml-auto">
+                          {item.badge}
+                        </Badge>
+                      )
                     )}
                   </a>
                 </SidebarMenuButton>

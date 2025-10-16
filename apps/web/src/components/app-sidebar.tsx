@@ -31,8 +31,7 @@ export const AppSidebar = async ({ ...props }: React.ComponentProps<typeof Sideb
       title: onboardingStatus.isComplete ? 'Profile Settings' : 'Activate Profile',
       url: '/settings',
       icon: 'Rocket',
-      badge: onboardingStatus.isComplete ? undefined : 'Inactive',
-      badgeVariant: onboardingStatus.isComplete ? undefined : 'destructive',
+      statusDot: onboardingStatus.isComplete ? 'active' : 'inactive',
       isOnboarding: !onboardingStatus.isComplete,
     },
     {
@@ -95,7 +94,7 @@ export const AppSidebar = async ({ ...props }: React.ComponentProps<typeof Sideb
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-semibold">Discuno</span>
-                  <span className="truncate text-xs">Mentor</span>
+                  <span className="truncate text-xs">Mentor Dashboard</span>
                 </div>
               </Link>
             </SidebarMenuButton>
