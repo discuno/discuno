@@ -73,6 +73,37 @@ const filterSchema = z.object({
   cursor: z.string().optional(),
 })
 
+/**
+ * Returns the SQL conditions that determine if a mentor profile is active.
+ * This is the single source of truth used by both:
+ * 1. Post queries (to filter who appears in feed)
+ * 2. Onboarding status (to show completion state)
+ *
+ * A mentor profile is considered active when:
+ * - Profile is complete (has bio and profile image)
+ * - Has at least one enabled event type
+ * - Has pricing configured for enabled event types
+ * - Payment setup is valid (free events OR paid events with Stripe enabled)
+ */
+export const getMentorProfileActiveConditions = () => {
+  return and(
+    // 1. Profile completion: bio and image must exist
+    isNotNull(userProfiles.bio),
+    isNotNull(users.image),
+
+    // 2. At least one event type enabled
+    eq(mentorEventTypes.isEnabled, true),
+
+    // 3. Payment setup validation
+    or(
+      // Allow mentors with free event types
+      eq(mentorEventTypes.customPrice, 0),
+      // Allow mentors with paid event types if charges are enabled
+      and(gt(mentorEventTypes.customPrice, 0), eq(mentorStripeAccounts.chargesEnabled, true))
+    )
+  )
+}
+
 // Modern SQL-first approach: Build posts query with optimal joins and no duplicates
 const buildPostsQuery = () => {
   const baseQuery = db
@@ -218,14 +249,7 @@ export const getInfiniteScrollPosts = async (
           : undefined,
         isNotNull(userProfiles.id), // Ensure the user has a profile
         isNull(posts.deletedAt), // Exclude deleted posts
-        // Ensure the mentor has an active event type
-        eq(mentorEventTypes.isEnabled, true),
-        or(
-          // Allow mentors with free event types
-          eq(mentorEventTypes.customPrice, 0),
-          // Allow mentors with paid event types if charges are enabled
-          and(gt(mentorEventTypes.customPrice, 0), eq(mentorStripeAccounts.chargesEnabled, true))
-        )
+        getMentorProfileActiveConditions() // Centralized profile activation logic
       )
     )
     .orderBy(desc(userProfiles.rankingScore), desc(posts.random_sort_key), desc(posts.id))
@@ -260,17 +284,7 @@ export const getPostById = async (id: number): Promise<Card> => {
       and(
         eq(posts.id, validId),
         isNotNull(userProfiles.id), // Ensure the user has a profile
-        eq(mentorEventTypes.isEnabled, true), // Ensure the mentor has an active event type
-        or(
-          // Allow mentors with free event types
-          eq(mentorEventTypes.customPrice, 0),
-          // Allow mentors with paid event types if their Stripe account is active
-          and(
-            gt(mentorEventTypes.customPrice, 0),
-            eq(mentorStripeAccounts.stripeAccountStatus, 'active'),
-            eq(mentorStripeAccounts.payoutsEnabled, true)
-          )
-        )
+        getMentorProfileActiveConditions() // Centralized profile activation logic
       )
     )
     .limit(1)
@@ -371,14 +385,7 @@ export const getPostsByFilters = async (
         ...(conditions.length > 0 ? conditions : [undefined]),
         isNotNull(userProfiles.id), // Ensure the user has a profile
         isNull(posts.deletedAt), // Exclude deleted posts
-        // Ensure the mentor has an active event type
-        eq(mentorEventTypes.isEnabled, true),
-        or(
-          // Allow mentors with free event types
-          eq(mentorEventTypes.customPrice, 0),
-          // Allow mentors with paid event types if charges are enabled
-          and(gt(mentorEventTypes.customPrice, 0), eq(mentorStripeAccounts.chargesEnabled, true))
-        )
+        getMentorProfileActiveConditions() // Centralized profile activation logic
       )
     )
     .orderBy(desc(userProfiles.rankingScore), desc(posts.random_sort_key), desc(posts.id))

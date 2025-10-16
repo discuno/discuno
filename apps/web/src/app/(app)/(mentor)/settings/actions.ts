@@ -1,6 +1,7 @@
 'use server'
 import 'server-only'
 
+import { and, eq } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import Stripe from 'stripe'
 import type { Availability, DateOverride, WeeklySchedule } from '~/app/types/availability'
@@ -14,11 +15,14 @@ import {
 import type { CreateCalcomUserInput, UpdateCalcomUserInput } from '~/lib/calcom/schemas'
 import { MINIMUM_PAID_BOOKING_PRICE } from '~/lib/constants'
 import { type UpdateCalcomToken, type UpdateMentorEventType } from '~/lib/schemas/db'
+import { db } from '~/server/db'
+import { mentorEventTypes, mentorStripeAccounts, userProfiles, users } from '~/server/db/schema'
 import {
   getFullProfile,
   getMentorBookings,
   getMentorCalcomTokens,
   getMentorEventTypes,
+  getMentorProfileActiveConditions,
   getMentorStripeAccount,
   updateCalcomTokensByUserId,
   updateMentorEventType,
@@ -1079,11 +1083,13 @@ export const getMentorOnboardingStatus = async (): Promise<{
     iconName: string
   }>
 }> => {
+  const { id: userId } = await requireAuth()
+
   // Check profile completion
   const profile = await getFullProfile()
   const hasProfile = !!(profile?.bio && profile.image)
 
-  // Check Cal.com setup (availability)
+  // Check Cal.com setup (availability) - this is the only check NOT in the database
   const scheduleResult = await getSchedule()
   const hasAvailability =
     scheduleResult.success &&
@@ -1106,6 +1112,17 @@ export const getMentorOnboardingStatus = async (): Promise<{
     eventTypesResult.success &&
     !!eventTypesResult.data &&
     eventTypesResult.data.some(et => et.isEnabled && et.customPrice !== null)
+
+  // Check if user meets the database-level profile activation conditions
+  // This ensures the onboarding status matches what the post feed queries check
+  const meetsProfileActiveConditions = await db
+    .select({ userId: users.id })
+    .from(users)
+    .leftJoin(userProfiles, eq(users.id, userProfiles.userId))
+    .leftJoin(mentorEventTypes, eq(users.id, mentorEventTypes.mentorUserId))
+    .leftJoin(mentorStripeAccounts, eq(users.id, mentorStripeAccounts.userId))
+    .where(and(eq(users.id, userId), getMentorProfileActiveConditions()))
+    .then(rows => rows.length > 0)
 
   const steps = [
     {
@@ -1156,7 +1173,12 @@ export const getMentorOnboardingStatus = async (): Promise<{
   ]
 
   const completedCount = steps.filter(s => s.completed).length
-  const isComplete = completedCount === steps.length
+
+  // Profile is fully active when:
+  // 1. All database conditions are met (same as post feed query)
+  // 2. AND availability is set (Cal.com check)
+  // This ensures the onboarding completion status matches whether they appear in the feed
+  const isComplete = meetsProfileActiveConditions && hasAvailability
 
   return {
     isComplete,
