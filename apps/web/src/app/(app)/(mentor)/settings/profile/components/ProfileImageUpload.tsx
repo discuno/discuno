@@ -85,26 +85,26 @@ export const ProfileImageUpload = ({ currentImageUrl, userName }: ProfileImageUp
   }
 
   return (
-    <Card>
+    <Card className="h-fit">
       <CardHeader>
         <CardTitle>Profile Image</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex flex-col items-center space-y-4">
+      <CardContent>
+        <div className="flex flex-col items-center space-y-6">
           {/* Image Preview */}
           <div className="relative">
-            <div className="border-border bg-muted aspect-square h-32 w-32 overflow-hidden rounded-full border-4">
+            <div className="border-border bg-muted ring-background aspect-square h-40 w-40 overflow-hidden rounded-full border-4 ring-2">
               {previewUrl ? (
                 <Image
                   src={previewUrl}
                   alt={userName ?? 'Profile'}
                   className="h-full w-full object-cover object-center"
-                  width={128}
-                  height={128}
+                  width={160}
+                  height={160}
                 />
               ) : (
                 <div className="flex h-full w-full items-center justify-center">
-                  <User className="text-muted-foreground h-16 w-16" />
+                  <User className="text-muted-foreground h-20 w-20" />
                 </div>
               )}
             </div>
@@ -114,8 +114,8 @@ export const ProfileImageUpload = ({ currentImageUrl, userName }: ProfileImageUp
               <Button
                 type="button"
                 variant="destructive"
-                size="sm"
-                className="absolute -right-2 -top-2 h-8 w-8 rounded-full p-0"
+                size="icon"
+                className="absolute -right-1 -top-1 h-9 w-9 rounded-full shadow-lg"
                 onClick={handleRemoveImage}
                 disabled={isUploading}
               >
@@ -125,13 +125,13 @@ export const ProfileImageUpload = ({ currentImageUrl, userName }: ProfileImageUp
           </div>
 
           {/* Upload Controls */}
-          <div className="flex flex-col items-center space-y-2">
+          <div className="flex w-full flex-col items-center space-y-3">
             <Button
               type="button"
               variant="outline"
               onClick={triggerFileSelect}
               disabled={isUploading}
-              className="flex items-center gap-2"
+              className="w-full gap-2"
             >
               <Upload className="h-4 w-4" />
               {isUploading ? 'Uploading...' : previewUrl ? 'Change Image' : 'Upload Image'}

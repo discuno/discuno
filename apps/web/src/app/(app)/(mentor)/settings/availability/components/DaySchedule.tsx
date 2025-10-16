@@ -1,8 +1,9 @@
 'use client'
 
+import { Plus } from 'lucide-react'
 import type { TimeInterval } from '~/app/types/availability'
 import { Button } from '~/components/ui/button'
-import { Checkbox } from '~/components/ui/checkbox'
+import { Switch } from '~/components/ui/switch'
 import { TimeIntervalRow } from './TimeIntervalRow'
 
 interface DayScheduleProps {
@@ -11,6 +12,7 @@ interface DayScheduleProps {
   onIntervalsChange: (newIntervals: TimeInterval[]) => void
   isEnabled: boolean
   onDayToggle: (isEnabled: boolean) => void
+  disabled?: boolean
 }
 
 const DEFAULT_INTERVAL = { start: '09:00', end: '17:00' }
@@ -21,6 +23,7 @@ export const DaySchedule = ({
   onIntervalsChange,
   isEnabled,
   onDayToggle,
+  disabled = false,
 }: DayScheduleProps) => {
   // Handle adding a new interval with default times
   const handleAddInterval = () => {
@@ -37,35 +40,47 @@ export const DaySchedule = ({
     onIntervalsChange(intervals.map((interval, i) => (i === indexToUpdate ? updated : interval)))
   }
 
-  // Handle checkbox change to toggle the day's availability
-  const handleCheckboxChange = (checked: boolean | 'indeterminate') => {
-    onDayToggle(Boolean(checked))
-  }
-
   return (
-    <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-[150px_1fr]">
-      <div className="flex items-center space-x-3">
-        <Checkbox id={`check-${day}`} checked={isEnabled} onCheckedChange={handleCheckboxChange} />
-        <label htmlFor={`check-${day}`} className="font-semibold capitalize">
-          {day}
-        </label>
+    <div className="bg-card hover:border-muted-foreground/50 group rounded-lg border p-4 transition-colors">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <Switch
+            id={`switch-${day}`}
+            checked={isEnabled}
+            onCheckedChange={onDayToggle}
+            disabled={disabled}
+          />
+          <label
+            htmlFor={`switch-${day}`}
+            className="text-card-foreground cursor-pointer text-sm font-medium capitalize"
+          >
+            {day}
+          </label>
+        </div>
+        {!isEnabled && <span className="text-muted-foreground text-xs">Unavailable</span>}
       </div>
-      {isEnabled ? (
-        <div className="space-y-2">
+      {isEnabled && (
+        <div className="mt-4 space-y-3">
           {intervals.map((interval, index) => (
             <TimeIntervalRow
               key={index}
               interval={interval}
               onIntervalChange={updated => handleIntervalChange(index, updated)}
               onRemove={() => handleRemoveInterval(index)}
+              disabled={disabled}
             />
           ))}
-          <Button variant="link" size="sm" className="px-0" onClick={handleAddInterval}>
-            + Add interval
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full"
+            onClick={handleAddInterval}
+            disabled={disabled}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Add time slot
           </Button>
         </div>
-      ) : (
-        <div className="text-sm text-gray-500">Unavailable</div>
       )}
     </div>
   )

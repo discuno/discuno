@@ -77,13 +77,18 @@ export function AvailabilityManager({ initialAvailability }: AvailabilityManager
 
   return (
     <div className="space-y-8">
-      <WeeklyScheduler
-        schedule={availability.weeklySchedule}
-        onScheduleChange={newSchedule => {
-          setAvailability(prev => (prev ? { ...prev, weeklySchedule: newSchedule } : null))
-        }}
-      />
-      <DateOverridesManager availability={availability} onOverridesChange={handleOverridesChange} />
+      <div className="grid gap-8 lg:grid-cols-2">
+        <WeeklyScheduler
+          schedule={availability.weeklySchedule}
+          onScheduleChange={newSchedule => {
+            setAvailability(prev => (prev ? { ...prev, weeklySchedule: newSchedule } : null))
+          }}
+        />
+        <DateOverridesManager
+          availability={availability}
+          onOverridesChange={handleOverridesChange}
+        />
+      </div>
       <div className="flex justify-end space-x-4">
         <Button variant="outline" onClick={handleCancel} disabled={!isDirty || isPending}>
           Cancel

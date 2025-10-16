@@ -68,46 +68,65 @@ export const EditProfileContent = ({ profile, schools, majors }: EditProfileCont
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-        {/* Left Column */}
-        <div className="space-y-8 lg:col-span-1">
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        {/* Left Column - Profile Image */}
+        <div className="lg:col-span-1">
           <ProfileImageUpload currentImageUrl={profile.image} userName={profile.name} />
         </div>
 
-        {/* Right Column */}
-        <div className="space-y-8 lg:col-span-2">
-          <ProfileCard title="Basic Information" icon={User}>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="name">Full Name</Label>
+        {/* Right Column - Form Fields */}
+        <div className="space-y-6 lg:col-span-2">
+          <ProfileCard
+            title="Basic Information"
+            description="Your name and bio are displayed on your public profile"
+            icon={User}
+          >
+            <div className="space-y-5">
+              <div className="space-y-2">
+                <Label htmlFor="name" className="text-sm font-medium">
+                  Full Name
+                </Label>
                 <Input
                   id="name"
                   name="name"
                   defaultValue={profile.name ?? ''}
                   placeholder="Enter your full name"
                   required
+                  className="text-base"
                 />
               </div>
-              <div>
-                <Label htmlFor="bio">Biography</Label>
+              <div className="space-y-2">
+                <Label htmlFor="bio" className="text-sm font-medium">
+                  Biography
+                </Label>
                 <Textarea
                   id="bio"
                   name="bio"
                   defaultValue={profile.bio ?? ''}
                   placeholder="Tell students about yourself, your experience, and what you can help with..."
-                  rows={4}
+                  rows={5}
+                  className="resize-none text-base"
                 />
+                <p className="text-muted-foreground text-xs">
+                  Share your background, interests, and how you can help prospective students
+                </p>
               </div>
             </div>
           </ProfileCard>
 
-          <ProfileCard title="Academic Information" icon={GraduationCap}>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="school">School</Label>
+          <ProfileCard
+            title="Academic Information"
+            description="Your academic background helps students find the right mentor"
+            icon={GraduationCap}
+          >
+            <div className="space-y-5">
+              <div className="space-y-2">
+                <Label htmlFor="school" className="text-sm font-medium">
+                  School
+                </Label>
                 <Select name="school" disabled defaultValue={profile.school ?? ''}>
-                  <SelectTrigger>
+                  <SelectTrigger className="text-base">
                     <SelectValue placeholder="Select your school" />
                   </SelectTrigger>
                   <SelectContent>
@@ -118,12 +137,17 @@ export const EditProfileContent = ({ profile, schools, majors }: EditProfileCont
                     ))}
                   </SelectContent>
                 </Select>
+                <p className="text-muted-foreground text-xs">
+                  School cannot be changed after registration
+                </p>
               </div>
 
-              <div>
-                <Label htmlFor="major">Major</Label>
+              <div className="space-y-2">
+                <Label htmlFor="major" className="text-sm font-medium">
+                  Major
+                </Label>
                 <Select name="major" defaultValue={profile.major ?? ''}>
-                  <SelectTrigger>
+                  <SelectTrigger className="text-base">
                     <SelectValue placeholder="Select your major" />
                   </SelectTrigger>
                   <SelectContent>
@@ -136,11 +160,13 @@ export const EditProfileContent = ({ profile, schools, majors }: EditProfileCont
                 </Select>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="schoolYear">Academic Level</Label>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="schoolYear" className="text-sm font-medium">
+                    Academic Level
+                  </Label>
                   <Select name="schoolYear" defaultValue={profile.schoolYear}>
-                    <SelectTrigger>
+                    <SelectTrigger className="text-base">
                       <SelectValue placeholder="Select level" />
                     </SelectTrigger>
                     <SelectContent>
@@ -153,10 +179,12 @@ export const EditProfileContent = ({ profile, schools, majors }: EditProfileCont
                   </Select>
                 </div>
 
-                <div>
-                  <Label htmlFor="graduationYear">Expected Graduation Year</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="graduationYear" className="text-sm font-medium">
+                    Expected Graduation
+                  </Label>
                   <Select name="graduationYear" defaultValue={profile.graduationYear.toString()}>
-                    <SelectTrigger>
+                    <SelectTrigger className="text-base">
                       <SelectValue placeholder="Select year" />
                     </SelectTrigger>
                     <SelectContent>
@@ -175,7 +203,7 @@ export const EditProfileContent = ({ profile, schools, majors }: EditProfileCont
       </div>
 
       {/* Actions */}
-      <div className="flex justify-end gap-4">
+      <div className="flex justify-end gap-3 pt-4">
         <Button type="button" variant="outline" asChild>
           <Link href="/profile/view">Cancel</Link>
         </Button>
