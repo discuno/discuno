@@ -18,7 +18,7 @@ export function EmailSignInForm() {
       const result = await signIn('nodemailer', {
         email,
         redirect: false,
-        callbackUrl: '/',
+        callbackUrl: '/settings',
       })
 
       if (result.error) {

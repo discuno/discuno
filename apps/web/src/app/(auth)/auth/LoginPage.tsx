@@ -24,7 +24,7 @@ export function LoginPage() {
     try {
       setIsLoading(provider)
       await signIn(provider, {
-        callbackUrl: '/',
+        callbackUrl: '/settings',
         redirect: true,
       })
     } catch (error) {
