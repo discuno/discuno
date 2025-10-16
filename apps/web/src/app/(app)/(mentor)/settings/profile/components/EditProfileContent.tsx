@@ -2,7 +2,6 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { GraduationCap, User } from 'lucide-react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { updateUserProfile } from '~/app/(app)/(mentor)/settings/profile/actions'
@@ -175,10 +174,7 @@ export const EditProfileContent = ({ profile, schools, majors }: EditProfileCont
       </div>
 
       {/* Actions */}
-      <div className="flex justify-end gap-4">
-        <Button type="button" variant="outline" asChild>
-          <Link href="/profile/view">Cancel</Link>
-        </Button>
+      <div className="flex justify-end">
         <Button type="submit" disabled={mutation.isPending}>
           {mutation.isPending ? 'Saving...' : 'Save Changes'}
         </Button>
