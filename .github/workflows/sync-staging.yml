@@ -1,0 +1,51 @@
+name: Sync Staging with Main
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  FORCE_COLOR: 1
+
+concurrency:
+  group: sync-staging-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Sync Staging Branch
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Fetch all branches
+        run: git fetch origin
+
+      - name: Sync staging with main
+        run: |
+          # Checkout staging branch
+          git checkout staging
+          
+          # Try to fast-forward merge main into staging
+          if git merge --ff-only origin/main; then
+            echo "✅ Successfully fast-forwarded staging to main"
+            git push origin staging
+          else
+            echo "⚠️  Cannot fast-forward staging to main"
+            echo "This means staging has commits that main doesn't have."
+            echo "Staging is ahead of main, which is the desired behavior."
+            echo "No action needed - staging will remain ahead of main."
+          fi
