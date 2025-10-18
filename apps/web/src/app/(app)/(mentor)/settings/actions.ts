@@ -1090,10 +1090,6 @@ export const getMentorOnboardingStatus = async (): Promise<{
     !!scheduleResult.data &&
     Object.values(scheduleResult.data.weeklySchedule).some(day => day.length > 0)
 
-  // Check Stripe setup
-  const stripeStatus = await getMentorStripeStatus()
-  const hasStripe = stripeStatus.success && !!stripeStatus.data?.chargesEnabled
-
   // Check if any event types are enabled
   const eventTypesResult = await getMentorEventTypePreferences()
   const hasEnabledEventTypes =
@@ -1106,6 +1102,29 @@ export const getMentorOnboardingStatus = async (): Promise<{
     eventTypesResult.success &&
     !!eventTypesResult.data &&
     eventTypesResult.data.some(et => et.isEnabled && et.customPrice !== null)
+
+  // Check if mentor has any free event types enabled
+  const hasFreeEventTypes =
+    eventTypesResult.success &&
+    !!eventTypesResult.data &&
+    eventTypesResult.data.some(
+      et => et.isEnabled && (et.customPrice === null || et.customPrice === 0)
+    )
+
+  // Check if mentor has any paid event types enabled
+  const hasPaidEventTypes =
+    eventTypesResult.success &&
+    !!eventTypesResult.data &&
+    eventTypesResult.data.some(et => et.isEnabled && et.customPrice !== null && et.customPrice > 0)
+
+  // Check Stripe setup
+  const stripeStatus = await getMentorStripeStatus()
+  const hasStripe = stripeStatus.success && !!stripeStatus.data?.chargesEnabled
+
+  // Stripe is only required if mentor has ONLY paid event types (no free ones)
+  // If they have at least one free event type, they can be active without Stripe
+  const stripeRequired = hasPaidEventTypes && !hasFreeEventTypes
+  const stripeCompleted = stripeRequired ? hasStripe : true
 
   const steps = [
     {
@@ -1156,13 +1175,24 @@ export const getMentorOnboardingStatus = async (): Promise<{
     },
   ]
 
-  const completedCount = steps.filter(s => s.completed).length
-  const isComplete = completedCount === steps.length
+  // Calculate completion based on required steps
+  // Stripe only counts if mentor has paid event types
+  const requiredSteps = steps.filter(s => s.id !== 'stripe' || stripeRequired)
+  const completedRequiredSteps = requiredSteps.filter(s => {
+    if (s.id === 'stripe') {
+      return stripeCompleted
+    }
+    return s.completed
+  })
+
+  const completedCount = completedRequiredSteps.length
+  const totalSteps = requiredSteps.length
+  const isComplete = completedCount === totalSteps
 
   return {
     isComplete,
     completedSteps: completedCount,
-    totalSteps: steps.length,
+    totalSteps,
     steps,
   }
 }

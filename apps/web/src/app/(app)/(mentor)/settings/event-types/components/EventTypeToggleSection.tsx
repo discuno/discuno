@@ -267,37 +267,38 @@ export const EventTypeToggleSection = () => {
 const EventTypeToggleSkeleton = () => {
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <Skeleton className="h-6 w-48" />
-          <Skeleton className="mt-2 h-4 w-96" />
+      <Card>
+        <div className="border-b p-6">
+          <div className="flex items-center justify-between">
+            <div className="space-y-2">
+              <Skeleton className="h-6 w-48" />
+              <Skeleton className="h-4 w-96" />
+            </div>
+            <Skeleton className="h-8 w-32" />
+          </div>
         </div>
-        <Skeleton className="h-8 w-32" />
-      </div>
 
-      <div className="grid gap-4">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <Card key={i}>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3">
-                    <Skeleton className="h-6 w-40" />
-                    <Skeleton className="h-4 w-16" />
-                    <Skeleton className="h-5 w-10" />
-                  </div>
-                  <Skeleton className="mt-2 h-4 w-80" />
-                  <div className="mt-3 flex items-center gap-4">
+        <CardContent className="p-0">
+          <div className="divide-y">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="p-6">
+                <div className="flex items-start justify-between gap-6">
+                  <div className="flex-1 space-y-3">
+                    <div className="flex items-center gap-3">
+                      <Skeleton className="h-5 w-10" />
+                      <Skeleton className="h-6 w-40" />
+                      <Skeleton className="h-5 w-16" />
+                    </div>
+                    <Skeleton className="h-4 w-80" />
                     <Skeleton className="h-4 w-20" />
-                    <Skeleton className="h-4 w-24" />
                   </div>
+                  <Skeleton className="h-9 w-24" />
                 </div>
-                <Skeleton className="h-8 w-20" />
               </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

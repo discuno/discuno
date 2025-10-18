@@ -90,7 +90,7 @@ export const EventTypeSettingsContent = ({
   const needsStripeSetup = !hasStripeAccount || !isStripeActive
 
   return (
-    <>
+    <div className="space-y-6">
       {/* Stripe Connection Banner - Only shown when setup needed */}
       {needsStripeSetup && (
         <Alert
@@ -107,11 +107,11 @@ export const EventTypeSettingsContent = ({
                 : 'text-primary h-4 w-4'
             }
           />
-          <div className="flex items-start justify-between">
+          <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
               <AlertDescription>
                 {hasStripeAccount ? (
-                  <div className="space-y-2">
+                  <div className="space-y-1">
                     <p className="font-semibold">Complete Your Stripe Setup</p>
                     <p className="text-muted-foreground text-sm">
                       Your Stripe account needs additional verification before you can accept
@@ -119,7 +119,7 @@ export const EventTypeSettingsContent = ({
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-1">
                     <p className="font-semibold">Connect Stripe to Accept Payments</p>
                     <p className="text-muted-foreground text-sm">
                       To offer paid sessions, you need to connect your Stripe account. This allows
@@ -129,7 +129,7 @@ export const EventTypeSettingsContent = ({
                 )}
               </AlertDescription>
             </div>
-            <div className="ml-4">
+            <div className="flex-shrink-0">
               {hasStripeAccount && connectInstance ? (
                 <Dialog open={isStripeModalOpen} onOpenChange={setStripeModalOpen}>
                   <DialogTrigger asChild>
@@ -158,92 +158,95 @@ export const EventTypeSettingsContent = ({
         </Alert>
       )}
 
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold">Event Type Settings</h3>
-          <p className="text-muted-foreground text-sm">
-            Configure which event types are available for booking and set your pricing
-          </p>
-        </div>
+      <Card>
+        <div className="border-b p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h3 className="text-lg font-semibold">Event Type Settings</h3>
+              <p className="text-muted-foreground text-sm">
+                Configure which event types are available for booking and set your pricing
+              </p>
+            </div>
 
-        {/* Stripe Status Badge - Simple indicator */}
-        {isStripeActive && (
-          <div className="flex items-center gap-2">
-            <CreditCard className="h-4 w-4" />
-            <Badge variant="default">Stripe Connected</Badge>
-            {connectInstance && (
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button size="sm" variant="outline">
-                    Manage Account
-                  </Button>
-                </DialogTrigger>
-                <StripeModal
-                  connectInstance={connectInstance}
-                  accountId={stripeStatus.accountId}
-                  stripeStatus={stripeStatus}
-                  onOnboardingComplete={onOnboardingComplete}
-                />
-              </Dialog>
+            {/* Stripe Status Badge - Simple indicator */}
+            {isStripeActive && (
+              <div className="flex items-center gap-2">
+                <Badge variant="default" className="gap-1.5">
+                  <CreditCard className="h-3 w-3" />
+                  Stripe Connected
+                </Badge>
+                {connectInstance && (
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button size="sm" variant="outline">
+                        Manage Account
+                      </Button>
+                    </DialogTrigger>
+                    <StripeModal
+                      connectInstance={connectInstance}
+                      accountId={stripeStatus.accountId}
+                      stripeStatus={stripeStatus}
+                      onOnboardingComplete={onOnboardingComplete}
+                    />
+                  </Dialog>
+                )}
+              </div>
             )}
           </div>
-        )}
-      </div>
+        </div>
 
-      {/* Event Types List */}
-      <div className="grid gap-4">
-        {eventTypes.map(eventType => (
-          <Card key={eventType.id} className="transition-shadow hover:shadow-md">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-semibold">{eventType.title}</h4>
-                      <Badge variant="outline" className="text-xs">
-                        <Timer className="mr-1 h-3 w-3" />
-                        {eventType.length} min
-                      </Badge>
+        {/* Event Types List */}
+        <CardContent className="p-0">
+          <div className="divide-y">
+            {eventTypes.map(eventType => (
+              <div key={eventType.id} className="hover:bg-muted/30 p-6 transition-colors">
+                <div className="flex items-start justify-between gap-6">
+                  <div className="flex-1 space-y-3">
+                    <div className="flex items-center gap-3">
+                      <Switch
+                        checked={eventType.isEnabled}
+                        onCheckedChange={checked => onToggleEventType(eventType, checked)}
+                        disabled={updateEventTypeMutation.isPending}
+                      />
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-medium">{eventType.title}</h4>
+                        <Badge variant="outline" className="gap-1 text-xs">
+                          <Timer className="h-3 w-3" />
+                          {eventType.length} min
+                        </Badge>
+                      </div>
                     </div>
-                    <Switch
-                      checked={eventType.isEnabled}
-                      onCheckedChange={checked => onToggleEventType(eventType, checked)}
-                      disabled={updateEventTypeMutation.isPending}
-                    />
-                  </div>
 
-                  {eventType.description && (
-                    <p className="text-muted-foreground mt-2 text-sm">{eventType.description}</p>
-                  )}
+                    {eventType.description && (
+                      <p className="text-muted-foreground text-sm">{eventType.description}</p>
+                    )}
 
-                  <div className="mt-3 flex items-center gap-4">
-                    <div className="flex items-center gap-1 text-sm">
-                      <DollarSign className="h-4 w-4" />
+                    <div className="flex items-center gap-1.5 text-sm font-medium">
+                      <DollarSign className="text-muted-foreground h-4 w-4" />
                       <span>
                         {eventType.customPrice
-                          ? `$${(eventType.customPrice / 100).toFixed(2)} USD`
+                          ? `$${(eventType.customPrice / 100).toFixed(2)}`
                           : 'Free'}
                       </span>
                     </div>
                   </div>
-                </div>
 
-                <div className="flex items-center gap-2">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => onPricingChange(eventType)}
                     disabled={updateEventTypeMutation.isPending}
+                    className="gap-1.5"
                   >
-                    <Settings className="mr-1 h-4 w-4" />
+                    <Settings className="h-4 w-4" />
                     Pricing
                   </Button>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Pricing Dialog */}
       <Dialog open={showPricingDialog} onOpenChange={setShowPricingDialog}>
@@ -303,6 +306,6 @@ export const EventTypeSettingsContent = ({
           </div>
         </DialogContent>
       </Dialog>
-    </>
+    </div>
   )
 }

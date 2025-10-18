@@ -323,6 +323,13 @@ export const mentorEventTypes = pgTable(
   table => [
     index('mentor_event_types_user_idx').on(table.mentorUserId),
     index('mentor_event_types_calcom_idx').on(table.calcomEventTypeId),
+    // Compound index for optimizing post visibility checks
+    // This allows the EXISTS subquery to be satisfied with a single index lookup
+    index('mentor_event_types_active_lookup_idx').on(
+      table.mentorUserId,
+      table.isEnabled,
+      table.customPrice
+    ),
   ]
 )
 

@@ -1,6 +1,6 @@
 'server only'
 
-import { and, desc, eq, gt, isNotNull, isNull, lt, or, sql } from 'drizzle-orm'
+import { and, desc, eq, exists, gt, isNotNull, isNull, lt, or, sql } from 'drizzle-orm'
 import {
   unstable_cacheLife as cacheLife,
   unstable_cacheTag as cacheTag,
@@ -218,13 +218,31 @@ export const getInfiniteScrollPosts = async (
           : undefined,
         isNotNull(userProfiles.id), // Ensure the user has a profile
         isNull(posts.deletedAt), // Exclude deleted posts
-        // Ensure the mentor has an active event type
-        eq(mentorEventTypes.isEnabled, true),
-        or(
-          // Allow mentors with free event types
-          eq(mentorEventTypes.customPrice, 0),
-          // Allow mentors with paid event types if charges are enabled
-          and(gt(mentorEventTypes.customPrice, 0), eq(mentorStripeAccounts.chargesEnabled, true))
+        // Ensure the mentor has at least one bookable event type (matching active status)
+        exists(
+          db
+            .select({ id: mentorEventTypes.id })
+            .from(mentorEventTypes)
+            .leftJoin(
+              mentorStripeAccounts,
+              eq(mentorEventTypes.mentorUserId, mentorStripeAccounts.userId)
+            )
+            .where(
+              and(
+                eq(mentorEventTypes.mentorUserId, users.id),
+                eq(mentorEventTypes.isEnabled, true),
+                or(
+                  // Free event types (price is 0 or null)
+                  eq(mentorEventTypes.customPrice, 0),
+                  isNull(mentorEventTypes.customPrice),
+                  // Paid event types with Stripe charges enabled
+                  and(
+                    gt(mentorEventTypes.customPrice, 0),
+                    eq(mentorStripeAccounts.chargesEnabled, true)
+                  )
+                )
+              )
+            )
         )
       )
     )
@@ -260,16 +278,31 @@ export const getPostById = async (id: number): Promise<Card> => {
       and(
         eq(posts.id, validId),
         isNotNull(userProfiles.id), // Ensure the user has a profile
-        eq(mentorEventTypes.isEnabled, true), // Ensure the mentor has an active event type
-        or(
-          // Allow mentors with free event types
-          eq(mentorEventTypes.customPrice, 0),
-          // Allow mentors with paid event types if their Stripe account is active
-          and(
-            gt(mentorEventTypes.customPrice, 0),
-            eq(mentorStripeAccounts.stripeAccountStatus, 'active'),
-            eq(mentorStripeAccounts.payoutsEnabled, true)
-          )
+        // Ensure the mentor has at least one bookable event type (matching active status)
+        exists(
+          db
+            .select({ id: mentorEventTypes.id })
+            .from(mentorEventTypes)
+            .leftJoin(
+              mentorStripeAccounts,
+              eq(mentorEventTypes.mentorUserId, mentorStripeAccounts.userId)
+            )
+            .where(
+              and(
+                eq(mentorEventTypes.mentorUserId, users.id),
+                eq(mentorEventTypes.isEnabled, true),
+                or(
+                  // Free event types (price is 0 or null)
+                  eq(mentorEventTypes.customPrice, 0),
+                  isNull(mentorEventTypes.customPrice),
+                  // Paid event types with Stripe charges enabled
+                  and(
+                    gt(mentorEventTypes.customPrice, 0),
+                    eq(mentorStripeAccounts.chargesEnabled, true)
+                  )
+                )
+              )
+            )
         )
       )
     )
@@ -371,13 +404,31 @@ export const getPostsByFilters = async (
         ...(conditions.length > 0 ? conditions : [undefined]),
         isNotNull(userProfiles.id), // Ensure the user has a profile
         isNull(posts.deletedAt), // Exclude deleted posts
-        // Ensure the mentor has an active event type
-        eq(mentorEventTypes.isEnabled, true),
-        or(
-          // Allow mentors with free event types
-          eq(mentorEventTypes.customPrice, 0),
-          // Allow mentors with paid event types if charges are enabled
-          and(gt(mentorEventTypes.customPrice, 0), eq(mentorStripeAccounts.chargesEnabled, true))
+        // Ensure the mentor has at least one bookable event type (matching active status)
+        exists(
+          db
+            .select({ id: mentorEventTypes.id })
+            .from(mentorEventTypes)
+            .leftJoin(
+              mentorStripeAccounts,
+              eq(mentorEventTypes.mentorUserId, mentorStripeAccounts.userId)
+            )
+            .where(
+              and(
+                eq(mentorEventTypes.mentorUserId, users.id),
+                eq(mentorEventTypes.isEnabled, true),
+                or(
+                  // Free event types (price is 0 or null)
+                  eq(mentorEventTypes.customPrice, 0),
+                  isNull(mentorEventTypes.customPrice),
+                  // Paid event types with Stripe charges enabled
+                  and(
+                    gt(mentorEventTypes.customPrice, 0),
+                    eq(mentorStripeAccounts.chargesEnabled, true)
+                  )
+                )
+              )
+            )
         )
       )
     )
