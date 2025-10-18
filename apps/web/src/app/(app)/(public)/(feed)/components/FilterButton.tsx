@@ -31,7 +31,7 @@ interface FilterProps {
 export const FilterButton = ({ filterItems, queryName, startValue }: FilterProps) => {
   const [open, setOpen] = useState(false)
   const [value, setValue] = useState(
-    filterItems.find(item => item.label === startValue)?.value ?? ''
+    filterItems.find(item => item.value === startValue)?.value ?? ''
   )
   const router = useRouter()
 
@@ -45,7 +45,7 @@ export const FilterButton = ({ filterItems, queryName, startValue }: FilterProps
       setValue('')
     } else {
       setValue(selectedValue)
-      url.searchParams.set(queryName, selectedItem?.label ?? '')
+      url.searchParams.set(queryName, selectedItem?.value ?? '')
     }
 
     router.push(url.toString())

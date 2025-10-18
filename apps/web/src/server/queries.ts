@@ -331,8 +331,9 @@ export const getSchools = cache(async () => {
   const schools = await db.query.schools.findMany()
   return schools.map(school => ({
     label: school.name,
-    value: school.name.toLowerCase(),
+    value: school.domainPrefix, // Use domain prefix instead of full name
     id: school.id,
+    domainPrefix: school.domainPrefix, // Include for lookups
   }))
 })
 

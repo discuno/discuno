@@ -191,8 +191,10 @@ export const authConfig = {
       if (isNewUser && user.id && user.email) {
         const emailDomain = user.email.split('@')[1]?.toLowerCase()
         if (emailDomain) {
+          // Extract domain prefix (e.g., 'stanford.edu' -> 'stanford')
+          const domainPrefix = emailDomain.replace('.edu', '')
           const school = await db.query.schools.findFirst({
-            where: eq(schools.domain, emailDomain),
+            where: eq(schools.domainPrefix, domainPrefix),
           })
           if (school) {
             await db.insert(userSchools).values({ userId: user.id, schoolId: school.id })

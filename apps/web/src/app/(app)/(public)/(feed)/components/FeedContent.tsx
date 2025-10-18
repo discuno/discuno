@@ -26,7 +26,7 @@ export const FeedContent = async ({ searchParams }: FeedContentProps) => {
   })
 
   const schoolId = searchParams.school
-    ? (schools.find(s => s.label === searchParams.school)?.id ?? null)
+    ? (schools.find(s => s.value === searchParams.school)?.id ?? null)
     : null
   const majorId = searchParams.major
     ? (majors.find(m => m.label === searchParams.major)?.id ?? null)
