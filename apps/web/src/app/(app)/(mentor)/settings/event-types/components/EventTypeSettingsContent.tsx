@@ -197,13 +197,17 @@ export const EventTypeSettingsContent = ({
         </div>
 
         {/* Event Types List */}
-        <CardContent className="p-0">
-          <div className="divide-y">
+        <CardContent className="p-6">
+          <div className="space-y-4">
             {eventTypes.map(eventType => (
-              <div key={eventType.id} className="hover:bg-muted/30 p-6 transition-colors">
-                <div className="flex items-start justify-between gap-6">
-                  <div className="flex-1 space-y-3">
-                    <div className="flex items-center gap-3">
+              <Card
+                key={eventType.id}
+                className="hover:border-muted-foreground/50 transition-colors"
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-4">
+                    {/* Toggle Switch */}
+                    <div className="pt-0.5">
                       {eventType.customPrice && eventType.customPrice > 0 && !isStripeActive ? (
                         <TooltipProvider>
                           <Tooltip delayDuration={0}>
@@ -228,41 +232,46 @@ export const EventTypeSettingsContent = ({
                           disabled={updateEventTypeMutation.isPending}
                         />
                       )}
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-medium">{eventType.title}</h4>
-                        <Badge variant="outline" className="gap-1 text-xs">
-                          <Timer className="h-3 w-3" />
-                          {eventType.length} min
-                        </Badge>
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex-1 space-y-2">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-semibold">{eventType.title}</h4>
+                          <Badge variant="secondary" className="gap-1">
+                            <Timer className="h-3 w-3" />
+                            {eventType.length} min
+                          </Badge>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onPricingChange(eventType)}
+                          disabled={updateEventTypeMutation.isPending}
+                          className="gap-1.5"
+                        >
+                          <Settings className="h-4 w-4" />
+                          Edit Pricing
+                        </Button>
+                      </div>
+
+                      {eventType.description && (
+                        <p className="text-muted-foreground text-sm">{eventType.description}</p>
+                      )}
+
+                      <div className="flex items-center gap-1.5">
+                        <DollarSign className="text-muted-foreground h-4 w-4" />
+                        <span className="text-sm font-medium">
+                          {eventType.customPrice
+                            ? `$${(eventType.customPrice / 100).toFixed(2)}`
+                            : 'Free'}
+                        </span>
                       </div>
                     </div>
-
-                    {eventType.description && (
-                      <p className="text-muted-foreground text-sm">{eventType.description}</p>
-                    )}
-
-                    <div className="flex items-center gap-1.5 text-sm font-medium">
-                      <DollarSign className="text-muted-foreground h-4 w-4" />
-                      <span>
-                        {eventType.customPrice
-                          ? `$${(eventType.customPrice / 100).toFixed(2)}`
-                          : 'Free'}
-                      </span>
-                    </div>
                   </div>
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onPricingChange(eventType)}
-                    disabled={updateEventTypeMutation.isPending}
-                    className="gap-1.5"
-                  >
-                    <Settings className="h-4 w-4" />
-                    Pricing
-                  </Button>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
         </CardContent>
