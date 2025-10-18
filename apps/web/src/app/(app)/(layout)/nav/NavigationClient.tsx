@@ -73,7 +73,7 @@ export function NavBarBase({ profilePic, isAuthenticated, onboardingStatus }: Na
           isAuthenticated={isAuthenticated}
           onboardingStatus={onboardingStatus}
         />
-        <Link href="/">
+        <Link href="/" className="flex items-center">
           <ThemeAwareIconLogo />
         </Link>
         {/* Desktop navigation */}
