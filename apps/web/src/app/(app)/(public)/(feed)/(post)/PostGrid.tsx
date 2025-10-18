@@ -1,7 +1,7 @@
 'use client'
 
 import { useInfiniteQuery } from '@tanstack/react-query'
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useInView } from 'react-intersection-observer'
 import { PostCard } from '~/app/(app)/(public)/(feed)/(post)/PostCard'
 import {
@@ -84,12 +84,103 @@ export const PostGrid = ({ schoolId, majorId, graduationYear }: PostGridProps) =
     return Array.from(uniquePostsMap.values())
   }, [data?.pages])
 
+  // Static hero headlines - pick one randomly on client mount to avoid hydration mismatch
+  const heroHeadlines = useMemo(
+    () => [
+      'Connect with students at your dream school',
+      'Get advice from those who made it',
+      'Find mentors who understand your journey',
+      'Learn from real college students',
+      'Discover your path to college success',
+    ],
+    []
+  )
+
+  const [selectedHeadline, setSelectedHeadline] = useState(heroHeadlines[0])
+
+  // Set random headline on client mount only
+  useEffect(() => {
+    setSelectedHeadline(heroHeadlines[Math.floor(Math.random() * heroHeadlines.length)])
+  }, [heroHeadlines])
+
+  // Colleges for animated carousel
+  const colleges = useMemo(
+    () => [
+      'UCLA',
+      'Harvard',
+      'Ohio State',
+      'Stanford',
+      'UF',
+      'Columbia',
+      'Michigan',
+      'Yale',
+      'Texas A&M',
+      'NYU',
+      'UC Berkeley',
+      'Penn State',
+      'Duke',
+      'Wisconsin',
+      'Princeton',
+      'Arizona State',
+      'Brown',
+      'UT Austin',
+      'Northwestern',
+      'Georgia',
+      'USC',
+      'Cornell',
+      'Illinois',
+      'UNC',
+      'Purdue',
+      'Boston University',
+      'Michigan State',
+      'Cal',
+      'UPenn',
+      'Virginia Tech',
+      'MIT',
+      'UW',
+    ],
+    []
+  )
+
+  const [collegeIndex, setCollegeIndex] = useState(0)
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCollegeIndex(prev => (prev + 1) % colleges.length)
+    }, 3000)
+    return () => clearInterval(interval)
+  }, [colleges.length])
+
+  const heroSection = (
+    <div className="mb-12 text-center">
+      <h1 className="text-foreground mb-4 text-3xl font-bold sm:text-4xl md:text-5xl">
+        {selectedHeadline}
+      </h1>
+      <div className="text-muted-foreground mx-auto flex items-center justify-center gap-2 text-lg sm:text-xl">
+        <span>Students from</span>
+        <div className="relative inline-block h-8 w-32 overflow-hidden sm:w-40">
+          <div
+            className="absolute inset-0 transition-transform duration-500 ease-in-out"
+            style={{ transform: `translateY(-${collegeIndex * 2}rem)` }}
+          >
+            {colleges.map(college => (
+              <div
+                key={college}
+                className="text-primary flex h-8 items-center justify-center font-semibold"
+              >
+                {college}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+
   if (isLoading) {
     return (
       <div className="container mx-auto min-h-[calc(100vh-4rem)] px-4 py-8">
-        <h1 className="text-foreground mb-8 text-center text-3xl font-bold">
-          Find Your College Mentor
-        </h1>
+        {heroSection}
         <PostGridSkeleton />
       </div>
     )
@@ -105,9 +196,7 @@ export const PostGrid = ({ schoolId, majorId, graduationYear }: PostGridProps) =
 
   return (
     <div className="container mx-auto min-h-[calc(100vh-4rem)] px-4 py-8">
-      <h1 className="text-foreground mb-8 text-center text-3xl font-bold">
-        Find Your College Mentor
-      </h1>
+      {heroSection}
       <PostsDisplay posts={allPosts} />
       <div ref={ref} />
       {isFetchingNextPage && (

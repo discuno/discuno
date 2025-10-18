@@ -8,11 +8,11 @@ import {
 } from '~/lib/schemas/calcom'
 import {
   cancelLocalBooking,
-  createAnalyticsEvent,
   createLocalBooking,
-  getUserIdByCalcomUserId,
   updateLocalBookingStatus,
-} from '~/server/queries'
+} from '~/lib/services/booking-service'
+import { getUserIdByCalcomUserId } from '~/lib/services/calcom-tokens-service'
+import { createAnalyticsEvent } from '~/server/dal/analytics'
 
 export async function POST(req: Request) {
   const signature = req.headers.get('x-cal-signature-256') ?? ''

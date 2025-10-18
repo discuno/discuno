@@ -8,7 +8,7 @@ import {
   type CreateCalcomUserResponse,
   type UpdateCalcomUserInput,
 } from '~/lib/calcom/schemas'
-import { storeCalcomTokensForUser } from '~/server/queries'
+import { storeCalcomTokensForUser } from '~/lib/services/calcom-tokens-service'
 
 /**
  * Add user to college-mentors team (core implementation)

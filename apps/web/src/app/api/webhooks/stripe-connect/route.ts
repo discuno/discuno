@@ -2,8 +2,8 @@ import { headers } from 'next/headers'
 import { NextResponse } from 'next/server'
 import type { Stripe } from 'stripe'
 import { env } from '~/env'
+import { upsertMentorStripeAccount } from '~/lib/services/stripe-service'
 import { stripe } from '~/lib/stripe'
-import { upsertMentorStripeAccount } from '~/server/queries'
 
 export async function POST(req: Request) {
   const signature = (await headers()).get('stripe-signature') ?? ''

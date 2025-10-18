@@ -14,16 +14,14 @@ import {
 import type { CreateCalcomUserInput, UpdateCalcomUserInput } from '~/lib/calcom/schemas'
 import { MINIMUM_PAID_BOOKING_PRICE } from '~/lib/constants'
 import { type UpdateCalcomToken, type UpdateMentorEventType } from '~/lib/schemas/db'
-import {
-  getFullProfile,
-  getMentorBookings,
-  getMentorCalcomTokens,
-  getMentorEventTypes,
-  getMentorStripeAccount,
-  updateCalcomTokensByUserId,
-  updateMentorEventType,
-  upsertMentorStripeAccount,
-} from '~/server/queries'
+import { updateMentorEventType } from '~/lib/services/calcom-service'
+import { updateCalcomTokensByUserId } from '~/lib/services/calcom-tokens-service'
+import { upsertMentorStripeAccount } from '~/lib/services/stripe-service'
+import { getMentorBookings } from '~/server/queries/bookings'
+import { getMentorCalcomTokens } from '~/server/queries/calcom'
+import { getMentorEventTypes } from '~/server/queries/event-types'
+import { getFullProfile } from '~/server/queries/profiles'
+import { getMentorStripeAccount } from '~/server/queries/stripe'
 
 /**
  * Get user's current Cal.com access token

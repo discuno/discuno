@@ -4,19 +4,19 @@ import 'server-only'
 import { revalidatePath } from 'next/cache'
 import { deleteProfileImage, extractPathnameFromBlobUrl } from '~/lib/blob'
 import {
-  getCurrentUserImage,
-  getOrCreateUserTimezone,
-  removeUserImage,
-  updateCompleteProfile,
-  updateUserImage,
-} from '~/server/queries'
+  getUserImageUrl,
+  setUserTimezone,
+  removeProfileImage,
+  completeUserProfile,
+  updateProfileImage,
+} from '~/lib/services/profile-service'
 
 export const updateUserProfileImage = async (imageUrl: string) => {
   // Get current user image to check for existing image
-  const currentImageUrl = await getCurrentUserImage()
+  const currentImageUrl = await getUserImageUrl()
 
   // Update user record with new image URL
-  await updateUserImage(imageUrl)
+  await updateProfileImage(imageUrl)
 
   // Delete old image if it exists and is a blob URL
   if (currentImageUrl?.includes('blob.vercel-storage.com')) {
@@ -42,10 +42,10 @@ export const updateUserProfileImage = async (imageUrl: string) => {
  */
 export const removeUserProfileImage = async () => {
   // Get current user image
-  const currentImageUrl = await getCurrentUserImage()
+  const currentImageUrl = await getUserImageUrl()
 
   // Update user record to remove image
-  await removeUserImage()
+  await removeProfileImage()
 
   // Delete image from blob storage if it's a blob URL
   if (currentImageUrl?.includes('blob.vercel-storage.com')) {
@@ -94,8 +94,8 @@ export const updateUserProfile = async (formData: FormData) => {
   }
 
   try {
-    // Update complete user profile using the query function
-    await updateCompleteProfile(updateData)
+    // Update complete user profile using the service function
+    await completeUserProfile(updateData)
 
     // Revalidate profile pages
     revalidatePath('/profile')
@@ -109,5 +109,5 @@ export const updateUserProfile = async (formData: FormData) => {
 }
 
 export const getOrCreateUserTimezoneAction = async (timezone: string) => {
-  await getOrCreateUserTimezone(timezone)
+  await setUserTimezone(timezone)
 }

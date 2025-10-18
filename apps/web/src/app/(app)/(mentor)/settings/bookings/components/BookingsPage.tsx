@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { getBookings } from '~/app/(app)/(mentor)/settings/actions'
 import { BookingList } from '~/app/(app)/(mentor)/settings/bookings/components/BookingList'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs'
-import type { getMentorBookings } from '~/server/queries'
+import type { getMentorBookings } from '~/server/queries/bookings'
 
 export type Booking = Awaited<ReturnType<typeof getMentorBookings>>[number]
 

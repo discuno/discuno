@@ -3,7 +3,7 @@ import 'server-only'
 import { eq, inArray, sql } from 'drizzle-orm'
 import { db } from '~/server/db'
 import { analyticsEvents, userProfiles } from '~/server/db/schema'
-import { revalidatePosts } from '~/server/queries'
+import { revalidatePosts } from '~/server/queries/posts'
 
 export const RANKING_EVENT_WEIGHTS = {
   PROFILE_VIEW: 0.3,

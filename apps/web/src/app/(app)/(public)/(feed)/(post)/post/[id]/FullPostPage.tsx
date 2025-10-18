@@ -26,7 +26,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { CardContent, CardHeader, CardTitle, Card as UICard } from '~/components/ui/card'
-import { getFullProfileByUserId, getPostById } from '~/server/queries'
+import { getPostById } from '~/server/queries/posts'
+import { getFullProfileByUserId } from '~/server/queries/profiles'
 
 export const PostPage = async ({ id }: { id: string }) => {
   const postId = Number(id)

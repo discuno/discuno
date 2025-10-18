@@ -1,4 +1,6 @@
-import { getFullProfile, getMajors, getSchools } from '~/server/queries'
+import type { Metadata } from 'next'
+import { getFullProfile } from '~/server/queries/profiles'
+import { getMajors, getSchools } from '~/server/queries/reference-data'
 import { EditProfileContent } from '../components/EditProfileContent'
 import { ProfileShell } from '../components/ProfileShell'
 
@@ -30,7 +32,7 @@ const EditProfilePage = async () => {
 
 export default EditProfilePage
 
-export const metadata = {
+export const metadata: Metadata = {
   title: 'Edit Profile | Discuno',
   description: 'Update your profile information and academic details on Discuno',
 }

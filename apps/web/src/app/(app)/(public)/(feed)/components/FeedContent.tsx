@@ -3,7 +3,7 @@ import { PostGrid } from '~/app/(app)/(public)/(feed)/(post)/PostGrid'
 import { FilterButton } from '~/app/(app)/(public)/(feed)/components/FilterButton'
 import { Button } from '~/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '~/components/ui/popover'
-import { getMajors, getSchools } from '~/server/queries'
+import { getMajors, getSchools } from '~/server/queries/reference-data'
 
 interface FeedContentProps {
   searchParams: { school?: string; major?: string; gradYear?: string }

@@ -15,7 +15,8 @@ import { BadRequestError, ExternalApiError, StripeError } from '~/lib/errors'
 import { stripe } from '~/lib/stripe'
 import { db } from '~/server/db'
 import { mentorStripeAccounts, payments } from '~/server/db/schema'
-import { getMentorCalcomTokensByUsername, getMentorEnabledEventTypes } from '~/server/queries'
+import { getMentorCalcomTokensByUsername } from '~/server/queries/calcom'
+import { getMentorEnabledEventTypes } from '~/server/queries/event-types'
 
 interface BookingData {
   name: string

@@ -5,7 +5,8 @@ import type { BookingData } from '~/app/(app)/(public)/mentor/[username]/book/co
 import { BookingModal } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingModal'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { Badge } from '~/components/ui/badge'
-import { getFullProfileByUserId, getPostById } from '~/server/queries'
+import { getPostById } from '~/server/queries/posts'
+import { getFullProfileByUserId } from '~/server/queries/profiles'
 
 const PostModal = async ({ params }: { params: Promise<{ id: string }> }) => {
   const { id: postId } = await params

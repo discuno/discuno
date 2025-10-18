@@ -5,7 +5,8 @@ import { headers } from 'next/headers'
 import { getAuthSession } from '~/lib/auth/auth-utils'
 import { ratelimit } from '~/lib/rate-limiter'
 import type { ClientAnalyticsEvent } from '~/lib/schemas/db/analyticsEvents'
-import { createAnalyticsEvent, getInfiniteScrollPosts, getPostsByFilters } from '~/server/queries'
+import { createAnalyticsEvent } from '~/server/dal/analytics'
+import { getInfiniteScrollPosts, getPostsByFilters } from '~/server/queries/posts'
 
 export const logAnalyticsEvent = async (input: ClientAnalyticsEvent) => {
   const session = await getAuthSession()

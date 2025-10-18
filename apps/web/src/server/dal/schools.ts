@@ -1,0 +1,103 @@
+import 'server-only'
+
+import { eq } from 'drizzle-orm'
+import { selectMajorSchema, selectSchoolSchema } from '~/lib/schemas/db'
+import { db } from '~/server/db'
+import { majors, schools, userMajors, userSchools } from '~/server/db/schema'
+
+/**
+ * Data Access Layer for schools, majors, and user associations
+ * Raw database operations with no caching or auth checks
+ */
+
+/**
+ * Get all schools
+ */
+export const getAllSchools = async () => {
+  return db.query.schools.findMany()
+}
+
+/**
+ * Get all majors
+ */
+export const getAllMajors = async () => {
+  return db.query.majors.findMany()
+}
+
+/**
+ * Find school by name
+ */
+export const findSchoolByName = async (schoolName: string): Promise<number | null> => {
+  const name = selectSchoolSchema.shape.name.parse(schoolName)
+  const [school] = await db
+    .select({ id: schools.id })
+    .from(schools)
+    .where(eq(schools.name, name))
+    .limit(1)
+
+  return school?.id ?? null
+}
+
+/**
+ * Find major by name
+ */
+export const findMajorByName = async (majorName: string): Promise<number | null> => {
+  const name = selectMajorSchema.shape.name.parse(majorName)
+  const [major] = await db
+    .select({ id: majors.id })
+    .from(majors)
+    .where(eq(majors.name, name))
+    .limit(1)
+
+  return major?.id ?? null
+}
+
+/**
+ * Get user's schools
+ */
+export const getUserSchools = async (userId: string) => {
+  return db.query.userSchools.findMany({
+    where: eq(userSchools.userId, userId),
+    with: {
+      school: true,
+    },
+  })
+}
+
+/**
+ * Get user's majors
+ */
+export const getUserMajors = async (userId: string) => {
+  return db.query.userMajors.findMany({
+    where: eq(userMajors.userId, userId),
+    with: {
+      major: true,
+    },
+  })
+}
+
+/**
+ * Replace user's school associations (delete all, then insert new)
+ */
+export const replaceUserSchools = async (userId: string, schoolIds: number[]): Promise<void> => {
+  // Delete existing associations
+  await db.delete(userSchools).where(eq(userSchools.userId, userId))
+
+  // Insert new associations
+  if (schoolIds.length > 0) {
+    await db.insert(userSchools).values(schoolIds.map(schoolId => ({ userId, schoolId })))
+  }
+}
+
+/**
+ * Replace user's major associations (delete all, then insert new)
+ */
+export const replaceUserMajors = async (userId: string, majorIds: number[]): Promise<void> => {
+  // Delete existing associations
+  await db.delete(userMajors).where(eq(userMajors.userId, userId))
+
+  // Insert new associations
+  if (majorIds.length > 0) {
+    await db.insert(userMajors).values(majorIds.map(majorId => ({ userId, majorId })))
+  }
+}

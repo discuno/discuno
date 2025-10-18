@@ -5,7 +5,7 @@ import { cache } from 'react'
 import { createCalcomUser, fetchCalcomEventTypesByUsername } from '~/lib/calcom'
 import { db } from '~/server/db'
 import { calcomTokens, mentorEventTypes } from '~/server/db/schema'
-import { getCalcomUsernameByUserId } from '~/server/queries'
+import { getCalcomUsernameByUserId } from '~/server/queries/calcom'
 
 /**
  * Data Access Layer for authentication operations

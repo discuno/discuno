@@ -1,6 +1,6 @@
 import { getMentorOnboardingStatus } from '~/app/(app)/(mentor)/settings/actions'
 import { NavBarBase } from '~/app/(app)/(layout)/nav/NavigationClient'
-import { getProfileWithImageCached } from '~/server/queries'
+import { getProfileWithImageCached } from '~/server/queries/profiles'
 
 export const NavBar = async () => {
   // Get profile data for authenticated users, or null if not authenticated
