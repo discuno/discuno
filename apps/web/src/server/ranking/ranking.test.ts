@@ -4,7 +4,7 @@ import { analyticsEvents, userProfiles, users } from '~/server/db/schema'
 import { testDb } from '~/server/db/test-db'
 import { processAnalyticsEvents } from './service'
 
-vi.mock('~/server/queries', () => ({
+vi.mock('~/server/queries/posts', () => ({
   revalidatePosts: vi.fn(),
 }))
 
