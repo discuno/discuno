@@ -19,6 +19,7 @@ import {
 import { Input } from '~/components/ui/input'
 import { Label } from '~/components/ui/label'
 import { Switch } from '~/components/ui/switch'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '~/components/ui/tooltip'
 
 interface EventTypePreference {
   id: number
@@ -203,11 +204,30 @@ export const EventTypeSettingsContent = ({
                 <div className="flex items-start justify-between gap-6">
                   <div className="flex-1 space-y-3">
                     <div className="flex items-center gap-3">
-                      <Switch
-                        checked={eventType.isEnabled}
-                        onCheckedChange={checked => onToggleEventType(eventType, checked)}
-                        disabled={updateEventTypeMutation.isPending}
-                      />
+                      {eventType.customPrice && eventType.customPrice > 0 && !isStripeActive ? (
+                        <TooltipProvider>
+                          <Tooltip delayDuration={0}>
+                            <TooltipTrigger asChild>
+                              <div>
+                                <Switch
+                                  checked={eventType.isEnabled}
+                                  onCheckedChange={checked => onToggleEventType(eventType, checked)}
+                                  disabled={updateEventTypeMutation.isPending}
+                                />
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Complete Stripe setup to enable paid event types</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      ) : (
+                        <Switch
+                          checked={eventType.isEnabled}
+                          onCheckedChange={checked => onToggleEventType(eventType, checked)}
+                          disabled={updateEventTypeMutation.isPending}
+                        />
+                      )}
                       <div className="flex items-center gap-2">
                         <h4 className="font-medium">{eventType.title}</h4>
                         <Badge variant="outline" className="gap-1 text-xs">
@@ -263,29 +283,30 @@ export const EventTypeSettingsContent = ({
                 <Input
                   id="price"
                   type="number"
-                  min="5"
+                  min="0"
                   step="1"
-                  placeholder="5.00"
+                  placeholder="0.00"
                   value={tempPrice}
                   onChange={e => setTempPrice(e.target.value)}
                   className="pl-9"
-                  disabled={!isStripeActive}
                 />
               </div>
               <p className="text-muted-foreground text-xs">
-                {isStripeActive
-                  ? 'Leave empty for free sessions. Minimum price is $5.00.'
-                  : 'Complete Stripe setup to enable paid pricing'}
+                Leave empty or set to 0 for free sessions. Minimum paid price is $5.00.
               </p>
             </div>
 
-            {!isStripeActive && (
-              <Alert>
-                <AlertDescription>
-                  You need to complete your Stripe setup before setting paid pricing.
-                </AlertDescription>
-              </Alert>
-            )}
+            {!isStripeActive &&
+              tempPrice &&
+              parseFloat(tempPrice) > 0 &&
+              parseFloat(tempPrice) >= 5 && (
+                <Alert className="border-yellow-500/50 bg-yellow-50/50 dark:bg-yellow-950/20">
+                  <AlertDescription className="text-sm">
+                    You need to complete Stripe setup and enable this event type to accept bookings
+                    for paid sessions.
+                  </AlertDescription>
+                </Alert>
+              )}
 
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setShowPricingDialog(false)}>
@@ -295,7 +316,6 @@ export const EventTypeSettingsContent = ({
                 onClick={onSavePricing}
                 disabled={
                   updateEventTypeMutation.isPending ||
-                  !isStripeActive ||
                   parseFloat(tempPrice) < 0 ||
                   (parseFloat(tempPrice) > 0 && parseFloat(tempPrice) < 5)
                 }

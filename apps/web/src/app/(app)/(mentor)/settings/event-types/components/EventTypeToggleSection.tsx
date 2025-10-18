@@ -154,6 +154,14 @@ export const EventTypeToggleSection = () => {
   }, [effectiveAccountId])
 
   const handleToggleEventType = async (eventType: EventTypePreference, checked: boolean) => {
+    // Prevent enabling paid event types without Stripe
+    if (checked && eventType.customPrice && eventType.customPrice > 0) {
+      if (!stripeStatus?.chargesEnabled) {
+        toast.error('Complete Stripe setup to enable paid event types')
+        return
+      }
+    }
+
     await updateEventTypeMutation.mutateAsync({
       eventTypeId: eventType.id,
       data: {
@@ -172,12 +180,6 @@ export const EventTypeToggleSection = () => {
     if (!selectedEventType) return
 
     const priceInCents = tempPrice ? Math.round(parseFloat(tempPrice) * 100) : 0
-
-    // If user is trying to set a price but doesn't have Stripe connected
-    if (priceInCents && priceInCents > 0 && !stripeStatus?.chargesEnabled) {
-      toast.error('Please complete your Stripe setup before setting paid pricing')
-      return
-    }
 
     await updateEventTypeMutation.mutateAsync({
       eventTypeId: selectedEventType.id,
