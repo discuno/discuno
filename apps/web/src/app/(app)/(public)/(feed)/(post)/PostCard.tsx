@@ -33,9 +33,7 @@ export const PostCard = ({ card }: { card: Card; index: number }) => {
         ratio={16 / 9}
         className="relative flex w-full items-center justify-center overflow-hidden"
         style={{
-          background: `radial-gradient(circle at center, ${
-            card.schoolSecondaryColor ?? '#4A5568'
-          } 0%, ${card.schoolPrimaryColor ?? '#1A202C'} 100%)`,
+          background: `radial-gradient(circle at center, ${card.schoolSecondaryColor ?? '#4A5568'} 0%, ${card.schoolPrimaryColor ?? '#1A202C'} 100%)`,
         }}
       >
         {card.userImage ? (
