@@ -1,19 +1,18 @@
 'use client'
 
-import { useTheme } from 'next-themes'
-import Image from 'next/image'
-import Link from 'next/link'
 import {
-  Users,
-  Target,
-  Heart,
-  Shield,
-  Zap,
-  TrendingUp,
   Award,
   GraduationCap,
+  Heart,
   Lightbulb,
+  Shield,
+  Target,
+  TrendingUp,
+  Users,
+  Zap,
 } from 'lucide-react'
+import Image from 'next/image'
+import Link from 'next/link'
 import { Icons } from '~/components/shared/icons'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
 
@@ -49,8 +48,6 @@ const stats = [
 ]
 
 const AboutPage = () => {
-  const { theme } = useTheme()
-
   return (
     <div className="text-foreground min-h-screen">
       {/* Hero Section */}
@@ -274,9 +271,19 @@ const AboutPage = () => {
                 rel="noopener noreferrer"
                 className="transition-opacity hover:opacity-80"
               >
+                {/* Light theme banner */}
                 <Image
-                  src={theme === 'dark' ? '/book-with-cal-dark.svg' : '/book-with-cal-light.svg'}
                   alt="Book us with Cal.com"
+                  src="/book-with-cal-light.svg"
+                  className="dark:hidden"
+                  width={200}
+                  height={50}
+                />
+                {/* Dark theme banner */}
+                <Image
+                  alt="Book us with Cal.com"
+                  src="/book-with-cal-dark.svg"
+                  className="hidden dark:block"
                   width={200}
                   height={50}
                 />
