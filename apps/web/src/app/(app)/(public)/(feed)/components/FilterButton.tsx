@@ -1,6 +1,6 @@
 'use client'
 
-import { Check, ChevronsUpDown } from 'lucide-react'
+import { Check, ChevronsUpDown, X } from 'lucide-react'
 import { useState } from 'react'
 
 import { useRouter } from 'next/navigation'
@@ -52,52 +52,73 @@ export const FilterButton = ({ filterItems, queryName, startValue }: FilterProps
     setOpen(false)
   }
 
+  const handleClearFilter = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const url = new URL(window.location.href)
+    url.searchParams.delete(queryName)
+    setValue('')
+    router.push(url.toString())
+  }
+
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
+    <div className="flex items-center gap-1">
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className="focus:ring-primary w-[225px] justify-between focus:ring-2 dark:bg-gray-700 dark:text-gray-200"
+          >
+            <span className="truncate">
+              {value
+                ? filterItems.find(item => item.value === value)?.label
+                : `Select ${queryName}...`}
+            </span>
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="border/40 bg-background/60 w-[225px] p-0 backdrop-blur-md">
+          <Command>
+            <CommandInput placeholder={`Search ${queryName}...`} className="bg-transparent" />
+            <CommandList>
+              <CommandEmpty>No {queryName} found.</CommandEmpty>
+              <CommandGroup>
+                {filterItems.map(item => (
+                  <CommandItem
+                    key={item.value}
+                    value={item.value}
+                    keywords={[item.label]}
+                    onSelect={() => {
+                      handleFilterChange(item.id)
+                    }}
+                    className="text-foreground hover:bg-muted"
+                  >
+                    <Check
+                      className={cn(
+                        'mr-2 h-4 w-4',
+                        value === item.value ? 'opacity-100' : 'opacity-0'
+                      )}
+                    />
+                    {item.label}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+      {value && (
         <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className="focus:ring-primary w-[225px] justify-between focus:ring-2 dark:bg-gray-700 dark:text-gray-200"
+          variant="ghost"
+          size="icon"
+          onClick={handleClearFilter}
+          className="text-muted-foreground hover:text-foreground h-9 w-9 shrink-0"
+          aria-label={`Clear ${queryName} filter`}
         >
-          <span className="truncate">
-            {value
-              ? filterItems.find(item => item.value === value)?.label
-              : `Select ${queryName}...`}
-          </span>
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          <X className="h-4 w-4" />
         </Button>
-      </PopoverTrigger>
-      <PopoverContent className="border/40 bg-background/60 w-[225px] p-0 backdrop-blur-md">
-        <Command>
-          <CommandInput placeholder={`Search ${queryName}...`} className="bg-transparent" />
-          <CommandList>
-            <CommandEmpty>No {queryName} found.</CommandEmpty>
-            <CommandGroup>
-              {filterItems.map(item => (
-                <CommandItem
-                  key={item.value}
-                  value={item.value}
-                  keywords={[item.label]}
-                  onSelect={() => {
-                    handleFilterChange(item.id)
-                  }}
-                  className="text-foreground hover:bg-muted"
-                >
-                  <Check
-                    className={cn(
-                      'mr-2 h-4 w-4',
-                      value === item.value ? 'opacity-100' : 'opacity-0'
-                    )}
-                  />
-                  {item.label}
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+      )}
+    </div>
   )
 }
