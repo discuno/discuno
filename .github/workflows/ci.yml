@@ -84,4 +84,6 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Run tests
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: pnpm test:run

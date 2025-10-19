@@ -41,6 +41,8 @@ jobs:
         run: pnpm lint
 
       - name: Test
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: pnpm test
 
       - name: Create Release
