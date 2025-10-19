@@ -160,14 +160,6 @@
     "secondaryColor": "#FFD100"
   },
   {
-    "name": "Case Western Reserve University",
-    "domainPrefix": "case",
-    "location": "Cleveland, OH",
-    "image": null,
-    "primaryColor": "#1C355E",
-    "secondaryColor": "#FFFFFF"
-  },
-  {
     "name": "Central Methodist College",
     "domainPrefix": "cmc",
     "location": "Claremont, CA",
@@ -182,14 +174,6 @@
     "image": null,
     "primaryColor": "#E41C38",
     "secondaryColor": "#000000"
-  },
-  {
-    "name": "Clark University",
-    "domainPrefix": "clarku",
-    "location": "Worcester, MA",
-    "image": null,
-    "primaryColor": "#D6001C",
-    "secondaryColor": "#231F20"
   },
   {
     "name": "Clemson University",
@@ -633,7 +617,7 @@
   },
   {
     "name": "Syracuse University",
-    "domainPrefix": "syracuse",
+    "domainPrefix": "syr",
     "location": "Syracuse, NY",
     "image": null,
     "primaryColor": "#F76900",
@@ -1102,14 +1086,6 @@
     "image": null,
     "primaryColor": "#003B71",
     "secondaryColor": "#FFCC00"
-  },
-  {
-    "name": "University of Rochester",
-    "domainPrefix": "rochester",
-    "location": "Rochester, NY",
-    "image": null,
-    "primaryColor": "#00205B",
-    "secondaryColor": "#FFCD00"
   },
   {
     "name": "University of San Diego",
