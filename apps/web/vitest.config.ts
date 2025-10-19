@@ -3,7 +3,10 @@ import dotenv from 'dotenv'
 import tsconfigPaths from 'vite-tsconfig-paths'
 import { defineConfig } from 'vitest/config'
 
-dotenv.config({ path: '.env.test', override: true })
+// Load .env.test if DATABASE_URL is not already set (e.g., in CI)
+if (!process.env.DATABASE_URL) {
+  dotenv.config({ path: '.env.test', override: true })
+}
 
 export default defineConfig({
   plugins: [tsconfigPaths(), react()],
