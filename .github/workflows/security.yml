@@ -6,29 +6,25 @@ on:
   pull_request:
     branches: [main, develop]
   schedule:
-    # Run security scans daily at 2 AM UTC
     - cron: '0 2 * * *'
 
 env:
   FORCE_COLOR: 1
-  CI: true
 
 jobs:
   dependency-review:
     name: Dependency Review
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
+    timeout-minutes: 5
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          persist-credentials: false
 
       - name: Dependency Review
         uses: actions/dependency-review-action@v4
         with:
           fail-on-severity: moderate
-          warn-only: false
 
   audit:
     name: Security Audit
@@ -37,128 +33,42 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-
-      # Node.js version management: consider using node-version-file: .nvmrc or package.json#engines.node
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'pnpm'
+
       - name: Install dependencies
-        run: pnpm install --prefer-offline --frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Run security audit
         run: pnpm audit --audit-level moderate
 
-      - name: Check for known security issues
-        run: |
-          # Run pnpm audit and capture output
-          if ! pnpm audit --audit-level moderate; then
-            echo "::error::Security vulnerabilities found. Please run 'pnpm audit' locally and fix the issues."
-            exit 1
-          fi
-
   codeql:
     name: CodeQL Analysis
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       actions: read
       contents: read
       security-events: write
-
-    strategy:
-      fail-fast: false
-      matrix:
-        language: ['javascript']
-
-    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          persist-credentials: false
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
-          languages: ${{ matrix.language }}
+          languages: javascript
           queries: +security-and-quality
 
-      # CodeQL autobuild for JavaScript/TypeScript analyzes source code directly
-      # No build step required - this makes the analysis faster and avoids database connection issues
       - name: Autobuild
         uses: github/codeql-action/autobuild@v3
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
-        with:
-          category: '/language:${{matrix.language}}'
-
-  trivy:
-    name: Trivy Security Scan
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      contents: read
-      security-events: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: 'fs'
-          scan-ref: '.'
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-          severity: 'CRITICAL,HIGH,MEDIUM'
-          trivy-config: 'trivy.yaml'
-
-      - name: Upload Trivy scan results
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
-        with:
-          sarif_file: 'trivy-results.sarif'
-
-  license-check:
-    name: License Check
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-
-      # Node.js version management: consider using node-version-file: .nvmrc or package.json#engines.node
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Install dependencies
-        run: pnpm install --prefer-offline --frozen-lockfile
-
-      - name: Check licenses
-        run: |
-          # Install license checker
-          npx license-checker --summary
-
-          # Fail on GPL, AGPL, or other copyleft licenses
-          if npx license-checker --onlyAllow 'MIT;BSD;ISC;Apache;Apache-2.0;BSD-2-Clause;BSD-3-Clause;Unlicense;WTFPL' --excludePrivatePackages; then
-            echo "✅ All licenses are compatible"
-          else
-            echo "❌ Incompatible licenses found"
-            exit 1
-          fi

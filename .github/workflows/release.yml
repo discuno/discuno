@@ -2,126 +2,48 @@ name: Release
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 env:
   FORCE_COLOR: 1
-  CI: true
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-      id-token: write
-    timeout-minutes: 30
+    timeout-minutes: 10
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-          persist-credentials: false
-
-      # Node.js version management: consider using node-version-file: .nvmrc or package.json#engines.node
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
 
-      - name: Install dependencies
-        run: pnpm install --prefer-offline --frozen-lockfile
-
-      - name: Build packages
-        env:
-          SKIP_ENV_VALIDATION: true
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          # Stripe keys (use placeholder if not set)
-          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY || 'sk_test_placeholder' }}
-          NEXT_PUBLIC_STRIPE_PUBLIC_KEY: ${{ secrets.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 'pk_test_placeholder' }}
-          # Cal.com API credentials
-          NEXT_PUBLIC_X_CAL_ID: ${{ secrets.CALCOM_CLIENT_ID || 'placeholder' }}
-          X_CAL_SECRET_KEY: ${{ secrets.CALCOM_CLIENT_SECRET || 'placeholder' }}
-          # Email service (Resend)
-          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY || 're_placeholder' }}
-          # Email provider for NextAuth (Nodemailer)
-          AUTH_EMAIL_SERVER: ${{ secrets.AUTH_EMAIL_SERVER || 'smtp://placeholder@example.com:password@smtp.placeholder.com:587' }}
-          AUTH_EMAIL_FROM: ${{ secrets.AUTH_EMAIL_FROM || 'noreply@placeholder.com' }}
-          # Other API keys that might be needed during build
-          NEXTAUTH_SECRET: 'test-secret-for-build-only'
-          NEXTAUTH_URL: 'http://localhost:3000'
-        run: pnpm build
-
-      - name: Create Release Pull Request or Publish
-        id: changesets
-        uses: changesets/action@v1
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          title: 'chore: release packages'
-          commit: 'chore: release packages'
-          publish: pnpm release
-          createGithubReleases: true
+          node-version-file: '.nvmrc'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Test
+        run: pnpm test
+
+      - name: Create Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SKIP_ENV_VALIDATION: true
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          # Stripe keys (use placeholder if not set)
-          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY || 'sk_test_placeholder' }}
-          NEXT_PUBLIC_STRIPE_PUBLIC_KEY: ${{ secrets.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 'pk_test_placeholder' }}
-          # Cal.com API credentials
-          NEXT_PUBLIC_X_CAL_ID: ${{ secrets.CALCOM_CLIENT_ID || 'placeholder' }}
-          X_CAL_SECRET_KEY: ${{ secrets.CALCOM_CLIENT_SECRET || 'placeholder' }}
-          NEXT_PUBLIC_CALCOM_API_URL: ${{ secrets.CALCOM_API_URL || 'https://api.cal.com/v2' }}
-          # Email service (Resend)
-          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY || 're_placeholder' }}
-          # Email provider for NextAuth (Nodemailer)
-          AUTH_EMAIL_SERVER: ${{ secrets.AUTH_EMAIL_SERVER || 'smtp://placeholder@example.com:password@smtp.placeholder.com:587' }}
-          AUTH_EMAIL_FROM: ${{ secrets.AUTH_EMAIL_FROM || 'noreply@placeholder.com' }}
-          # PostHog analytics
-          NEXT_PUBLIC_POSTHOG_KEY: ${{ secrets.POSTHOG_KEY || 'phc_placeholder' }}
-          NEXT_PUBLIC_POSTHOG_HOST: ${{ secrets.POSTHOG_HOST || 'https://app.posthog.com' }}
-          NEXT_PUBLIC_POSTHOG_UI_HOST: ${{ secrets.POSTHOG_UI_HOST || 'https://app.posthog.com' }}
-          # Other required build variables
-          NEXTAUTH_SECRET: 'test-secret-for-build-only'
-          NEXTAUTH_URL: 'http://localhost:3000'
-          NEXT_PUBLIC_BASE_URL: 'http://localhost:3000'
-
-  deploy-docs:
-    name: Deploy Documentation
-    runs-on: ubuntu-latest
-    needs: release
-    if: always()
-    timeout-minutes: 15
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-
-      # Node.js version management: consider using node-version-file: .nvmrc or package.json#engines.node
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Install dependencies
-        run: pnpm install --prefer-offline --frozen-lockfile
-
-      - name: Build documentation
-        run: |
-          echo "📚 Documentation deployment will be implemented here"
-          echo "This could include:"
-          echo "- Storybook for component docs"
-          echo "- API documentation"
-          echo "- Deployment guides"
+        run: pnpm exec semantic-release
