@@ -1,4 +1,4 @@
-'server only'
+import 'server-only'
 
 import { type PutBlobResult, put } from '@vercel/blob'
 import sharp from 'sharp'

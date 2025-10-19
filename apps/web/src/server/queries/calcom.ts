@@ -1,10 +1,10 @@
-'server only'
+import 'server-only'
 
 import { cache } from 'react'
-import type { CalcomToken } from '~/lib/schemas/db'
 import { requireAuth } from '~/lib/auth/auth-utils'
 import { NotFoundError } from '~/lib/errors'
-import { getTokensByUserId, getUsernameByUserId, getTokensByUsername } from '~/server/dal/calcom'
+import type { CalcomToken } from '~/lib/schemas/db'
+import { getTokensByUserId, getTokensByUsername, getUsernameByUserId } from '~/server/dal/calcom'
 
 /**
  * Query Layer for Cal.com tokens

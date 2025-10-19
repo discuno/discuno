@@ -1,13 +1,13 @@
-'server only'
+import 'server-only'
 
 import { eq } from 'drizzle-orm'
 import { cache } from 'react'
 import type { FullUserProfile } from '~/app/types'
-import type { UserProfile } from '~/lib/schemas/db'
 import { getAuthSession, requireAuth } from '~/lib/auth/auth-utils'
 import { NotFoundError } from '~/lib/errors'
-import { getUserById, getUserImageById } from '~/server/dal/users'
+import type { UserProfile } from '~/lib/schemas/db'
 import { getProfileByUserId } from '~/server/dal/profiles'
+import { getUserById, getUserImageById } from '~/server/dal/users'
 import { db } from '~/server/db'
 import {
   calcomTokens,

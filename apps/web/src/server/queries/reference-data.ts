@@ -1,5 +1,5 @@
-'server only'
 'use cache'
+import 'server-only'
 
 import { cacheLife } from 'next/dist/server/use-cache/cache-life'
 import { cache } from 'react'
