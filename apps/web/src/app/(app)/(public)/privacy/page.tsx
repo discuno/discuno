@@ -1,5 +1,6 @@
 import { Shield } from 'lucide-react'
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
 
 export const metadata: Metadata = {
@@ -46,9 +47,9 @@ export default function PrivacyPage() {
               </p>
               <p className="border-primary/20 bg-primary/5 rounded-lg border p-3">
                 Please also review our{' '}
-                <a href="/terms" className="text-primary font-semibold underline">
+                <Link href="/terms" className="text-primary font-semibold underline">
                   Terms of Service
-                </a>
+                </Link>
                 , which govern your use of Discuno.
               </p>
             </CardContent>

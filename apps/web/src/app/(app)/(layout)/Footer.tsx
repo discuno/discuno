@@ -1,3 +1,4 @@
+import Link from 'next/dist/client/link'
 import Image from 'next/image'
 
 /**
@@ -51,15 +52,15 @@ export const Footer = () => {
 
             {/* Footer Links - right side on desktop */}
             <div className="text-muted-foreground flex flex-wrap items-center justify-center gap-4 text-xs md:justify-end">
-              <a href="/about" className="hover:text-foreground transition-colors">
+              <Link href="/about" className="hover:text-foreground transition-colors">
                 About
-              </a>
-              <a href="/privacy" className="hover:text-foreground transition-colors">
+              </Link>
+              <Link href="/privacy" className="hover:text-foreground transition-colors">
                 Privacy
-              </a>
-              <a href="/terms" className="hover:text-foreground transition-colors">
+              </Link>
+              <Link href="/terms" className="hover:text-foreground transition-colors">
                 Terms
-              </a>
+              </Link>
               <a
                 href="https://github.com/bradmcnew/discuno"
                 target="_blank"

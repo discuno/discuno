@@ -188,9 +188,9 @@ export const OnboardingDashboard = ({ initialStatus }: OnboardingDashboardProps)
         <CardContent className="text-muted-foreground space-y-2 text-sm">
           <p>
             If you have any questions about setting up your mentor profile, check out our{' '}
-            <a href="#" className="text-primary underline-offset-4 hover:underline">
+            <Link href="#" className="text-primary underline-offset-4 hover:underline">
               Getting Started Guide
-            </a>
+            </Link>
             .
           </p>
           <p>

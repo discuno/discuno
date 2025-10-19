@@ -10,6 +10,8 @@ import {
   Settings2,
   User,
 } from 'lucide-react'
+import Link from 'next/link'
+import { Badge } from '~/components/ui/badge'
 import {
   SidebarGroup,
   SidebarGroupLabel,
@@ -17,7 +19,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '~/components/ui/sidebar'
-import { Badge } from '~/components/ui/badge'
 import { StatusDot } from '~/components/ui/status-dot'
 
 const iconMap = {
@@ -68,7 +69,7 @@ export function NavMain({ items }: NavMainProps) {
                   tooltip={item.title}
                   className={item.isOnboarding && item.badge ? 'font-semibold' : ''}
                 >
-                  <a href={item.url} className="flex items-center justify-between">
+                  <Link href={item.url} className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Icon />
                       <span>{item.title}</span>
@@ -84,7 +85,7 @@ export function NavMain({ items }: NavMainProps) {
                         </Badge>
                       )
                     )}
-                  </a>
+                  </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             )
@@ -118,7 +119,7 @@ export function NavMain({ items }: NavMainProps) {
                       </SidebarMenuButton>
                     ) : (
                       <SidebarMenuButton asChild tooltip={subItem.title}>
-                        <a href={subItem.url}>
+                        <Link href={subItem.url}>
                           <SubIcon />
                           <div className="flex flex-col items-start">
                             <span>{subItem.title}</span>
@@ -128,7 +129,7 @@ export function NavMain({ items }: NavMainProps) {
                               </span>
                             )}
                           </div>
-                        </a>
+                        </Link>
                       </SidebarMenuButton>
                     )}
                   </SidebarMenuItem>
