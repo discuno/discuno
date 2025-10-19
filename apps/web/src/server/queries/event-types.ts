@@ -1,11 +1,11 @@
-'server only'
+import 'server-only'
 
 import { cache } from 'react'
-import type { MentorEventType } from '~/lib/schemas/db'
 import { requireAuth } from '~/lib/auth/auth-utils'
+import type { MentorEventType } from '~/lib/schemas/db'
 import {
-  getEventTypesByUserId,
   getEnabledEventTypesWithStripeStatus,
+  getEventTypesByUserId,
 } from '~/server/dal/event-types'
 
 /**

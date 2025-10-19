@@ -1,8 +1,8 @@
-'server only'
+import 'server-only'
 
 import { cache } from 'react'
-import type { MentorStripeAccount } from '~/lib/schemas/db'
 import { requireAuth } from '~/lib/auth/auth-utils'
+import type { MentorStripeAccount } from '~/lib/schemas/db'
 import { getStripeAccountByUserId } from '~/server/dal/stripe'
 
 /**
