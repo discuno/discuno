@@ -1,0 +1,1274 @@
+[
+  {
+    "name": "American University",
+    "domainPrefix": "american",
+    "location": "Washington, DC",
+    "image": null,
+    "primaryColor": "#003DA5",
+    "secondaryColor": "#E41C38"
+  },
+  {
+    "name": "Amherst College",
+    "domainPrefix": "amherst",
+    "location": "Amherst, MA",
+    "image": null,
+    "primaryColor": "#502D7F",
+    "secondaryColor": "#FFFFFF"
+  },
+  {
+    "name": "Appalachian State University",
+    "domainPrefix": "appstate",
+    "location": "Boone, NC",
+    "image": null,
+    "primaryColor": "#FFCC00",
+    "secondaryColor": "#000000"
+  },
+  {
+    "name": "Arizona State University",
+    "domainPrefix": "asu",
+    "location": "Tempe, AZ",
+    "image": null,
+    "primaryColor": "#8C1D40",
+    "secondaryColor": "#FFC627"
+  },
+  {
+    "name": "Auburn University",
+    "domainPrefix": "auburn",
+    "location": "Auburn, AL",
+    "image": null,
+    "primaryColor": "#0C2340",
+    "secondaryColor": "#E87722"
+  },
+  {
+    "name": "Baylor University",
+    "domainPrefix": "baylor",
+    "location": "Waco, TX",
+    "image": null,
+    "primaryColor": "#154734",
+    "secondaryColor": "#FFB81C"
+  },
+  {
+    "name": "Belmont University",
+    "domainPrefix": "belmont",
+    "location": "Nashville, TN",
+    "image": null,
+    "primaryColor": "#8B2332",
+    "secondaryColor": "#FFFFFF"
+  },
+  {
+    "name": "Bentley University",
+    "domainPrefix": "bentley",
+    "location": "Waltham, MA",
+    "image": null,
+    "primaryColor": "#003C71",
+    "secondaryColor": "#C8102E"
+  },
+  {
+    "name": "Binghamton University",
+    "domainPrefix": "binghamton",
+    "location": "Binghamton, NY",
+    "image": null,
+    "primaryColor": "#1B5633",
+    "secondaryColor": "#FFFFFF"
+  },
+  {
+    "name": "Boise State University",
+    "domainPrefix": "boisestate",
+    "location": "Boise, ID",
+    "image": null,
+    "primaryColor": "#0033A0",
+    "secondaryColor": "#D64309"
+  },
+  {
+    "name": "Boston College",
+    "domainPrefix": "bc",
+    "location": "Chestnut Hill, MA",
+    "image": null,
+    "primaryColor": "#8A100B",
+    "secondaryColor": "#B4975A"
+  },
+  {
+    "name": "Boston University",
+    "domainPrefix": "bu",
+    "location": "Boston, MA",
+    "image": null,
+    "primaryColor": "#CC0000",
+    "secondaryColor": "#FFFFFF"
+  },
+  {
+    "name": "Bowdoin College",
+    "domainPrefix": "bowdoin",
+    "location": "Brunswick, ME",
+    "image": null,
+    "primaryColor": "#000000",
+    "secondaryColor": "#FFFFFF"
+  },
+  {
+    "name": "Brandeis University",
+    "domainPrefix": "brandeis",
+    "location": "Waltham, MA",
+    "image": null,
+    "primaryColor": "#003478",
+    "secondaryColor": "#FFFFFF"
+  },
+  {
+    "name": "Brigham Young University",
+    "domainPrefix": "byu",
+    "location": "Provo, UT",
+    "image": null,
+    "primaryColor": "#002E5D",
+    "secondaryColor": "#FFFFFF"
+  },
+  {
+    "name": "Brown University",
+    "domainPrefix": "brown",
+    "location": "Providence, RI",
+    "image": null,
+    "primaryColor": "#4E3629",
+    "secondaryColor": "#FFFFFF"
+  },
+  {
+    "name": "California State University, Fullerton",
+    "domainPrefix": "fullerton",
+    "location": "Fullerton, CA",
+    "image": null,
+    "primaryColor": "#00274D",
+    "secondaryColor": "#FF6600"
+  },
+  {
+    "name": "California State University, Long Beach",
+    "domainPrefix": "csulb",
+    "location": "Long Beach, CA",
+    "image": null,
+    "primaryColor": "#FFC72C",
+    "secondaryColor": "#000000"
+  },
+  {
+    "name": "Carnegie Mellon University",
+    "domainPrefix": "cmu",
+    "location": "Pittsburgh, PA",
+    "image": null,
+    "primaryColor": "#C41230",
+    "secondaryColor": "#000000"
+  },
+  {
+    "name": "Case Western Reserve University",
+    "domainPrefix": "case",
+    "location": "Cleveland, OH",
+    "image": null,
+    "primaryColor": "#003366",
+    "secondaryColor": "#FFD100"
+  },
+  {
+    "name": "Case Western Reserve University",
+    "domainPrefix": "case",
+    "location": "Cleveland, OH",
+    "image": null,
+    "primaryColor": "#1C355E",
+    "secondaryColor": "#FFFFFF"
+  },
+  {
+    "name": "Central Methodist College",
+    "domainPrefix": "cmc",
+    "location": "Claremont, CA",
+    "image": null,
+    "primaryColor": "#9D2235",
+    "secondaryColor": "#FFFFFF"
+  },
+  {
+    "name": "Clark University",
+    "domainPrefix": "clarku",
+    "location": "Worcester, MA",
+    "image": null,
+    "primaryColor": "#E41C38",
+    "secondaryColor": "#000000"
+  },
+  {
+    "name": "Clark University",
+    "domainPrefix": "clarku",
+    "location": "Worcester, MA",
+    "image": null,
+    "primaryColor": "#D6001C",
+    "secondaryColor": "#231F20"
+  },
+  {
+    "name": "Clemson University",
+    "domainPrefix": "clemson",
+    "location": "Clemson, SC",
+    "image": null,
+    "primaryColor": "#F66733",
+    "secondaryColor": "#522D80"
+  },
+  {
+    "name": "Coastal Carolina University",
+    "domainPrefix": "coastal",
+    "location": "Conway, SC",
+    "image": null,
+    "primaryColor": "#007D75",
+    "secondaryColor": "#98765B"
+  },
+  {
+    "name": "Colgate University",
+    "domainPrefix": "colgate",
+    "location": "Hamilton, NY",
+    "image": null,
+    "primaryColor": "#841617",
+    "secondaryColor": "#FFFFFF"
+  },
+  {
+    "name": "College of Charleston",
+    "domainPrefix": "cofc",
+    "location": "Charleston, SC",
+    "image": null,
+    "primaryColor": "#782F40",
+    "secondaryColor": "#FFFFFF"
+  },
+  {
+    "name": "Colorado State University",
+    "domainPrefix": "colostate",
+    "location": "Fort Collins, CO",
+    "image": null,
+    "primaryColor": "#1E4D2B",
+    "secondaryColor": "#C8C372"
+  },
+  {
+    "name": "Columbia University",
+    "domainPrefix": "columbia",
+    "location": "New York, NY",
+    "image": null,
+    "primaryColor": "#B9D9EB",
+    "secondaryColor": "#FFFFFF"
+  },
+  {
+    "name": "Cornell University",
+    "domainPrefix": "cornell",
+    "location": "Ithaca, NY",
+    "image": null,
+    "primaryColor": "#B31B1B",
+    "secondaryColor": "#222222"
+  },
+  {
+    "name": "Davidson College",
+    "domainPrefix": "davidson",
+    "location": "Davidson, NC",
+    "image": null,
+    "primaryColor": "#CC0000",
+    "secondaryColor": "#000000"
+  },
+  {
+    "name": "Drake University",
+    "domainPrefix": "drake",
+    "location": "Des Moines, IA",
+    "image": null,
+    "primaryColor": "#004B98",
+    "secondaryColor": "#A7A8AA"
+  },
+  {
+    "name": "Duke University",
+    "domainPrefix": "duke",
+    "location": "Durham, NC",
+    "image": null,
+    "primaryColor": "#012169",
+    "secondaryColor": "#FFFFFF"
+  },
+  {
+    "name": "Elon College",
+    "domainPrefix": "elon",
+    "location": "Elon, NC",
+    "image": null,
+    "primaryColor": "#7D2239",
+    "secondaryColor": "#C7A46D"
+  },
+  {
+    "name": "Emory University",
+    "domainPrefix": "emory",
+    "location": "Atlanta, GA",
+    "image": null,
+    "primaryColor": "#002878",
+    "secondaryColor": "#FFD100"
+  },
+  {
+    "name": "Fairfield University",
+    "domainPrefix": "fairfield",
+    "location": "Fairfield, CT",
+    "image": null,
+    "primaryColor": "#C8102E",
+    "secondaryColor": "#FFFFFF"
+  },
+  {
+    "name": "Florida Atlantic University",
+    "domainPrefix": "fau",
+    "location": "Boca Raton, FL",
+    "image": null,
+    "primaryColor": "#003366",
+    "secondaryColor": "#CC0000"
+  },
+  {
+    "name": "Florida Gulf Coast University",
+    "domainPrefix": "fgcu",
+    "location": "Fort Myers, FL",
+    "image": null,
+    "primaryColor": "#006747",
+    "secondaryColor": "#0072CE"
+  },
+  {
+    "name": "Florida International University",
+    "domainPrefix": "fiu",
+    "location": "Miami, FL",
+    "image": null,
+    "primaryColor": "#081E3F",
+    "secondaryColor": "#B6862C"
+  },
+  {
+    "name": "Florida State University",
+    "domainPrefix": "fsu",
+    "location": "Tallahassee, FL",
+    "image": null,
+    "primaryColor": "#782F40",
+    "secondaryColor": "#CEB888"
+  },
+  {
+    "name": "Fordham University",
+    "domainPrefix": "fordham",
+    "location": "New York, NY",
+    "image": null,
+    "primaryColor": "#900028",
+    "secondaryColor": "#BFBFBF"
+  },
+  {
+    "name": "Georgia Institute of Technology",
+    "domainPrefix": "gatech",
+    "location": "Atlanta, GA",
+    "image": null,
+    "primaryColor": "#B3A369",
+    "secondaryColor": "#002D56"
+  },
+  {
+    "name": "Gonzaga University",
+    "domainPrefix": "gonzaga",
+    "location": "Spokane, WA",
+    "image": null,
+    "primaryColor": "#041E42",
+    "secondaryColor": "#C8102E"
+  },
+  {
+    "name": "Harvard University",
+    "domainPrefix": "harvard",
+    "location": "Cambridge, MA",
+    "image": null,
+    "primaryColor": "#A51C30",
+    "secondaryColor": "#000000"
+  },
+  {
+    "name": "Indiana University - Bloomington",
+    "domainPrefix": "indiana",
+    "location": "Bloomington, IN",
+    "image": null,
+    "primaryColor": "#990000",
+    "secondaryColor": "#EDEBEB"
+  },
+  {
+    "name": "Iowa State University",
+    "domainPrefix": "iastate",
+    "location": "Ames, IA",
+    "image": null,
+    "primaryColor": "#C8102E",
+    "secondaryColor": "#F1BE48"
+  },
+  {
+    "name": "James Madison University",
+    "domainPrefix": "jmu",
+    "location": "Harrisonburg, VA",
+    "image": null,
+    "primaryColor": "#450084",
+    "secondaryColor": "#CBB677"
+  },
+  {
+    "name": "Johns Hopkins University",
+    "domainPrefix": "jh",
+    "location": "Baltimore, MD",
+    "image": null,
+    "primaryColor": "#002D72",
+    "secondaryColor": "#A1D6E2"
+  },
+  {
+    "name": "Lehigh University",
+    "domainPrefix": "lehigh",
+    "location": "Bethlehem, PA",
+    "image": null,
+    "primaryColor": "#532E1C",
+    "secondaryColor": "#E0C68B"
+  },
+  {
+    "name": "Lipscomb University",
+    "domainPrefix": "lipscomb",
+    "location": "Nashville, TN",
+    "image": null,
+    "primaryColor": "#512D6D",
+    "secondaryColor": "#FFFFFF"
+  },
+  {
+    "name": "Loyola Marymount University",
+    "domainPrefix": "lmu",
+    "location": "Los Angeles, CA",
+    "image": null,
+    "primaryColor": "#A41E34",
+    "secondaryColor": "#6DCDB8"
+  },
+  {
+    "name": "Loyola University Chicago",
+    "domainPrefix": "luc",
+    "location": "Chicago, IL",
+    "image": null,
+    "primaryColor": "#7A003C",
+    "secondaryColor": "#FFCC33"
+  },
+  {
+    "name": "Marquette University",
+    "domainPrefix": "marquette",
+    "location": "Milwaukee, WI",
+    "image": null,
+    "primaryColor": "#003366",
+    "secondaryColor": "#F1C400"
+  },
+  {
+    "name": "Massachusetts Institute of Technology",
+    "domainPrefix": "mit",
+    "location": "Cambridge, MA",
+    "image": null,
+    "primaryColor": "#A31F34",
+    "secondaryColor": "#8A8B8C"
+  },
+  {
+    "name": "Michigan State University",
+    "domainPrefix": "msu",
+    "location": "East Lansing, MI",
+    "image": null,
+    "primaryColor": "#18453B",
+    "secondaryColor": "#FFFFFF"
+  },
+  {
+    "name": "Michigan Technological University",
+    "domainPrefix": "mtu",
+    "location": "Houghton, MI",
+    "image": null,
+    "primaryColor": "#FFCD00",
+    "secondaryColor": "#000000"
+  },
+  {
+    "name": "Middlebury College",
+    "domainPrefix": "middlebury",
+    "location": "Middlebury, VT",
+    "image": null,
+    "primaryColor": "#003366",
+    "secondaryColor": "#FFFFFF"
+  },
+  {
+    "name": "New York University",
+    "domainPrefix": "nyu",
+    "location": "New York, NY",
+    "image": null,
+    "primaryColor": "#57068C",
+    "secondaryColor": "#FFFFFF"
+  },
+  {
+    "name": "Northeastern University",
+    "domainPrefix": "neu",
+    "location": "Boston, MA",
+    "image": null,
+    "primaryColor": "#D41B2C",
+    "secondaryColor": "#000000"
+  },
+  {
+    "name": "Northwestern University",
+    "domainPrefix": "northwestern",
+    "location": "Evanston, IL",
+    "image": null,
+    "primaryColor": "#4E2A84",
+    "secondaryColor": "#FFFFFF"
+  },
+  {
+    "name": "Ohio State University - Columbus",
+    "domainPrefix": "osu",
+    "location": "Columbus, OH",
+    "image": null,
+    "primaryColor": "#BB0000",
+    "secondaryColor": "#666666"
+  },
+  {
+    "name": "Pennsylvania State University",
+    "domainPrefix": "psu",
+    "location": "University Park, PA",
+    "image": null,
+    "primaryColor": "#041E42",
+    "secondaryColor": "#FFFFFF"
+  },
+  {
+    "name": "Pepperdine University",
+    "domainPrefix": "pepperdine",
+    "location": "Malibu, CA",
+    "image": null,
+    "primaryColor": "#00205B",
+    "secondaryColor": "#FF6F40"
+  },
+  {
+    "name": "Pomona College",
+    "domainPrefix": "pomona",
+    "location": "Claremont, CA",
+    "image": null,
+    "primaryColor": "#1B365D",
+    "secondaryColor": "#A7C6ED"
+  },
+  {
+    "name": "Princeton University",
+    "domainPrefix": "princeton",
+    "location": "Princeton, NJ",
+    "image": null,
+    "primaryColor": "#FF6000",
+    "secondaryColor": "#000000"
+  },
+  {
+    "name": "Providence College",
+    "domainPrefix": "providence",
+    "location": "Providence, RI",
+    "image": null,
+    "primaryColor": "#000000",
+    "secondaryColor": "#FFFFFF"
+  },
+  {
+    "name": "Purdue University",
+    "domainPrefix": "purdue",
+    "location": "West Lafayette, IN",
+    "image": null,
+    "primaryColor": "#CEB888",
+    "secondaryColor": "#000000"
+  },
+  {
+    "name": "Quinnipiac University",
+    "domainPrefix": "quinnipiac",
+    "location": "Hamden, CT",
+    "image": null,
+    "primaryColor": "#003A63",
+    "secondaryColor": "#C69214"
+  },
+  {
+    "name": "Rensselaer Polytechnic Institute",
+    "domainPrefix": "rpi",
+    "location": "Troy, NY",
+    "image": null,
+    "primaryColor": "#D6001C",
+    "secondaryColor": "#FFFFFF"
+  },
+  {
+    "name": "Rice University",
+    "domainPrefix": "rice",
+    "location": "Houston, TX",
+    "image": null,
+    "primaryColor": "#00205B",
+    "secondaryColor": "#5E8AB4"
+  },
+  {
+    "name": "San Diego State University",
+    "domainPrefix": "sdsu",
+    "location": "San Diego, CA",
+    "image": null,
+    "primaryColor": "#A6192E",
+    "secondaryColor": "#000000"
+  },
+  {
+    "name": "San Jose State University",
+    "domainPrefix": "sjsu",
+    "location": "San Jose, CA",
+    "image": null,
+    "primaryColor": "#0055A2",
+    "secondaryColor": "#FFD200"
+  },
+  {
+    "name": "Santa Clara University",
+    "domainPrefix": "scu",
+    "location": "Santa Clara, CA",
+    "image": null,
+    "primaryColor": "#660000",
+    "secondaryColor": "#B7A57A"
+  },
+  {
+    "name": "Seton Hall University",
+    "domainPrefix": "shu",
+    "location": "South Orange, NJ",
+    "image": null,
+    "primaryColor": "#004488",
+    "secondaryColor": "#FFFFFF"
+  },
+  {
+    "name": "Skidmore College",
+    "domainPrefix": "skidmore",
+    "location": "Saratoga Springs, NY",
+    "image": null,
+    "primaryColor": "#006B54",
+    "secondaryColor": "#FFD100"
+  },
+  {
+    "name": "Southern Methodist University",
+    "domainPrefix": "smu",
+    "location": "Dallas, TX",
+    "image": null,
+    "primaryColor": "#E41C38",
+    "secondaryColor": "#0054A6"
+  },
+  {
+    "name": "Stanford University",
+    "domainPrefix": "stanford",
+    "location": "Stanford, CA",
+    "image": null,
+    "primaryColor": "#8C1515",
+    "secondaryColor": "#2E2D29"
+  },
+  {
+    "name": "Stevens Institute of Technology",
+    "domainPrefix": "stevens",
+    "location": "Hoboken, NJ",
+    "image": null,
+    "primaryColor": "#990000",
+    "secondaryColor": "#7A99AC"
+  },
+  {
+    "name": "Syracuse University",
+    "domainPrefix": "syracuse",
+    "location": "Syracuse, NY",
+    "image": null,
+    "primaryColor": "#F76900",
+    "secondaryColor": "#000E54"
+  },
+  {
+    "name": "Texas A&M University - College Station",
+    "domainPrefix": "tamu",
+    "location": "College Station, TX",
+    "image": null,
+    "primaryColor": "#500000",
+    "secondaryColor": "#FFFFFF"
+  },
+  {
+    "name": "Texas Christian University",
+    "domainPrefix": "tcu",
+    "location": "Fort Worth, TX",
+    "image": null,
+    "primaryColor": "#4D1979",
+    "secondaryColor": "#FFFFFF"
+  },
+  {
+    "name": "Texas State University",
+    "domainPrefix": "txstate",
+    "location": "San Marcos, TX",
+    "image": null,
+    "primaryColor": "#501214",
+    "secondaryColor": "#BC9B6A"
+  },
+  {
+    "name": "Texas Tech University",
+    "domainPrefix": "ttu",
+    "location": "Lubbock, TX",
+    "image": null,
+    "primaryColor": "#CC0000",
+    "secondaryColor": "#000000"
+  },
+  {
+    "name": "The University of Alabama",
+    "domainPrefix": "ua",
+    "location": "Tuscaloosa, AL",
+    "image": null,
+    "primaryColor": "#9E1B32",
+    "secondaryColor": "#FFFFFF"
+  },
+  {
+    "name": "The University of Texas at Austin",
+    "domainPrefix": "utexas",
+    "location": "Austin, TX",
+    "image": null,
+    "primaryColor": "#BF5700",
+    "secondaryColor": "#333F48"
+  },
+  {
+    "name": "Tufts University",
+    "domainPrefix": "tufts",
+    "location": "Medford, MA",
+    "image": null,
+    "primaryColor": "#3E8EDE",
+    "secondaryColor": "#E5E5E5"
+  },
+  {
+    "name": "Tulane University",
+    "domainPrefix": "tulane",
+    "location": "New Orleans, LA",
+    "image": null,
+    "primaryColor": "#004E38",
+    "secondaryColor": "#00A3AD"
+  },
+  {
+    "name": "Tulsa University",
+    "domainPrefix": "utulsa",
+    "location": "Tulsa, OK",
+    "image": null,
+    "primaryColor": "#002D72",
+    "secondaryColor": "#FFC72C"
+  },
+  {
+    "name": "University of Alabama at Birmingham",
+    "domainPrefix": "uab",
+    "location": "Birmingham, AL",
+    "image": null,
+    "primaryColor": "#1E6B52",
+    "secondaryColor": "#F1BE48"
+  },
+  {
+    "name": "University of Arizona",
+    "domainPrefix": "arizona",
+    "location": "Tucson, AZ",
+    "image": null,
+    "primaryColor": "#AB0520",
+    "secondaryColor": "#0C234B"
+  },
+  {
+    "name": "University of Arkansas - Fayetteville",
+    "domainPrefix": "uark",
+    "location": "Fayetteville, AR",
+    "image": null,
+    "primaryColor": "#9D2235",
+    "secondaryColor": "#000000"
+  },
+  {
+    "name": "University of California, Berkeley",
+    "domainPrefix": "berkeley",
+    "location": "Berkeley, CA",
+    "image": null,
+    "primaryColor": "#003262",
+    "secondaryColor": "#FDB515"
+  },
+  {
+    "name": "University of California, Davis",
+    "domainPrefix": "ucdavis",
+    "location": "Davis, CA",
+    "image": null,
+    "primaryColor": "#002855",
+    "secondaryColor": "#DAAA00"
+  },
+  {
+    "name": "University of California, Irvine",
+    "domainPrefix": "uci",
+    "location": "Irvine, CA",
+    "image": null,
+    "primaryColor": "#0064A4",
+    "secondaryColor": "#FFD200"
+  },
+  {
+    "name": "University of California, Los Angeles",
+    "domainPrefix": "ucla",
+    "location": "Los Angeles, CA",
+    "image": null,
+    "primaryColor": "#2774AE",
+    "secondaryColor": "#FFD100"
+  },
+  {
+    "name": "University of California, San Diego",
+    "domainPrefix": "ucsd",
+    "location": "La Jolla, CA",
+    "image": null,
+    "primaryColor": "#182B49",
+    "secondaryColor": "#FFCD00"
+  },
+  {
+    "name": "University of California, San Francisco",
+    "domainPrefix": "ucsf",
+    "location": "San Francisco, CA",
+    "image": null,
+    "primaryColor": "#052049",
+    "secondaryColor": "#18A999"
+  },
+  {
+    "name": "University of California, Santa Barbara",
+    "domainPrefix": "ucsb",
+    "location": "Santa Barbara, CA",
+    "image": null,
+    "primaryColor": "#003660",
+    "secondaryColor": "#FFD200"
+  },
+  {
+    "name": "University of California, Santa Cruz",
+    "domainPrefix": "ucsc",
+    "location": "Santa Cruz, CA",
+    "image": null,
+    "primaryColor": "#003C6C",
+    "secondaryColor": "#FFD700"
+  },
+  {
+    "name": "University of Central Florida",
+    "domainPrefix": "ucf",
+    "location": "Orlando, FL",
+    "image": null,
+    "primaryColor": "#FFC904",
+    "secondaryColor": "#000000"
+  },
+  {
+    "name": "University of Chicago",
+    "domainPrefix": "uchicago",
+    "location": "Chicago, IL",
+    "image": null,
+    "primaryColor": "#800000",
+    "secondaryColor": "#FFFFFF"
+  },
+  {
+    "name": "University of Cincinnati",
+    "domainPrefix": "uc",
+    "location": "Cincinnati, OH",
+    "image": null,
+    "primaryColor": "#E00122",
+    "secondaryColor": "#000000"
+  },
+  {
+    "name": "University of Colorado at Boulder",
+    "domainPrefix": "colorado",
+    "location": "Boulder, CO",
+    "image": null,
+    "primaryColor": "#CFB87C",
+    "secondaryColor": "#000000"
+  },
+  {
+    "name": "University of Colorado at Denver",
+    "domainPrefix": "ucdenver",
+    "location": "Denver, CO",
+    "image": null,
+    "primaryColor": "#A2A4A3",
+    "secondaryColor": "#000000"
+  },
+  {
+    "name": "University of Connecticut",
+    "domainPrefix": "uconn",
+    "location": "Storrs, CT",
+    "image": null,
+    "primaryColor": "#000E2F",
+    "secondaryColor": "#FFFFFF"
+  },
+  {
+    "name": "University of Delaware",
+    "domainPrefix": "udel",
+    "location": "Newark, DE",
+    "image": null,
+    "primaryColor": "#00539F",
+    "secondaryColor": "#FFD200"
+  },
+  {
+    "name": "University of Denver",
+    "domainPrefix": "du",
+    "location": "Denver, CO",
+    "image": null,
+    "primaryColor": "#862633",
+    "secondaryColor": "#C5B783"
+  },
+  {
+    "name": "University of Florida",
+    "domainPrefix": "ufl",
+    "location": "Gainesville, FL",
+    "image": null,
+    "primaryColor": "#FA4616",
+    "secondaryColor": "#0021A5"
+  },
+  {
+    "name": "University of Georgia",
+    "domainPrefix": "uga",
+    "location": "Athens, GA",
+    "image": null,
+    "primaryColor": "#BA0C2F",
+    "secondaryColor": "#000000"
+  },
+  {
+    "name": "University of Hawaii System",
+    "domainPrefix": "hawaii",
+    "location": "Honolulu, HI",
+    "image": null,
+    "primaryColor": "#024731",
+    "secondaryColor": "#FFFFFF"
+  },
+  {
+    "name": "University of Houston",
+    "domainPrefix": "uh",
+    "location": "Houston, TX",
+    "image": null,
+    "primaryColor": "#C8102E",
+    "secondaryColor": "#FFFFFF"
+  },
+  {
+    "name": "University of Illinois Urbana-Champaign",
+    "domainPrefix": "uiuc",
+    "location": "Champaign, IL",
+    "image": null,
+    "primaryColor": "#E84A27",
+    "secondaryColor": "#13294B"
+  },
+  {
+    "name": "University of Iowa",
+    "domainPrefix": "uiowa",
+    "location": "Iowa City, IA",
+    "image": null,
+    "primaryColor": "#FFCD00",
+    "secondaryColor": "#000000"
+  },
+  {
+    "name": "University of Kansas",
+    "domainPrefix": "ku",
+    "location": "Lawrence, KS",
+    "image": null,
+    "primaryColor": "#0051BA",
+    "secondaryColor": "#E8000D"
+  },
+  {
+    "name": "University of Kentucky",
+    "domainPrefix": "uky",
+    "location": "Lexington, KY",
+    "image": null,
+    "primaryColor": "#0033A0",
+    "secondaryColor": "#FFFFFF"
+  },
+  {
+    "name": "University of Louisville",
+    "domainPrefix": "louisville",
+    "location": "Louisville, KY",
+    "image": null,
+    "primaryColor": "#AD0000",
+    "secondaryColor": "#000000"
+  },
+  {
+    "name": "University of Maryland, College Park",
+    "domainPrefix": "umd",
+    "location": "College Park, MD",
+    "image": null,
+    "primaryColor": "#E21833",
+    "secondaryColor": "#FFD200"
+  },
+  {
+    "name": "University of Massachusetts at Amherst",
+    "domainPrefix": "umass",
+    "location": "Amherst, MA",
+    "image": null,
+    "primaryColor": "#881C1C",
+    "secondaryColor": "#000000"
+  },
+  {
+    "name": "University of Miami",
+    "domainPrefix": "miami",
+    "location": "Coral Gables, FL",
+    "image": null,
+    "primaryColor": "#005030",
+    "secondaryColor": "#F47321"
+  },
+  {
+    "name": "University of Michigan - Ann Arbor",
+    "domainPrefix": "umich",
+    "location": "Ann Arbor, MI",
+    "image": null,
+    "primaryColor": "#00274C",
+    "secondaryColor": "#FFCB05"
+  },
+  {
+    "name": "University of Minnesota",
+    "domainPrefix": "umn",
+    "location": "Minneapolis, MN",
+    "image": null,
+    "primaryColor": "#7A0019",
+    "secondaryColor": "#FFCC33"
+  },
+  {
+    "name": "University of Mississippi",
+    "domainPrefix": "olemiss",
+    "location": "Oxford, MS",
+    "image": null,
+    "primaryColor": "#CE1126",
+    "secondaryColor": "#14213D"
+  },
+  {
+    "name": "University of Missouri",
+    "domainPrefix": "missouri",
+    "location": "Columbia, MO",
+    "image": null,
+    "primaryColor": "#F1B82D",
+    "secondaryColor": "#000000"
+  },
+  {
+    "name": "University of Missouri - Kansas City",
+    "domainPrefix": "umkc",
+    "location": "Kansas City, MO",
+    "image": null,
+    "primaryColor": "#0066CC",
+    "secondaryColor": "#FFCC33"
+  },
+  {
+    "name": "University of Nebraska, Lincoln",
+    "domainPrefix": "unl",
+    "location": "Lincoln, NE",
+    "image": null,
+    "primaryColor": "#D00000",
+    "secondaryColor": "#000000"
+  },
+  {
+    "name": "University of Nevada, Las Vegas",
+    "domainPrefix": "unlv",
+    "location": "Las Vegas, NV",
+    "image": null,
+    "primaryColor": "#C8102E",
+    "secondaryColor": "#000000"
+  },
+  {
+    "name": "University of Nevada, Reno",
+    "domainPrefix": "unr",
+    "location": "Reno, NV",
+    "image": null,
+    "primaryColor": "#003366",
+    "secondaryColor": "#999999"
+  },
+  {
+    "name": "University of North Carolina at Chapel Hill",
+    "domainPrefix": "unc",
+    "location": "Chapel Hill, NC",
+    "image": null,
+    "primaryColor": "#7BAFD4",
+    "secondaryColor": "#FFFFFF"
+  },
+  {
+    "name": "University of North Carolina at Wilmington",
+    "domainPrefix": "uncw",
+    "location": "Wilmington, NC",
+    "image": null,
+    "primaryColor": "#006666",
+    "secondaryColor": "#FFD700"
+  },
+  {
+    "name": "University of North Texas",
+    "domainPrefix": "unt",
+    "location": "Denton, TX",
+    "image": null,
+    "primaryColor": "#00853E",
+    "secondaryColor": "#000000"
+  },
+  {
+    "name": "University of Notre Dame",
+    "domainPrefix": "nd",
+    "location": "Notre Dame, IN",
+    "image": null,
+    "primaryColor": "#0C2340",
+    "secondaryColor": "#C99700"
+  },
+  {
+    "name": "University of Oklahoma",
+    "domainPrefix": "ou",
+    "location": "Norman, OK",
+    "image": null,
+    "primaryColor": "#841617",
+    "secondaryColor": "#FFFFFF"
+  },
+  {
+    "name": "University of Oregon",
+    "domainPrefix": "uoregon",
+    "location": "Eugene, OR",
+    "image": null,
+    "primaryColor": "#154733",
+    "secondaryColor": "#FEE123"
+  },
+  {
+    "name": "University of Pennsylvania",
+    "domainPrefix": "upenn",
+    "location": "Philadelphia, PA",
+    "image": null,
+    "primaryColor": "#011F5B",
+    "secondaryColor": "#990000"
+  },
+  {
+    "name": "University of Pittsburgh",
+    "domainPrefix": "pitt",
+    "location": "Pittsburgh, PA",
+    "image": null,
+    "primaryColor": "#003594",
+    "secondaryColor": "#FFB81C"
+  },
+  {
+    "name": "University of Richmond",
+    "domainPrefix": "urich",
+    "location": "Richmond, VA",
+    "image": null,
+    "primaryColor": "#041E42",
+    "secondaryColor": "#C8102E"
+  },
+  {
+    "name": "University of Rochester",
+    "domainPrefix": "rochester",
+    "location": "Rochester, NY",
+    "image": null,
+    "primaryColor": "#003B71",
+    "secondaryColor": "#FFCC00"
+  },
+  {
+    "name": "University of Rochester",
+    "domainPrefix": "rochester",
+    "location": "Rochester, NY",
+    "image": null,
+    "primaryColor": "#00205B",
+    "secondaryColor": "#FFCD00"
+  },
+  {
+    "name": "University of San Diego",
+    "domainPrefix": "usd",
+    "location": "San Diego, CA",
+    "image": null,
+    "primaryColor": "#00205B",
+    "secondaryColor": "#78BE20"
+  },
+  {
+    "name": "University of South Carolina",
+    "domainPrefix": "sc",
+    "location": "Columbia, SC",
+    "image": null,
+    "primaryColor": "#73000A",
+    "secondaryColor": "#000000"
+  },
+  {
+    "name": "University of South Florida",
+    "domainPrefix": "usf",
+    "location": "Tampa, FL",
+    "image": null,
+    "primaryColor": "#006747",
+    "secondaryColor": "#CFC493"
+  },
+  {
+    "name": "University of Southern California",
+    "domainPrefix": "usc",
+    "location": "Los Angeles, CA",
+    "image": null,
+    "primaryColor": "#990000",
+    "secondaryColor": "#FFC72C"
+  },
+  {
+    "name": "University of Tampa",
+    "domainPrefix": "ut",
+    "location": "Tampa, FL",
+    "image": null,
+    "primaryColor": "#682D63",
+    "secondaryColor": "#C8102E"
+  },
+  {
+    "name": "University of Tennessee, Knoxville",
+    "domainPrefix": "utk",
+    "location": "Knoxville, TN",
+    "image": null,
+    "primaryColor": "#FF8200",
+    "secondaryColor": "#58595B"
+  },
+  {
+    "name": "University of Utah",
+    "domainPrefix": "utah",
+    "location": "Salt Lake City, UT",
+    "image": null,
+    "primaryColor": "#CC0000",
+    "secondaryColor": "#808080"
+  },
+  {
+    "name": "University of Vermont",
+    "domainPrefix": "uvm",
+    "location": "Burlington, VT",
+    "image": null,
+    "primaryColor": "#005030",
+    "secondaryColor": "#FFD100"
+  },
+  {
+    "name": "University of Virginia, Charlottesville",
+    "domainPrefix": "virginia",
+    "location": "Charlottesville, VA",
+    "image": null,
+    "primaryColor": "#232D4B",
+    "secondaryColor": "#F84C1E"
+  },
+  {
+    "name": "University of Washington",
+    "domainPrefix": "uw",
+    "location": "Seattle, WA",
+    "image": null,
+    "primaryColor": "#4B2E83",
+    "secondaryColor": "#B7A57A"
+  },
+  {
+    "name": "University of Wisconsin - Madison",
+    "domainPrefix": "wisc",
+    "location": "Madison, WI",
+    "image": null,
+    "primaryColor": "#C5050C",
+    "secondaryColor": "#FFFFFF"
+  },
+  {
+    "name": "Utah State University",
+    "domainPrefix": "usu",
+    "location": "Logan, UT",
+    "image": null,
+    "primaryColor": "#0F2439",
+    "secondaryColor": "#FFFFFF"
+  },
+  {
+    "name": "Vanderbilt University",
+    "domainPrefix": "vanderbilt",
+    "location": "Nashville, TN",
+    "image": null,
+    "primaryColor": "#000000",
+    "secondaryColor": "#B39700"
+  },
+  {
+    "name": "Villanova University",
+    "domainPrefix": "villanova",
+    "location": "Villanova, PA",
+    "image": null,
+    "primaryColor": "#003366",
+    "secondaryColor": "#89CFF0"
+  },
+  {
+    "name": "Wake Forest University",
+    "domainPrefix": "wfu",
+    "location": "Winston-Salem, NC",
+    "image": null,
+    "primaryColor": "#9E7E38",
+    "secondaryColor": "#000000"
+  },
+  {
+    "name": "Washington University, Saint Louis",
+    "domainPrefix": "wustl",
+    "location": "St. Louis, MO",
+    "image": null,
+    "primaryColor": "#AD0000",
+    "secondaryColor": "#5B5B5B"
+  },
+  {
+    "name": "Williams College",
+    "domainPrefix": "williams",
+    "location": "Williamstown, MA",
+    "image": null,
+    "primaryColor": "#542583",
+    "secondaryColor": "#FFD700"
+  },
+  {
+    "name": "Worcester Polytechnic Institute",
+    "domainPrefix": "wpi",
+    "location": "Worcester, MA",
+    "image": null,
+    "primaryColor": "#AC2B37",
+    "secondaryColor": "#FFFFFF"
+  },
+  {
+    "name": "Xavier University",
+    "domainPrefix": "xavier",
+    "location": "Cincinnati, OH",
+    "image": null,
+    "primaryColor": "#0C2340",
+    "secondaryColor": "#9EA2A2"
+  },
+  {
+    "name": "Yale University",
+    "domainPrefix": "yale",
+    "location": "New Haven, CT",
+    "image": null,
+    "primaryColor": "#00356B",
+    "secondaryColor": "#FFFFFF"
+  }
+]
