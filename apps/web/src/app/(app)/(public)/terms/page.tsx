@@ -1,11 +1,17 @@
 import { Scale } from 'lucide-react'
 import type { Metadata } from 'next'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
+import { createMetadata } from '~/lib/metadata'
 
-export const metadata: Metadata = {
-  title: 'Terms of Service - Discuno',
-  description: 'Terms of Service for Discuno mentorship platform',
-}
+export const metadata: Metadata = createMetadata({
+  title: 'Terms of Service',
+  description:
+    "Read Discuno's terms of service covering user agreements, platform guidelines, mentor policies, payment terms, and user responsibilities.",
+  openGraph: {
+    title: 'Terms of Service - Discuno',
+    description: 'Platform guidelines and user agreements for our mentorship community.',
+  },
+})
 
 export default function TermsPage() {
   return (

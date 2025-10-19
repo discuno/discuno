@@ -1,5 +1,4 @@
-'use client'
-
+import { type Metadata } from 'next'
 import {
   Award,
   GraduationCap,
@@ -15,6 +14,18 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Icons } from '~/components/shared/icons'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
+import { createMetadata } from '~/lib/metadata'
+
+export const metadata: Metadata = createMetadata({
+  title: 'About Us',
+  description:
+    "Learn about Discuno's mission to democratize mentorship by connecting college students with experienced peers. Meet our team and discover our values.",
+  openGraph: {
+    title: 'About Discuno - Empowering Students Through Mentorship',
+    description:
+      'Discuno exists to democratize access to mentorship by connecting college students with experienced peers who have walked the same path.',
+  },
+})
 
 const values = [
   {

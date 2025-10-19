@@ -1,3 +1,4 @@
+import { type Metadata } from 'next'
 import Link from 'next/link'
 import {
   BookOpen,
@@ -17,6 +18,18 @@ import {
   AccordionTrigger,
 } from '~/components/ui/accordion'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
+import { createMetadata } from '~/lib/metadata'
+
+export const metadata: Metadata = createMetadata({
+  title: 'Support & Help Center',
+  description:
+    'Get help with Discuno. Find answers to FAQs about mentorship, payments, safety, and more. Contact our support team for assistance.',
+  openGraph: {
+    title: 'Discuno Support - Get Help With Mentorship Platform',
+    description:
+      'Find answers to common questions about finding mentors, booking sessions, payments, and platform safety. Our support team is here to help.',
+  },
+})
 
 const supportCategories = [
   {

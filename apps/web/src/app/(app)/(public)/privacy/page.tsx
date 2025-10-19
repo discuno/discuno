@@ -2,11 +2,17 @@ import { Shield } from 'lucide-react'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
+import { createMetadata } from '~/lib/metadata'
 
-export const metadata: Metadata = {
-  title: 'Privacy Policy - Discuno',
-  description: 'Privacy Policy for Discuno mentorship platform',
-}
+export const metadata: Metadata = createMetadata({
+  title: 'Privacy Policy',
+  description:
+    'Learn how Discuno protects your privacy and data. Read our privacy policy covering data collection, usage, security, and your rights.',
+  openGraph: {
+    title: 'Privacy Policy - Discuno',
+    description: 'How we protect your privacy and secure your data on our mentorship platform.',
+  },
+})
 
 export default function PrivacyPage() {
   return (

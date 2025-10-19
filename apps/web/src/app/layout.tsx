@@ -1,25 +1,14 @@
 import '~/styles/globals.css'
 
 import { GeistSans } from 'geist/font/sans'
-import { type Metadata } from 'next'
+import type { Metadata } from 'next'
 import { Toaster } from 'sonner'
+import { defaultMetadata } from '~/lib/metadata'
 import { PostHogProvider } from '~/lib/providers/PostHogProvider'
 import { ThemeProvider } from '~/lib/providers/ThemeProvider'
 import { QueryProvider } from '~/lib/react-query/QueryProvider'
 
-export const metadata: Metadata = {
-  title: 'Discuno - Your Guide to College Success',
-  description:
-    'Discover personalized advice, resources, and tools to help you get into your dream college.',
-  icons: {
-    icon: [
-      { url: '/favicon.ico', sizes: 'any' },
-      { url: '/logos/black-icon-logo.svg', type: 'image/svg+xml' },
-    ],
-    shortcut: '/favicon.ico',
-    apple: '/favicon.ico',
-  },
-}
+export const metadata: Metadata = defaultMetadata
 
 const RootLayout = ({ children }: Readonly<{ children: React.ReactNode }>) => {
   return (

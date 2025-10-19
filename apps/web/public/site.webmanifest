@@ -1,0 +1,58 @@
+{
+  "name": "Discuno",
+  "short_name": "Discuno",
+  "lang": "en",
+  "description": "Get insider college advice from verified students. Connect with real mentors for guidance on courses, internships, and careers.",
+  "start_url": "/",
+  "scope": "/",
+  "id": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "fullscreen"],
+  "background_color": "#ffffff",
+  "theme_color": "#7c3aed",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logos/black-sq-logo.svg",
+      "sizes": "any",
+      "type": "image/png"
+    }
+  ],
+  "categories": ["education", "productivity", "social"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Find Mentors",
+      "short_name": "Mentors",
+      "description": "Browse and connect with student mentors",
+      "url": "/",
+      "icons": []
+    },
+    {
+      "name": "Become a Mentor",
+      "short_name": "Sign In",
+      "description": "Join as a mentor and help students",
+      "url": "/auth",
+      "icons": []
+    },
+    {
+      "name": "Support",
+      "short_name": "Help",
+      "description": "Get help and support",
+      "url": "/support",
+      "icons": []
+    }
+  ]
+}
