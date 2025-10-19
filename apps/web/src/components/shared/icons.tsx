@@ -1,8 +1,9 @@
-import { GraduationCap } from 'lucide-react' // Add GraduationCap import
+import { GraduationCap, Github, Linkedin, Instagram, Twitter } from 'lucide-react'
 
 export const Icons = {
-  logo: GraduationCap, // Replace the SVG with GraduationCap
-  // Add more icons as needed:
-  // calendar: Calendar,
-  // user: User,
+  logo: GraduationCap,
+  github: Github,
+  linkedin: Linkedin,
+  instagram: Instagram,
+  twitter: Twitter,
 }

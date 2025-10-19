@@ -14,6 +14,7 @@ import {
   GraduationCap,
   Lightbulb,
 } from 'lucide-react'
+import { Icons } from '~/components/shared/icons'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
 
 const values = [
@@ -203,6 +204,58 @@ const AboutPage = () => {
               </CardContent>
             </Card>
           </div>
+        </section>
+
+        {/* Connect With Us Section */}
+        <section className="mb-20">
+          <Card className="border-primary/20 bg-primary/5">
+            <CardHeader className="text-center">
+              <CardTitle className="text-2xl">Connect With Us</CardTitle>
+              <CardDescription className="text-base">
+                Follow our journey and stay updated on the latest features and news
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex justify-center pb-8">
+              <div className="flex items-center gap-6">
+                <a
+                  href="https://linkedin.com/company/discuno"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                  aria-label="LinkedIn"
+                >
+                  <Icons.linkedin className="h-8 w-8" />
+                </a>
+                <a
+                  href="https://instagram.com/discunoapp"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                  aria-label="Instagram"
+                >
+                  <Icons.instagram className="h-8 w-8" />
+                </a>
+                <a
+                  href="https://x.com/discuno"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                  aria-label="X (Twitter)"
+                >
+                  <Icons.twitter className="h-8 w-8" />
+                </a>
+                <a
+                  href="https://github.com/discuno/discuno"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                  aria-label="GitHub"
+                >
+                  <Icons.github className="h-8 w-8" />
+                </a>
+              </div>
+            </CardContent>
+          </Card>
         </section>
 
         {/* Sponsors Section */}
