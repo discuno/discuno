@@ -149,7 +149,7 @@ apps/web/
 
 - **Framework**: Next.js 15 with App Router
 - **React**: v19 with Server Components
-- **Database**: PostgreSQL (Neon) with Drizzle ORM
+- **Database**: PostgreSQL (Railway) with Drizzle ORM
 - **Authentication**: NextAuth.js v5 with Drizzle adapter
 - **Styling**: Tailwind CSS 4 + Radix UI primitives
 - **Testing**: Vitest + Testing Library + jsdom
@@ -234,7 +234,7 @@ Environment variables are validated using `@t3-oss/env-nextjs` in `apps/web/src/
 **Required Variables**:
 
 - Auth: `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, provider credentials
-- Database: `DATABASE_URL` (Neon PostgreSQL connection string)
+- Database: `DATABASE_URL` (Railway PostgreSQL connection string)
 - Cal.com: `X_CAL_SECRET_KEY`, `NEXT_PUBLIC_X_CAL_ID`, `CALCOM_*`
 - Stripe: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_CONNECT_WEBHOOK_SECRET`, `NEXT_PUBLIC_STRIPE_PUBLIC_KEY`
 - PostHog: `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST`, `NEXT_PUBLIC_POSTHOG_UI_HOST`
@@ -346,7 +346,7 @@ The application is optimized for Vercel deployment:
 - Environment variables configured in Vercel dashboard
 - Automatic deployments from `main` branch
 - Preview deployments for all PRs
-- Neon database branching for preview environments
+- Railway database branching for preview environments
 
 ### Known Patterns
 

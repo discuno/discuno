@@ -53,7 +53,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Frontend**: Next.js 15 (App Router), React 19, TypeScript
 - **Styling**: Tailwind CSS 4, Radix UI primitives
-- **Database**: Drizzle ORM with PostgreSQL/Neon
+- **Database**: Drizzle ORM with PostgreSQL/Railway
 - **Authentication**: NextAuth.js v5
 - **Monorepo**: pnpm workspaces + Turborepo
 - **Testing**: Vitest, Testing Library

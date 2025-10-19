@@ -96,7 +96,7 @@ pnpm db:studio    # Open Drizzle Studio
 **Main Application** - Full-featured Next.js app with:
 
 - 🔐 NextAuth.js authentication
-- 📊 Drizzle ORM + PostgreSQL/Neon
+- 📊 Drizzle ORM + PostgreSQL/Railway
 - 📅 Cal.com scheduling integration
 - 🎨 Tailwind CSS + Radix UI
 - 📱 Responsive design system
@@ -111,7 +111,7 @@ pnpm db:studio    # Open Drizzle Studio
 - **Frontend**: Next.js 15 (App Router), React 19
 - **Language**: TypeScript (strict mode)
 - **Styling**: Tailwind CSS 4, Radix UI primitives
-- **Database**: Drizzle ORM, PostgreSQL (Neon)
+- **Database**: Drizzle ORM, PostgreSQL (Railway)
 - **Authentication**: NextAuth.js v5
 - **Build System**: Turbo
 
@@ -133,7 +133,7 @@ pnpm db:studio    # Open Drizzle Studio
 <summary><strong>Infrastructure & Deployment</strong></summary>
 
 - **Platform**: Vercel (optimized for Next.js)
-- **Database**: Neon (PostgreSQL), Redis (caching)
+- **Database**: Railway (PostgreSQL), Redis (caching)
 - **CDN**: Vercel Edge Network
 - **Monitoring**: Sentry error tracking
 - **Analytics**: Vercel Analytics
