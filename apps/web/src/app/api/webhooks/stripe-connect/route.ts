@@ -2,7 +2,7 @@ import { headers } from 'next/headers'
 import { NextResponse } from 'next/server'
 import type { Stripe } from 'stripe'
 import { env } from '~/env'
-import { upsertMentorStripeAccount } from '~/lib/services/stripe-service'
+import { upsertStripeAccount } from '~/server/dal/stripe'
 import { stripe } from '~/lib/stripe'
 
 export async function POST(req: Request) {
@@ -56,7 +56,7 @@ async function handleAccountUpdated(account: Stripe.Account) {
       return
     }
 
-    await upsertMentorStripeAccount({
+    await upsertStripeAccount({
       userId,
       stripeAccountId: account.id,
       stripeAccountStatus:
