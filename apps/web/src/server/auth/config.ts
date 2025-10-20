@@ -123,9 +123,26 @@ export const authConfig = {
 
         // Check if email domain matches a known school domain (in-memory check)
         const emailDomain = user.email.split('@')[1]?.toLowerCase()
+        console.log(`🔍 [SignIn] Checking domain: ${emailDomain}`)
+
+        // Extract domain prefix (e.g., 'smccme.edu' -> 'smccme')
+        const domainPrefix = emailDomain?.replace('.edu', '')
+        console.log(`🔍 [SignIn] Domain prefix: ${domainPrefix}`)
+
         const allowedDomains = await getAllowedDomains()
-        if (!emailDomain || !allowedDomains.has(emailDomain)) return '/auth/rejected'
-        console.log(`Sign-in approved for recognized school domain: ${emailDomain}`)
+        console.log(`🔍 [SignIn] Allowed domains count: ${allowedDomains.size}`)
+
+        if (!domainPrefix || !allowedDomains.has(domainPrefix)) {
+          console.error(
+            `❌ [SignIn] REJECTED .edu domain not in database: ${domainPrefix} (full domain: ${emailDomain}, email: ${user.email})`
+          )
+          console.error(
+            `[SignIn] Action required: Add school with domain prefix '${domainPrefix}' to the database`
+          )
+          return '/auth/rejected'
+        }
+
+        console.log(`✅ [SignIn] Approved for recognized school domain prefix: ${domainPrefix}`)
         return true
       } catch (error) {
         console.error('Error in signIn callback:', error)
