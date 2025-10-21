@@ -1,7 +1,8 @@
-import { NextResponse } from 'next/server'
+import { connection, NextResponse } from 'next/server'
 import { processAnalyticsEvents } from '~/server/ranking/service'
 
 export async function GET() {
+  await connection()
   try {
     await processAnalyticsEvents()
     return NextResponse.json({ success: true })

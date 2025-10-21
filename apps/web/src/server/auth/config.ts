@@ -231,4 +231,5 @@ export const authConfig = {
     },
   },
   secret: env.NEXTAUTH_SECRET,
+  trustHost: true, // Trust x-forwarded-host header from Vercel
 } satisfies NextAuthConfig
