@@ -64,6 +64,8 @@ export const usersRelations = relations(users, ({ many, one }) => ({
   calcomTokens: one(calcomTokens),
   stripeAccount: one(mentorStripeAccounts),
   mentorEventTypes: many(mentorEventTypes),
+  mentorReviews: many(mentorReviews, { relationName: 'mentorReviews' }),
+  reviewsGiven: many(mentorReviews, { relationName: 'reviewsGiven' }),
 }))
 
 export const accounts = pgTable(
@@ -225,12 +227,36 @@ export const mentorReviews = pgTable(
     userId: uuid('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
+    bookingId: integer()
+      .unique()
+      .references(() => bookings.id, { onDelete: 'cascade' }),
     rating: integer().notNull(),
     review: varchar({ length: 1000 }),
     ...softDeleteTimestamps,
   },
-  table => [check('rating_check', sql`${table.rating} >= 1 AND ${table.rating} <= 5`)]
+  table => [
+    check('rating_check', sql`${table.rating} >= 1 AND ${table.rating} <= 5`),
+    index('mentor_reviews_mentor_id_idx').on(table.mentorId),
+    index('mentor_reviews_booking_id_idx').on(table.bookingId),
+  ]
 )
+
+export const mentorReviewsRelations = relations(mentorReviews, ({ one }) => ({
+  mentor: one(users, {
+    fields: [mentorReviews.mentorId],
+    references: [users.id],
+    relationName: 'mentorReviews',
+  }),
+  reviewer: one(users, {
+    fields: [mentorReviews.userId],
+    references: [users.id],
+    relationName: 'reviewsGiven',
+  }),
+  booking: one(bookings, {
+    fields: [mentorReviews.bookingId],
+    references: [bookings.id],
+  }),
+}))
 
 export const calcomTokens = pgTable(
   'discuno_calcom_token',
@@ -450,6 +476,10 @@ export const bookingsRelations = relations(bookings, ({ one, many }) => ({
     references: [mentorEventTypes.id],
   }),
   payment: one(payments, { fields: [bookings.paymentId], references: [payments.id] }),
+  review: one(mentorReviews, {
+    fields: [bookings.id],
+    references: [mentorReviews.bookingId],
+  }),
   attendees: many(bookingAttendees),
   organizers: many(bookingOrganizers),
 }))
