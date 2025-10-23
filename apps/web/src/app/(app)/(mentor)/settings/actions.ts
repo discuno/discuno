@@ -1075,11 +1075,21 @@ export const getMentorOnboardingStatus = async (): Promise<{
     actionUrl: string
     actionLabel: string
     iconName: string
+    missingItems?: string[]
+    estimatedTime?: string
+    optional?: boolean
   }>
 }> => {
   // Check profile completion
   const profile = await getFullProfile()
-  const hasProfile = !!(profile?.bio && profile.image)
+  const hasBio = !!profile?.bio
+  const hasImage = !!profile?.image
+  const hasProfile = hasBio && hasImage
+
+  // Build missing items list for profile
+  const profileMissingItems: string[] = []
+  if (!hasBio) profileMissingItems.push('Biography')
+  if (!hasImage) profileMissingItems.push('Profile photo')
 
   // Check Cal.com setup (availability)
   const scheduleResult = await getSchedule()
@@ -1088,6 +1098,11 @@ export const getMentorOnboardingStatus = async (): Promise<{
     !!scheduleResult.data &&
     Object.values(scheduleResult.data.weeklySchedule).some(day => day.length > 0)
 
+  const availabilityMissingItems: string[] = []
+  if (!hasAvailability) {
+    availabilityMissingItems.push('Set at least one time slot in your weekly schedule')
+  }
+
   // Check if any event types are enabled
   const eventTypesResult = await getMentorEventTypePreferences()
   const hasEnabledEventTypes =
@@ -1095,11 +1110,21 @@ export const getMentorOnboardingStatus = async (): Promise<{
     !!eventTypesResult.data &&
     eventTypesResult.data.some(et => et.isEnabled)
 
+  const eventTypesMissingItems: string[] = []
+  if (!hasEnabledEventTypes) {
+    eventTypesMissingItems.push('Enable at least one event type')
+  }
+
   // Check if pricing is set for enabled event types
   const hasPricing =
     eventTypesResult.success &&
     !!eventTypesResult.data &&
     eventTypesResult.data.some(et => et.isEnabled && et.customPrice !== null)
+
+  const pricingMissingItems: string[] = []
+  if (!hasPricing && hasEnabledEventTypes) {
+    pricingMissingItems.push('Set pricing for your enabled event types (can be free)')
+  }
 
   // Check if mentor has any free event types enabled
   const hasFreeEventTypes =
@@ -1119,10 +1144,14 @@ export const getMentorOnboardingStatus = async (): Promise<{
   const stripeStatus = await getMentorStripeStatus()
   const hasStripe = stripeStatus.success && !!stripeStatus.data?.chargesEnabled
 
+  const stripeMissingItems: string[] = []
+  if (!hasStripe) {
+    stripeMissingItems.push('Complete Stripe Connect account setup and verification')
+  }
+
   // Stripe is only required if mentor has ONLY paid event types (no free ones)
   // If they have at least one free event type, they can be active without Stripe
   const stripeRequired = hasPaidEventTypes && !hasFreeEventTypes
-  const stripeCompleted = stripeRequired ? hasStripe : true
 
   const steps = [
     {
@@ -1133,6 +1162,9 @@ export const getMentorOnboardingStatus = async (): Promise<{
       actionUrl: '/settings/profile/edit',
       actionLabel: 'Complete Profile',
       iconName: 'User',
+      missingItems: profileMissingItems,
+      estimatedTime: '3 min',
+      optional: false,
     },
     {
       id: 'availability',
@@ -1142,16 +1174,9 @@ export const getMentorOnboardingStatus = async (): Promise<{
       actionUrl: '/settings/availability',
       actionLabel: 'Set Availability',
       iconName: 'CalendarDays',
-    },
-    {
-      id: 'stripe',
-      title: 'Connect Stripe account',
-      description:
-        'Required only if you want to charge for sessions. Skip if offering only free sessions.',
-      completed: hasStripe,
-      actionUrl: '/settings/event-types',
-      actionLabel: 'Connect Stripe',
-      iconName: 'CreditCard',
+      missingItems: availabilityMissingItems,
+      estimatedTime: '5 min',
+      optional: false,
     },
     {
       id: 'event-types',
@@ -1161,27 +1186,42 @@ export const getMentorOnboardingStatus = async (): Promise<{
       actionUrl: '/settings/event-types',
       actionLabel: 'Enable Event Types',
       iconName: 'BookOpen',
+      missingItems: eventTypesMissingItems,
+      estimatedTime: '2 min',
+      optional: false,
     },
     {
       id: 'pricing',
       title: 'Set pricing',
-      description: 'Configure pricing for your sessions (free or paid)',
+      description: 'Configure pricing for your sessions (can be free or paid)',
       completed: hasPricing,
       actionUrl: '/settings/event-types',
       actionLabel: 'Set Pricing',
       iconName: 'DollarSign',
+      missingItems: pricingMissingItems,
+      estimatedTime: '2 min',
+      optional: false,
+    },
+    {
+      id: 'stripe',
+      title: 'Connect Stripe account',
+      description: stripeRequired
+        ? 'Required to receive payments for paid sessions'
+        : 'Optional - only needed if you want to charge for sessions',
+      completed: hasStripe,
+      actionUrl: '/settings/event-types',
+      actionLabel: 'Connect Stripe',
+      iconName: 'CreditCard',
+      missingItems: stripeMissingItems,
+      estimatedTime: '5 min',
+      optional: !stripeRequired,
     },
   ]
 
   // Calculate completion based on required steps
   // Stripe only counts if mentor has paid event types
-  const requiredSteps = steps.filter(s => s.id !== 'stripe' || stripeRequired)
-  const completedRequiredSteps = requiredSteps.filter(s => {
-    if (s.id === 'stripe') {
-      return stripeCompleted
-    }
-    return s.completed
-  })
+  const requiredSteps = steps.filter(s => !s.optional)
+  const completedRequiredSteps = requiredSteps.filter(s => s.completed)
 
   const completedCount = completedRequiredSteps.length
   const totalSteps = requiredSteps.length
