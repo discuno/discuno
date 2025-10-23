@@ -31,6 +31,10 @@ describe('Analytics Events and Ranking System', () => {
       })
       .returning()
 
+    if (!event) {
+      throw new Error('Failed to create analytics event')
+    }
+
     expect(event).toBeDefined()
     expect(event.eventType).toBe('PROFILE_VIEW')
     expect(event.targetUserId).toBe(testUserId)
@@ -46,6 +50,10 @@ describe('Analytics Events and Ranking System', () => {
         processed: false,
       })
       .returning()
+
+    if (!event) {
+      throw new Error('Failed to create analytics event')
+    }
 
     expect(event).toBeDefined()
     expect(event.eventType).toBe('COMPLETED_BOOKING')
@@ -91,6 +99,10 @@ describe('Analytics Events and Ranking System', () => {
         processed: false,
       })
       .returning()
+
+    if (!event) {
+      throw new Error('Failed to create analytics event')
+    }
 
     // Process the event
     await testDb
@@ -266,6 +278,10 @@ describe('Analytics Events and Ranking System', () => {
       })
       .returning()
 
+    if (!event) {
+      throw new Error('Failed to create analytics event')
+    }
+
     expect(event.createdAt).toBeDefined()
     expect(event.createdAt.getTime()).toBeLessThanOrEqual(Date.now())
   })
@@ -284,6 +300,10 @@ describe('Analytics Events and Ranking System', () => {
         processed: false,
       })
       .returning()
+
+    if (!event) {
+      throw new Error('Failed to create analytics event')
+    }
 
     // Event should be between yesterday and tomorrow
     expect(event.createdAt.getTime()).toBeGreaterThan(yesterday.getTime())

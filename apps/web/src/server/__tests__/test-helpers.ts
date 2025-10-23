@@ -97,6 +97,10 @@ export const createTestCalcomTokens = async (
 
   const [tokens] = await testDb.insert(calcomTokens).values(tokenData).returning()
 
+  if (!tokens) {
+    throw new Error('Failed to create Cal.com tokens')
+  }
+
   return tokens
 }
 
@@ -128,6 +132,10 @@ export const createTestEventType = async (
 
   const [eventType] = await testDb.insert(mentorEventTypes).values(eventTypeData).returning()
 
+  if (!eventType) {
+    throw new Error('Failed to create event type')
+  }
+
   return eventType
 }
 
@@ -154,6 +162,10 @@ export const createTestStripeAccount = async (
   }
 
   const [stripeAccount] = await testDb.insert(mentorStripeAccounts).values(stripeData).returning()
+
+  if (!stripeAccount) {
+    throw new Error('Failed to create Stripe account')
+  }
 
   return stripeAccount
 }
@@ -188,6 +200,10 @@ export const createTestBooking = async (
 
   const [booking] = await testDb.insert(bookings).values(bookingData).returning()
 
+  if (!booking) {
+    throw new Error('Failed to create booking')
+  }
+
   return booking
 }
 
@@ -210,6 +226,10 @@ export const createTestBookingAttendee = async (
   }
 
   const [attendee] = await testDb.insert(bookingAttendees).values(attendeeData).returning()
+
+  if (!attendee) {
+    throw new Error('Failed to create booking attendee')
+  }
 
   return attendee
 }
@@ -236,6 +256,10 @@ export const createTestBookingOrganizer = async (
 
   const [organizer] = await testDb.insert(bookingOrganizers).values(organizerData).returning()
 
+  if (!organizer) {
+    throw new Error('Failed to create booking organizer')
+  }
+
   return organizer
 }
 
@@ -255,6 +279,10 @@ export const createTestSchool = async (data?: {
 
   const [school] = await testDb.insert(schools).values(schoolData).returning()
 
+  if (!school) {
+    throw new Error('Failed to create school')
+  }
+
   return school
 }
 
@@ -267,6 +295,10 @@ export const createTestMajor = async (data?: { name?: string }) => {
   }
 
   const [major] = await testDb.insert(majors).values(majorData).returning()
+
+  if (!major) {
+    throw new Error('Failed to create major')
+  }
 
   return major
 }

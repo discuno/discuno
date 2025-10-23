@@ -28,6 +28,9 @@ describe('Mentor Stripe Account Setup', () => {
     })
 
     expect(stripeAccount).toBeDefined()
+    if (!stripeAccount) {
+      throw new Error('Failed to create Stripe account')
+    }
     expect(stripeAccount.stripeAccountStatus).toBe('pending')
     expect(stripeAccount.payoutsEnabled).toBe(false)
     expect(stripeAccount.chargesEnabled).toBe(false)
@@ -38,6 +41,10 @@ describe('Mentor Stripe Account Setup', () => {
     const stripeAccount = await createTestStripeAccount(testUserId, {
       stripeAccountStatus: 'pending',
     })
+
+    if (!stripeAccount) {
+      throw new Error('Failed to create Stripe account')
+    }
 
     // Update to active
     await testDb
@@ -56,11 +63,15 @@ describe('Mentor Stripe Account Setup', () => {
       where: eq(mentorStripeAccounts.id, stripeAccount.id),
     })
 
-    expect(updated?.stripeAccountStatus).toBe('active')
-    expect(updated?.chargesEnabled).toBe(true)
-    expect(updated?.payoutsEnabled).toBe(true)
-    expect(updated?.detailsSubmitted).toBe(true)
-    expect(updated?.onboardingCompleted).toBeDefined()
+    if (!updated) {
+      throw new Error('Failed to find updated Stripe account')
+    }
+
+    expect(updated.stripeAccountStatus).toBe('active')
+    expect(updated.chargesEnabled).toBe(true)
+    expect(updated.payoutsEnabled).toBe(true)
+    expect(updated.detailsSubmitted).toBe(true)
+    expect(updated.onboardingCompleted).toBeDefined()
   })
 
   it('should handle restricted Stripe account', async () => {
@@ -69,6 +80,10 @@ describe('Mentor Stripe Account Setup', () => {
       chargesEnabled: false,
       payoutsEnabled: false,
     })
+
+    if (!stripeAccount) {
+      throw new Error('Failed to create Stripe account')
+    }
 
     expect(stripeAccount.stripeAccountStatus).toBe('restricted')
     expect(stripeAccount.chargesEnabled).toBe(false)
@@ -101,6 +116,10 @@ describe('Mentor Stripe Account Setup', () => {
       payoutsEnabled: true,
     })
 
+    if (!stripeAccount) {
+      throw new Error('Failed to create Stripe account')
+    }
+
     expect(stripeAccount.chargesEnabled).toBe(true)
   })
 
@@ -111,6 +130,10 @@ describe('Mentor Stripe Account Setup', () => {
       payoutsEnabled: true,
     })
 
+    if (!stripeAccount) {
+      throw new Error('Failed to create Stripe account')
+    }
+
     expect(stripeAccount.payoutsEnabled).toBe(true)
   })
 
@@ -119,6 +142,10 @@ describe('Mentor Stripe Account Setup', () => {
     const stripeAccount = await createTestStripeAccount(testUserId, {
       stripeAccountStatus: 'pending',
     })
+
+    if (!stripeAccount) {
+      throw new Error('Failed to create Stripe account')
+    }
 
     // Update with onboarding completion
     await testDb
@@ -136,8 +163,12 @@ describe('Mentor Stripe Account Setup', () => {
       where: eq(mentorStripeAccounts.id, stripeAccount.id),
     })
 
-    expect(updated?.onboardingCompleted).toBeDefined()
-    expect(updated?.stripeAccountStatus).toBe('active')
+    if (!updated) {
+      throw new Error('Failed to find updated Stripe account')
+    }
+
+    expect(updated.onboardingCompleted).toBeDefined()
+    expect(updated.stripeAccountStatus).toBe('active')
   })
 
   it('should handle Stripe account with requirements', async () => {
@@ -152,6 +183,10 @@ describe('Mentor Stripe Account Setup', () => {
       detailsSubmitted: false,
     })
 
+    if (!stripeAccount) {
+      throw new Error('Failed to create Stripe account')
+    }
+
     // Update with requirements
     await testDb
       .update(mentorStripeAccounts)
@@ -165,7 +200,11 @@ describe('Mentor Stripe Account Setup', () => {
       where: eq(mentorStripeAccounts.id, stripeAccount.id),
     })
 
-    expect(updated?.requirements).toEqual(requirements)
+    if (!updated) {
+      throw new Error('Failed to find updated Stripe account')
+    }
+
+    expect(updated.requirements).toEqual(requirements)
   })
 
   it('should handle inactive Stripe account', async () => {
@@ -174,6 +213,10 @@ describe('Mentor Stripe Account Setup', () => {
       chargesEnabled: false,
       payoutsEnabled: false,
     })
+
+    if (!stripeAccount) {
+      throw new Error('Failed to create Stripe account')
+    }
 
     expect(stripeAccount.stripeAccountStatus).toBe('inactive')
   })
@@ -201,6 +244,10 @@ describe('Mentor Stripe Account Setup', () => {
       detailsSubmitted: true,
     })
 
+    if (!stripeAccount) {
+      throw new Error('Failed to create Stripe account')
+    }
+
     // Verify all fields
     expect(stripeAccount.stripeAccountStatus).toBe('active')
     expect(stripeAccount.chargesEnabled).toBe(true)
@@ -215,6 +262,10 @@ describe('Mentor Stripe Account Setup', () => {
       stripeAccountId: accountId,
     })
 
+    if (!account) {
+      throw new Error('Failed to create Stripe account')
+    }
+
     expect(account.stripeAccountId).toBe(accountId)
 
     // Verify it can be queried by Stripe account ID
@@ -222,6 +273,10 @@ describe('Mentor Stripe Account Setup', () => {
       where: eq(mentorStripeAccounts.stripeAccountId, accountId),
     })
 
-    expect(found?.id).toBe(account.id)
+    if (!found) {
+      throw new Error('Failed to find Stripe account by account ID')
+    }
+
+    expect(found.id).toBe(account.id)
   })
 })

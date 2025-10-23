@@ -77,6 +77,10 @@ describe('Mentor Profile Management', () => {
       location: 'Stanford, CA',
     })
 
+    if (!school) {
+      throw new Error('Failed to create school')
+    }
+
     // Associate user with school
     await testDb.insert(userSchools).values({
       userId: testUserId,
@@ -100,6 +104,10 @@ describe('Mentor Profile Management', () => {
     const major = await createTestMajor({
       name: 'Computer Science',
     })
+
+    if (!major) {
+      throw new Error('Failed to create major')
+    }
 
     // Associate user with major
     await testDb.insert(userMajors).values({
@@ -190,6 +198,11 @@ describe('Mentor Profile Management', () => {
     const major = await createTestMajor({
       name: 'Electrical Engineering',
     })
+
+    // Ensure school and major were created
+    if (!school || !major) {
+      throw new Error('Failed to create school or major')
+    }
 
     // Associate with user
     await testDb.insert(userSchools).values({
