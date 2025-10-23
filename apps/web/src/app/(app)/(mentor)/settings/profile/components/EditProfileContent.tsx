@@ -5,6 +5,7 @@ import { GraduationCap, User } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
+import { OnboardingInfoBanner } from '~/app/(app)/(mentor)/settings/components/OnboardingInfoBanner'
 import { updateUserProfile } from '~/app/(app)/(mentor)/settings/profile/actions'
 import { ProfileCard } from '~/app/(app)/(mentor)/settings/profile/components/ProfileCard'
 import { ProfileImageUpload } from '~/app/(app)/(mentor)/settings/profile/components/ProfileImageUpload'
@@ -69,6 +70,16 @@ export const EditProfileContent = ({ profile, schools, majors }: EditProfileCont
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      <OnboardingInfoBanner
+        title="Complete Your Profile"
+        description="Your profile helps students understand who you are and what you can help them with. A complete profile with a photo and detailed bio helps build trust."
+        tips={[
+          'Add a professional photo - profiles with photos get 3x more bookings',
+          'Write a detailed bio highlighting your experience and what you can help with',
+          'Your academic information helps students find mentors from their target schools',
+        ]}
+        storageKey="profile-banner-dismissed"
+      />
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Left Column - Profile Image */}
         <div className="lg:col-span-1">

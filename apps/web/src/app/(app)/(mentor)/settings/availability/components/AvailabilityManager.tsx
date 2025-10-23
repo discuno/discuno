@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { updateSchedule } from '~/app/(app)/(mentor)/settings/actions'
+import { OnboardingInfoBanner } from '~/app/(app)/(mentor)/settings/components/OnboardingInfoBanner'
 import type { Availability, DateOverride } from '~/app/types/availability'
 import { Button } from '~/components/ui/button'
 import { DateOverridesManager } from './DateOverridesManager'
@@ -77,6 +78,16 @@ export function AvailabilityManager({ initialAvailability }: AvailabilityManager
 
   return (
     <div className="space-y-8">
+      <OnboardingInfoBanner
+        title="Set Your Availability"
+        description="Configure when you're available for mentorship sessions. Students will only be able to book time slots within your availability."
+        tips={[
+          'Set recurring weekly hours for your regular schedule',
+          'Use date overrides for holidays, vacations, or one-time changes',
+          'You can always update your availability later',
+        ]}
+        storageKey="availability-banner-dismissed"
+      />
       <div className="grid gap-8 lg:grid-cols-2">
         <WeeklyScheduler
           schedule={availability.weeklySchedule}

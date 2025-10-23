@@ -4,6 +4,7 @@ import { type StripeConnectInstance } from '@stripe/connect-js/pure'
 import type { UseMutationResult } from '@tanstack/react-query'
 import { CreditCard, DollarSign, Settings, Timer } from 'lucide-react'
 import type { updateMentorEventTypePreferences } from '~/app/(app)/(mentor)/settings/actions'
+import { OnboardingInfoBanner } from '~/app/(app)/(mentor)/settings/components/OnboardingInfoBanner'
 import { StripeModal } from '~/app/(app)/(mentor)/settings/event-types/components/StripeOnboardingModal'
 import { Alert, AlertDescription } from '~/components/ui/alert'
 import { Badge } from '~/components/ui/badge'
@@ -92,6 +93,17 @@ export const EventTypeSettingsContent = ({
 
   return (
     <div className="space-y-6">
+      <OnboardingInfoBanner
+        title="Configure Your Session Types"
+        description="Choose which types of sessions you want to offer and set your pricing. You can offer free sessions, paid sessions, or a mix of both."
+        tips={[
+          'Start with free sessions to build reviews and reputation',
+          'Stripe is only required if you want to charge for sessions',
+          'You can enable multiple session lengths (15, 30, or 60 minutes)',
+          'Pricing can be updated anytime',
+        ]}
+        storageKey="event-types-banner-dismissed"
+      />
       {/* Stripe Connection Banner - Only shown when setup needed */}
       {needsStripeSetup && (
         <Alert
