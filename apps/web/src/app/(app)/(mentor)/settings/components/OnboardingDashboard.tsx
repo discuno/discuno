@@ -31,6 +31,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '~/components/ui/collapsible'
+import { QuickSetupDialog } from './QuickSetupDialog'
 
 export interface OnboardingStep {
   id: string
@@ -175,15 +176,23 @@ export const OnboardingDashboard = ({ initialStatus }: OnboardingDashboardProps)
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Activation Progress</CardTitle>
-            <Badge variant="secondary">
-              {completedSteps} of {totalSteps} completed
-            </Badge>
+            <div>
+              <CardTitle>Activation Progress</CardTitle>
+              <CardDescription>Complete all steps to activate your profile</CardDescription>
+            </div>
+            <QuickSetupDialog onSetupComplete={() => {}} />
           </div>
-          <CardDescription>Complete all steps to activate your profile</CardDescription>
         </CardHeader>
         <CardContent>
-          <Progress value={progressPercent} className="h-2" />
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Progress</span>
+              <Badge variant="secondary">
+                {completedSteps} of {totalSteps} completed
+              </Badge>
+            </div>
+            <Progress value={progressPercent} className="h-2" />
+          </div>
         </CardContent>
       </Card>
 
