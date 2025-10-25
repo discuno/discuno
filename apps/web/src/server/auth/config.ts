@@ -12,15 +12,7 @@ import { SignInEmail } from '~/lib/emails/templates/SignInEmail'
 import { enforceCalcomIntegration, syncMentorEventTypesForUser } from '~/server/auth/dal'
 import { getAllowedDomains } from '~/server/auth/domain-cache'
 import { db } from '~/server/db'
-import {
-  accounts,
-  posts,
-  schools,
-  sessions,
-  users,
-  userSchools,
-  verificationTokens,
-} from '~/server/db/schema'
+import { posts, schools, users, userSchools } from '~/server/db/schema'
 
 /**
  * Module augmentation for `next-auth` types. Allows us to add custom properties to the `session`
@@ -90,12 +82,7 @@ export const authConfig = {
     maxAge: 2 * 60 * 60, // 2 hours
     updateAge: 30 * 60, // 30 minutes
   },
-  adapter: DrizzleAdapter(db, {
-    usersTable: users,
-    accountsTable: accounts,
-    sessionsTable: sessions,
-    verificationTokensTable: verificationTokens,
-  }),
+  adapter: DrizzleAdapter(db),
   trustHost: true,
   debug: true,
   pages: {
