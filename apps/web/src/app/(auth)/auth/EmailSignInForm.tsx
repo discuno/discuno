@@ -15,7 +15,7 @@ export function EmailSignInForm() {
     e.preventDefault()
     setIsLoading(true)
     try {
-      const result = await signIn('nodemailer', {
+      const result = await signIn('resend', {
         email,
         redirect: false,
         callbackUrl: '/settings',
