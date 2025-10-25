@@ -2,9 +2,9 @@ import { DrizzleAdapter } from '@auth/drizzle-adapter'
 import { type DefaultSession, type NextAuthConfig } from 'next-auth'
 import GoogleProvider from 'next-auth/providers/google'
 import MicrosoftEntraID from 'next-auth/providers/microsoft-entra-id'
+import Resend from 'next-auth/providers/resend'
 
 import { eq } from 'drizzle-orm'
-import Nodemailer from 'next-auth/providers/nodemailer'
 import { env } from '~/env'
 import { downloadAndUploadProfileImage } from '~/lib/blob'
 import { resend } from '~/lib/emails'
@@ -62,9 +62,9 @@ export const authConfig = {
       allowDangerousEmailAccountLinking: true,
     }),
 
-    // Email provider cannot run in edge runtime in middleware
-    Nodemailer({
-      server: env.AUTH_EMAIL_SERVER,
+    // Resend provider for magic link email authentication
+    Resend({
+      apiKey: env.RESEND_API_KEY,
       from: env.AUTH_EMAIL_FROM,
       sendVerificationRequest: async ({ identifier: email, url }) => {
         const { host } = new URL(url)
