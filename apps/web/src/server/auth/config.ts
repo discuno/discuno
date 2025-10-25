@@ -96,6 +96,8 @@ export const authConfig = {
     sessionsTable: sessions,
     verificationTokensTable: verificationTokens,
   }),
+  trustHost: true,
+  debug: true,
   pages: {
     error: '/auth/error',
     signIn: '/auth',
@@ -231,5 +233,4 @@ export const authConfig = {
     },
   },
   secret: env.NEXTAUTH_SECRET,
-  trustHost: true, // Trust x-forwarded-host header from Vercel
 } satisfies NextAuthConfig
