@@ -31,6 +31,7 @@ export const auth = betterAuth({
       generateId: () => crypto.randomUUID(),
     },
   },
+  trustedOrigins: ['https://*.vercel.app', 'https://*.discuno.com'],
   databaseHooks: {
     user: {
       create: {
