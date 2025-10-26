@@ -26,6 +26,11 @@ export const auth = betterAuth({
       },
     },
   },
+  logger: {
+    disabled: false,
+    disableColors: false,
+    level: 'debug',
+  },
   advanced: {
     database: {
       generateId: () => crypto.randomUUID(),
