@@ -22,7 +22,13 @@ export const OtpEmail = ({ code, host }: Readonly<OtpEmailProps>) => (
     <Preview>Your sign-in code for {host}</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Img src={'/logos/black-icon-logo.png'} width="42" height="42" alt="Discuno" style={logo} />
+        <Img
+          src={'https://discuno.com/logos/black-icon-logo.png'}
+          width="42"
+          height="42"
+          alt="Discuno"
+          style={logo}
+        />
         <Text style={tertiary}>Sign In</Text>
         <Heading style={secondary}>Enter the following code to sign in.</Heading>
         <Section style={codeContainer}>
