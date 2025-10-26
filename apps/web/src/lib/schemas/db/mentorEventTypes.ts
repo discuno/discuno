@@ -1,15 +1,15 @@
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod'
 import { type z } from 'zod/v4'
 import { excludeFields } from '~/lib/schemas/db/helpers'
-import { mentorEventTypes } from '~/server/db/schema'
+import { mentorEventType } from '~/server/db/schema'
 
 const insertExcludedFields = {
-  ...excludeFields(mentorEventTypes, ['id', 'createdAt', 'updatedAt']),
+  ...excludeFields(mentorEventType, ['id', 'createdAt', 'updatedAt']),
 }
 
 const updateExcludedFields = {
   ...insertExcludedFields,
-  ...excludeFields(mentorEventTypes, [
+  ...excludeFields(mentorEventType, [
     'title',
     'description',
     'duration',
@@ -18,15 +18,9 @@ const updateExcludedFields = {
   ]),
 }
 
-export const selectMentorEventTypeSchema = createSelectSchema(mentorEventTypes)
-export const insertMentorEventTypeSchema = createInsertSchema(
-  mentorEventTypes,
-  insertExcludedFields
-)
-export const updateMentorEventTypeSchema = createUpdateSchema(
-  mentorEventTypes,
-  updateExcludedFields
-)
+export const selectMentorEventTypeSchema = createSelectSchema(mentorEventType)
+export const insertMentorEventTypeSchema = createInsertSchema(mentorEventType, insertExcludedFields)
+export const updateMentorEventTypeSchema = createUpdateSchema(mentorEventType, updateExcludedFields)
 
 export type MentorEventType = z.infer<typeof selectMentorEventTypeSchema>
 export type NewMentorEventType = Omit<

@@ -1,6 +1,7 @@
-import type { Session, User } from 'next-auth'
+import type { Session, User } from 'better-auth'
+import { headers } from 'next/headers'
+import { auth } from '~/lib/auth'
 import { UnauthenticatedError } from '~/lib/errors'
-import { auth } from '~/server/auth'
 
 export type AuthenticatedUser = User & {
   id: string
@@ -22,17 +23,21 @@ export {
  * Require authentication for a page
  * Use this in Server Components that require authentication
  */
-export const requireAuth = async (): Promise<AuthenticatedUser> => {
-  const session: Session | null = await auth()
+export const requireAuth = async (): Promise<{ session: Session; user: User }> => {
+  const res = await auth.api.getSession({
+    headers: await headers(),
+  })
 
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  if (!session?.user?.id) {
+  const session = res?.session
+  const user = res?.user
+
+  if (!session?.userId || !user) {
     throw new UnauthenticatedError()
   }
 
   return {
-    ...session.user,
-    id: session.user.id,
+    session,
+    user,
   }
 }
 
@@ -40,16 +45,20 @@ export const requireAuth = async (): Promise<AuthenticatedUser> => {
  * Get auth session without throwing
  * Returns null if not authenticated, useful for optional auth
  */
-export const getAuthSession = async (): Promise<AuthenticatedUser | null> => {
-  const session: Session | null = await auth()
+export const getAuthSession = async (): Promise<{ session: Session; user: User } | null> => {
+  const res = await auth.api.getSession({
+    headers: await headers(),
+  })
 
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  if (!session?.user?.id) {
+  const session = res?.session
+  const user = res?.user
+
+  if (!session?.userId || !user) {
     return null
   }
 
   return {
-    ...session.user,
-    id: session.user.id,
+    session,
+    user,
   }
 }

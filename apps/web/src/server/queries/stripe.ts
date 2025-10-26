@@ -14,7 +14,8 @@ import { getStripeAccountByUserId } from '~/server/dal/stripe'
  * Get mentor's Stripe account information
  */
 export const getMentorStripeAccount = cache(async (): Promise<MentorStripeAccount | null> => {
-  const { id: currentUserId } = await requireAuth()
+  const { user } = await requireAuth()
+  const currentUserId = user.id
 
   return getStripeAccountByUserId(currentUserId)
 })

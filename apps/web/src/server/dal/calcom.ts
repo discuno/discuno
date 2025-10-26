@@ -5,7 +5,7 @@ import { InternalServerError } from '~/lib/errors'
 import type { NewCalcomToken, UpdateCalcomToken } from '~/lib/schemas/db'
 import { insertCalcomTokenSchema, updateCalcomTokenSchema } from '~/lib/schemas/db'
 import { db } from '~/server/db'
-import { calcomTokens } from '~/server/db/schema'
+import { calcomToken } from '~/server/db/schema'
 
 /**
  * Data Access Layer for Cal.com tokens
@@ -16,8 +16,8 @@ import { calcomTokens } from '~/server/db/schema'
  * Get Cal.com tokens by user ID
  */
 export const getTokensByUserId = async (userId: string) => {
-  const tokens = await db.query.calcomTokens.findFirst({
-    where: eq(calcomTokens.userId, userId),
+  const tokens = await db.query.calcomToken.findFirst({
+    where: eq(calcomToken.userId, userId),
   })
 
   return tokens ?? null
@@ -31,11 +31,11 @@ export const getUsernameByUserId = async (
 ): Promise<{ calcomUsername: string; calcomUserId: number } | null> => {
   const [row] = await db
     .select({
-      calcomUsername: calcomTokens.calcomUsername,
-      calcomUserId: calcomTokens.calcomUserId,
+      calcomUsername: calcomToken.calcomUsername,
+      calcomUserId: calcomToken.calcomUserId,
     })
-    .from(calcomTokens)
-    .where(eq(calcomTokens.userId, userId))
+    .from(calcomToken)
+    .where(eq(calcomToken.userId, userId))
     .limit(1)
 
   if (!row?.calcomUsername) return null
@@ -46,8 +46,8 @@ export const getUsernameByUserId = async (
  * Get Cal.com tokens by username
  */
 export const getTokensByUsername = async (username: string) => {
-  const tokens = await db.query.calcomTokens.findFirst({
-    where: eq(calcomTokens.calcomUsername, username),
+  const tokens = await db.query.calcomToken.findFirst({
+    where: eq(calcomToken.calcomUsername, username),
   })
 
   return tokens ?? null
@@ -63,7 +63,7 @@ export const storeTokens = async (data: NewCalcomToken): Promise<void> => {
   const refreshExpiry = new Date(validData.refreshTokenExpiresAt)
 
   const res = await db
-    .insert(calcomTokens)
+    .insert(calcomToken)
     .values({
       ...validData,
       userId: validData.userId,
@@ -71,7 +71,7 @@ export const storeTokens = async (data: NewCalcomToken): Promise<void> => {
       refreshTokenExpiresAt: refreshExpiry,
     })
     .onConflictDoUpdate({
-      target: calcomTokens.userId,
+      target: calcomToken.userId,
       set: {
         ...validData,
         accessTokenExpiresAt: accessExpiry,
@@ -80,7 +80,7 @@ export const storeTokens = async (data: NewCalcomToken): Promise<void> => {
       },
     })
     .returning({
-      userId: calcomTokens.userId,
+      userId: calcomToken.userId,
     })
 
   if (res.length === 0) {
@@ -98,15 +98,15 @@ export const updateTokens = async (userId: string, data: UpdateCalcomToken): Pro
   const refreshExpiry = new Date(validData.refreshTokenExpiresAt ?? '')
 
   const res = await db
-    .update(calcomTokens)
+    .update(calcomToken)
     .set({
       ...validData,
       accessTokenExpiresAt: accessExpiry,
       refreshTokenExpiresAt: refreshExpiry,
       updatedAt: new Date(),
     })
-    .where(eq(calcomTokens.userId, userId))
-    .returning({ userId: calcomTokens.userId })
+    .where(eq(calcomToken.userId, userId))
+    .returning({ userId: calcomToken.userId })
 
   if (res.length === 0) {
     throw new InternalServerError('Failed to update calcom tokens')
@@ -119,10 +119,10 @@ export const updateTokens = async (userId: string, data: UpdateCalcomToken): Pro
 export const getUserIdByCalcomUserId = async (calcomUserId: number): Promise<string | null> => {
   const [result] = await db
     .select({
-      userId: calcomTokens.userId,
+      userId: calcomToken.userId,
     })
-    .from(calcomTokens)
-    .where(eq(calcomTokens.calcomUserId, calcomUserId))
+    .from(calcomToken)
+    .where(eq(calcomToken.calcomUserId, calcomUserId))
     .limit(1)
 
   return result?.userId ?? null

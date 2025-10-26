@@ -7,14 +7,12 @@ import {
   jsonb,
   pgEnum,
   pgTable,
-  primaryKey,
   real,
   text,
   timestamp,
   uuid,
   varchar,
 } from 'drizzle-orm/pg-core'
-import { type AdapterAccount } from 'next-auth/adapters'
 import { softDeleteTimestamps, timestamps } from '~/server/db/columns.helpers'
 
 /**
@@ -24,25 +22,64 @@ import { softDeleteTimestamps, timestamps } from '~/server/db/columns.helpers'
  * @see https://orm.drizzle.team/docs/goodies#multi-project-schema
  */
 
-export const users = pgTable('discuno_user', {
+export const user = pgTable('discuno_user', {
   id: uuid().defaultRandom().primaryKey(),
   name: varchar({ length: 255 }),
   email: varchar({ length: 255 }).unique(),
-  emailVerified: timestamp({
-    mode: 'date',
-    withTimezone: true,
-  }).default(sql`CURRENT_TIMESTAMP`),
+  emailVerified: boolean().default(false),
   image: varchar({ length: 255 }),
+  ...timestamps,
   ...softDeleteTimestamps,
 })
 
-export const posts = pgTable(
+export const session = pgTable('discuno_user_session', {
+  id: text().primaryKey(),
+  expiresAt: timestamp().notNull(),
+  token: text().notNull().unique(),
+  ipAddress: text(),
+  userAgent: text(),
+  userId: uuid()
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  ...timestamps,
+})
+
+export const account = pgTable(
+  'discuno_account',
+  {
+    id: text().primaryKey(),
+    accountId: text().notNull(),
+    providerId: text().notNull(),
+    userId: uuid()
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    accessToken: text(),
+    refreshToken: text(),
+    idToken: text(),
+    accessTokenExpiresAt: timestamp(),
+    refreshTokenExpiresAt: timestamp(),
+    scope: text(),
+    password: text(),
+    ...timestamps,
+  },
+  account => [index('account_user_id_idx').on(account.userId)]
+)
+
+export const verification = pgTable('discuno_verification', {
+  id: text().primaryKey(),
+  identifier: text().notNull(),
+  value: text().notNull(),
+  expiresAt: timestamp().notNull(),
+  ...timestamps,
+})
+
+export const post = pgTable(
   'discuno_post',
   {
     id: integer().primaryKey().generatedByDefaultAsIdentity(),
     createdById: uuid('created_by_id')
       .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
+      .references(() => user.id, { onDelete: 'cascade' }),
     random_sort_key: real('random_sort_key').default(Math.random()).notNull(),
     ...softDeleteTimestamps,
   },
@@ -55,78 +92,24 @@ export const posts = pgTable(
   ]
 )
 
-export const postsRelations = relations(posts, ({ one }) => ({
-  creator: one(users, { fields: [posts.createdById], references: [users.id] }), // Link 'createdById' with 'users.id'
+export const postsRelation = relations(post, ({ one }) => ({
+  creator: one(user, { fields: [post.createdById], references: [user.id] }), // Link 'createdById' with 'users.id'
 }))
 
-export const usersRelations = relations(users, ({ many, one }) => ({
-  accounts: many(accounts),
-  calcomTokens: one(calcomTokens),
-  stripeAccount: one(mentorStripeAccounts),
-  mentorEventTypes: many(mentorEventTypes),
+export const usersRelation = relations(user, ({ many, one }) => ({
+  accounts: many(account),
+  calcomTokens: one(calcomToken),
+  stripeAccount: one(mentorStripeAccount),
+  mentorEventTypes: many(mentorEventType),
 }))
 
-export const accounts = pgTable(
-  'discuno_account',
-  {
-    userId: uuid('user_id')
-      .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
-    type: varchar({ length: 255 }).$type<AdapterAccount['type']>().notNull(),
-    provider: varchar({ length: 255 }).notNull(),
-    // NextAuth requires snake case for these fields
-    providerAccountId: varchar({ length: 255 }).notNull(),
-    refresh_token: text(''),
-    access_token: text(''),
-    expires_at: integer(),
-    token_type: varchar({ length: 255 }),
-    scope: varchar({ length: 255 }),
-    id_token: text(),
-    session_state: varchar({ length: 255 }),
-  },
-  account => [
-    primaryKey({
-      columns: [account.provider, account.providerAccountId],
-    }),
-    index('account_user_id_idx').on(account.userId),
-  ]
-)
-
-export const accountsRelations = relations(accounts, ({ one }) => ({
-  user: one(users, { fields: [accounts.userId], references: [users.id] }),
+export const accountsRelation = relations(account, ({ one }) => ({
+  user: one(user, { fields: [account.userId], references: [user.id] }),
 }))
 
-export const sessions = pgTable(
-  'discuno_session',
-  {
-    sessionToken: varchar({ length: 255 }).notNull().primaryKey(),
-    userId: uuid('user_id')
-      .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
-    expires: timestamp({
-      mode: 'date',
-      withTimezone: true,
-    }).notNull(),
-  },
-  session => [index('session_user_id_idx').on(session.userId)]
-)
-
-export const sessionsRelations = relations(sessions, ({ one }) => ({
-  user: one(users, { fields: [sessions.userId], references: [users.id] }),
+export const sessionsRelation = relations(session, ({ one }) => ({
+  user: one(user, { fields: [session.userId], references: [user.id] }),
 }))
-
-export const verificationTokens = pgTable(
-  'discuno_verification_token',
-  {
-    identifier: varchar({ length: 255 }).notNull(),
-    token: varchar({ length: 255 }).notNull(),
-    expires: timestamp({
-      mode: 'date',
-      withTimezone: true,
-    }).notNull(),
-  },
-  vt => [primaryKey({ columns: [vt.identifier, vt.token] })]
-)
 
 export const schoolYearEnum = pgEnum('school_year', [
   'Freshman',
@@ -136,19 +119,19 @@ export const schoolYearEnum = pgEnum('school_year', [
   'Graduate',
 ] as const)
 
-export const userProfiles = pgTable(
+export const userProfile = pgTable(
   'discuno_user_profile',
   {
     id: integer().primaryKey().generatedByDefaultAsIdentity(),
     userId: uuid('user_id')
       .notNull()
       .unique()
-      .references(() => users.id, { onDelete: 'cascade' }),
+      .references(() => user.id, { onDelete: 'cascade' }),
     bio: varchar({ length: 1000 }),
     schoolYear: schoolYearEnum().notNull(),
     graduationYear: integer().notNull(), // E.g., 2027
     timezone: varchar({ length: 255 }).notNull().default('UTC'),
-    rankingScore: real('ranking_score').default(0).notNull(),
+    rankingScore: real().default(0).notNull(),
     ...softDeleteTimestamps,
   },
   table => [
@@ -161,35 +144,35 @@ export const userProfiles = pgTable(
   ]
 )
 
-export const userProfilesRelations = relations(userProfiles, ({ one }) => ({
-  user: one(users, { fields: [userProfiles.userId], references: [users.id] }),
+export const userProfilesRelation = relations(userProfile, ({ one }) => ({
+  user: one(user, { fields: [userProfile.userId], references: [user.id] }),
 }))
 
-export const userMajors = pgTable(
+export const userMajor = pgTable(
   'discuno_user_major',
   {
     id: integer().primaryKey().generatedByDefaultAsIdentity(),
-    userId: uuid('user_id')
+    userId: uuid()
       .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
+      .references(() => user.id, { onDelete: 'cascade' }),
     majorId: integer()
       .notNull()
-      .references(() => majors.id),
+      .references(() => major.id),
     ...softDeleteTimestamps,
   },
   table => [index('major_user_compound_idx').on(table.majorId, table.userId)]
 )
 
-export const userSchools = pgTable(
+export const userSchool = pgTable(
   'discuno_user_school',
   {
     id: integer().primaryKey().generatedByDefaultAsIdentity(),
-    userId: uuid('user_id')
+    userId: uuid()
       .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
+      .references(() => user.id, { onDelete: 'cascade' }),
     schoolId: integer()
       .notNull()
-      .references(() => schools.id),
+      .references(() => school.id),
     ...softDeleteTimestamps,
   },
   table => [
@@ -198,13 +181,13 @@ export const userSchools = pgTable(
   ]
 )
 
-export const majors = pgTable('discuno_major', {
+export const major = pgTable('discuno_major', {
   id: integer().primaryKey().generatedByDefaultAsIdentity(),
   name: varchar({ length: 255 }).notNull().unique(),
   ...timestamps,
 })
 
-export const schools = pgTable('discuno_school', {
+export const school = pgTable('discuno_school', {
   id: integer().primaryKey().generatedByDefaultAsIdentity(),
   name: varchar({ length: 255 }).unique().notNull(),
   domainPrefix: varchar({ length: 100 }).unique().notNull(), // e.g., 'stanford' for stanford.edu
@@ -215,16 +198,16 @@ export const schools = pgTable('discuno_school', {
   ...timestamps,
 })
 
-export const mentorReviews = pgTable(
+export const mentorReview = pgTable(
   'discuno_mentor_review',
   {
     id: integer().primaryKey().generatedByDefaultAsIdentity(),
     mentorId: uuid('mentor_id')
       .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
+      .references(() => user.id, { onDelete: 'cascade' }),
     userId: uuid('user_id')
       .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
+      .references(() => user.id, { onDelete: 'cascade' }),
     rating: integer().notNull(),
     review: varchar({ length: 1000 }),
     ...softDeleteTimestamps,
@@ -232,14 +215,14 @@ export const mentorReviews = pgTable(
   table => [check('rating_check', sql`${table.rating} >= 1 AND ${table.rating} <= 5`)]
 )
 
-export const calcomTokens = pgTable(
+export const calcomToken = pgTable(
   'discuno_calcom_token',
   {
     id: integer().primaryKey().generatedByDefaultAsIdentity(),
     userId: uuid('user_id')
       .notNull()
       .unique()
-      .references(() => users.id, { onDelete: 'cascade' }),
+      .references(() => user.id, { onDelete: 'cascade' }),
     calcomUserId: integer().notNull(), // Cal.com managed user ID
     calcomUsername: varchar({ length: 255 }).notNull(), // Cal.com generated username
     accessToken: text().notNull(),
@@ -261,8 +244,8 @@ export const calcomTokens = pgTable(
   ]
 )
 
-export const calcomTokensRelations = relations(calcomTokens, ({ one }) => ({
-  user: one(users, { fields: [calcomTokens.userId], references: [users.id] }),
+export const calcomTokenRelation = relations(calcomToken, ({ one }) => ({
+  user: one(user, { fields: [calcomToken.userId], references: [user.id] }),
 }))
 
 // Mentor Stripe account information
@@ -273,14 +256,14 @@ export const stripeAccountStatusEnum = pgEnum('stripe_account_status', [
   'inactive',
 ] as const)
 
-export const mentorStripeAccounts = pgTable(
+export const mentorStripeAccount = pgTable(
   'discuno_mentor_stripe_account',
   {
     id: integer().primaryKey().generatedByDefaultAsIdentity(),
     userId: uuid('user_id')
       .notNull()
       .unique()
-      .references(() => users.id, { onDelete: 'cascade' }),
+      .references(() => user.id, { onDelete: 'cascade' }),
     stripeAccountId: varchar({ length: 255 }).notNull().unique(),
     stripeAccountStatus: stripeAccountStatusEnum(),
     onboardingCompleted: timestamp({
@@ -299,18 +282,18 @@ export const mentorStripeAccounts = pgTable(
   ]
 )
 
-export const mentorStripeAccountsRelations = relations(mentorStripeAccounts, ({ one }) => ({
-  user: one(users, { fields: [mentorStripeAccounts.userId], references: [users.id] }),
+export const mentorStripeAccountRelation = relations(mentorStripeAccount, ({ one }) => ({
+  user: one(user, { fields: [mentorStripeAccount.userId], references: [user.id] }),
 }))
 
 // Mentor event type preferences and pricing (junction table)
-export const mentorEventTypes = pgTable(
+export const mentorEventType = pgTable(
   'discuno_mentor_event_type',
   {
     id: integer().primaryKey().generatedByDefaultAsIdentity(),
     mentorUserId: uuid('mentor_user_id')
       .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
+      .references(() => user.id, { onDelete: 'cascade' }),
     calcomEventTypeId: integer().unique().notNull(), // The mentor's individual Cal.com event type ID
     isEnabled: boolean().notNull().default(false), // Whether this mentor has enabled this event type
     customPrice: integer().default(0).notNull(), // Price in cents (e.g., 2500 = $25.00)
@@ -333,9 +316,9 @@ export const mentorEventTypes = pgTable(
   ]
 )
 
-export const mentorEventTypesRelations = relations(mentorEventTypes, ({ one, many }) => ({
-  user: one(users, { fields: [mentorEventTypes.mentorUserId], references: [users.id] }),
-  bookings: many(bookings),
+export const mentorEventTypeRelation = relations(mentorEventType, ({ one, many }) => ({
+  user: one(user, { fields: [mentorEventType.mentorUserId], references: [user.id] }),
+  bookings: many(booking),
 }))
 
 // Booking status enum
@@ -349,7 +332,7 @@ export const bookingStatusEnum = pgEnum('booking_status', [
 ] as const)
 
 // Bookings table to store Cal.com booking data
-export const bookings = pgTable(
+export const booking = pgTable(
   'discuno_booking',
   {
     id: integer().primaryKey().generatedByDefaultAsIdentity(),
@@ -370,16 +353,16 @@ export const bookings = pgTable(
     }).notNull(),
     status: bookingStatusEnum().notNull().default('PENDING'),
     meetingUrl: varchar({ length: 255 }),
-    hostNoShow: boolean('host_no_show').default(false),
-    attendeeNoShow: boolean('attendee_no_show').default(false),
+    hostNoShow: boolean().default(false),
+    attendeeNoShow: boolean().default(false),
 
     // Event type reference
-    mentorEventTypeId: integer().references(() => mentorEventTypes.id, {
+    mentorEventTypeId: integer().references(() => mentorEventType.id, {
       onDelete: 'set null',
     }),
 
     // Payment reference (will be set after payment is processed)
-    paymentId: integer().references(() => payments.id, { onDelete: 'set null' }),
+    paymentId: integer().references(() => payment.id, { onDelete: 'set null' }),
 
     // Response data (name, email, location, notes, etc.)
     responses: jsonb().default('{}'),
@@ -399,15 +382,15 @@ export const bookings = pgTable(
 )
 
 // Booking attendees table to store attendee information separately
-export const bookingAttendees = pgTable(
+export const bookingAttendee = pgTable(
   'discuno_booking_attendee',
   {
     id: integer().primaryKey().generatedByDefaultAsIdentity(),
     bookingId: integer()
       .notNull()
-      .references(() => bookings.id, { onDelete: 'cascade' }),
+      .references(() => booking.id, { onDelete: 'cascade' }),
     // Future proofing for logged in users
-    userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+    userId: uuid().references(() => user.id, { onDelete: 'set null' }),
     name: varchar({ length: 255 }).notNull(),
     email: varchar({ length: 255 }).notNull(),
     phoneNumber: varchar({ length: 255 }),
@@ -422,16 +405,16 @@ export const bookingAttendees = pgTable(
 )
 
 // Booking organizers table to store organizer (mentor) information separately
-export const bookingOrganizers = pgTable(
+export const bookingOrganizer = pgTable(
   'discuno_booking_organizer',
   {
     id: integer().primaryKey().generatedByDefaultAsIdentity(),
     bookingId: integer()
       .notNull()
-      .references(() => bookings.id, { onDelete: 'cascade' }),
-    userId: uuid('user_id')
+      .references(() => booking.id, { onDelete: 'cascade' }),
+    userId: uuid()
       .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
+      .references(() => user.id, { onDelete: 'cascade' }),
     name: varchar({ length: 255 }).notNull(),
     email: varchar({ length: 255 }).notNull(),
     username: varchar({ length: 255 }).notNull(),
@@ -444,24 +427,24 @@ export const bookingOrganizers = pgTable(
   ]
 )
 
-export const bookingsRelations = relations(bookings, ({ one, many }) => ({
-  mentorEventType: one(mentorEventTypes, {
-    fields: [bookings.mentorEventTypeId],
-    references: [mentorEventTypes.id],
+export const bookingRelation = relations(booking, ({ one, many }) => ({
+  mentorEventType: one(mentorEventType, {
+    fields: [booking.mentorEventTypeId],
+    references: [mentorEventType.id],
   }),
-  payment: one(payments, { fields: [bookings.paymentId], references: [payments.id] }),
-  attendees: many(bookingAttendees),
-  organizers: many(bookingOrganizers),
+  payment: one(payment, { fields: [booking.paymentId], references: [payment.id] }),
+  attendees: many(bookingAttendee),
+  organizers: many(bookingOrganizer),
 }))
 
-export const bookingAttendeesRelations = relations(bookingAttendees, ({ one }) => ({
-  booking: one(bookings, { fields: [bookingAttendees.bookingId], references: [bookings.id] }),
-  user: one(users, { fields: [bookingAttendees.userId], references: [users.id] }),
+export const bookingAttendeeRelation = relations(bookingAttendee, ({ one }) => ({
+  booking: one(booking, { fields: [bookingAttendee.bookingId], references: [booking.id] }),
+  user: one(user, { fields: [bookingAttendee.userId], references: [user.id] }),
 }))
 
-export const bookingOrganizersRelations = relations(bookingOrganizers, ({ one }) => ({
-  booking: one(bookings, { fields: [bookingOrganizers.bookingId], references: [bookings.id] }),
-  user: one(users, { fields: [bookingOrganizers.userId], references: [users.id] }),
+export const bookingOrganizerRelation = relations(bookingOrganizer, ({ one }) => ({
+  booking: one(booking, { fields: [bookingOrganizer.bookingId], references: [booking.id] }),
+  user: one(user, { fields: [bookingOrganizer.userId], references: [user.id] }),
 }))
 
 // Payment status enum
@@ -482,7 +465,7 @@ export const stripePaymentStatusEnum = pgEnum('stripe_payment_status', [
 ] as const)
 
 // Payments table to track Stripe payments and transfers
-export const payments = pgTable(
+export const payment = pgTable(
   'discuno_payment',
   {
     id: integer().primaryKey().generatedByDefaultAsIdentity(),
@@ -493,7 +476,7 @@ export const payments = pgTable(
 
     mentorUserId: uuid('mentor_user_id')
       .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
+      .references(() => user.id, { onDelete: 'cascade' }),
 
     customerEmail: varchar({ length: 255 }).notNull(),
     customerName: varchar({ length: 255 }).notNull(),
@@ -532,8 +515,8 @@ export const payments = pgTable(
   ]
 )
 
-export const paymentsRelations = relations(payments, ({ one }) => ({
-  mentorUser: one(users, { fields: [payments.mentorUserId], references: [users.id] }),
+export const paymentRelation = relations(payment, ({ one }) => ({
+  mentorUser: one(user, { fields: [payment.mentorUserId], references: [user.id] }),
 }))
 
 export const analyticsEventEnum = pgEnum('analytics_event_type', [
@@ -545,22 +528,22 @@ export const analyticsEventEnum = pgEnum('analytics_event_type', [
   'CANCELLED_BOOKING',
 ])
 
-export const analyticsEvents = pgTable(
+export const analyticEvent = pgTable(
   'discuno_analytics_event',
   {
     id: integer().primaryKey().generatedByDefaultAsIdentity(),
-    eventType: analyticsEventEnum('event_type').notNull(),
-    actorUserId: uuid('actor_user_id').references(() => users.id, {
+    eventType: analyticsEventEnum().notNull(),
+    actorUserId: uuid().references(() => user.id, {
       onDelete: 'set null',
     }), // User performing the action (optional)
-    targetUserId: uuid('target_user_id')
+    targetUserId: uuid()
       .notNull()
-      .references(() => users.id, {
+      .references(() => user.id, {
         onDelete: 'no action',
       }), // User being acted upon
-    postId: integer().references(() => posts.id, { onDelete: 'set null' }),
+    postId: integer().references(() => post.id, { onDelete: 'set null', onUpdate: 'cascade' }),
     distinctId: varchar({ length: 255 }), // PostHog distinct_id (anonymous or authenticated)
-    processed: boolean('processed').default(false).notNull(),
+    processed: boolean().default(false).notNull(),
     ...softDeleteTimestamps,
   },
   table => [

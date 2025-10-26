@@ -3,7 +3,7 @@ import 'server-only'
 import type { NewAnalyticsEvent, NewMentorReview } from '~/lib/schemas/db'
 import { insertAnalyticsEventSchema, insertMentorReviewSchema } from '~/lib/schemas/db'
 import { db } from '~/server/db'
-import { analyticsEvents, mentorReviews } from '~/server/db/schema'
+import { analyticEvent, mentorReview } from '~/server/db/schema'
 
 /**
  * Data Access Layer for analytics and reviews
@@ -15,7 +15,7 @@ import { analyticsEvents, mentorReviews } from '~/server/db/schema'
  */
 export const createAnalyticsEvent = async (data: NewAnalyticsEvent) => {
   const validatedData = insertAnalyticsEventSchema.parse(data)
-  return db.insert(analyticsEvents).values(validatedData).returning()
+  return db.insert(analyticEvent).values(validatedData).returning()
 }
 
 /**
@@ -23,5 +23,5 @@ export const createAnalyticsEvent = async (data: NewAnalyticsEvent) => {
  */
 export const createMentorReview = async (data: NewMentorReview) => {
   const validatedData = insertMentorReviewSchema.parse(data)
-  return db.insert(mentorReviews).values(validatedData).returning()
+  return db.insert(mentorReview).values(validatedData).returning()
 }

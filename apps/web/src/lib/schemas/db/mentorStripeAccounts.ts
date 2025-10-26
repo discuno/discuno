@@ -1,23 +1,23 @@
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod'
 import { type z } from 'zod/v4'
 import { excludeFields } from '~/lib/schemas/db/helpers'
-import { mentorStripeAccounts } from '~/server/db/schema'
+import { mentorStripeAccount } from '~/server/db/schema'
 
 const insertExcludedFields = {
-  ...excludeFields(mentorStripeAccounts, ['id', 'createdAt', 'updatedAt']),
+  ...excludeFields(mentorStripeAccount, ['id', 'createdAt', 'updatedAt']),
 }
 const updateExcludedFields = {
   ...insertExcludedFields,
-  ...excludeFields(mentorStripeAccounts, ['userId', 'stripeAccountId']),
+  ...excludeFields(mentorStripeAccount, ['userId', 'stripeAccountId']),
 }
 
-export const selectMentorStripeAccountSchema = createSelectSchema(mentorStripeAccounts)
+export const selectMentorStripeAccountSchema = createSelectSchema(mentorStripeAccount)
 export const insertMentorStripeAccountSchema = createInsertSchema(
-  mentorStripeAccounts,
+  mentorStripeAccount,
   insertExcludedFields
 )
 export const updateMentorStripeAccountSchema = createUpdateSchema(
-  mentorStripeAccounts,
+  mentorStripeAccount,
   updateExcludedFields
 )
 

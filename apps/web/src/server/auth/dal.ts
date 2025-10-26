@@ -4,7 +4,7 @@ import { and, eq, inArray, sql } from 'drizzle-orm'
 import { cache } from 'react'
 import { createCalcomUser, fetchCalcomEventTypesByUsername } from '~/lib/calcom'
 import { db } from '~/server/db'
-import { calcomTokens, mentorEventTypes } from '~/server/db/schema'
+import { calcomToken, mentorEventType } from '~/server/db/schema'
 import { getCalcomUsernameByUserId } from '~/server/queries/calcom'
 
 /**
@@ -16,8 +16,8 @@ import { getCalcomUsernameByUserId } from '~/server/queries/calcom'
  */
 export const hasCalcomIntegration = cache(async (userId: string): Promise<boolean> => {
   try {
-    const token = await db.query.calcomTokens.findFirst({
-      where: eq(calcomTokens.userId, userId),
+    const token = await db.query.calcomToken.findFirst({
+      where: eq(calcomToken.userId, userId),
     })
     return !!token
   } catch (error) {
@@ -47,8 +47,8 @@ export const createCalcomUserForNewUser = async ({
   if (hasIntegration) {
     console.log(`User ${userId} already has Cal.com integration, skipping creation`)
     // Get existing Cal.com user info
-    const token = await db.query.calcomTokens.findFirst({
-      where: eq(calcomTokens.userId, userId),
+    const token = await db.query.calcomToken.findFirst({
+      where: eq(calcomToken.userId, userId),
     })
     if (!token) {
       throw new Error('Cal.com integration check failed: token not found')
@@ -191,13 +191,13 @@ export const syncMentorEventTypesForUser = async (
       // Fetch existing event types for this mentor (include metadata for change detection)
       const existing = await tx
         .select({
-          calcomEventTypeId: mentorEventTypes.calcomEventTypeId,
-          title: mentorEventTypes.title,
-          description: mentorEventTypes.description,
-          duration: mentorEventTypes.duration,
+          calcomEventTypeId: mentorEventType.calcomEventTypeId,
+          title: mentorEventType.title,
+          description: mentorEventType.description,
+          duration: mentorEventType.duration,
         })
-        .from(mentorEventTypes)
-        .where(eq(mentorEventTypes.mentorUserId, userId))
+        .from(mentorEventType)
+        .where(eq(mentorEventType.mentorUserId, userId))
 
       const { toCreateIds, toUpdateIds, toDeleteIds } = computeEventTypeSyncPlan(existing, remote)
 
@@ -271,10 +271,10 @@ export const syncMentorEventTypesForUser = async (
 
       if (valuesToUpsert.length > 0) {
         await tx
-          .insert(mentorEventTypes)
+          .insert(mentorEventType)
           .values(valuesToUpsert)
           .onConflictDoUpdate({
-            target: mentorEventTypes.calcomEventTypeId,
+            target: mentorEventType.calcomEventTypeId,
             set: {
               title: sql`excluded.title`,
               description: sql`excluded.description`,
@@ -286,11 +286,11 @@ export const syncMentorEventTypesForUser = async (
 
       if (toDeleteIds.length > 0) {
         await tx
-          .delete(mentorEventTypes)
+          .delete(mentorEventType)
           .where(
             and(
-              eq(mentorEventTypes.mentorUserId, userId),
-              inArray(mentorEventTypes.calcomEventTypeId, toDeleteIds)
+              eq(mentorEventType.mentorUserId, userId),
+              inArray(mentorEventType.calcomEventTypeId, toDeleteIds)
             )
           )
       }

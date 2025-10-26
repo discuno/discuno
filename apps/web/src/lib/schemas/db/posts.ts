@@ -1,20 +1,20 @@
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod'
 import { type z } from 'zod/v4'
 import { excludeFields } from '~/lib/schemas/db/helpers'
-import { posts } from '~/server/db/schema'
+import { post } from '~/server/db/schema'
 
 const insertExcludedFields = {
-  ...excludeFields(posts, ['id', 'createdAt', 'updatedAt', 'deletedAt']),
+  ...excludeFields(post, ['id', 'createdAt', 'updatedAt', 'deletedAt']),
 }
 
 const updateExcludedFields = {
   ...insertExcludedFields,
-  ...excludeFields(posts, ['createdById']),
+  ...excludeFields(post, ['createdById']),
 }
 
-export const selectPostSchema = createSelectSchema(posts)
-export const insertPostSchema = createInsertSchema(posts, insertExcludedFields)
-export const updatePostSchema = createUpdateSchema(posts, updateExcludedFields)
+export const selectPostSchema = createSelectSchema(post)
+export const insertPostSchema = createInsertSchema(post, insertExcludedFields)
+export const updatePostSchema = createUpdateSchema(post, updateExcludedFields)
 
 export type Post = z.infer<typeof selectPostSchema>
 export type NewPost = Omit<z.infer<typeof insertPostSchema>, keyof typeof insertExcludedFields>

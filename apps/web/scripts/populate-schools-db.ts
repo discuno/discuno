@@ -12,7 +12,7 @@
 import { config } from 'dotenv'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
-import { schools } from '../src/server/db/schema'
+import { school } from '../src/server/db/schema'
 import schoolData from './us_schools_sorted.json'
 
 type Environment = 'local' | 'preview' | 'production'
@@ -102,12 +102,12 @@ const main = async () => {
     }
 
     // Insert with conflict resolution (skip duplicates)
-    await db.insert(schools).values(validSchools).onConflictDoNothing()
+    await db.insert(school).values(validSchools).onConflictDoNothing()
 
     console.log('✅ Schools populated successfully!')
     console.log(`📈 Inserted or skipped ${validSchools.length} schools`)
 
-    const countResult = await db.$count(schools)
+    const countResult = await db.$count(school)
     console.log(`📊 Total schools in database: ${countResult}`)
   } catch (error) {
     console.error('❌ Failed to populate schools:', error)

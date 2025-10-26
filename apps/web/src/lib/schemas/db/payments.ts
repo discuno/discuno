@@ -1,15 +1,15 @@
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod'
 import { type z } from 'zod/v4'
 import { excludeFields } from '~/lib/schemas/db/helpers'
-import { payments } from '~/server/db/schema'
+import { payment } from '~/server/db/schema'
 
 const insertExcludedFields = {
-  ...excludeFields(payments, ['id', 'createdAt', 'updatedAt']),
+  ...excludeFields(payment, ['id', 'createdAt', 'updatedAt']),
 }
 
 const updateExcludedFields = {
   ...insertExcludedFields,
-  ...excludeFields(payments, [
+  ...excludeFields(payment, [
     'stripePaymentIntentId',
     'stripeCheckoutSessionId',
     'mentorUserId',
@@ -22,9 +22,9 @@ const updateExcludedFields = {
   ]),
 }
 
-export const selectPaymentSchema = createSelectSchema(payments)
-export const insertPaymentSchema = createInsertSchema(payments, insertExcludedFields)
-export const updatePaymentSchema = createUpdateSchema(payments, updateExcludedFields)
+export const selectPaymentSchema = createSelectSchema(payment)
+export const insertPaymentSchema = createInsertSchema(payment, insertExcludedFields)
+export const updatePaymentSchema = createUpdateSchema(payment, updateExcludedFields)
 
 export type Payment = z.infer<typeof selectPaymentSchema>
 export type NewPayment = Omit<

@@ -2,19 +2,7 @@ import { config } from 'dotenv'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 import Stripe from 'stripe'
-import {
-  calcomTokens,
-  majors,
-  mentorEventTypes,
-  mentorReviews,
-  mentorStripeAccounts,
-  posts,
-  schools,
-  userMajors,
-  userProfiles,
-  users,
-  userSchools,
-} from '~/server/db/schema'
+import * as schema from '~/server/db/schema'
 
 /**
  * Database seeding utility for Railway PostgreSQL using manual insertion
@@ -399,9 +387,9 @@ export const seedDatabase = async (environment?: Environment) => {
       // Note: bookings, attendees, organizers, and payments will be created via webhooks/API, not seeded
     }
 
-    type InsertedMajor = typeof majors.$inferSelect
-    type InsertedSchool = typeof schools.$inferSelect
-    type InsertedUser = typeof users.$inferSelect
+    type InsertedMajor = typeof schema.major.$inferSelect
+    type InsertedSchool = typeof schema.school.$inferSelect
+    type InsertedUser = typeof schema.user.$inferSelect
 
     let insertedMajors: InsertedMajor[] = []
     let insertedSchools: InsertedSchool[] = []
@@ -411,7 +399,7 @@ export const seedDatabase = async (environment?: Environment) => {
     try {
       console.log('📚 Inserting majors...')
       insertedMajors = await db
-        .insert(majors)
+        .insert(schema.major)
         .values(majorNames.map(name => ({ name })))
         .returning()
       seedResults.majors = true
@@ -423,7 +411,7 @@ export const seedDatabase = async (environment?: Environment) => {
     // Step 2: Insert schools
     try {
       console.log('🏫 Inserting schools...')
-      insertedSchools = await db.insert(schools).values(schoolData).returning()
+      insertedSchools = await db.insert(schema.school).values(schoolData).returning()
       seedResults.schools = true
       console.log('✅ Schools seeded successfully')
     } catch (error) {
@@ -434,7 +422,7 @@ export const seedDatabase = async (environment?: Environment) => {
     try {
       console.log('👥 Inserting mentor users...')
       const userData = generateUserData(50) // Only create mentors
-      insertedUsers = await db.insert(users).values(userData).returning()
+      insertedUsers = await db.insert(schema.user).values(userData).returning()
       seedResults.users = true
       console.log('✅ Users seeded successfully')
     } catch (error) {
@@ -457,7 +445,7 @@ export const seedDatabase = async (environment?: Environment) => {
             graduationYear,
           }
         })
-        await db.insert(userProfiles).values(userProfileData)
+        await db.insert(schema.userProfile).values(userProfileData)
         seedResults.userProfiles = true
         console.log('✅ User profiles seeded successfully')
       } catch (error) {
@@ -481,7 +469,7 @@ export const seedDatabase = async (environment?: Environment) => {
             })
           }
         }
-        await db.insert(userMajors).values(userMajorData)
+        await db.insert(schema.userMajor).values(userMajorData)
         seedResults.userMajors = true
         console.log('✅ User majors seeded successfully')
       } catch (error) {
@@ -497,7 +485,7 @@ export const seedDatabase = async (environment?: Environment) => {
           userId: user.id,
           schoolId: getRandomElement(insertedSchools).id,
         }))
-        await db.insert(userSchools).values(userSchoolData)
+        await db.insert(schema.userSchool).values(userSchoolData)
         seedResults.userSchools = true
         console.log('✅ User schools seeded successfully')
       } catch (error) {
@@ -514,7 +502,7 @@ export const seedDatabase = async (environment?: Environment) => {
         const postData = postingUsers.map(user => ({
           createdById: user.id,
         }))
-        await db.insert(posts).values(postData)
+        await db.insert(schema.post).values(postData)
         seedResults.posts = true
         console.log('✅ Posts seeded successfully')
       } catch (error) {
@@ -553,7 +541,7 @@ export const seedDatabase = async (environment?: Environment) => {
             })
           }
         }
-        await db.insert(mentorReviews).values(reviewData)
+        await db.insert(schema.mentorReview).values(reviewData)
         seedResults.mentorReviews = true
         console.log('✅ Mentor reviews seeded successfully')
       } catch (error) {
@@ -674,7 +662,7 @@ export const seedDatabase = async (environment?: Environment) => {
 
         if (calcomTokenData.length > 0) {
           console.log('📑 Inserting Cal.com tokens into DB...')
-          await db.insert(calcomTokens).values(calcomTokenData)
+          await db.insert(schema.calcomToken).values(calcomTokenData)
         }
         seedResults.calcomTokens = true
         console.log('✅ Cal.com tokens seeded successfully')
@@ -687,7 +675,7 @@ export const seedDatabase = async (environment?: Environment) => {
     if (insertedUsers.length > 0) {
       try {
         console.log('💳 Creating Stripe Connect test accounts for mentors...')
-        type StripeAccountData = typeof mentorStripeAccounts.$inferInsert
+        type StripeAccountData = typeof schema.mentorStripeAccount.$inferInsert
         const stripeAccountData: StripeAccountData[] = []
 
         const stripeSecretKey = process.env.STRIPE_SECRET_KEY
@@ -754,7 +742,7 @@ export const seedDatabase = async (environment?: Environment) => {
 
         if (stripeAccountData.length > 0) {
           console.log('📑 Inserting Stripe Connect accounts into DB...')
-          await db.insert(mentorStripeAccounts).values(stripeAccountData)
+          await db.insert(schema.mentorStripeAccount).values(stripeAccountData)
         }
         seedResults.stripeAccounts = true
         console.log('✅ Stripe Connect accounts seeded successfully')
@@ -768,7 +756,7 @@ export const seedDatabase = async (environment?: Environment) => {
       try {
         console.log('🔄 Populating mentor event types from Cal.com...')
         const calcomApiBase = process.env.NEXT_PUBLIC_CALCOM_API_URL
-        const allCalcomTokens = await db.select().from(calcomTokens)
+        const allCalcomTokens = await db.select().from(schema.calcomToken)
 
         const userToCalcomInfoMap = new Map(
           allCalcomTokens.map(token => [
@@ -831,7 +819,7 @@ export const seedDatabase = async (environment?: Environment) => {
         }
 
         if (mentorEventTypesData.length > 0) {
-          await db.insert(mentorEventTypes).values(mentorEventTypesData)
+          await db.insert(schema.mentorEventType).values(mentorEventTypesData)
         }
 
         seedResults.mentorEventTypes = true
@@ -872,12 +860,12 @@ export const seedProductionData = async () => {
   try {
     console.log('📚 Inserting majors...')
     await db
-      .insert(majors)
+      .insert(schema.major)
       .values(majorNames.map(name => ({ name })))
       .onConflictDoNothing()
 
     console.log('🏫 Inserting schools...')
-    await db.insert(schools).values(schoolData).onConflictDoNothing()
+    await db.insert(schema.school).values(schoolData).onConflictDoNothing()
 
     console.log('✅ Production data seeded successfully')
   } catch (error) {

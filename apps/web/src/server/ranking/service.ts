@@ -2,7 +2,7 @@ import 'server-only'
 
 import { eq, inArray, sql } from 'drizzle-orm'
 import { db } from '~/server/db'
-import { analyticsEvents, userProfiles } from '~/server/db/schema'
+import { analyticEvent, userProfile } from '~/server/db/schema'
 import { revalidatePosts } from '~/server/queries/posts'
 
 export const RANKING_EVENT_WEIGHTS = {
@@ -28,7 +28,7 @@ export async function decayRankingScores() {
   console.log(
     `typeof RANKING_EVENT_WEIGHTS.WEEKLY_DECAY_PERCENTAGE: ${typeof RANKING_EVENT_WEIGHTS.WEEKLY_DECAY_PERCENTAGE}`
   )
-  await db.update(userProfiles).set({
+  await db.update(userProfile).set({
     rankingScore: sql`"ranking_score" * (1.0 - ${RANKING_EVENT_WEIGHTS.WEEKLY_DECAY_PERCENTAGE})`,
   })
   console.log('DECAYING RANKING SCORES: Invalidating posts cache')
@@ -40,7 +40,7 @@ export async function decayRankingScores() {
  */
 export async function processAnalyticsEvents() {
   // Get all unprocessed analytics events
-  const events = await db.query.analyticsEvents.findMany({
+  const events = await db.query.analyticEvent.findMany({
     where: (events, { eq }) => eq(events.processed, false),
   })
 
@@ -61,22 +61,22 @@ export async function processAnalyticsEvents() {
   // Update mentor ranking scores in a batch
   const promises = Array.from(scoreChanges.entries()).map(([mentorId, scoreChange]) => {
     return db
-      .update(userProfiles)
+      .update(userProfile)
       .set({
         rankingScore: sql`"ranking_score" + ${scoreChange}`,
       })
-      .where(eq(userProfiles.userId, mentorId))
+      .where(eq(userProfile.userId, mentorId))
   })
 
   await Promise.all(promises)
 
   // Mark events as processed
   await db
-    .update(analyticsEvents)
+    .update(analyticEvent)
     .set({ processed: true })
     .where(
       inArray(
-        analyticsEvents.id,
+        analyticEvent.id,
         events.map(e => e.id)
       )
     )

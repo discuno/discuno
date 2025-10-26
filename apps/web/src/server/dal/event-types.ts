@@ -1,11 +1,11 @@
 import 'server-only'
 
 import { and, eq, inArray, isNotNull, sql } from 'drizzle-orm'
+import { NotFoundError } from '~/lib/errors'
 import type { UpdateMentorEventType } from '~/lib/schemas/db'
 import { updateMentorEventTypeSchema } from '~/lib/schemas/db'
-import { NotFoundError } from '~/lib/errors'
 import { db } from '~/server/db'
-import { mentorEventTypes, mentorStripeAccounts } from '~/server/db/schema'
+import { mentorEventType, mentorStripeAccount } from '~/server/db/schema'
 
 /**
  * Data Access Layer for mentor event types
@@ -16,8 +16,8 @@ import { mentorEventTypes, mentorStripeAccounts } from '~/server/db/schema'
  * Get all event types for a mentor
  */
 export const getEventTypesByUserId = async (userId: string) => {
-  return db.query.mentorEventTypes.findMany({
-    where: eq(mentorEventTypes.mentorUserId, userId),
+  return db.query.mentorEventType.findMany({
+    where: eq(mentorEventType.mentorUserId, userId),
   })
 }
 
@@ -25,8 +25,8 @@ export const getEventTypesByUserId = async (userId: string) => {
  * Get single event type by Cal.com event type ID
  */
 export const getEventTypeByCalcomId = async (calcomEventTypeId: number) => {
-  return db.query.mentorEventTypes.findFirst({
-    where: eq(mentorEventTypes.calcomEventTypeId, calcomEventTypeId),
+  return db.query.mentorEventType.findFirst({
+    where: eq(mentorEventType.calcomEventTypeId, calcomEventTypeId),
   })
 }
 
@@ -36,21 +36,21 @@ export const getEventTypeByCalcomId = async (calcomEventTypeId: number) => {
 export const getEnabledEventTypesWithStripeStatus = async (userId: string) => {
   return db
     .select({
-      calcomEventTypeId: mentorEventTypes.calcomEventTypeId,
-      title: mentorEventTypes.title,
-      description: mentorEventTypes.description,
-      duration: mentorEventTypes.duration,
-      customPrice: mentorEventTypes.customPrice,
-      currency: mentorEventTypes.currency,
-      chargesEnabled: mentorStripeAccounts.chargesEnabled,
+      calcomEventTypeId: mentorEventType.calcomEventTypeId,
+      title: mentorEventType.title,
+      description: mentorEventType.description,
+      duration: mentorEventType.duration,
+      customPrice: mentorEventType.customPrice,
+      currency: mentorEventType.currency,
+      chargesEnabled: mentorStripeAccount.chargesEnabled,
     })
-    .from(mentorEventTypes)
-    .leftJoin(mentorStripeAccounts, eq(mentorEventTypes.mentorUserId, mentorStripeAccounts.userId))
+    .from(mentorEventType)
+    .leftJoin(mentorStripeAccount, eq(mentorEventType.mentorUserId, mentorStripeAccount.userId))
     .where(
       and(
-        eq(mentorEventTypes.mentorUserId, userId),
-        eq(mentorEventTypes.isEnabled, true),
-        isNotNull(mentorEventTypes.calcomEventTypeId)
+        eq(mentorEventType.mentorUserId, userId),
+        eq(mentorEventType.isEnabled, true),
+        isNotNull(mentorEventType.calcomEventTypeId)
       )
     )
 }
@@ -65,10 +65,10 @@ export const updateEventType = async (
   const validData = updateMentorEventTypeSchema.parse(data)
 
   const res = await db
-    .update(mentorEventTypes)
+    .update(mentorEventType)
     .set(validData)
-    .where(eq(mentorEventTypes.calcomEventTypeId, calcomEventTypeId))
-    .returning({ id: mentorEventTypes.id })
+    .where(eq(mentorEventType.calcomEventTypeId, calcomEventTypeId))
+    .returning({ id: mentorEventType.id })
 
   if (res.length === 0) {
     throw new NotFoundError(`Mentor event type with Cal.com ID ${calcomEventTypeId} not found`)
@@ -96,10 +96,10 @@ export const upsertEventTypes = async (
   const now = new Date()
 
   await db
-    .insert(mentorEventTypes)
+    .insert(mentorEventType)
     .values(values)
     .onConflictDoUpdate({
-      target: mentorEventTypes.calcomEventTypeId,
+      target: mentorEventType.calcomEventTypeId,
       set: {
         title: sql`excluded.title`,
         description: sql`excluded.description`,
@@ -119,11 +119,11 @@ export const deleteEventTypesByCalcomIds = async (
   if (calcomEventTypeIds.length === 0) return
 
   await db
-    .delete(mentorEventTypes)
+    .delete(mentorEventType)
     .where(
       and(
-        eq(mentorEventTypes.mentorUserId, userId),
-        inArray(mentorEventTypes.calcomEventTypeId, calcomEventTypeIds)
+        eq(mentorEventType.mentorUserId, userId),
+        inArray(mentorEventType.calcomEventTypeId, calcomEventTypeIds)
       )
     )
 }
@@ -134,11 +134,11 @@ export const deleteEventTypesByCalcomIds = async (
 export const getExistingEventTypesForSync = async (userId: string) => {
   return db
     .select({
-      calcomEventTypeId: mentorEventTypes.calcomEventTypeId,
-      title: mentorEventTypes.title,
-      description: mentorEventTypes.description,
-      duration: mentorEventTypes.duration,
+      calcomEventTypeId: mentorEventType.calcomEventTypeId,
+      title: mentorEventType.title,
+      description: mentorEventType.description,
+      duration: mentorEventType.duration,
     })
-    .from(mentorEventTypes)
-    .where(eq(mentorEventTypes.mentorUserId, userId))
+    .from(mentorEventType)
+    .where(eq(mentorEventType.mentorUserId, userId))
 }

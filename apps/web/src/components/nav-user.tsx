@@ -3,8 +3,8 @@
 import { ChevronsUpDown, HelpCircle, LogOut, Moon, Sun } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
-import { signOut } from 'next-auth/react'
 import { type getFullProfileAction } from '~/app/(app)/(mentor)/settings/actions'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import {
@@ -22,12 +22,14 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '~/components/ui/sidebar'
+import { signOut } from '~/lib/auth-client'
 
 type NavUserProps = {
   user: Awaited<ReturnType<typeof getFullProfileAction>>
 }
 
 export const NavUser = ({ user: data }: NavUserProps) => {
+  const router = useRouter()
   const { isMobile } = useSidebar()
   const { setTheme, resolvedTheme } = useTheme()
 
@@ -105,11 +107,16 @@ export const NavUser = ({ user: data }: NavUserProps) => {
             <DropdownMenuItem
               onClick={async () => {
                 try {
-                  await signOut({ callbackUrl: '/' })
+                  await signOut({
+                    fetchOptions: {
+                      onSuccess: () => {
+                        router.push('/')
+                      },
+                    },
+                  })
                 } catch (error) {
                   console.error('Sign out error:', error)
-                  // Fallback redirect
-                  window.location.href = '/'
+                  router.push('/')
                 }
               }}
             >
