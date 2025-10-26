@@ -31,6 +31,7 @@ export const auth = betterAuth({
     disableColors: false,
     level: 'debug',
   },
+  appName: 'Discuno',
   advanced: {
     database: {
       generateId: () => crypto.randomUUID(),
@@ -161,7 +162,6 @@ export const auth = betterAuth({
       redirectURI: 'https://discuno.com/api/auth/callback/microsoft',
     },
   },
-  baseURL: env.BETTER_AUTH_URL,
   plugins: [
     oAuthProxy({
       productionURL: 'https://discuno.com',
