@@ -9,8 +9,8 @@ import { createAnalyticsEvent } from '~/server/dal/analytics'
 import { getInfiniteScrollPosts, getPostsByFilters } from '~/server/queries/posts'
 
 export const logAnalyticsEvent = async (input: ClientAnalyticsEvent) => {
-  const session = await getAuthSession()
-  const actorUserId = session?.id
+  const res = await getAuthSession()
+  const actorUserId = res?.session.userId
 
   await createAnalyticsEvent({
     ...input,

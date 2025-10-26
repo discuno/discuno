@@ -9,7 +9,6 @@ import {
   TrendingUp,
   Users,
 } from 'lucide-react'
-import { signIn } from 'next-auth/react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useState } from 'react'
@@ -26,6 +25,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '~/components/ui/dialog'
+import { authClient } from '~/lib/auth-client'
 
 const benefits = [
   {
@@ -59,12 +59,12 @@ const requirements = [
 export function LoginPage() {
   const [isLoading, setIsLoading] = useState<string | null>(null)
 
-  const handleOAuthSignIn = async (provider: 'google' | 'microsoft-entra-id') => {
+  const handleOAuthSignIn = async (provider: 'google' | 'microsoft') => {
     try {
       setIsLoading(provider)
-      await signIn(provider, {
-        callbackUrl: '/settings',
-        redirect: true,
+      await authClient.signIn.social({
+        provider,
+        callbackURL: '/settings',
       })
     } catch (error) {
       console.error('Sign in error:', error)
@@ -185,10 +185,10 @@ export function LoginPage() {
                       )}
                     </div>
                     <div
-                      onClick={() => handleOAuthSignIn('microsoft-entra-id')}
+                      onClick={() => handleOAuthSignIn('microsoft')}
                       className="flex h-10 cursor-pointer items-center justify-center"
                     >
-                      {isLoading === 'microsoft-entra-id' ? (
+                      {isLoading === 'microsoft' ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
                         <Image
@@ -211,7 +211,7 @@ export function LoginPage() {
                       <DialogHeader>
                         <DialogTitle>Sign in with your email</DialogTitle>
                         <DialogDescription>
-                          We&apos;ll send you a magic link to your inbox.
+                          Enter your .edu email to receive a verification code.
                         </DialogDescription>
                       </DialogHeader>
                       <EmailSignInForm />

@@ -25,7 +25,8 @@ export const completeUserProfile = async (
   data: UpdateUserProfile & UpdateUser & { school?: string; major?: string }
 ) => {
   const validData = updateCompleteProfileSchema.parse(data)
-  const { id: userId } = await requireAuth()
+  const { user } = await requireAuth()
+  const userId = user.id
 
   await db.transaction(async () => {
     // 1. Update user basic info
@@ -73,7 +74,8 @@ const timezoneSchema = z
 
 export const setUserTimezone = async (timezone: string): Promise<void> => {
   const parsedTimezone = timezoneSchema.parse(timezone)
-  const { id: userId } = await requireAuth()
+  const { user } = await requireAuth()
+  const userId = user.id
 
   await updateProfileTimezone(userId, parsedTimezone)
 }
@@ -82,7 +84,9 @@ export const setUserTimezone = async (timezone: string): Promise<void> => {
  * Get current user's image URL
  */
 export const getUserImageUrl = async (): Promise<string | null> => {
-  const { id: userId } = await requireAuth()
+  const { user } = await requireAuth()
+  const userId = user.id
+
   return getUserImageById(userId)
 }
 
@@ -90,7 +94,8 @@ export const getUserImageUrl = async (): Promise<string | null> => {
  * Update user's profile image
  */
 export const updateProfileImage = async (imageUrl: string): Promise<void> => {
-  const { id: userId } = await requireAuth()
+  const { user } = await requireAuth()
+  const userId = user.id
   await updateUserImage(userId, imageUrl)
 }
 
@@ -98,6 +103,7 @@ export const updateProfileImage = async (imageUrl: string): Promise<void> => {
  * Remove user's profile image
  */
 export const removeProfileImage = async (): Promise<void> => {
-  const { id: userId } = await requireAuth()
+  const { user } = await requireAuth()
+  const userId = user.id
   await removeUserImage(userId)
 }

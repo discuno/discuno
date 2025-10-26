@@ -17,7 +17,8 @@ import {
  * Get mentor's event type preferences with details
  */
 export const getMentorEventTypes = cache(async (): Promise<MentorEventType[]> => {
-  const { id: currentUserId } = await requireAuth()
+  const { user } = await requireAuth()
+  const currentUserId = user.id
 
   const result = await getEventTypesByUserId(currentUserId)
 

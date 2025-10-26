@@ -15,7 +15,8 @@ import { getTokensByUserId, getTokensByUsername, getUsernameByUserId } from '~/s
  * Get mentor's Cal.com tokens (requires auth)
  */
 export const getMentorCalcomTokens = cache(async (): Promise<CalcomToken | null> => {
-  const { id: userId } = await requireAuth()
+  const { user } = await requireAuth()
+  const userId = user.id
 
   const tokens = await getTokensByUserId(userId)
 

@@ -1,10 +1,10 @@
 import 'server-only'
 
 import { desc, eq } from 'drizzle-orm'
-import type { NewBooking, NewBookingAttendee, NewBookingOrganizer } from '~/lib/schemas/db'
 import { NotFoundError } from '~/lib/errors'
+import type { NewBooking, NewBookingAttendee, NewBookingOrganizer } from '~/lib/schemas/db'
 import { db } from '~/server/db'
-import { bookingAttendees, bookingOrganizers, bookings, mentorEventTypes } from '~/server/db/schema'
+import * as schema from '~/server/db/schema'
 
 /**
  * Data Access Layer for bookings
@@ -17,25 +17,25 @@ import { bookingAttendees, bookingOrganizers, bookings, mentorEventTypes } from 
 export const getBookingsByMentorId = async (mentorId: string) => {
   return db
     .select({
-      id: bookings.id,
-      calcomBookingId: bookings.calcomBookingId,
-      calcomUid: bookings.calcomUid,
-      title: bookings.title,
-      description: bookings.description,
-      startTime: bookings.startTime,
-      endTime: bookings.endTime,
-      status: bookings.status,
-      meetingUrl: bookings.meetingUrl,
-      attendeeName: bookingAttendees.name,
-      attendeeEmail: bookingAttendees.email,
-      attendeeTimeZone: bookingAttendees.timeZone,
-      createdAt: bookings.createdAt,
+      id: schema.booking.id,
+      calcomBookingId: schema.booking.calcomBookingId,
+      calcomUid: schema.booking.calcomUid,
+      title: schema.booking.title,
+      description: schema.booking.description,
+      startTime: schema.booking.startTime,
+      endTime: schema.booking.endTime,
+      status: schema.booking.status,
+      meetingUrl: schema.booking.meetingUrl,
+      attendeeName: schema.bookingAttendee.name,
+      attendeeEmail: schema.bookingAttendee.email,
+      attendeeTimeZone: schema.bookingAttendee.timeZone,
+      createdAt: schema.booking.createdAt,
     })
-    .from(bookings)
-    .innerJoin(bookingAttendees, eq(bookings.id, bookingAttendees.bookingId))
-    .innerJoin(bookingOrganizers, eq(bookings.id, bookingOrganizers.bookingId))
-    .where(eq(bookingOrganizers.userId, mentorId))
-    .orderBy(desc(bookings.startTime))
+    .from(schema.booking)
+    .innerJoin(schema.bookingAttendee, eq(schema.booking.id, schema.bookingAttendee.bookingId))
+    .innerJoin(schema.bookingOrganizer, eq(schema.booking.id, schema.bookingOrganizer.bookingId))
+    .where(eq(schema.bookingOrganizer.userId, mentorId))
+    .orderBy(desc(schema.booking.startTime))
 }
 
 /**
@@ -52,8 +52,8 @@ type CreateBookingInput = NewBooking & {
 export const createBooking = async (input: CreateBookingInput) => {
   return db.transaction(async tx => {
     // Look up the internal mentor event type ID from the Cal.com event type ID
-    const mentorEventType = await tx.query.mentorEventTypes.findFirst({
-      where: eq(mentorEventTypes.calcomEventTypeId, input.calcomEventTypeId),
+    const mentorEventType = await tx.query.mentorEventType.findFirst({
+      where: eq(schema.mentorEventType.calcomEventTypeId, input.calcomEventTypeId),
     })
 
     if (!mentorEventType) {
@@ -64,7 +64,7 @@ export const createBooking = async (input: CreateBookingInput) => {
 
     // Create the booking record
     const [booking] = await tx
-      .insert(bookings)
+      .insert(schema.booking)
       .values({
         calcomBookingId: input.calcomBookingId,
         calcomUid: input.calcomUid,
@@ -87,13 +87,13 @@ export const createBooking = async (input: CreateBookingInput) => {
     }
 
     // Create the organizer record
-    await tx.insert(bookingOrganizers).values({
+    await tx.insert(schema.bookingOrganizer).values({
       ...input.organizer,
       bookingId: booking.id,
     })
 
     // Create the attendee record
-    await tx.insert(bookingAttendees).values({
+    await tx.insert(schema.bookingAttendee).values({
       ...input.attendee,
       bookingId: booking.id,
     })
@@ -107,10 +107,10 @@ export const createBooking = async (input: CreateBookingInput) => {
  */
 export const cancelBooking = async (calcomBookingUid: string) => {
   const [result] = await db
-    .update(bookings)
+    .update(schema.booking)
     .set({ status: 'CANCELLED' })
-    .where(eq(bookings.calcomUid, calcomBookingUid))
-    .returning({ id: bookings.id })
+    .where(eq(schema.booking.calcomUid, calcomBookingUid))
+    .returning({ id: schema.booking.id })
 
   if (!result) {
     throw new NotFoundError(`Booking with Cal.com UID ${calcomBookingUid} not found`)
@@ -131,14 +131,14 @@ export const updateBookingStatus = async (
   }
 ) => {
   const [result] = await db
-    .update(bookings)
+    .update(schema.booking)
     .set({
       status,
       hostNoShow: options?.hostNoShow,
       attendeeNoShow: options?.attendeeNoShow,
     })
-    .where(eq(bookings.calcomUid, calcomBookingUid))
-    .returning({ id: bookings.id })
+    .where(eq(schema.booking.calcomUid, calcomBookingUid))
+    .returning({ id: schema.booking.id })
 
   if (!result) {
     throw new NotFoundError(`Booking with Cal.com UID ${calcomBookingUid} not found`)

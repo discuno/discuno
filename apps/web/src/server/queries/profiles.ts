@@ -9,15 +9,7 @@ import type { UserProfile } from '~/lib/schemas/db'
 import { getProfileByUserId } from '~/server/dal/profiles'
 import { getUserById, getUserImageById } from '~/server/dal/users'
 import { db } from '~/server/db'
-import {
-  calcomTokens,
-  majors,
-  schools,
-  userMajors,
-  userProfiles,
-  users,
-  userSchools,
-} from '~/server/db/schema'
+import * as schema from '~/server/db/schema'
 
 /**
  * Query Layer for profiles
@@ -28,7 +20,8 @@ import {
  * Get profile picture URL for current user
  */
 export const getProfilePic = cache(async (): Promise<string> => {
-  const { id } = await requireAuth()
+  const { user } = await requireAuth()
+  const id = user.id
 
   const image = await getUserImageById(id)
 
@@ -44,7 +37,8 @@ export const getProfilePic = cache(async (): Promise<string> => {
  */
 export const getProfile = cache(
   async (): Promise<{ profile: UserProfile | null; userId: string }> => {
-    const { id: userId } = await requireAuth()
+    const { user } = await requireAuth()
+    const userId = user.id
 
     const profile = await getProfileByUserId(userId)
 
@@ -62,9 +56,10 @@ export const getProfile = cache(
 const getProfileWithImage = async (): Promise<{
   profilePic: string | null
 } | null> => {
-  const session = await getAuthSession()
+  const res = await getAuthSession()
+  const session = res?.session
 
-  if (!session?.id) {
+  if (!session?.userId) {
     return null
   }
 
@@ -88,36 +83,35 @@ const getFullProfileById = async (userId: string): Promise<FullUserProfile | nul
   const res = await db
     .select({
       // User basic info
-      id: users.id,
-      name: users.name,
-      email: users.email,
-      emailVerified: users.emailVerified,
-      image: users.image,
-
+      id: schema.user.id,
+      name: schema.user.name,
+      email: schema.user.email,
+      emailVerified: schema.user.emailVerified,
+      image: schema.user.image,
       // Profile info
-      userProfileId: userProfiles.id,
-      bio: userProfiles.bio,
-      schoolYear: userProfiles.schoolYear,
-      graduationYear: userProfiles.graduationYear,
+      userProfileId: schema.userProfile.id,
+      bio: schema.userProfile.bio,
+      schoolYear: schema.userProfile.schoolYear,
+      graduationYear: schema.userProfile.graduationYear,
 
       // School and major info
-      schoolName: schools.name,
-      majorName: majors.name,
+      schoolName: schema.school.name,
+      majorName: schema.major.name,
 
       // Cal.com integration
-      calcomUserId: calcomTokens.calcomUserId,
-      calcomUsername: calcomTokens.calcomUsername,
-      accessToken: calcomTokens.accessToken,
-      refreshToken: calcomTokens.refreshToken,
+      calcomUserId: schema.calcomToken.calcomUserId,
+      calcomUsername: schema.calcomToken.calcomUsername,
+      accessToken: schema.calcomToken.accessToken,
+      refreshToken: schema.calcomToken.refreshToken,
     })
-    .from(users)
-    .leftJoin(userProfiles, eq(users.id, userProfiles.userId))
-    .leftJoin(userSchools, eq(users.id, userSchools.userId))
-    .leftJoin(schools, eq(userSchools.schoolId, schools.id))
-    .leftJoin(userMajors, eq(users.id, userMajors.userId))
-    .leftJoin(majors, eq(userMajors.majorId, majors.id))
-    .leftJoin(calcomTokens, eq(users.id, calcomTokens.userId))
-    .where(eq(users.id, userId))
+    .from(schema.user)
+    .leftJoin(schema.userProfile, eq(schema.user.id, schema.userProfile.userId))
+    .leftJoin(schema.userSchool, eq(schema.user.id, schema.userSchool.userId))
+    .leftJoin(schema.school, eq(schema.userSchool.schoolId, schema.school.id))
+    .leftJoin(schema.userMajor, eq(schema.user.id, schema.userMajor.userId))
+    .leftJoin(schema.major, eq(schema.userMajor.majorId, schema.major.id))
+    .leftJoin(schema.calcomToken, eq(schema.user.id, schema.calcomToken.userId))
+    .where(eq(schema.user.id, userId))
     .limit(1)
 
   const userData = res[0]
@@ -154,7 +148,8 @@ export const getFullProfileByUserId = cache(getFullProfileById)
  * Get full profile for current user (cached)
  */
 export const getFullProfile = cache(async (): Promise<FullUserProfile | null> => {
-  const { id: userId } = await requireAuth()
+  const { user } = await requireAuth()
+  const userId = user.id
   const profile = await getFullProfileById(userId)
   if (!profile) {
     throw new NotFoundError('Profile not found')
@@ -166,6 +161,7 @@ export const getFullProfile = cache(async (): Promise<FullUserProfile | null> =>
  * Get user ID for current user
  */
 export const getUserId = async (): Promise<string> => {
-  const { id: userId } = await requireAuth()
+  const { user } = await requireAuth()
+  const userId = user.id
   return userId
 }

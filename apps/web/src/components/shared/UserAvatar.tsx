@@ -1,9 +1,9 @@
 'use client'
 
 import { HelpCircle, Info, LayoutDashboard, LogIn, Moon, Settings, Sun, User } from 'lucide-react'
-import { signOut } from 'next-auth/react'
 import { useTheme } from 'next-themes'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { Button } from '~/components/ui/button'
 import {
@@ -15,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from '~/components/ui/dropdown-menu'
 import { StatusDot } from '~/components/ui/status-dot'
+import { authClient } from '~/lib/auth-client'
 
 const AvatarPic = ({
   profilePic,
@@ -53,6 +54,7 @@ export const AvatarIcon = ({
   isAuthenticated = false,
   onboardingStatus,
 }: AvatarIconProps) => {
+  const router = useRouter()
   // Show login button for unauthenticated users
   if (!isAuthenticated) {
     return (
@@ -112,11 +114,17 @@ export const AvatarIcon = ({
           <DropdownMenuItem
             onClick={async () => {
               try {
-                await signOut({ callbackUrl: '/auth' })
+                await authClient.signOut({
+                  fetchOptions: {
+                    onSuccess: () => {
+                      router.push('/auth')
+                    },
+                  },
+                })
               } catch (error) {
                 console.error('Sign out error:', error)
                 // Fallback redirect
-                window.location.href = '/auth'
+                router.push('/auth')
               }
             }}
             className="text-red-600 focus:text-red-600 dark:text-red-400 dark:focus:text-red-400"

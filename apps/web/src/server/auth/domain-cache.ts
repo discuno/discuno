@@ -9,7 +9,7 @@ export const getAllowedDomains = async (): Promise<Set<string>> => {
   }
 
   try {
-    const allSchools = await db.query.schools.findMany()
+    const allSchools = await db.query.school.findMany()
     console.log(`[auth] Loading ${allSchools.length} schools from database`)
 
     // Store domain prefixes WITHOUT .edu (e.g., 'stanford', 'umich', 'smccme')

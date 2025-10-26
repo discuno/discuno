@@ -4,7 +4,7 @@ import { eq } from 'drizzle-orm'
 import type { NewMentorStripeAccount } from '~/lib/schemas/db'
 import { insertMentorStripeAccountSchema } from '~/lib/schemas/db'
 import { db } from '~/server/db'
-import { mentorStripeAccounts } from '~/server/db/schema'
+import { mentorStripeAccount } from '~/server/db/schema'
 
 /**
  * Data Access Layer for Stripe accounts
@@ -15,8 +15,8 @@ import { mentorStripeAccounts } from '~/server/db/schema'
  * Get mentor's Stripe account by user ID
  */
 export const getStripeAccountByUserId = async (userId: string) => {
-  const result = await db.query.mentorStripeAccounts.findFirst({
-    where: eq(mentorStripeAccounts.userId, userId),
+  const result = await db.query.mentorStripeAccount.findFirst({
+    where: eq(mentorStripeAccount.userId, userId),
   })
 
   if (!result) return null
@@ -35,10 +35,10 @@ export const upsertStripeAccount = async (data: NewMentorStripeAccount): Promise
   const validData = insertMentorStripeAccountSchema.parse(data)
 
   await db
-    .insert(mentorStripeAccounts)
+    .insert(mentorStripeAccount)
     .values(validData)
     .onConflictDoUpdate({
-      target: mentorStripeAccounts.userId,
+      target: mentorStripeAccount.userId,
       set: {
         ...validData,
         updatedAt: new Date(),

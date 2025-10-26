@@ -1,11 +1,11 @@
 import 'server-only'
 
 import { eq } from 'drizzle-orm'
+import { NotFoundError } from '~/lib/errors'
 import type { UpdateUser } from '~/lib/schemas/db'
 import { updateUserSchema } from '~/lib/schemas/db'
-import { NotFoundError } from '~/lib/errors'
 import { db } from '~/server/db'
-import { users } from '~/server/db/schema'
+import { user } from '~/server/db/schema'
 
 /**
  * Data Access Layer for users table
@@ -16,22 +16,18 @@ import { users } from '~/server/db/schema'
  * Get user by ID
  */
 export const getUserById = async (userId: string) => {
-  const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1)
+  const [u] = await db.select().from(user).where(eq(user.id, userId)).limit(1)
 
-  return user ?? null
+  return u ?? null
 }
 
 /**
  * Get user image URL by ID
  */
 export const getUserImageById = async (userId: string): Promise<string | null> => {
-  const [user] = await db
-    .select({ image: users.image })
-    .from(users)
-    .where(eq(users.id, userId))
-    .limit(1)
+  const [u] = await db.select({ image: user.image }).from(user).where(eq(user.id, userId)).limit(1)
 
-  return user?.image ?? null
+  return u?.image ?? null
 }
 
 /**
@@ -41,10 +37,10 @@ export const updateUser = async (userId: string, data: UpdateUser): Promise<void
   const validData = updateUserSchema.parse(data)
 
   const result = await db
-    .update(users)
+    .update(user)
     .set(validData)
-    .where(eq(users.id, userId))
-    .returning({ id: users.id })
+    .where(eq(user.id, userId))
+    .returning({ id: user.id })
 
   if (result.length === 0) {
     throw new NotFoundError('User not found')
@@ -58,10 +54,10 @@ export const updateUserImage = async (userId: string, imageUrl: string): Promise
   const validData = updateUserSchema.parse({ image: imageUrl })
 
   const result = await db
-    .update(users)
+    .update(user)
     .set(validData)
-    .where(eq(users.id, userId))
-    .returning({ id: users.id })
+    .where(eq(user.id, userId))
+    .returning({ id: user.id })
 
   if (result.length === 0) {
     throw new NotFoundError('User not found')
@@ -73,10 +69,10 @@ export const updateUserImage = async (userId: string, imageUrl: string): Promise
  */
 export const removeUserImage = async (userId: string): Promise<void> => {
   const result = await db
-    .update(users)
+    .update(user)
     .set({ image: null })
-    .where(eq(users.id, userId))
-    .returning({ id: users.id })
+    .where(eq(user.id, userId))
+    .returning({ id: user.id })
 
   if (result.length === 0) {
     throw new NotFoundError('User not found')

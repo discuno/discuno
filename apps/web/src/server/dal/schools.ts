@@ -3,7 +3,7 @@ import 'server-only'
 import { eq } from 'drizzle-orm'
 import { selectMajorSchema, selectSchoolSchema } from '~/lib/schemas/db'
 import { db } from '~/server/db'
-import { majors, schools, userMajors, userSchools } from '~/server/db/schema'
+import * as schema from '~/server/db/schema'
 
 /**
  * Data Access Layer for schools, majors, and user associations
@@ -14,14 +14,14 @@ import { majors, schools, userMajors, userSchools } from '~/server/db/schema'
  * Get all schools
  */
 export const getAllSchools = async () => {
-  return db.query.schools.findMany()
+  return db.query.school.findMany()
 }
 
 /**
  * Get all majors
  */
 export const getAllMajors = async () => {
-  return db.query.majors.findMany()
+  return db.query.major.findMany()
 }
 
 /**
@@ -30,9 +30,9 @@ export const getAllMajors = async () => {
 export const findSchoolByName = async (schoolName: string): Promise<number | null> => {
   const name = selectSchoolSchema.shape.name.parse(schoolName)
   const [school] = await db
-    .select({ id: schools.id })
-    .from(schools)
-    .where(eq(schools.name, name))
+    .select({ id: schema.school.id })
+    .from(schema.school)
+    .where(eq(schema.school.name, name))
     .limit(1)
 
   return school?.id ?? null
@@ -44,9 +44,9 @@ export const findSchoolByName = async (schoolName: string): Promise<number | nul
 export const findMajorByName = async (majorName: string): Promise<number | null> => {
   const name = selectMajorSchema.shape.name.parse(majorName)
   const [major] = await db
-    .select({ id: majors.id })
-    .from(majors)
-    .where(eq(majors.name, name))
+    .select({ id: schema.major.id })
+    .from(schema.major)
+    .where(eq(schema.major.name, name))
     .limit(1)
 
   return major?.id ?? null
@@ -56,8 +56,8 @@ export const findMajorByName = async (majorName: string): Promise<number | null>
  * Get user's schools
  */
 export const getUserSchools = async (userId: string) => {
-  return db.query.userSchools.findMany({
-    where: eq(userSchools.userId, userId),
+  return db.query.userSchool.findMany({
+    where: eq(schema.userSchool.userId, userId),
     with: {
       school: true,
     },
@@ -68,8 +68,8 @@ export const getUserSchools = async (userId: string) => {
  * Get user's majors
  */
 export const getUserMajors = async (userId: string) => {
-  return db.query.userMajors.findMany({
-    where: eq(userMajors.userId, userId),
+  return db.query.userMajor.findMany({
+    where: eq(schema.userMajor.userId, userId),
     with: {
       major: true,
     },
@@ -81,11 +81,11 @@ export const getUserMajors = async (userId: string) => {
  */
 export const replaceUserSchools = async (userId: string, schoolIds: number[]): Promise<void> => {
   // Delete existing associations
-  await db.delete(userSchools).where(eq(userSchools.userId, userId))
+  await db.delete(schema.userSchool).where(eq(schema.userSchool.userId, userId))
 
   // Insert new associations
   if (schoolIds.length > 0) {
-    await db.insert(userSchools).values(schoolIds.map(schoolId => ({ userId, schoolId })))
+    await db.insert(schema.userSchool).values(schoolIds.map(schoolId => ({ userId, schoolId })))
   }
 }
 
@@ -94,10 +94,9 @@ export const replaceUserSchools = async (userId: string, schoolIds: number[]): P
  */
 export const replaceUserMajors = async (userId: string, majorIds: number[]): Promise<void> => {
   // Delete existing associations
-  await db.delete(userMajors).where(eq(userMajors.userId, userId))
-
+  await db.delete(schema.userMajor).where(eq(schema.userMajor.userId, userId))
   // Insert new associations
   if (majorIds.length > 0) {
-    await db.insert(userMajors).values(majorIds.map(majorId => ({ userId, majorId })))
+    await db.insert(schema.userMajor).values(majorIds.map(majorId => ({ userId, majorId })))
   }
 }

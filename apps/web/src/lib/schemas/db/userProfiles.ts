@@ -2,20 +2,20 @@ import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'driz
 import { z } from 'zod/v4'
 import { excludeFields } from '~/lib/schemas/db/helpers'
 import { updateUserSchema } from '~/lib/schemas/db/users'
-import { userProfiles } from '~/server/db/schema'
+import { userProfile } from '~/server/db/schema'
 
 const insertExcludedFields = {
-  ...excludeFields(userProfiles, ['id', 'createdAt', 'updatedAt', 'deletedAt']),
+  ...excludeFields(userProfile, ['id', 'createdAt', 'updatedAt', 'deletedAt']),
 }
 
 const updateExcludedFields = {
   ...insertExcludedFields,
-  ...excludeFields(userProfiles, ['userId']),
+  ...excludeFields(userProfile, ['userId']),
 }
 
-export const selectUserProfileSchema = createSelectSchema(userProfiles)
-export const insertUserProfileSchema = createInsertSchema(userProfiles, insertExcludedFields)
-export const updateUserProfileSchema = createUpdateSchema(userProfiles, updateExcludedFields)
+export const selectUserProfileSchema = createSelectSchema(userProfile)
+export const insertUserProfileSchema = createInsertSchema(userProfile, insertExcludedFields)
+export const updateUserProfileSchema = createUpdateSchema(userProfile, updateExcludedFields)
 
 export const updateCompleteProfileSchema = updateUserProfileSchema
   .extend(updateUserSchema.shape)

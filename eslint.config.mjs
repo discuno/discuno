@@ -159,7 +159,6 @@ const PATTERNS = {
     'apps/web/drizzle.config.ts',
     'apps/web/next.config.js',
     'apps/web/src/middleware.ts',
-    'apps/web/src/server/auth/index.ts',
     'apps/web/src/app/**/layout.{ts,tsx}',
     'apps/web/src/app/**/page.{ts,tsx}',
     'apps/web/src/app/**/error.{ts,tsx}',

@@ -749,7 +749,8 @@ export const createStripeConnectAccount = async (): Promise<{
   error?: string
 }> => {
   try {
-    const { id: userId } = await requireAuth()
+    const { user } = await requireAuth()
+    const userId = user.id
     const profile = await getFullProfile()
 
     if (!profile?.email) {
@@ -985,7 +986,8 @@ export const getBookings = async (): Promise<{
   error?: string
 }> => {
   try {
-    const { id: userId } = await requireAuth()
+    const { user } = await requireAuth()
+    const userId = user.id
     const bookings = await getMentorBookings(userId)
 
     return {

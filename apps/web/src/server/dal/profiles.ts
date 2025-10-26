@@ -3,7 +3,7 @@ import 'server-only'
 import { eq } from 'drizzle-orm'
 import type { UpdateUserProfile } from '~/lib/schemas/db'
 import { db } from '~/server/db'
-import { userProfiles } from '~/server/db/schema'
+import { userProfile } from '~/server/db/schema'
 
 /**
  * Data Access Layer for user_profiles table
@@ -14,8 +14,8 @@ import { userProfiles } from '~/server/db/schema'
  * Get user profile by user ID
  */
 export const getProfileByUserId = async (userId: string) => {
-  const profile = await db.query.userProfiles.findFirst({
-    where: eq(userProfiles.userId, userId),
+  const profile = await db.query.userProfile.findFirst({
+    where: eq(userProfile.userId, userId),
   })
 
   return profile ?? null
@@ -29,7 +29,7 @@ export const upsertProfile = async (
   data: Partial<UpdateUserProfile>
 ): Promise<void> => {
   await db
-    .insert(userProfiles)
+    .insert(userProfile)
     .values({
       userId,
       bio: data.bio,
@@ -38,7 +38,7 @@ export const upsertProfile = async (
       timezone: data.timezone,
     })
     .onConflictDoUpdate({
-      target: userProfiles.userId,
+      target: userProfile.userId,
       set: {
         bio: data.bio,
         schoolYear: data.schoolYear ?? 'Freshman',
@@ -54,14 +54,14 @@ export const upsertProfile = async (
  */
 export const updateProfileTimezone = async (userId: string, timezone: string): Promise<void> => {
   const current = await db
-    .select({ timezone: userProfiles.timezone })
-    .from(userProfiles)
-    .where(eq(userProfiles.userId, userId))
+    .select({ timezone: userProfile.timezone })
+    .from(userProfile)
+    .where(eq(userProfile.userId, userId))
     .limit(1)
     .then(rows => rows[0])
 
   // Only update if current timezone is UTC (default) or doesn't exist
   if (current?.timezone !== timezone && current?.timezone === 'UTC') {
-    await db.update(userProfiles).set({ timezone }).where(eq(userProfiles.userId, userId))
+    await db.update(userProfile).set({ timezone }).where(eq(userProfile.userId, userId))
   }
 }

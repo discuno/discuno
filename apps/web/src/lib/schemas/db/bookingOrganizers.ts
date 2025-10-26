@@ -1,14 +1,14 @@
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
 import type { z } from 'zod/v4'
 import { excludeFields } from '~/lib/schemas/db/helpers'
-import { bookingOrganizers } from '~/server/db/schema'
+import { bookingOrganizer } from '~/server/db/schema'
 
 const excludedFields = {
-  ...excludeFields(bookingOrganizers, ['id', 'createdAt', 'updatedAt', 'deletedAt']),
+  ...excludeFields(bookingOrganizer, ['id', 'createdAt', 'updatedAt', 'deletedAt']),
 }
 
-export const selectBookingOrganizerSchema = createSelectSchema(bookingOrganizers)
-export const insertBookingOrganizerSchema = createInsertSchema(bookingOrganizers, excludedFields)
+export const selectBookingOrganizerSchema = createSelectSchema(bookingOrganizer)
+export const insertBookingOrganizerSchema = createInsertSchema(bookingOrganizer, excludedFields)
 
 export type BookingOrganizer = z.infer<typeof insertBookingOrganizerSchema>
 export type NewBookingOrganizer = Omit<

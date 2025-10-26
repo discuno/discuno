@@ -14,7 +14,7 @@ import {
 import { BadRequestError, ExternalApiError, StripeError } from '~/lib/errors'
 import { stripe } from '~/lib/stripe'
 import { db } from '~/server/db'
-import { mentorStripeAccounts, payments } from '~/server/db/schema'
+import { mentorStripeAccount, payment } from '~/server/db/schema'
 import { getMentorCalcomTokensByUsername } from '~/server/queries/calcom'
 import { getMentorEnabledEventTypes } from '~/server/queries/event-types'
 
@@ -234,8 +234,8 @@ export const createStripeCheckoutSession = async (
 
     const stripeAccount = await db
       .select()
-      .from(mentorStripeAccounts)
-      .where(eq(mentorStripeAccounts.userId, mentorUserId))
+      .from(mentorStripeAccount)
+      .where(eq(mentorStripeAccount.userId, mentorUserId))
       .limit(1)
 
     if (!stripeAccount.length || !stripeAccount[0]?.stripeAccountId) {
@@ -419,7 +419,7 @@ export const handleCheckoutSessionWebhook = async (
     return { success: false, error: 'Missing payment intent id' }
   }
 
-  const insertData: typeof payments.$inferInsert = {
+  const insertData: typeof payment.$inferInsert = {
     stripeCheckoutSessionId: sessionId,
     stripePaymentIntentId: paymentIntentId,
     mentorUserId: metadata.mentorUserId,
@@ -436,7 +436,7 @@ export const handleCheckoutSessionWebhook = async (
     metadata: { checkoutSessionMetadata: metadata },
   }
 
-  const paymentRecord = await db.insert(payments).values(insertData).returning()
+  const paymentRecord = await db.insert(payment).values(insertData).returning()
 
   if (!paymentRecord[0]) {
     console.error('Failed to create payment record for checkout session:', sessionId)
@@ -488,9 +488,9 @@ export const handleCheckoutSessionWebhook = async (
     }
 
     await db
-      .update(payments)
+      .update(payment)
       .set({ platformStatus: 'FAILED' })
-      .where(eq(payments.stripePaymentIntentId, paymentIntentId))
+      .where(eq(payment.stripePaymentIntentId, paymentIntentId))
 
     // Send failure email
     await sendBookingFailureEmail({

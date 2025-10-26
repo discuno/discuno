@@ -4,10 +4,10 @@ import 'server-only'
 import { revalidatePath } from 'next/cache'
 import { deleteProfileImage, extractPathnameFromBlobUrl } from '~/lib/blob'
 import {
-  getUserImageUrl,
-  setUserTimezone,
-  removeProfileImage,
   completeUserProfile,
+  getUserImageUrl,
+  removeProfileImage,
+  setUserTimezone,
   updateProfileImage,
 } from '~/lib/services/profile-service'
 
