@@ -163,7 +163,9 @@ export const auth = betterAuth({
   },
   baseURL: env.BETTER_AUTH_URL,
   plugins: [
-    oAuthProxy(),
+    oAuthProxy({
+      productionURL: 'https://discuno.com',
+    }),
     emailOTP({
       async sendVerificationOTP({ email, otp, type }) {
         const subject =
