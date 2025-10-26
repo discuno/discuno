@@ -46,7 +46,7 @@
     "db:studio": "drizzle-kit studio",
     "db:studio:local": "drizzle-kit studio --config=drizzle.local.config.ts",
     "db:studio:preview": "drizzle-kit studio --config=drizzle.preview.config.ts",
-    "db:studio:prod": "drizzle-kit studio --config=drizzle.production.config.ts",
+    "db:studio:prod": "NODE_TLS_REJECT_UNAUTHORIZED=0 drizzle-kit studio --config=drizzle.production.config.ts",
     "db:studio:test": "drizzle-kit studio --config=drizzle.test.config.ts",
     "db:test:local": "tsx scripts/db-test-connection.ts local",
     "db:test:preview": "tsx scripts/db-test-connection.ts preview",
