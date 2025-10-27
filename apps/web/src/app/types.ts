@@ -13,6 +13,7 @@ export interface Card extends Post {
   userImage?: string | null
   schoolYear?: string | null
   school?: string | null
+  schoolDomainPrefix?: string | null
   major?: string | null
   graduationYear?: number | null
   schoolPrimaryColor?: string | null
