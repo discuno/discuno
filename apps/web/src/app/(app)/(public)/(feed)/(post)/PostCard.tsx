@@ -67,7 +67,7 @@ export const PostCard = ({ card }: { card: Card; index: number }) => {
             <div className="mb-1 flex items-center gap-2">
               <School className="text-primary h-4 w-4 flex-shrink-0" />
               <Link
-                href={{ pathname: '/', query: { school: card.school ?? '' } }}
+                href={{ pathname: '/', query: { school: card.schoolDomainPrefix ?? '' } }}
                 className="text-foreground truncate text-sm font-semibold hover:underline"
                 aria-label={`Filter by school ${card.school ?? ''}`}
                 title={card.school ?? ''}
@@ -78,7 +78,7 @@ export const PostCard = ({ card }: { card: Card; index: number }) => {
             <div className="flex items-center gap-2">
               <GraduationCap className="text-muted-foreground h-4 w-4 flex-shrink-0" />
               <Link
-                href={{ pathname: '/', query: { major: card.major ?? '' } }}
+                href={{ pathname: '/', query: { major: card.major?.toLowerCase() ?? '' } }}
                 className="text-muted-foreground hover:text-foreground truncate text-sm hover:underline"
                 aria-label={`Filter by major ${card.major ?? ''}`}
                 title={card.major ?? ''}

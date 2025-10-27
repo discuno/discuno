@@ -50,6 +50,7 @@ const transformPostResult = (result: PostQueryResult[]): Card[] => {
         graduationYear: profile?.graduationYear ?? null,
         schoolYear: profile?.schoolYear ?? null,
         school: school?.name ?? null,
+        schoolDomainPrefix: school?.domainPrefix ?? null,
         major: major?.name ?? null,
         schoolPrimaryColor: school?.primaryColor ?? null,
         schoolSecondaryColor: school?.secondaryColor ?? null,

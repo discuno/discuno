@@ -46,6 +46,7 @@ export const buildPostsQuery = () => {
       },
       school: {
         name: school.name,
+        domainPrefix: school.domainPrefix,
         primaryColor: school.primaryColor,
         secondaryColor: school.secondaryColor,
       },
