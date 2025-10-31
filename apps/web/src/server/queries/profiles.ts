@@ -63,7 +63,7 @@ const getProfileWithImage = async (): Promise<{
     return null
   }
 
-  const user = await getUserById(session.id)
+  const user = await getUserById(session.userId)
 
   return {
     profilePic: user?.image ?? null,

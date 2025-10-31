@@ -95,14 +95,18 @@ const refreshCalcomToken = async (): Promise<{
 
     if (!refreshResponse.ok) {
       const errorText = await refreshResponse.text()
-      console.error('Normal refresh failed:', refreshResponse.status, errorText)
+      console.warn(
+        'Normal refresh failed, attempting force refresh:',
+        refreshResponse.status,
+        errorText
+      )
       return forceRefreshCalcomToken(tokenRecord.calcomUserId, tokenRecord.userId)
     }
 
     const refreshData = await refreshResponse.json()
 
     if (refreshData.status !== 'success') {
-      console.error('Refresh response error:', refreshData)
+      console.warn('Refresh response error, attempting force refresh:', refreshData)
       return forceRefreshCalcomToken(tokenRecord.calcomUserId, tokenRecord.userId)
     }
 
