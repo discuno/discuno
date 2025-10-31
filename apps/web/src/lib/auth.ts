@@ -33,6 +33,9 @@ export const auth = betterAuth({
     level: 'debug',
   },
   appName: 'Discuno',
+  advanced: {
+    generateId: false,
+  },
   trustedOrigins: ['https://*.vercel.app', 'https://*.discuno.com'],
   databaseHooks: {
     user: {
