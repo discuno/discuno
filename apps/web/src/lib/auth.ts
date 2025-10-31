@@ -150,10 +150,12 @@ export const auth = betterAuth({
     google: {
       clientId: env.AUTH_GOOGLE_ID,
       clientSecret: env.AUTH_GOOGLE_SECRET,
+      redirectURI: 'https://discuno.com/api/auth/callback/google',
     },
     microsoft: {
       clientId: env.AUTH_MICROSOFT_ENTRA_ID_ID,
       clientSecret: env.AUTH_MICROSOFT_ENTRA_ID_SECRET,
+      redirectURI: 'https://discuno.com/api/auth/callback/microsoft',
     },
   },
   plugins: [
