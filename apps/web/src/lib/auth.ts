@@ -34,7 +34,7 @@ export const auth = betterAuth({
   },
   appName: 'Discuno',
   advanced: {
-    generateId: false,
+    generateId: () => crypto.randomUUID(),
   },
   trustedOrigins: ['https://*.vercel.app', 'https://*.discuno.com'],
   databaseHooks: {
