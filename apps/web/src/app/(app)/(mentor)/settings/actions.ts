@@ -1081,11 +1081,20 @@ export const getMentorOnboardingStatus = async (): Promise<{
     actionUrl: string
     actionLabel: string
     iconName: string
+    missingFields?: string[]
+    requiredForPaid?: boolean
   }>
 }> => {
   // Check profile completion
   const profile = await getFullProfile()
-  const hasProfile = !!(profile?.bio && profile.image)
+  const missingProfileFields: string[] = []
+
+  if (!profile?.bio) missingProfileFields.push('Bio')
+  if (!profile?.image) missingProfileFields.push('Profile photo')
+  if (!profile?.name) missingProfileFields.push('Name')
+  if (!profile?.major) missingProfileFields.push('Major')
+
+  const hasProfile = missingProfileFields.length === 0
 
   // Check Cal.com setup (availability)
   const scheduleResult = await getSchedule()
@@ -1128,66 +1137,76 @@ export const getMentorOnboardingStatus = async (): Promise<{
   // Stripe is only required if mentor has ONLY paid event types (no free ones)
   // If they have at least one free event type, they can be active without Stripe
   const stripeRequired = hasPaidEventTypes && !hasFreeEventTypes
-  const stripeCompleted = stripeRequired ? hasStripe : true
 
   const steps = [
     {
       id: 'profile',
       title: 'Complete your profile',
-      description: 'Add a bio and profile photo to help students get to know you',
+      description:
+        missingProfileFields.length > 0
+          ? `Missing: ${missingProfileFields.join(', ')}`
+          : 'Add a bio and profile photo to help students get to know you',
       completed: hasProfile,
       actionUrl: '/settings/profile/edit',
       actionLabel: 'Complete Profile',
       iconName: 'User',
+      missingFields: missingProfileFields,
     },
     {
       id: 'availability',
       title: 'Set your availability',
-      description: 'Configure when you&aposre available for mentorship sessions',
+      description: hasAvailability
+        ? "You've configured your availability"
+        : "Configure when you're available for mentorship sessions",
       completed: hasAvailability,
       actionUrl: '/settings/availability',
       actionLabel: 'Set Availability',
       iconName: 'CalendarDays',
     },
     {
-      id: 'stripe',
-      title: 'Connect Stripe account',
-      description:
-        'Required only if you want to charge for sessions. Skip if offering only free sessions.',
-      completed: hasStripe,
-      actionUrl: '/settings/event-types',
-      actionLabel: 'Connect Stripe',
-      iconName: 'CreditCard',
-    },
-    {
       id: 'event-types',
       title: 'Enable event types',
-      description: 'Choose which session types students can book with you',
+      description: hasEnabledEventTypes
+        ? 'You have enabled event types'
+        : 'Choose which session types students can book with you',
       completed: hasEnabledEventTypes,
       actionUrl: '/settings/event-types',
       actionLabel: 'Enable Event Types',
       iconName: 'BookOpen',
     },
     {
+      id: 'stripe',
+      title: 'Connect Stripe account',
+      description: hasStripe
+        ? 'Stripe account connected'
+        : 'Required only if you want to charge for sessions. Skip if offering only free sessions.',
+      completed: hasStripe,
+      actionUrl: '/settings/event-types',
+      actionLabel: 'Connect Stripe',
+      iconName: 'CreditCard',
+      requiredForPaid: stripeRequired,
+    },
+    {
       id: 'pricing',
       title: 'Set pricing',
-      description: 'Configure pricing for your sessions (free or paid)',
+      description: hasPricing
+        ? 'Pricing configured for your sessions'
+        : 'Configure pricing for your sessions (free or paid)',
       completed: hasPricing,
       actionUrl: '/settings/event-types',
       actionLabel: 'Set Pricing',
       iconName: 'DollarSign',
+      requiredForPaid: false,
     },
   ]
 
   // Calculate completion based on required steps
-  // Stripe only counts if mentor has paid event types
-  const requiredSteps = steps.filter(s => s.id !== 'stripe' || stripeRequired)
-  const completedRequiredSteps = requiredSteps.filter(s => {
-    if (s.id === 'stripe') {
-      return stripeCompleted
-    }
-    return s.completed
-  })
+  // Count steps without requiredForPaid flag (always required: profile, availability, event-types)
+  // Plus steps with requiredForPaid === true (Stripe when only paid sessions)
+  const requiredSteps = steps.filter(
+    s => s.requiredForPaid === undefined || s.requiredForPaid === true
+  )
+  const completedRequiredSteps = requiredSteps.filter(s => s.completed)
 
   const completedCount = completedRequiredSteps.length
   const totalSteps = requiredSteps.length

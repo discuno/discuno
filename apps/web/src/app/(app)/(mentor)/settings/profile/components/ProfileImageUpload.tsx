@@ -7,6 +7,7 @@ import { useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
+import { FieldDescription } from '~/components/ui/field'
 import { compressFile } from '~/lib/blob/client-utils'
 import { removeUserProfileImage, updateUserProfileImage } from '../actions'
 
@@ -87,7 +88,9 @@ export const ProfileImageUpload = ({ currentImageUrl, userName }: ProfileImageUp
   return (
     <Card className="h-fit">
       <CardHeader>
-        <CardTitle>Profile Image</CardTitle>
+        <CardTitle>
+          Profile Image <span className="text-red-500">*</span>
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="flex flex-col items-center space-y-6">
@@ -137,7 +140,7 @@ export const ProfileImageUpload = ({ currentImageUrl, userName }: ProfileImageUp
               {isUploading ? 'Uploading...' : previewUrl ? 'Change Image' : 'Upload Image'}
             </Button>
 
-            <p className="text-muted-foreground text-center text-xs">JPG, PNG or GIF. Max 5MB.</p>
+            <FieldDescription className="text-center">JPG, PNG or GIF. Max 5MB.</FieldDescription>
           </div>
 
           {/* Hidden file input */}

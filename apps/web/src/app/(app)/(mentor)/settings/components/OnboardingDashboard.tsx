@@ -26,6 +26,8 @@ export interface OnboardingStep {
   actionUrl: string
   actionLabel: string
   iconName: string
+  missingFields?: string[]
+  requiredForPaid?: boolean
 }
 
 interface OnboardingStatus {
@@ -133,50 +135,78 @@ export const OnboardingDashboard = ({ initialStatus }: OnboardingDashboardProps)
       </Card>
 
       <div className="space-y-4">
-        {steps.map((step, index) => (
-          <Card
-            key={step.id}
-            className={
-              step.completed ? 'border-green-500/50 bg-green-50/50 dark:bg-green-950/20' : ''
-            }
-          >
-            <CardContent className="pt-6">
-              <div className="flex items-start gap-4">
-                <div className="flex-shrink-0">
-                  {step.completed ? (
-                    <CheckCircle2 className="h-6 w-6 text-green-600 dark:text-green-400" />
-                  ) : (
-                    <Circle className="text-muted-foreground h-6 w-6" />
-                  )}
-                </div>
+        {steps.map((step, index) => {
+          // Check if we need to render a section header for "Required for Paid Sessions"
+          // This applies to any step with requiredForPaid !== undefined (steps 4 and 5)
+          const isPaidSessionStep = step.requiredForPaid !== undefined
+          const showPaidSessionHeader =
+            isPaidSessionStep && (index === 0 || steps[index - 1]?.requiredForPaid === undefined)
 
-                <div className="flex-1 space-y-3">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-semibold">
-                        Step {index + 1}: {step.title}
-                      </h3>
-                      {step.completed && (
-                        <Badge variant="outline" className="text-green-600 dark:text-green-400">
-                          Completed
-                        </Badge>
+          return (
+            <div key={step.id}>
+              {showPaidSessionHeader && (
+                <div className="mb-4 mt-6">
+                  <div className="flex items-center gap-3">
+                    <Separator className="flex-1" />
+                    <Badge variant="secondary" className="text-xs">
+                      Required for Paid Sessions
+                    </Badge>
+                    <Separator className="flex-1" />
+                  </div>
+                  <p className="text-muted-foreground mt-2 text-center text-xs">
+                    Complete these steps only if you want to charge for sessions
+                  </p>
+                </div>
+              )}
+              <Card
+                className={
+                  step.completed ? 'border-green-500/50 bg-green-50/50 dark:bg-green-950/20' : ''
+                }
+              >
+                <CardContent className="pt-6">
+                  <div className="flex items-start gap-4">
+                    <div className="flex-shrink-0">
+                      {step.completed ? (
+                        <CheckCircle2 className="h-6 w-6 text-green-600 dark:text-green-400" />
+                      ) : (
+                        <Circle className="text-muted-foreground h-6 w-6" />
                       )}
                     </div>
-                    <p className="text-muted-foreground mt-1 text-sm">{step.description}</p>
+
+                    <div className="flex-1 space-y-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold">
+                            Step {index + 1}: {step.title}
+                          </h3>
+                          {step.completed && (
+                            <Badge variant="outline" className="text-green-600 dark:text-green-400">
+                              Completed
+                            </Badge>
+                          )}
+                          {isPaidSessionStep && step.requiredForPaid && !step.completed && (
+                            <Badge variant="destructive" className="text-xs">
+                              Required
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-muted-foreground mt-1 text-sm">{step.description}</p>
+                      </div>
+
+                      {!step.completed && (
+                        <Link href={step.actionUrl}>
+                          <Button size="sm">{step.actionLabel}</Button>
+                        </Link>
+                      )}
+                    </div>
+
+                    <div className="flex-shrink-0">{getIcon(step.iconName)}</div>
                   </div>
-
-                  {!step.completed && (
-                    <Link href={step.actionUrl}>
-                      <Button size="sm">{step.actionLabel}</Button>
-                    </Link>
-                  )}
-                </div>
-
-                <div className="flex-shrink-0">{getIcon(step.iconName)}</div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+                </CardContent>
+              </Card>
+            </div>
+          )
+        })}
       </div>
 
       <Separator />
