@@ -18,7 +18,7 @@ export interface Card extends Post {
   graduationYear?: number | null
   schoolPrimaryColor?: string | null
   schoolSecondaryColor?: string | null
-  hasFreeSessions?: boolean
+  hasFreeSessions?: boolean | null
 }
 
 export interface PostGridProps {

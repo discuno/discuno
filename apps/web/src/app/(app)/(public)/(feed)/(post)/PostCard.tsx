@@ -10,7 +10,7 @@ import { AspectRatio } from '~/components/ui/aspect-ratio'
 import { Button } from '~/components/ui/button'
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '~/components/ui/hover-card'
 
-export const PostCard = ({ card }: { card: Card; index: number }) => {
+export const PostCard = ({ card }: { card: Card }) => {
   const posthog = usePostHog()
 
   const handleProfileView = () => {
