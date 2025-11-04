@@ -197,8 +197,17 @@ export const auth = betterAuth({
   ],
   hooks: {
     before: createAuthMiddleware(async ctx => {
+      // Log the path for debugging
+      console.log(`[AuthHook] Processing path: ${ctx.path}`)
+
       // Validate .edu email domain for sign-up and sign-in endpoints
-      const signUpPaths = ['/sign-up/email', '/callback/google', '/callback/microsoft']
+      const signUpPaths = [
+        '/sign-up/email',
+        '/api/auth/callback/google',
+        '/callback/google',
+        '/api/auth/callback/microsoft',
+        '/callback/microsoft',
+      ]
       const signInPaths = ['/sign-in/email-otp']
 
       if (
@@ -206,6 +215,7 @@ export const auth = betterAuth({
         signInPaths.some(path => ctx.path.startsWith(path))
       ) {
         const email = ctx.body?.email ?? ctx.context.newSession?.user.email
+        console.log(`[AuthHook] Validating email: ${email} for path: ${ctx.path}`)
 
         if (email) {
           // Ensure the user has a valid .edu email format
