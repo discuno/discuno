@@ -40,7 +40,7 @@ const transformPostResult = (result: PostQueryResult[]): Card[] => {
   // Transform and ensure uniqueness at application level as safety net
   const uniquePosts = new Map<number, Card>()
 
-  for (const { post, creator, profile, school, major } of result) {
+  for (const { post, creator, profile, school, major, hasFreeSessions } of result) {
     if (!uniquePosts.has(post.id)) {
       uniquePosts.set(post.id, {
         ...post,
@@ -54,6 +54,7 @@ const transformPostResult = (result: PostQueryResult[]): Card[] => {
         major: major?.name ?? null,
         schoolPrimaryColor: school?.primaryColor ?? null,
         schoolSecondaryColor: school?.secondaryColor ?? null,
+        hasFreeSessions: hasFreeSessions,
       })
     }
   }
