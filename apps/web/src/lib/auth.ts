@@ -1,7 +1,7 @@
 import { render } from '@react-email/render'
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
-import { createAuthMiddleware } from 'better-auth/api'
+import { createAuthMiddleware, APIError } from 'better-auth/api'
 import { emailOTP, oAuthProxy } from 'better-auth/plugins'
 import { eq } from 'drizzle-orm'
 import { env } from '~/env'
@@ -200,46 +200,47 @@ export const auth = betterAuth({
       // Log the path for debugging
       console.log(`[AuthHook] Processing path: ${ctx.path}`)
 
-      // Validate .edu email domain for sign-up and sign-in endpoints
-      const isSignUpPath =
-        ctx.path.startsWith('/sign-up/email') ||
-        ctx.path.includes('/callback/') || // Catches both /callback/:id and /api/auth/callback/:id
-        ctx.path.startsWith('/sign-in/email-otp')
-
-      if (isSignUpPath) {
-        const email = ctx.body?.email ?? ctx.context.newSession?.user.email
-        console.log(`[AuthHook] Validating email: ${email} for path: ${ctx.path}`)
-
-        if (email) {
-          // Ensure the user has a valid .edu email format
-          const eduEmailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.edu$/
-          if (!eduEmailRegex.test(email)) {
-            console.log(`Sign-in rejected for invalid .edu email format: ${email}`)
-            throw ctx.redirect('/auth/rejected')
-          }
-
-          // Check if email domain matches a known school domain
-          const emailDomain = email.split('@')[1]?.toLowerCase()
-          console.log(`🔍 [SignIn] Checking domain: ${emailDomain}`)
-
-          const domainPrefix = emailDomain?.replace('.edu', '')
-          console.log(`🔍 [SignIn] Domain prefix: ${domainPrefix}`)
-
-          const allowedDomains = await getAllowedDomains()
-          console.log(`🔍 [SignIn] Allowed domains count: ${allowedDomains.size}`)
-
-          if (!domainPrefix || !allowedDomains.has(domainPrefix)) {
-            console.error(
-              `❌ [SignIn] REJECTED .edu domain not in database: ${domainPrefix} (full domain: ${emailDomain}, email: ${email})`
-            )
-            console.error(
-              `[SignIn] Action required: Add school with domain prefix '${domainPrefix}' to the database`
-            )
-            throw ctx.redirect('/auth/rejected')
-          }
-
-          console.log(`✅ [SignIn] Approved for recognized school domain prefix: ${domainPrefix}`)
+      // Validate .edu email domain for email sign-up/sign-in
+      if (ctx.path === '/sign-up/email' || ctx.path === '/sign-in/email-otp') {
+        const email = ctx.body?.email
+        if (!email) {
+          return // No email to validate
         }
+
+        console.log(`[AuthHook] Validating email for email auth: ${email}`)
+
+        // Ensure the user has a valid .edu email format
+        const eduEmailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.edu$/
+        if (!eduEmailRegex.test(email)) {
+          console.log(`❌ Sign-in rejected for invalid .edu email format: ${email}`)
+          throw new APIError('BAD_REQUEST', {
+            message: 'You must use a valid .edu email address to sign up.',
+          })
+        }
+
+        // Check if email domain matches a known school domain
+        const emailDomain = email.split('@')[1]?.toLowerCase()
+        const domainPrefix = emailDomain?.replace('.edu', '')
+
+        const allowedDomains = await getAllowedDomains()
+
+        if (!domainPrefix || !allowedDomains.has(domainPrefix)) {
+          console.error(
+            `❌ [SignIn] REJECTED .edu domain not in database: ${domainPrefix} (email: ${email})`
+          )
+          throw new APIError('BAD_REQUEST', {
+            message: 'Your school is not yet supported. Please contact support to add your school.',
+          })
+        }
+
+        console.log(`✅ [SignIn] Approved email for school domain: ${domainPrefix}`)
+      }
+
+      // Validate .edu email domain for OAuth sign-in (Google, Microsoft, etc.)
+      if (ctx.path === '/sign-in/social') {
+        // For OAuth, the email comes from the provider in the callback
+        // We'll validate it in the user.created hook instead
+        console.log(`[AuthHook] OAuth sign-in initiated, will validate email in user.created hook`)
       }
     }),
   },
