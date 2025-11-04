@@ -201,19 +201,12 @@ export const auth = betterAuth({
       console.log(`[AuthHook] Processing path: ${ctx.path}`)
 
       // Validate .edu email domain for sign-up and sign-in endpoints
-      const signUpPaths = [
-        '/sign-up/email',
-        '/api/auth/callback/google',
-        '/callback/google',
-        '/api/auth/callback/microsoft',
-        '/callback/microsoft',
-      ]
-      const signInPaths = ['/sign-in/email-otp']
+      const isSignUpPath =
+        ctx.path.startsWith('/sign-up/email') ||
+        ctx.path.includes('/callback/') || // Catches both /callback/:id and /api/auth/callback/:id
+        ctx.path.startsWith('/sign-in/email-otp')
 
-      if (
-        signUpPaths.some(path => ctx.path.startsWith(path)) ||
-        signInPaths.some(path => ctx.path.startsWith(path))
-      ) {
+      if (isSignUpPath) {
         const email = ctx.body?.email ?? ctx.context.newSession?.user.email
         console.log(`[AuthHook] Validating email: ${email} for path: ${ctx.path}`)
 
