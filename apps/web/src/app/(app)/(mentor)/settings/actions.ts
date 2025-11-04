@@ -801,6 +801,7 @@ export const createStripeConnectAccount = async (): Promise<{
         mcc: '8299',
         url: 'https://discuno.com',
         product_description: 'Provides college advice and guidance via the Discuno platform',
+        name: profile.name ?? 'Discuno Mentor',
       },
     })
 
@@ -927,55 +928,74 @@ export const getValidCalcomToken = async (): Promise<{
 }
 
 /**
- * Create Stripe Account Session for embedded onboarding
+ * Create Stripe Account Link for hosted onboarding
+ * Redirects to Stripe-hosted onboarding flow
  */
-export const createStripeAccountSession = async ({
+export const createStripeAccountLink = async ({
   accountId,
-  accountManagement,
-  accountOnboarding,
-  notificationBanner,
-  payouts,
+  type = 'account_onboarding',
+  collectionOptions = 'eventually_due',
 }: {
   accountId: string
-  accountManagement?: boolean
-  accountOnboarding?: boolean
-  notificationBanner?: boolean
-  payouts?: boolean
+  type?: 'account_onboarding' | 'account_update'
+  collectionOptions?: 'currently_due' | 'eventually_due'
 }): Promise<{
   success: boolean
-  client_secret?: string
+  url?: string
   error?: string
 }> => {
   try {
     const stripe = new Stripe(env.STRIPE_SECRET_KEY)
+    const baseUrl = env.BETTER_AUTH_URL ?? 'http://localhost:3000'
 
-    const accountSession = await stripe.accountSessions.create({
+    const accountLink = await stripe.accountLinks.create({
       account: accountId,
-      components: {
-        account_management: {
-          enabled: accountManagement ?? false,
-        },
-        account_onboarding: {
-          enabled: accountOnboarding ?? false,
-        },
-        notification_banner: {
-          enabled: notificationBanner ?? false,
-        },
-        payouts: {
-          enabled: payouts ?? false,
-        },
+      refresh_url: `${baseUrl}/settings/event-types?stripe_refresh=true`,
+      return_url: `${baseUrl}/settings/event-types?stripe_setup=success`,
+      type,
+      collection_options: {
+        fields: collectionOptions,
       },
     })
 
     return {
       success: true,
-      client_secret: accountSession.client_secret,
+      url: accountLink.url,
     }
   } catch (error) {
-    console.error('Error creating Stripe Account Session:', error)
+    console.error('Error creating Stripe Account Link:', error)
     return {
       success: false,
-      error: 'Failed to create Account Session',
+      error: 'Failed to create Account Link',
+    }
+  }
+}
+
+/**
+ * Create Stripe Login Link for Express Dashboard
+ * Redirects to Stripe-hosted Express Dashboard
+ */
+export const createStripeLoginLink = async (
+  accountId: string
+): Promise<{
+  success: boolean
+  url?: string
+  error?: string
+}> => {
+  try {
+    const stripe = new Stripe(env.STRIPE_SECRET_KEY)
+
+    const loginLink = await stripe.accounts.createLoginLink(accountId)
+
+    return {
+      success: true,
+      url: loginLink.url,
+    }
+  } catch (error) {
+    console.error('Error creating Stripe Login Link:', error)
+    return {
+      success: false,
+      error: 'Failed to create Login Link',
     }
   }
 }

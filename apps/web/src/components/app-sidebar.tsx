@@ -72,12 +72,6 @@ export const AppSidebar = async ({ ...props }: React.ComponentProps<typeof Sideb
           icon: 'CalendarCheck',
           description: 'View your sessions',
         },
-        {
-          title: 'Billing',
-          url: '/settings/billing',
-          icon: 'CreditCard',
-          description: 'Manage payments',
-        },
       ],
     },
   ]
