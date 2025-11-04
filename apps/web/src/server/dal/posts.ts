@@ -53,6 +53,21 @@ export const buildPostsQuery = () => {
       major: {
         name: major.name,
       },
+      hasFreeSessions: sql<boolean>`
+        ${exists(
+          db
+            .select({ id: mentorEventType.id })
+            .from(mentorEventType)
+            .where(
+              and(
+                eq(mentorEventType.mentorUserId, user.id),
+                eq(mentorEventType.isEnabled, true),
+                or(eq(mentorEventType.customPrice, 0), isNull(mentorEventType.customPrice)),
+                isNull(mentorEventType.deletedAt)
+              )
+            )
+        )}
+      `.as('has_free_sessions'),
     })
     .from(post)
     .leftJoin(user, eq(post.createdById, user.id))

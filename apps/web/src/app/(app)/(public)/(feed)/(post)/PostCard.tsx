@@ -1,6 +1,6 @@
 'use client'
 
-import { Calendar, GraduationCap, School, User } from 'lucide-react'
+import { GraduationCap, School, User } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePostHog } from 'posthog-js/react'
@@ -12,6 +12,7 @@ import { HoverCard, HoverCardContent, HoverCardTrigger } from '~/components/ui/h
 
 export const PostCard = ({ card }: { card: Card; index: number }) => {
   const posthog = usePostHog()
+
   const handleProfileView = () => {
     const distinctId = posthog.get_distinct_id()
     posthog.capture('profile_view', {
@@ -26,8 +27,31 @@ export const PostCard = ({ card }: { card: Card; index: number }) => {
     })
   }
 
+  const isNewMentor = (() => {
+    const profileDate = new Date(card.createdAt)
+    const now = new Date()
+    const daysSinceJoined = Math.floor(
+      (now.getTime() - profileDate.getTime()) / (1000 * 60 * 60 * 24)
+    )
+    return daysSinceJoined <= 30
+  })()
+
   return (
     <div className="animate-in fade-in-50 zoom-in-95 bg-card/90 hover:shadow-primary/10 dark:bg-card/90 dark:shadow-primary/5 dark:hover:bg-card/95 dark:hover:shadow-primary/15 group relative overflow-hidden rounded-xl p-0 shadow-lg transition-all duration-100 hover:scale-[1.02] hover:shadow-xl dark:shadow-lg">
+      {/* Badges */}
+      <div className="absolute right-2 top-2 z-10 flex flex-col gap-2">
+        {isNewMentor && (
+          <div className="bg-primary/90 text-primary-foreground rounded-full px-3 py-1 text-xs font-semibold shadow-lg">
+            NEW
+          </div>
+        )}
+        {card.hasFreeSessions && (
+          <div className="bg-muted/50 text-foreground rounded-full px-3 py-1 text-xs font-semibold shadow-lg">
+            FREE
+          </div>
+        )}
+      </div>
+
       {/* Profile Image Section */}
       <AspectRatio
         ratio={16 / 9}
@@ -119,15 +143,10 @@ export const PostCard = ({ card }: { card: Card; index: number }) => {
         )}
 
         {/* Footer Info */}
-        <div className="flex items-center justify-between pt-3">
+        <div className="flex items-center justify-start pt-3">
           <div className="text-muted-foreground flex items-center gap-1">
             <span className="text-xs">Class of</span>
             <span className="text-foreground text-xs font-medium">{card.graduationYear}</span>
-          </div>
-
-          <div className="text-muted-foreground flex items-center gap-1">
-            <Calendar className="h-3 w-3" />
-            <span className="text-xs">{new Date(card.createdAt).toLocaleDateString()}</span>
           </div>
         </div>
 
