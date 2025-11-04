@@ -51,23 +51,47 @@ export async function POST(req: Request) {
     switch (triggerEvent) {
       case 'BOOKING_CREATED':
         return await storeBooking(payload)
-      // Attempt to refund no show
+      // Guest didn't show up
+      case 'AFTER_GUESTS_CAL_VIDEO_NO_SHOW':
+        {
+          const { bookingUid } = event.payload
+          // Only update local database - guest no-show
+          await updateLocalBookingStatus(bookingUid, 'NO_SHOW', {
+            hostNoShow: false,
+            attendeeNoShow: true,
+          })
+          console.log(`✅ Marked guest as no-show for booking ${bookingUid}`)
+        }
+        break
+      // Host didn't show up - attempt to mark and potentially refund
       case 'AFTER_HOSTS_CAL_VIDEO_NO_SHOW':
         {
           const { bookingUid, attendees } = event.payload
-          // Mark the booking as a no-show in both our local database and Cal.com
-          await markAsNoShow(
-            bookingUid,
-            attendees.map(attendee => ({
-              email: attendee.email,
-              absent: true,
-            })),
-            true // Mark the host as absent
-          )
+
+          // Update local database first
           await updateLocalBookingStatus(bookingUid, 'NO_SHOW', {
             hostNoShow: true,
-            attendeeNoShow: true,
+            attendeeNoShow: false,
           })
+
+          // Try to mark as no-show in Cal.com, but don't fail if it errors
+          try {
+            await markAsNoShow(
+              bookingUid,
+              attendees.map(attendee => ({
+                email: attendee.email,
+                absent: true,
+              })),
+              true // Mark the host as absent
+            )
+            console.log(`✅ Marked host as no-show in Cal.com for booking ${bookingUid}`)
+          } catch (calcomError) {
+            // Log the error but continue - we've already updated our local database
+            console.warn(
+              `⚠️ Failed to mark no-show in Cal.com (booking ${bookingUid}):`,
+              calcomError
+            )
+          }
         }
         break
       case 'RECORDING_TRANSCRIPTION_GENERATED':
@@ -85,12 +109,14 @@ export async function POST(req: Request) {
       case 'MEETING_ENDED':
         console.log(`✅ Meeting ended for event: ${triggerEvent}`)
         console.log(`✅ Meeting details: ${JSON.stringify(payload)}`)
-        if (payload.metadata.mentorUserId) {
+        if (payload?.metadata.mentorUserId) {
           await createAnalyticsEvent({
             eventType: 'COMPLETED_BOOKING',
             targetUserId: payload.metadata.mentorUserId,
             actorUserId: payload.metadata.actorUserId ?? null,
           })
+        } else {
+          console.warn(`⚠️ MEETING_ENDED event missing payload or metadata`)
         }
         break
       case 'BOOKING_CANCELLED':

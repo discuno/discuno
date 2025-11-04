@@ -102,7 +102,7 @@ export const CalcomNoShowPayloadSchema = z.object({
   attendees: z.array(z.object({ email: z.string().email(), name: z.string() })),
   endTime: z.string().datetime(),
   participants: z.array(z.object({ email: z.string().email(), name: z.string() })),
-  hostEmail: z.string().email(),
+  hostEmail: z.string().email().optional(), // Optional for guest no-show events
   eventType: z.object({
     id: z.number(),
     teamId: z.number().nullable(),
@@ -133,6 +133,11 @@ export const CalcomWebhookSchema = z.discriminatedUnion('triggerEvent', [
     payload: CalcomBookingPayloadSchema,
   }),
   z.object({
+    triggerEvent: z.literal('AFTER_GUESTS_CAL_VIDEO_NO_SHOW'),
+    createdAt: z.string(),
+    payload: CalcomNoShowPayloadSchema,
+  }),
+  z.object({
     triggerEvent: z.literal('AFTER_HOSTS_CAL_VIDEO_NO_SHOW'),
     createdAt: z.string(),
     payload: CalcomNoShowPayloadSchema,
@@ -160,7 +165,7 @@ export const CalcomWebhookSchema = z.discriminatedUnion('triggerEvent', [
   z.object({
     triggerEvent: z.literal('MEETING_ENDED'),
     createdAt: z.string(),
-    payload: CalcomBookingPayloadSchema, // Assuming it's similar to booking created
+    payload: CalcomBookingPayloadSchema.optional(), // Payload can be undefined
   }),
 ])
 
