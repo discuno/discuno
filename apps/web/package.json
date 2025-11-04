@@ -96,8 +96,6 @@
     "@radix-ui/react-tooltip": "^1.2.7",
     "@react-email/components": "0.5.7",
     "@react-email/render": "^1.2.3",
-    "@stripe/connect-js": "^3.3.27",
-    "@stripe/react-connect-js": "^3.3.25",
     "@stripe/react-stripe-js": "^3.7.0",
     "@stripe/stripe-js": "^7.3.1",
     "@t3-oss/env-nextjs": "^0.13.8",

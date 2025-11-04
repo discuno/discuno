@@ -1,26 +1,19 @@
 'use client'
 
-import { loadConnectAndInitialize, type StripeConnectInstance } from '@stripe/connect-js/pure'
-import { ConnectComponentsProvider } from '@stripe/react-connect-js'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { useTheme } from 'next-themes'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import {
-  createStripeAccountSession,
-  createStripeConnectAccount,
   getMentorEventTypePreferences,
   getMentorStripeStatus,
   updateMentorEventTypePreferences,
 } from '~/app/(app)/(mentor)/settings/actions'
 import { EventTypeSettingsContent } from '~/app/(app)/(mentor)/settings/event-types/components/EventTypeSettingsContent'
-import { StripeNotificationBanner } from '~/app/(app)/(mentor)/settings/event-types/components/StripeNotificationBanner'
 import { Alert, AlertDescription } from '~/components/ui/alert'
 import { Card, CardContent } from '~/components/ui/card'
 import { Skeleton } from '~/components/ui/skeleton'
-import { env } from '~/env'
 import { type UpdateMentorEventType } from '~/lib/schemas/db'
-import { darkVariables, lightVariables } from '~/lib/stripe/appearance'
 
 interface EventTypePreference {
   id: number
@@ -33,22 +26,26 @@ interface EventTypePreference {
 }
 
 export const EventTypeToggleSection = () => {
-  const { theme } = useTheme()
+  const searchParams = useSearchParams()
   const [selectedEventType, setSelectedEventType] = useState<EventTypePreference | null>(null)
   const [showPricingDialog, setShowPricingDialog] = useState(false)
-  const [isStripeModalOpen, setStripeModalOpen] = useState(false)
   const [tempPrice, setTempPrice] = useState<string>('')
-  const [stripeAccountId, setStripeAccountId] = useState<string | null>(null)
-  const [stripeConnectInstance, setStripeConnectInstance] = useState<StripeConnectInstance | null>(
-    null
-  )
 
-  const appearance = useMemo(() => {
-    return {
-      overlays: 'dialog' as const,
-      variables: theme === 'dark' ? darkVariables : lightVariables,
+  // Handle Stripe onboarding return
+  useEffect(() => {
+    const stripeSetup = searchParams.get('stripe_setup')
+    const stripeRefresh = searchParams.get('stripe_refresh')
+
+    if (stripeSetup === 'success') {
+      toast.success('Stripe setup completed! You can now accept payments.')
+      // Clean up URL params
+      window.history.replaceState({}, '', '/settings/event-types')
+    } else if (stripeRefresh === 'true') {
+      toast.error('Stripe setup expired or was invalid. Please try again.')
+      // Clean up URL params
+      window.history.replaceState({}, '', '/settings/event-types')
     }
-  }, [theme])
+  }, [searchParams])
 
   // Fetch mentor's event type preferences
   const {
@@ -63,11 +60,7 @@ export const EventTypeToggleSection = () => {
   })
 
   // Fetch mentor's Stripe status
-  const {
-    data: stripeStatusData,
-    isLoading: stripeStatusLoading,
-    refetch: refetchStripeStatus,
-  } = useQuery({
+  const { data: stripeStatusData, isLoading: stripeStatusLoading } = useQuery({
     queryKey: ['mentor-stripe-status'],
     queryFn: getMentorStripeStatus,
     staleTime: 5 * 60 * 1000,
@@ -87,71 +80,8 @@ export const EventTypeToggleSection = () => {
     },
   })
 
-  // Create Stripe Connect account
-  const createStripeAccountMutation = useMutation({
-    mutationFn: createStripeConnectAccount,
-    onSuccess: result => {
-      if (result.success && result.accountId) {
-        setStripeAccountId(result.accountId)
-        setStripeModalOpen(true)
-        void refetchStripeStatus()
-      } else {
-        toast.error(result.error ?? 'Failed to create Stripe account')
-      }
-    },
-    onError: error => {
-      console.error('Failed to create Stripe account:', error)
-      toast.error('Failed to create Stripe account')
-    },
-  })
-
   const eventTypes = eventTypesData?.data ?? []
   const stripeStatus = stripeStatusData?.data
-  const effectiveAccountId = stripeAccountId ?? stripeStatus?.accountId
-
-  // Initialize Stripe Connect instance when session data is available
-  const initializeConnectMutation = useMutation({
-    mutationFn: async (accountId: string) => {
-      const connectInstance = loadConnectAndInitialize({
-        publishableKey: env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY,
-        fetchClientSecret: async () => {
-          const session = await createStripeAccountSession({
-            accountId,
-            notificationBanner: true,
-            accountManagement: true,
-            accountOnboarding: true,
-          })
-          if (!session.success || !session.client_secret) {
-            throw new Error('Failed to create Stripe Account Session')
-          }
-          return session.client_secret
-        },
-        appearance,
-      })
-      return connectInstance
-    },
-    onSuccess: connectInstance => {
-      setStripeConnectInstance(connectInstance)
-    },
-    onError: error => {
-      console.error('Failed to initialize Stripe Connect:', error)
-      toast.error('Failed to initialize Stripe Connect')
-    },
-  })
-
-  // Initialize Connect when session data becomes available
-  useEffect(() => {
-    if (effectiveAccountId && !stripeConnectInstance) {
-      initializeConnectMutation.mutate(effectiveAccountId)
-    }
-  }, [effectiveAccountId, stripeConnectInstance, initializeConnectMutation])
-
-  // Reset connect instance when effectiveAccountId changes
-  useEffect(() => {
-    if (!effectiveAccountId) {
-      setStripeConnectInstance(null)
-    }
-  }, [effectiveAccountId])
 
   const handleToggleEventType = async (eventType: EventTypePreference, checked: boolean) => {
     // Prevent enabling paid event types without Stripe
@@ -193,12 +123,6 @@ export const EventTypeToggleSection = () => {
     setSelectedEventType(null)
   }
 
-  const handleOnboardingComplete = () => {
-    // Refetch Stripe status to check if onboarding was completed
-    void refetchStripeStatus()
-    toast.success('Stripe setup completed! You can now set pricing for your sessions.')
-  }
-
   if (eventTypesLoading || stripeStatusLoading) {
     return <EventTypeToggleSkeleton />
   }
@@ -212,57 +136,19 @@ export const EventTypeToggleSection = () => {
   }
 
   return (
-    <div className="space-y-6">
-      {stripeConnectInstance ? (
-        <ConnectComponentsProvider connectInstance={stripeConnectInstance}>
-          {stripeStatus && (
-            <StripeNotificationBanner
-              stripeStatus={stripeStatus}
-              onRefetchStripeStatus={refetchStripeStatus}
-            />
-          )}
-          <EventTypeSettingsContent
-            eventTypes={eventTypes}
-            stripeStatus={stripeStatus}
-            stripeAccountId={stripeAccountId}
-            connectInstance={stripeConnectInstance}
-            selectedEventType={selectedEventType}
-            showPricingDialog={showPricingDialog}
-            isStripeModalOpen={isStripeModalOpen}
-            setStripeModalOpen={setStripeModalOpen}
-            tempPrice={tempPrice}
-            updateEventTypeMutation={updateEventTypeMutation}
-            createStripeAccountMutation={createStripeAccountMutation}
-            onToggleEventType={handleToggleEventType}
-            onPricingChange={handlePricingChange}
-            onSavePricing={handleSavePricing}
-            onOnboardingComplete={handleOnboardingComplete}
-            setShowPricingDialog={setShowPricingDialog}
-            setTempPrice={setTempPrice}
-          />
-        </ConnectComponentsProvider>
-      ) : (
-        <EventTypeSettingsContent
-          eventTypes={eventTypes}
-          stripeStatus={stripeStatus}
-          stripeAccountId={stripeAccountId}
-          connectInstance={stripeConnectInstance}
-          selectedEventType={selectedEventType}
-          showPricingDialog={showPricingDialog}
-          isStripeModalOpen={isStripeModalOpen}
-          setStripeModalOpen={setStripeModalOpen}
-          tempPrice={tempPrice}
-          updateEventTypeMutation={updateEventTypeMutation}
-          createStripeAccountMutation={createStripeAccountMutation}
-          onToggleEventType={handleToggleEventType}
-          onPricingChange={handlePricingChange}
-          onSavePricing={handleSavePricing}
-          onOnboardingComplete={handleOnboardingComplete}
-          setShowPricingDialog={setShowPricingDialog}
-          setTempPrice={setTempPrice}
-        />
-      )}
-    </div>
+    <EventTypeSettingsContent
+      eventTypes={eventTypes}
+      stripeStatus={stripeStatus}
+      selectedEventType={selectedEventType}
+      showPricingDialog={showPricingDialog}
+      tempPrice={tempPrice}
+      updateEventTypeMutation={updateEventTypeMutation}
+      onToggleEventType={handleToggleEventType}
+      onPricingChange={handlePricingChange}
+      onSavePricing={handleSavePricing}
+      setShowPricingDialog={setShowPricingDialog}
+      setTempPrice={setTempPrice}
+    />
   )
 }
 
