@@ -1,7 +1,7 @@
 import { render } from '@react-email/render'
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
-import { createAuthMiddleware, APIError } from 'better-auth/api'
+import { APIError, createAuthMiddleware } from 'better-auth/api'
 import { emailOTP, oAuthProxy } from 'better-auth/plugins'
 import { eq } from 'drizzle-orm'
 import { env } from '~/env'
@@ -11,6 +11,37 @@ import { enforceCalcomIntegration, syncMentorEventTypesForUser } from '~/server/
 import { getAllowedDomains } from '~/server/auth/domain-cache'
 import { db } from '~/server/db'
 import * as schema from '~/server/db/schema'
+
+/**
+ * Helper function to validate .edu email and check if school is supported
+ * Used for OAuth providers (Google, Microsoft)
+ */
+async function validateEduEmail(email: string): Promise<void> {
+  console.log(`[OAuth] Validating email: ${email}`)
+
+  // Validate .edu email format
+  const eduEmailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.edu$/
+  if (!eduEmailRegex.test(email)) {
+    console.error(`❌ [OAuth] Rejected non-.edu email: ${email}`)
+    throw new APIError('FORBIDDEN', {
+      message: 'You must use a valid .edu email address to sign up.',
+    })
+  }
+
+  // Check if school domain is in database
+  const emailDomain = email.split('@')[1]?.toLowerCase()
+  const domainPrefix = emailDomain?.replace('.edu', '')
+  const allowedDomains = await getAllowedDomains()
+
+  if (!domainPrefix || !allowedDomains.has(domainPrefix)) {
+    console.error(`❌ [OAuth] School not supported: ${domainPrefix}`)
+    throw new APIError('FORBIDDEN', {
+      message: 'Your school is not yet supported. Please contact support to add your school.',
+    })
+  }
+
+  console.log(`✅ [OAuth] Approved email for school: ${domainPrefix}`)
+}
 
 export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL ?? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`,
@@ -40,6 +71,10 @@ export const auth = betterAuth({
   databaseHooks: {
     user: {
       create: {
+        before: async user => {
+          // Validate .edu email BEFORE user is created (works for ALL auth methods)
+          await validateEduEmail(user.email)
+        },
         after: async user => {
           // This runs after a new user is created in the database
           console.log(`[DatabaseHook] New user created: ${user.email}`)
@@ -199,49 +234,6 @@ export const auth = betterAuth({
     before: createAuthMiddleware(async ctx => {
       // Log the path for debugging
       console.log(`[AuthHook] Processing path: ${ctx.path}`)
-
-      // Validate .edu email domain for email sign-up/sign-in
-      if (ctx.path === '/sign-up/email' || ctx.path === '/sign-in/email-otp') {
-        const email = ctx.body?.email
-        if (!email) {
-          return // No email to validate
-        }
-
-        console.log(`[AuthHook] Validating email for email auth: ${email}`)
-
-        // Ensure the user has a valid .edu email format
-        const eduEmailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.edu$/
-        if (!eduEmailRegex.test(email)) {
-          console.log(`❌ Sign-in rejected for invalid .edu email format: ${email}`)
-          throw new APIError('BAD_REQUEST', {
-            message: 'You must use a valid .edu email address to sign up.',
-          })
-        }
-
-        // Check if email domain matches a known school domain
-        const emailDomain = email.split('@')[1]?.toLowerCase()
-        const domainPrefix = emailDomain?.replace('.edu', '')
-
-        const allowedDomains = await getAllowedDomains()
-
-        if (!domainPrefix || !allowedDomains.has(domainPrefix)) {
-          console.error(
-            `❌ [SignIn] REJECTED .edu domain not in database: ${domainPrefix} (email: ${email})`
-          )
-          throw new APIError('BAD_REQUEST', {
-            message: 'Your school is not yet supported. Please contact support to add your school.',
-          })
-        }
-
-        console.log(`✅ [SignIn] Approved email for school domain: ${domainPrefix}`)
-      }
-
-      // Validate .edu email domain for OAuth sign-in (Google, Microsoft, etc.)
-      if (ctx.path === '/sign-in/social') {
-        // For OAuth, the email comes from the provider in the callback
-        // We'll validate it in the user.created hook instead
-        console.log(`[AuthHook] OAuth sign-in initiated, will validate email in user.created hook`)
-      }
     }),
   },
 })
