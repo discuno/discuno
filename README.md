@@ -24,7 +24,7 @@ A professional monorepo built with Next.js, pnpm workspaces, and Cal.com integra
 
 - 📅 **Seamless Scheduling** - Cal.com integration for professional booking management
 - 👥 **Mentorship Platform** - Connect mentors and mentees with advanced matching
-- 🔐 **Secure Authentication** - NextAuth.js v5 with multiple providers
+- 🔐 **Secure Authentication** - better-auth with email OTP + Google & Microsoft OAuth
 - 📱 **Mobile-First Design** - Responsive UI built with Tailwind CSS & Radix UI
 - 🧪 **Full Test Coverage** - Comprehensive testing with Vitest & Testing Library
 - 🚀 **Performance Optimized** - Turbo builds, server components, and edge functions
@@ -38,11 +38,12 @@ discuno/
 ├── apps/
 │   └── web/                 # Main Next.js application
 │       ├── src/
-│       │   ├── app/         # Next.js App Router
-│       │   ├── components/  # React components
-│       │   ├── lib/         # Utilities & configurations
-│       │   └── server/      # Server-side code
-│       ├── drizzle/         # Database migrations
+│       │   ├── app/         # App Router routes, APIs, and server actions
+│       │   ├── components/  # UI primitives and business components
+│       │   ├── lib/         # Shared utilities, providers, integrations
+│       │   ├── server/      # Auth DAL, Drizzle schema, queries, ranking
+│       │   └── styles/      # Tailwind tokens and global styles
+│       ├── scripts/         # Database and environment scripts
 │       └── public/          # Static assets
 ├── .github/                 # GitHub Actions & templates
 ├── docs/                    # Documentation
@@ -84,9 +85,9 @@ pnpm test         # Run test suites
 pnpm format       # Format code with Prettier
 
 # Database operations
-pnpm db:generate  # Generate Drizzle schema
-pnpm db:migrate   # Run migrations
-pnpm db:studio    # Open Drizzle Studio
+pnpm db:generate  # Generate Drizzle schema for the default environment
+pnpm db:push      # Push schema changes to the active database
+pnpm db:studio    # Open Drizzle Studio (use db:studio:<env> for scoped access)
 ```
 
 ## 📦 Application
@@ -95,7 +96,7 @@ pnpm db:studio    # Open Drizzle Studio
 
 **Main Application** - Full-featured Next.js app with:
 
-- 🔐 NextAuth.js authentication
+- 🔐 better-auth session management (email OTP + Google/Microsoft OAuth)
 - 📊 Drizzle ORM + PostgreSQL/Railway
 - 📅 Cal.com scheduling integration
 - 🎨 Tailwind CSS + Radix UI
@@ -112,7 +113,7 @@ pnpm db:studio    # Open Drizzle Studio
 - **Language**: TypeScript (strict mode)
 - **Styling**: Tailwind CSS 4, Radix UI primitives
 - **Database**: Drizzle ORM, PostgreSQL (Railway)
-- **Authentication**: NextAuth.js v5
+- **Authentication**: better-auth (Drizzle adapter, email OTP, OAuth)
 - **Build System**: Turbo
 
 </details>
@@ -137,7 +138,7 @@ pnpm db:studio    # Open Drizzle Studio
 - **CDN**: Vercel Edge Network
 - **Monitoring**: Sentry error tracking
 - **Analytics**: Vercel Analytics
-- **Email**: SendGrid integration
+- **Email**: Resend transactional delivery
 
 </details>
 

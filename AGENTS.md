@@ -1,10 +1,10 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to AI coding assistants collaborating in this repository.
 
 ## Project Overview
 
-Discuno is a modern scheduling and mentorship platform built as a monorepo using pnpm workspaces and Turborepo. The platform connects mentors and mentees with integrated calendar management via Cal.com, payment processing through Stripe, and user analytics via PostHog.
+Discuno is a scheduling and mentorship platform built as a pnpm/Turborepo monorepo. The flagship product is a Next.js 15 application in `apps/web` that orchestrates Cal.com scheduling, Stripe-powered payments, and PostHog analytics. TypeScript strict mode, Drizzle ORM, and Zod validation enforce end-to-end type safety.
 
 ## Common Commands
 
@@ -107,7 +107,7 @@ pnpm --filter @discuno/web vitest watch src/path/to/file.test.ts
 - **pnpm workspaces** for package management
 - **Turborepo** for build orchestration and caching
 - Single application: `apps/web` (Next.js 15)
-- All configuration files at root level
+- All configuration files reside at the repository root
 
 ### Web Application (`apps/web`)
 
@@ -162,7 +162,7 @@ apps/web/
 
 #### Schema Organization (`apps/web/src/server/db/schema.ts`)
 
-The database schema uses Drizzle ORM with snake*case naming convention and the `discuno*` table prefix.
+The database schema uses Drizzle ORM with snake*case naming conventions and the `discuno*` table prefix.
 
 **Core Tables**:
 
@@ -188,193 +188,155 @@ The database schema uses Drizzle ORM with snake*case naming convention and the `
 
 - Soft deletes via `softDeleteTimestamps` helper (`deleted_at`, `created_at`, `updated_at`)
 - Compound indexes for common query patterns
-- Foreign keys with appropriate cascade/set null behavior
+- Foreign keys with cascade/set-null policies
 - JSON columns for flexible metadata storage
 
 #### Database Queries
 
-All database queries live in `apps/web/src/server/queries/` (one module per domain) with complementary data access helpers in `apps/web/src/server/dal/`. Prefer these exported functions over ad-hoc SQL so business logic stays consistent.
+All database queries live in `apps/web/src/server/queries/` (scoped per domain) with complementary helpers in `apps/web/src/server/dal/`. Prefer these exports over ad-hoc SQL so business logic stays consistent.
 
-### Authentication Architecture
+## Authentication Architecture
 
 better-auth is configured in `apps/web/src/lib/auth.ts` with helpers in `apps/web/src/lib/auth-client.ts` and `apps/web/src/lib/auth/auth-utils.ts`:
 
 - **Providers**: Google, Microsoft Entra ID (OAuth), and email OTP
 - **Adapter**: Drizzle adapter backed by PostgreSQL tables
-- Server components should call `requireAuth`/`getAuthSession` (wraps `auth.api.getSession`) for typed access
+- Server components should call `requireAuth`/`getAuthSession` (wraps `auth.api.getSession`)
 - Client components import `signIn`, `signOut`, and `useSession` from `authClient`
-- Database hooks provision Cal.com integration, seed default posts, and assign school metadata on first login
+- Database hooks enforce Cal.com onboarding, seed a default post, and attach school metadata on first login
 
-### API Integration Patterns
+## API Integration Patterns
 
-#### Cal.com Integration (`apps/web/src/lib/calcom/`)
+### Cal.com (`apps/web/src/lib/calcom/`)
 
-- OAuth 2.0 flow for managed users in Cal.com organization
-- Token refresh logic with expiration handling
-- Webhook handlers in `apps/web/src/app/api/webhooks/cal/`
-- All booking state stored locally with Cal.com IDs as foreign keys
+- OAuth 2.0 flow for managed users within the Cal.com organization
+- Token refresh logic handles expirations and retries
+- Webhook handlers at `apps/web/src/app/api/webhooks/cal/`
+- Booking state stored locally with Cal.com IDs as foreign keys
 
-#### Stripe Integration (`apps/web/src/lib/stripe/`)
+### Stripe (`apps/web/src/lib/stripe/`)
 
-- Stripe Connect for mentor payouts
-- Checkout Session flow for bookings
-- Webhook handlers in `apps/web/src/app/api/webhooks/stripe/`
+- Stripe Connect powers mentor payouts
+- Checkout Session flow for booking payments
+- Webhook handlers at `apps/web/src/app/api/webhooks/stripe/`
 - Payment lifecycle: pending → processing → succeeded → transferred
 - Dispute period enforced before automatic transfers
 
-#### PostHog Analytics
+### PostHog Analytics
 
-- Client-side tracking via `posthog-js` (`PostHogProvider`)
-- Analytics events stored in the database to support ranking calculations
+- Client tracking via `posthog-js` (`PostHogProvider`)
+- Analytics events persisted for ranking calculations
 
-### Environment Variables
+## Environment Variables
 
-Environment variables are validated using `@t3-oss/env-nextjs` in `apps/web/src/env.js`. The validation runs at build time and provides type-safe access to environment variables.
+Environment validation uses `@t3-oss/env-nextjs` in `apps/web/src/env.js` to provide typed access.
 
 **Required Variables**:
 
 - Auth & email: `BETTER_AUTH_SECRET`, optional `BETTER_AUTH_URL`, `AUTH_EMAIL_FROM`, `AUTH_EMAIL_SERVER`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `AUTH_MICROSOFT_ENTRA_ID_ID`, `AUTH_MICROSOFT_ENTRA_ID_SECRET`, `AUTH_MICROSOFT_ENTRA_ID_ISSUER`, `AUTH_DISCORD_ID`, `AUTH_DISCORD_SECRET`, `RESEND_API_KEY`
 - Platform URLs: `NEXT_PUBLIC_BASE_URL`, `NEXT_PUBLIC_CALCOM_API_URL`
-- Database: `DATABASE_URL` (Railway PostgreSQL connection string)
+- Database: `DATABASE_URL`
 - Cal.com: `CALCOM_ORG_ID`, `CALCOM_ORG_SLUG`, `CALCOM_COLLEGE_MENTORS_TEAM_SLUG`, `CALCOM_WEBHOOK_SECRET`, `X_CAL_SECRET_KEY`, `NEXT_PUBLIC_X_CAL_ID`
 - Stripe: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_CONNECT_WEBHOOK_SECRET`, `NEXT_PUBLIC_STRIPE_PUBLIC_KEY`
 - PostHog: `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST`, `NEXT_PUBLIC_POSTHOG_UI_HOST`
 - Redis: `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`
 - Misc: `CRON_SECRET`, `BLOB_READ_WRITE_TOKEN`, `COLLEGE_MENTOR_TEAM_ID`, `SENTRY_DSN`, `SENTRY_ENVIRONMENT`, `SENTRY_AUTH_TOKEN`
 
-Use `SKIP_ENV_VALIDATION=1` to bypass validation during development.
+Use `SKIP_ENV_VALIDATION=1` only when local experimentation requires bypassing validation.
 
-### Testing Conventions
+## Testing Conventions
 
-- Tests are colocated with source files using `.test.ts` or `.spec.ts` extensions
-- Test configuration in `apps/web/vitest.config.ts`
-- Setup files in `apps/web/src/server/__tests__/setup.ts`
-- Use `.env.test` for test environment variables
-- Test database operations use separate test database URLs
+- Tests sit beside implementations using `.test.ts` or `.spec.ts`
+- Vitest configuration: `apps/web/vitest.config.ts`
+- Setup file: `apps/web/vitest.setup.ts`
+- Use `.env.test` for test-only secrets
+- Database specs rely on dedicated test database URLs
 - Coverage thresholds: 80% statements, 70% branches, 80% functions/lines
 
-### Code Style & Conventions
+## Code Style & Naming
 
-#### TypeScript
+- TypeScript strict mode; avoid `any` (prefer explicit types or `unknown`)
+- Export types with implementations to aid reuse
+- Path alias `~/` resolves to `apps/web/src/`
+- Prefer Server Components; add `'use client'` only when necessary
+- Components: PascalCase (`UserProfile.tsx`)
+- Utilities: kebab-case (`format-date.ts`)
+- API routes: kebab-case (`route.ts`)
 
-- Strict mode enabled
-- Avoid `any` - use specific types or `unknown`
-- Export types alongside implementations
-- Use path aliases: `~/` maps to `apps/web/src/`
+## Development Notes
 
-#### React Patterns
+### Mentor Dashboard
 
-- Prefer Server Components by default
-- Use `'use client'` directive only when needed
-- Functional components with hooks only
-- Use composition over inheritance
+Consult `.cursor/rules/mentor-dashboard.md` for UI and data requirements: meeting management, payout visibility, Stripe onboarding state, analytics widgets, and notifications.
 
-#### File Naming
+### Database Migrations
 
-- Components: PascalCase (e.g., `UserProfile.tsx`)
-- Utilities: kebab-case (e.g., `format-date.ts`)
-- API routes: kebab-case (e.g., `route.ts`)
+- Do not edit generated files in `drizzle/`
+- Make schema changes in `apps/web/src/server/db/schema.ts`
+- Regenerate with `pnpm db:generate`
+- Validate migrations locally before release
+- Drizzle enforces snake_case columns via config
 
-#### Commit Convention
+### Webhook Development
 
-Follow [Conventional Commits](https://www.conventionalcommits.org/):
+- Verify Cal.com signatures with `CALCOM_WEBHOOK_SECRET`
+- Verify Stripe payloads via `stripe.webhooks.constructEvent()`
+- Persist raw webhook payloads for auditing
+- Use idempotency keys to guard against duplicates
 
-- `feat:` - New features
-- `fix:` - Bug fixes
-- `refactor:` - Code refactoring
-- `docs:` - Documentation changes
-- `test:` - Test additions/changes
-- `chore:` - Build/config changes
+### Rate Limiting
 
-### Important Development Notes
+`apps/web/src/lib/rate-limiter.ts` applies Upstash Redis rate limits to protect public endpoints.
 
-#### Mentor Dashboard Requirements
+### Payment Processing
 
-Reference `.cursor/rules/mentor-dashboard.md` for mentor dashboard specifications including:
+- Platform fee logic lives where payments are created
+- Disputes hold payouts for 7 days after booking completion
+- Cron jobs transfer funds automatically post-dispute window
+- Handle refunds for cancelled bookings gracefully
 
-- Meeting management (upcoming, past, cancelled)
-- Payment tracking (pending, payouts)
-- Stripe account status
-- Analytics and notifications
+## Useful Scripts
 
-#### Database Migrations
+Database scripts reside in `apps/web/scripts/`:
 
-- Never edit generated migration files in `drizzle/`
-- Always modify `apps/web/src/server/db/schema.ts` and regenerate
-- Use `pnpm db:generate` to create new migrations
-- Test migrations in local environment before deploying
-- Drizzle uses snake_case for column names (configured in drizzle.config.ts)
+- `db-seed.ts` – Seed canonical schools and majors data
+- `db-reset.ts` – Reset database with safety checks
+- `db-push.ts` – Push schema changes to the target database
+- `db-test-connection.ts` – Validate connectivity for each environment
+- `dev-setup.sh` – Bootstrap local development prerequisites
 
-#### Webhook Development
+## CI/CD
 
-- Cal.com webhooks: Verify signature using `CALCOM_WEBHOOK_SECRET`
-- Stripe webhooks: Verify using `stripe.webhooks.constructEvent()`
-- Always store raw webhook payload in database for auditing
-- Use idempotency keys to prevent duplicate processing
+GitHub Actions in `.github/workflows/` handle CI (lint, typecheck, test, build). Husky runs lint-staged on commit, and Commitlint enforces Conventional Commits.
 
-#### Rate Limiting
+## Deployment
 
-Rate limiting is implemented using Upstash Redis in `apps/web/src/lib/rate-limiter.ts`. Apply rate limiting to public API endpoints to prevent abuse.
+- Optimized for Vercel; environment variables managed in the Vercel dashboard
+- Automatic deploys from `main`
+- Preview builds for every PR
+- Railway provides branching for preview databases
 
-#### Payment Processing
+## Known Patterns
 
-- Platform fee calculations in payment creation logic
-- Dispute period: 7 days after booking completion
-- Automatic transfers via cron job after dispute period
-- Refund handling for cancelled bookings
+### Server Actions
 
-### Useful Scripts
+- Validate inputs with Zod schemas
+- Call `requireAuth`/`getAuthSession` from `~/lib/auth/auth-utils` to fetch the current session
+- Return serializable payloads only
+- Guard with error boundaries for graceful failure
 
-Database utility scripts are in `apps/web/scripts/`:
+### Data Fetching
 
-- `db-seed.ts` - Seed database with schools and majors data
-- `db-reset.ts` - Reset database (with safety checks)
-- `db-push.ts` - Push schema changes to database
-- `db-test-connection.ts` - Test database connectivity
-- `dev-setup.sh` - Initial development environment setup
+- Server Components may query the database directly via Drizzle
+- Client Components should use React Query (`@tanstack/react-query`)
+- Always cover loading and error states
+- Employ React Suspense for smoother UX
 
-### CI/CD
+### Form Handling
 
-GitHub Actions workflows in `.github/workflows/`:
-
-- **CI**: Runs on all PRs (lint, typecheck, test, build)
-- Husky pre-commit hooks run lint-staged
-- Commitlint validates commit messages
-
-### Deployment
-
-The application is optimized for Vercel deployment:
-
-- Environment variables configured in Vercel dashboard
-- Automatic deployments from `main` branch
-- Preview deployments for all PRs
-- Railway database branching for preview environments
-
-### Known Patterns
-
-#### Server Actions
-
-When using Server Actions in Next.js:
-
-- Always validate inputs with Zod schemas
-- Call `requireAuth`/`getAuthSession` from `~/lib/auth/auth-utils` for session data
-- Return serializable data only
-- Handle errors gracefully with proper error boundaries
-
-#### Data Fetching
-
-- Server Components: Direct database queries via Drizzle
-- Client Components: Use React Query (`@tanstack/react-query`)
-- Always implement loading and error states
-- Use React Suspense boundaries for better UX
-
-#### Form Handling
-
-- Use Radix UI form primitives
-- Validate with Zod schemas from `apps/web/src/lib/schemas/`
-- Display errors using toast notifications (Sonner)
-- Implement optimistic updates where appropriate
-- Use shadcn ui reusable UI components when possible.
-- use global tailwind variables where possible.
-- use arrow function syntax when possible.
-- remember we don't do database migrations just pushes
+- Use Radix UI primitives and shadcn/ui components
+- Validate with Zod schemas in `apps/web/src/lib/schemas/`
+- Surface errors with Sonner toasts
+- Prefer optimistic updates when feasible
+- Reuse Tailwind design tokens and write components using arrow functions
+- Favor schema pushes over ad-hoc database migrations

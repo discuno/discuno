@@ -16,7 +16,7 @@ export const TimeSlotsList = ({
 }) => {
   if (isFetchingSlots) {
     return (
-      <div className="animate-in fade-in space-y-2 duration-200">
+      <div className="slide-in-up space-y-2">
         {Array.from({ length: 6 }).map((_, i) => (
           <Skeleton key={i} className="h-10 w-full" />
         ))}
@@ -26,17 +26,17 @@ export const TimeSlotsList = ({
 
   if (slots.length > 0) {
     return (
-      <div className="animate-in fade-in slide-in-from-bottom-2 grid gap-2 duration-200">
+      <div className="slide-in-up space-y-2">
         {slots.map((slot, index) => (
           <Button
             key={index}
             variant="outline"
-            className="animate-in fade-in slide-in-from-bottom-2 w-full justify-start duration-200"
+            className="slide-in-up h-10 w-full justify-center px-3 text-sm"
             style={{ animationDelay: `${Math.min(index, 10) * 25}ms` }}
             disabled={!slot.available}
             onClick={() => onSelectTimeSlot(slot.time)}
           >
-            <Clock className="mr-2 h-4 w-4" />
+            <Clock className="mr-2 h-3.5 w-3.5" />
             {format(new Date(slot.time), 'p')}
           </Button>
         ))}
@@ -45,7 +45,7 @@ export const TimeSlotsList = ({
   }
 
   return (
-    <div className="text-muted-foreground animate-in fade-in rounded-md border border-dashed p-6 text-center duration-200">
+    <div className="slide-in-up text-muted-foreground rounded-md border border-dashed p-6 text-center">
       <CalendarIcon className="mx-auto mb-2 h-8 w-8" />
       <p className="text-sm">Please select an available date</p>
     </div>

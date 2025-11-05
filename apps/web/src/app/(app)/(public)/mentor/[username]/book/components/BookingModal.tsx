@@ -37,7 +37,7 @@ export const BookingModal = ({ bookingData, children, className }: BookingModalP
         <DialogContent className="aspect-[9/16] max-h-[85vh] w-full max-w-[85vw] overflow-hidden p-0 focus:outline-none sm:rounded-xl">
           <div className="flex h-full min-h-0 flex-col">
             {/* Enhanced Header */}
-            <div className="from-primary/10 via-primary/5 animate-in fade-in slide-in-from-top-2 relative hidden flex-shrink-0 border-b bg-gradient-to-r to-transparent p-6 duration-200 md:block">
+            <div className="slide-in-down from-primary/10 via-primary/5 relative hidden flex-shrink-0 border-b bg-gradient-to-r to-transparent p-6 md:block">
               <DialogHeader>
                 <div className="flex items-start gap-4">
                   {bookingData.image && (
@@ -67,11 +67,9 @@ export const BookingModal = ({ bookingData, children, className }: BookingModalP
 
             {/* Booking Interface */}
             <div className="bg-background flex-1 overflow-hidden [padding-bottom:env(safe-area-inset-bottom)]">
-              <div className="animate-in fade-in h-full overflow-y-auto duration-200">
-                <Suspense fallback={<BookingEmbedSkeleton />}>
-                  <BookingEmbed bookingData={bookingData} />
-                </Suspense>
-              </div>
+              <Suspense fallback={<BookingEmbedSkeleton />}>
+                <BookingEmbed bookingData={bookingData} />
+              </Suspense>
             </div>
           </div>
         </DialogContent>

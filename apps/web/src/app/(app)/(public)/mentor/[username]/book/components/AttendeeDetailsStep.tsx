@@ -1,13 +1,15 @@
 import type { UseMutationResult } from '@tanstack/react-query'
 import { format } from 'date-fns'
+import { Check, Mail, Phone as PhoneIcon, User } from 'lucide-react'
+import { useState } from 'react'
 import PhoneInput from 'react-phone-number-input'
 import 'react-phone-number-input/style.css'
 import type { EventType } from '~/app/(app)/(public)/mentor/[username]/book/actions'
 import type { BookingFormData } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingEmbed'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent } from '~/components/ui/card'
-import { Input } from '~/components/ui/input'
-import { Label } from '~/components/ui/label'
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '~/components/ui/field'
+import { InputGroup, InputGroupAddon, InputGroupInput } from '~/components/ui/input-group'
 
 interface AttendeeDetailsStepProps {
   selectedEventType: EventType | null
@@ -28,75 +30,138 @@ export const AttendeeDetailsStep = ({
   setCurrentStep,
   createBookingMutation,
 }: AttendeeDetailsStepProps) => {
+  const [emailError, setEmailError] = useState<string>('')
+  const [nameError, setNameError] = useState<string>('')
+
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    return emailRegex.test(email)
+  }
+
+  const handleEmailChange = (email: string) => {
+    setFormData({ ...formData, email })
+    if (email && !validateEmail(email)) {
+      setEmailError('Please enter a valid email address')
+    } else {
+      setEmailError('')
+    }
+  }
+
+  const handleNameChange = (name: string) => {
+    setFormData({ ...formData, name })
+    if (name && name.trim().length < 2) {
+      setNameError('Name must be at least 2 characters')
+    } else {
+      setNameError('')
+    }
+  }
+
+  const isFormValid = formData.name.trim().length >= 2 && validateEmail(formData.email)
+
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-2 p-6 duration-200">
-      <div className="mb-6">
-        <h2 className="mb-2 text-xl font-semibold">Your Details</h2>
-        <p className="text-muted-foreground text-sm">
+    <div className="slide-in-up h-full overflow-y-auto p-3">
+      <div className="mb-2">
+        <h2 className="text-base font-semibold">Your Details</h2>
+        <p className="text-muted-foreground text-xs">
           Please provide your contact information for the booking
         </p>
       </div>
 
-      <div className="max-w-md space-y-4">
-        <div>
-          <Label htmlFor="name">Full Name</Label>
-          <Input
-            id="name"
-            type="text"
-            value={formData.name}
-            onChange={e => setFormData({ ...formData, name: e.target.value })}
-            placeholder="Your full name"
-          />
-        </div>
+      <FieldGroup className="max-w-md space-y-2">
+        <Field data-invalid={!!nameError} className="gap-1">
+          <FieldLabel htmlFor="name">Full Name</FieldLabel>
+          <InputGroup>
+            <InputGroupAddon>
+              <User className="h-4 w-4" />
+            </InputGroupAddon>
+            <InputGroupInput
+              id="name"
+              type="text"
+              value={formData.name}
+              onChange={e => handleNameChange(e.target.value)}
+              placeholder="Your full name"
+              aria-invalid={!!nameError}
+              required
+              minLength={2}
+            />
+            {!nameError && formData.name.trim().length >= 2 && (
+              <InputGroupAddon align="inline-end">
+                <Check className="h-4 w-4 text-green-500" />
+              </InputGroupAddon>
+            )}
+          </InputGroup>
+          <FieldError>{nameError}</FieldError>
+        </Field>
 
-        <div>
-          <Label htmlFor="email">Email Address</Label>
-          <Input
-            id="email"
-            type="email"
-            value={formData.email}
-            onChange={e => setFormData({ ...formData, email: e.target.value })}
-            placeholder="your.email@example.com"
-          />
-        </div>
+        <Field data-invalid={!!emailError} className="gap-1">
+          <FieldLabel htmlFor="email">Email Address</FieldLabel>
+          <InputGroup>
+            <InputGroupAddon>
+              <Mail className="h-4 w-4" />
+            </InputGroupAddon>
+            <InputGroupInput
+              id="email"
+              type="email"
+              value={formData.email}
+              onChange={e => handleEmailChange(e.target.value)}
+              placeholder="your.email@example.com"
+              aria-invalid={!!emailError}
+              required
+            />
+            {!emailError && formData.email && validateEmail(formData.email) && (
+              <InputGroupAddon align="inline-end">
+                <Check className="h-4 w-4 text-green-500" />
+              </InputGroupAddon>
+            )}
+          </InputGroup>
+          <FieldError>{emailError}</FieldError>
+        </Field>
 
-        <div>
-          <Label htmlFor="phone">Phone Number (optional for reminders)</Label>
-          <PhoneInput
-            id="phone"
-            international
-            defaultCountry="US"
-            value={formData.phone}
-            onChange={value => setFormData({ ...formData, phone: value })}
-            placeholder="Your phone number"
-          />
-        </div>
+        <Field className="gap-1">
+          <FieldLabel htmlFor="phone">Phone Number</FieldLabel>
+          <InputGroup>
+            <InputGroupAddon>
+              <PhoneIcon className="h-4 w-4" />
+            </InputGroupAddon>
+            <PhoneInput
+              id="phone"
+              international
+              defaultCountry="US"
+              value={formData.phone}
+              onChange={value => setFormData({ ...formData, phone: value })}
+              placeholder="Your phone number"
+              className="flex-1 rounded-none border-0 bg-transparent shadow-none focus-visible:ring-0 dark:bg-transparent"
+              data-slot="input-group-control"
+            />
+          </InputGroup>
+          <FieldDescription className="text-xs">Optional - for SMS reminders</FieldDescription>
+        </Field>
 
         {/* Booking Summary */}
         {selectedEventType && selectedTimeSlot && (
-          <Card className="mt-4">
-            <CardContent className="pt-4">
-              <h3 className="mb-2 font-medium">Booking Summary</h3>
-              <div className="space-y-1 text-sm">
+          <Card className="mt-3">
+            <CardContent className="p-2.5">
+              <h3 className="mb-1 text-sm font-medium">Booking Summary</h3>
+              <div className="space-y-0 text-xs">
                 <div className="flex justify-between">
-                  <span>Session:</span>
-                  <span>{selectedEventType.title}</span>
+                  <span className="text-muted-foreground">Session:</span>
+                  <span className="font-medium">{selectedEventType.title}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Date:</span>
-                  <span>{selectedDate?.toDateString()}</span>
+                  <span className="text-muted-foreground">Date:</span>
+                  <span className="font-medium">{selectedDate?.toDateString()}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Time:</span>
-                  <span>{format(new Date(selectedTimeSlot), 'p')}</span>
+                  <span className="text-muted-foreground">Time:</span>
+                  <span className="font-medium">{format(new Date(selectedTimeSlot), 'p')}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Duration:</span>
-                  <span>{selectedEventType.length} minutes</span>
+                  <span className="text-muted-foreground">Duration:</span>
+                  <span className="font-medium">{selectedEventType.length} minutes</span>
                 </div>
-                <div className="flex justify-between border-t pt-2 font-medium">
-                  <span>Price:</span>
-                  <span>
+                <div className="mt-1 flex justify-between border-t pt-1">
+                  <span className="font-medium">Price:</span>
+                  <span className="font-semibold">
                     {selectedEventType.price && selectedEventType.price > 0
                       ? `$${(selectedEventType.price / 100).toFixed(2)} ${selectedEventType.currency}`
                       : 'Free'}
@@ -107,16 +172,17 @@ export const AttendeeDetailsStep = ({
           </Card>
         )}
 
-        <div className="flex gap-3">
-          <Button variant="outline" onClick={() => setCurrentStep('calendar')}>
+        <div className="mt-3 flex gap-2">
+          <Button variant="outline" onClick={() => setCurrentStep('calendar')} size="sm">
             Back
           </Button>
           <Button
             onClick={() => {
               createBookingMutation.mutate()
             }}
-            disabled={!formData.name || !formData.email || createBookingMutation.isPending}
+            disabled={!isFormValid || createBookingMutation.isPending}
             className="flex-1"
+            size="sm"
           >
             {createBookingMutation.isPending ? (
               <>
@@ -130,7 +196,7 @@ export const AttendeeDetailsStep = ({
             )}
           </Button>
         </div>
-      </div>
+      </FieldGroup>
     </div>
   )
 }

@@ -2,14 +2,15 @@
 
 import type { UseMutationResult } from '@tanstack/react-query'
 import { CreditCard, DollarSign, Settings, Timer } from 'lucide-react'
+import { useState } from 'react'
 import { type updateMentorEventTypePreferences } from '~/app/(app)/(mentor)/settings/actions'
 import { Alert, AlertDescription } from '~/components/ui/alert'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent } from '~/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '~/components/ui/dialog'
-import { Input } from '~/components/ui/input'
-import { Label } from '~/components/ui/label'
+import { Field, FieldDescription, FieldError, FieldLabel } from '~/components/ui/field'
+import { InputGroup, InputGroupAddon, InputGroupInput } from '~/components/ui/input-group'
 import { Switch } from '~/components/ui/switch'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '~/components/ui/tooltip'
 
@@ -69,6 +70,19 @@ export const EventTypeSettingsContent = ({
   const isStripeActive = stripeStatus?.chargesEnabled === true
   const hasStripeAccount = stripeStatus?.hasAccount === true
   const needsStripeSetup = !hasStripeAccount || !isStripeActive
+  const [priceError, setPriceError] = useState('')
+
+  const handlePriceChange = (value: string) => {
+    setTempPrice(value)
+    const price = parseFloat(value)
+    if (value && (isNaN(price) || price < 0)) {
+      setPriceError('Price must be a positive number')
+    } else if (price > 0 && price < 5) {
+      setPriceError('Minimum paid price is $5.00')
+    } else {
+      setPriceError('')
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -220,25 +234,28 @@ export const EventTypeSettingsContent = ({
           </DialogHeader>
 
           <div className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="price">Price (USD)</Label>
-              <div className="relative">
-                <DollarSign className="text-muted-foreground absolute left-3 top-3 h-4 w-4" />
-                <Input
+            <Field data-invalid={!!priceError}>
+              <FieldLabel htmlFor="price">Price (USD)</FieldLabel>
+              <InputGroup>
+                <InputGroupAddon>
+                  <DollarSign className="h-4 w-4" />
+                </InputGroupAddon>
+                <InputGroupInput
                   id="price"
                   type="number"
                   min="0"
                   step="1"
                   placeholder="0.00"
                   value={tempPrice}
-                  onChange={e => setTempPrice(e.target.value)}
-                  className="pl-9"
+                  onChange={e => handlePriceChange(e.target.value)}
+                  aria-invalid={!!priceError}
                 />
-              </div>
-              <p className="text-muted-foreground text-xs">
+              </InputGroup>
+              <FieldDescription>
                 Leave empty or set to 0 for free sessions. Minimum paid price is $5.00.
-              </p>
-            </div>
+              </FieldDescription>
+              <FieldError>{priceError}</FieldError>
+            </Field>
 
             {!isStripeActive &&
               tempPrice &&
@@ -258,11 +275,7 @@ export const EventTypeSettingsContent = ({
               </Button>
               <Button
                 onClick={onSavePricing}
-                disabled={
-                  updateEventTypeMutation.isPending ||
-                  parseFloat(tempPrice) < 0 ||
-                  (parseFloat(tempPrice) > 0 && parseFloat(tempPrice) < 5)
-                }
+                disabled={updateEventTypeMutation.isPending || !!priceError}
               >
                 {updateEventTypeMutation.isPending ? 'Saving...' : 'Save'}
               </Button>
