@@ -13,7 +13,7 @@ const SelectItem = forwardRef<
   <SelectPrimitive.Item
     ref={ref}
     className={cn(
-      'focus:bg-primary/10 focus:text-primary outline-hidden data-disabled:pointer-events-none data-disabled:opacity-50 relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-2 pr-8 text-sm',
+      'outline-hidden focus:bg-primary/10 focus:text-primary data-disabled:pointer-events-none data-disabled:opacity-50 relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-2 pr-8 text-sm',
       className
     )}
     {...props}
@@ -66,7 +66,7 @@ export const EventTypeSelector = ({
 
         <div className="pr-2">
           {selectedEventType?.price && selectedEventType.price > 0 ? (
-            <Badge variant="secondary" className="bg-success/20 text-success dark:bg-success/30">
+            <Badge variant="secondary" className="badge-success-muted">
               ${(selectedEventType.price / 100).toFixed(2)} {selectedEventType.currency}
             </Badge>
           ) : (
@@ -85,7 +85,7 @@ export const EventTypeSelector = ({
             </div>
             <div className="flex-grow" />
             {eventType.price && eventType.price > 0 ? (
-              <Badge variant="secondary" className="bg-success/20 text-success dark:bg-success/30">
+              <Badge variant="secondary" className="badge-success-muted">
                 ${(eventType.price / 100).toFixed(2)} {eventType.currency}
               </Badge>
             ) : (

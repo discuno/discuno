@@ -8,6 +8,7 @@ import { TimeSlotsList } from '~/app/(app)/(public)/mentor/[username]/book/compo
 import type { BookingData } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingModal'
 import { Calendar } from '~/components/ui/calendar'
 import { Label } from '~/components/ui/label'
+import { Separator } from '~/components/ui/separator'
 
 interface BookingCalendarProps {
   selectedEventType: EventType | null
@@ -77,9 +78,10 @@ export const BookingCalendar = ({
   )
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-2 flex h-full min-h-0 flex-col p-6 duration-200">
+    <div className="slide-in-up flex h-full flex-col">
+      {/* Header - Mobile Only */}
       {selectedEventType && (
-        <div className="bg-background/80 sticky top-0 z-30 -mx-6 -mt-6 border-b px-6 py-3 supports-[backdrop-filter]:backdrop-blur md:hidden">
+        <div className="bg-background/95 supports-[backdrop-filter]:bg-background/80 sticky top-0 z-30 border-b px-4 py-3 backdrop-blur md:hidden">
           <div className="flex items-center gap-3">
             {bookingData.image && (
               <Image
@@ -87,10 +89,10 @@ export const BookingCalendar = ({
                 alt={bookingData.name}
                 width={40}
                 height={40}
-                className="ring-border h-10 w-10 shrink-0 rounded-full object-cover shadow-sm ring-1"
+                className="avatar-ring h-10 w-10 shrink-0"
               />
             )}
-            <div className="flex-1">
+            <div className="min-w-0 flex-1">
               <EventTypeSelector
                 selectedEventType={selectedEventType}
                 eventTypes={eventTypes}
@@ -102,58 +104,61 @@ export const BookingCalendar = ({
           </div>
         </div>
       )}
-      {!selectedEventType && (
-        <div className="animate-in fade-in mb-6 duration-200">
-          <h2 className="mb-2 text-xl font-semibold">Schedule a Session</h2>
-          <p className="text-muted-foreground text-sm">
-            Choose your session type, then select a date and time
-          </p>
-        </div>
-      )}
 
-      {/* Event Type Selection (hidden on small screens after selection) */}
-      <div
-        className={`animate-in fade-in slide-in-from-bottom-2 mb-6 duration-200 ${selectedEventType ? 'hidden md:block' : ''}`}
-      >
-        <Label className="mb-2 block text-sm font-medium">Session Type</Label>
-        <EventTypeSelector
-          selectedEventType={selectedEventType}
-          eventTypes={eventTypes}
-          onSelectEventType={onSelectEventType}
-          onSelectTimeSlot={onSelectTimeSlot}
-        />
-      </div>
-
-      {selectedEventType && (
-        <div className="animate-in fade-in slide-in-from-bottom-2 grid min-h-0 flex-1 grid-rows-[auto_1fr] gap-6 duration-200 md:grid-cols-2 md:grid-rows-1">
-          {/* Calendar */}
-          <div className="min-h-0">
-            <Label className="mb-2 hidden text-sm font-medium md:block">Select Date</Label>
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={handleDateSelect}
-              onMonthChange={handleMonthChange}
-              disabled={isDateDisabled}
-              className="animate-in fade-in slide-in-from-bottom-2 mt-2 rounded-md border duration-200 md:mt-3"
-              startMonth={startMonth}
-              endMonth={endMonth}
-            />
+      {/* Main Content */}
+      <div className="flex-1 overflow-y-auto px-4 py-6 md:px-6">
+        {/* Welcome Message */}
+        {!selectedEventType && (
+          <div className="slide-in-up mb-6">
+            <h2 className="mb-2 text-xl font-semibold">Schedule a Session</h2>
+            <p className="text-muted-foreground text-sm">
+              Choose your session type, then select a date and time
+            </p>
           </div>
+        )}
 
-          {/* Time Slots */}
-          <div className="flex min-h-0 flex-col">
-            <Label className="mb-2 hidden text-sm font-medium md:block">Available Times</Label>
-            <div className="flex-1 overflow-y-auto pr-1 md:pl-3">
+        {/* Event Type Selection */}
+        <div className={`slide-in-up ${selectedEventType ? 'mb-6 hidden md:block' : 'mb-6'}`}>
+          <Label className="mb-3 block text-sm font-medium">Session Type</Label>
+          <EventTypeSelector
+            selectedEventType={selectedEventType}
+            eventTypes={eventTypes}
+            onSelectEventType={onSelectEventType}
+            onSelectTimeSlot={onSelectTimeSlot}
+          />
+        </div>
+
+        {selectedEventType && (
+          <>
+            {/* Calendar Section */}
+            <div className="slide-in-up mb-6">
+              <Label className="mb-3 block text-sm font-medium">Select Date</Label>
+              <Calendar
+                mode="single"
+                selected={selectedDate}
+                onSelect={handleDateSelect}
+                onMonthChange={handleMonthChange}
+                disabled={isDateDisabled}
+                className="slide-in-up rounded-md border"
+                startMonth={startMonth}
+                endMonth={endMonth}
+              />
+            </div>
+
+            <Separator className="my-6" />
+
+            {/* Time Slots Section */}
+            <div className="slide-in-up">
+              <Label className="mb-3 block text-sm font-medium">Available Times</Label>
               <TimeSlotsList
                 slots={slotsForSelectedDate}
                 isFetchingSlots={isFetchingSlots}
                 onSelectTimeSlot={onSelectTimeSlot}
               />
             </div>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </div>
     </div>
   )
 }

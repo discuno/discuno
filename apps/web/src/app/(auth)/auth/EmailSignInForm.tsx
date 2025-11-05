@@ -1,20 +1,36 @@
 'use client'
 
-import { Mail } from 'lucide-react'
+import { Loader2, Mail } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '~/components/ui/button'
-import { Input } from '~/components/ui/input'
+import { Field, FieldDescription, FieldError, FieldLabel } from '~/components/ui/field'
+import { InputGroup, InputGroupAddon, InputGroupInput } from '~/components/ui/input-group'
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '~/components/ui/input-otp'
 import { authClient } from '~/lib/auth-client'
 
 export function EmailSignInForm() {
   const router = useRouter()
   const [email, setEmail] = useState('')
+  const [emailError, setEmailError] = useState('')
   const [otp, setOtp] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [showOtpInput, setShowOtpInput] = useState(false)
+
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    return emailRegex.test(email)
+  }
+
+  const handleEmailChange = (value: string) => {
+    setEmail(value)
+    if (value && !validateEmail(value)) {
+      setEmailError('Please enter a valid email address')
+    } else {
+      setEmailError('')
+    }
+  }
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -119,23 +135,32 @@ export function EmailSignInForm() {
 
   return (
     <form onSubmit={handleEmailSubmit} className="space-y-4">
-      <Input
-        type="email"
-        placeholder="Enter your .edu email"
-        value={email}
-        onChange={e => setEmail(e.target.value)}
-        required
-        className="w-full"
-      />
-      <Button type="submit" disabled={isLoading} className="w-full">
-        {isLoading ? (
-          'Sending...'
-        ) : (
-          <>
-            <Mail className="mr-2 h-4 w-4" />
-            Sign in with Email
-          </>
-        )}
+      <Field data-invalid={!!emailError}>
+        <FieldLabel htmlFor="email">Email Address</FieldLabel>
+        <InputGroup>
+          <InputGroupAddon>
+            <Mail className="h-4 w-4" />
+          </InputGroupAddon>
+          <InputGroupInput
+            id="email"
+            type="email"
+            placeholder="Enter your .edu email"
+            value={email}
+            onChange={e => handleEmailChange(e.target.value)}
+            aria-invalid={!!emailError}
+            required
+          />
+          {isLoading && (
+            <InputGroupAddon align="inline-end">
+              <Loader2 className="h-4 w-4 animate-spin" />
+            </InputGroupAddon>
+          )}
+        </InputGroup>
+        <FieldDescription>We&apos;ll send you a verification code to sign in</FieldDescription>
+        <FieldError>{emailError}</FieldError>
+      </Field>
+      <Button type="submit" disabled={isLoading || !!emailError} className="w-full">
+        {isLoading ? 'Sending...' : 'Continue with Email'}
       </Button>
     </form>
   )

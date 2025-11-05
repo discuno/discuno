@@ -1,9 +1,14 @@
 'use client'
 
-import { Trash2 } from 'lucide-react'
+import { Clock, Trash2 } from 'lucide-react'
 import type { TimeInterval } from '~/app/types/availability'
 import { Button } from '~/components/ui/button'
-import { Input } from '~/components/ui/input'
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+  InputGroupText,
+} from '~/components/ui/input-group'
 
 interface TimeIntervalRowProps {
   interval: TimeInterval
@@ -28,23 +33,28 @@ export const TimeIntervalRow = ({
 
   return (
     <div className="flex items-center gap-3">
-      <div className="flex flex-1 items-center gap-2">
-        <Input
+      <InputGroup className="flex-1">
+        <InputGroupAddon>
+          <Clock className="h-4 w-4" />
+        </InputGroupAddon>
+        <InputGroupInput
           type="time"
           value={interval.start}
           onChange={handleStartChange}
           disabled={disabled}
-          className="flex-1"
+          aria-label="Start time"
         />
-        <span className="text-muted-foreground">to</span>
-        <Input
+        <InputGroupAddon align="inline-end">
+          <InputGroupText>to</InputGroupText>
+        </InputGroupAddon>
+        <InputGroupInput
           type="time"
           value={interval.end}
           onChange={handleEndChange}
           disabled={disabled}
-          className="flex-1"
+          aria-label="End time"
         />
-      </div>
+      </InputGroup>
       <Button
         variant="ghost"
         size="icon"
