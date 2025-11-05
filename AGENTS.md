@@ -2,6 +2,10 @@
 
 This file provides guidance to AI coding assistants collaborating in this repository.
 
+## Cross-Agent Coordination
+
+This repository is maintained by multiple AI agents (Gemini, Claude, etc.). When you make a change that renders this file outdated, you are responsible for updating `AGENTS.md`, `CLAUDE.md`, and `GEMINI.md` to reflect the new project state.
+
 ## Project Overview
 
 Discuno is a scheduling and mentorship platform built as a pnpm/Turborepo monorepo. The flagship product is a Next.js 15 application in `apps/web` that orchestrates Cal.com scheduling, Stripe-powered payments, and PostHog analytics. TypeScript strict mode, Drizzle ORM, and Zod validation enforce end-to-end type safety.

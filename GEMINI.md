@@ -2,6 +2,10 @@
 
 This playbook guides Google Gemini (and other Gemini-based coding agents) when contributing to this repository.
 
+## Cross-Agent Coordination
+
+This repository is maintained by multiple AI agents (Gemini, Claude, etc.). When you make a change that renders this file outdated, you are responsible for updating `AGENTS.md`, `CLAUDE.md`, and `GEMINI.md` to reflect the new project state.
+
 ## Project Overview
 
 Discuno is a scheduling and mentorship platform built on a pnpm/Turborepo monorepo. The flagship app lives in `apps/web` and runs on Next.js 15 with React Server Components, coordinating Cal.com scheduling, Stripe payouts, and PostHog analytics. TypeScript strict mode, Drizzle ORM, and Zod schemas ensure typed workflows from database to UI.
