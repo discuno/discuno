@@ -68,6 +68,7 @@
     "@eslint/js": "^9.31.0",
     "@next/eslint-plugin-next": "^15.4.1",
     "@semantic-release/github": "^12.0.0",
+    "@types/mdx": "^2.0.13",
     "@types/node": "^24.0.14",
     "@typescript-eslint/eslint-plugin": "^8.37.0",
     "@typescript-eslint/parser": "^8.37.0",
@@ -109,6 +110,14 @@
   },
   "dependencies": {
     "better-auth": "^1.3.31",
-    "drizzle": "link:better-auth/adapters/drizzle"
+    "drizzle": "link:better-auth/adapters/drizzle",
+    "feed": "^5.1.0",
+    "gray-matter": "^4.0.3",
+    "next-mdx-remote": "^5.0.0",
+    "reading-time": "^1.5.0",
+    "rehype-autolink-headings": "^7.1.0",
+    "rehype-highlight": "^7.0.2",
+    "rehype-slug": "^6.0.0",
+    "remark-gfm": "^4.0.1"
   }
 }
