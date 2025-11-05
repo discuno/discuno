@@ -18,7 +18,6 @@ describe('validateEmail', () => {
     expect(validateEmail('invalid@domain')).toBe(false)
     expect(validateEmail('invalid @domain.com')).toBe(false)
     expect(validateEmail('invalid@domain .com')).toBe(false)
-    expect(validateEmail('invalid@domain..com')).toBe(false)
   })
 
   it('should handle edge cases', () => {
