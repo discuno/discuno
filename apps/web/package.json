@@ -118,19 +118,20 @@
     "drizzle-zod": "^0.8.3",
     "esbuild": "^0.25.5",
     "geist": "^1.4.2",
+    "highlight.js": "^11.11.1",
     "input-otp": "^1.4.2",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.544.0",
-    "next": "15.6.0-canary.32",
+    "next": "16.0.1",
     "next-themes": "^0.4.6",
     "nodemailer": "^7.0.9",
     "pg": "^8.16.3",
     "postgres": "^3.4.7",
     "posthog-js": "^1.260.2",
     "posthog-node": "^5.7.0",
-    "react": "^19.1.0",
+    "react": "19.2.0",
     "react-day-picker": "^9.8.1",
-    "react-dom": "^19.1.0",
+    "react-dom": "19.2.0",
     "react-image-crop": "^11.0.10",
     "react-intersection-observer": "^9.16.0",
     "react-phone-number-input": "^3.4.12",
@@ -148,7 +149,7 @@
     "@commitlint/cli": "^19.8.1",
     "@commitlint/config-conventional": "^19.8.1",
     "@eslint/js": "^9.28.0",
-    "@next/eslint-plugin-next": "^15.3.3",
+    "@next/eslint-plugin-next": "16.0.1",
     "@svgr/webpack": "^8.1.0",
     "@tailwindcss/postcss": "^4.1.10",
     "@testing-library/dom": "^10.4.1",
@@ -160,8 +161,8 @@
     "@types/node": "^24.0.1",
     "@types/nodemailer": "^6.4.17",
     "@types/pg": "^8.15.4",
-    "@types/react": "^19.1.8",
-    "@types/react-dom": "^19.1.6",
+    "@types/react": "19.2.2",
+    "@types/react-dom": "19.2.2",
     "@typescript-eslint/eslint-plugin": "^8.34.0",
     "@typescript-eslint/parser": "^8.34.0",
     "@vitejs/plugin-react": "^4.5.2",
@@ -170,7 +171,7 @@
     "dotenv": "^16.5.0",
     "drizzle-kit": "^0.31.5",
     "eslint": "^9.28.0",
-    "eslint-config-next": "^15.3.3",
+    "eslint-config-next": "16.0.1",
     "eslint-import-resolver-typescript": "^4.4.3",
     "eslint-plugin-drizzle": "^0.2.3",
     "eslint-plugin-import": "^2.31.0",
@@ -194,5 +195,11 @@
   "ct3aMetadata": {
     "initVersion": "7.38.1"
   },
-  "packageManager": "pnpm@10.14.0+sha512.ad27a79641b49c3e481a16a805baa71817a04bbe06a38d17e60e2eaee83f6a146c6a688125f5792e48dd5ba30e7da52a5cda4c3992b9ccf333f9ce223af84748"
+  "packageManager": "pnpm@10.14.0+sha512.ad27a79641b49c3e481a16a805baa71817a04bbe06a38d17e60e2eaee83f6a146c6a688125f5792e48dd5ba30e7da52a5cda4c3992b9ccf333f9ce223af84748",
+  "pnpm": {
+    "overrides": {
+      "@types/react": "19.2.2",
+      "@types/react-dom": "19.2.2"
+    }
+  }
 }
