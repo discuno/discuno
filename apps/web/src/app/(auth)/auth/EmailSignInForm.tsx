@@ -9,6 +9,7 @@ import { Field, FieldDescription, FieldError, FieldLabel } from '~/components/ui
 import { InputGroup, InputGroupAddon, InputGroupInput } from '~/components/ui/input-group'
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '~/components/ui/input-otp'
 import { authClient } from '~/lib/auth-client'
+import { validateEmail } from '~/lib/utils/validation'
 
 export function EmailSignInForm() {
   const router = useRouter()
@@ -17,11 +18,6 @@ export function EmailSignInForm() {
   const [otp, setOtp] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [showOtpInput, setShowOtpInput] = useState(false)
-
-  const validateEmail = (email: string): boolean => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    return emailRegex.test(email)
-  }
 
   const handleEmailChange = (value: string) => {
     setEmail(value)
