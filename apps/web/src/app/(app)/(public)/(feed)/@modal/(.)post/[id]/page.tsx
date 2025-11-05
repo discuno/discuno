@@ -1,48 +1,87 @@
+'use client'
+
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Calendar, Clock, GraduationCap, School, User } from 'lucide-react'
+import React from 'react'
+import {
+  fetchPostByIdAction,
+  fetchProfileByUserIdAction,
+} from '~/app/(app)/(public)/(feed)/(post)/actions'
 import { Modal } from '~/app/(app)/(public)/(feed)/@modal/(.)post/[id]/modal'
 import { ViewFullProfileButton } from '~/app/(app)/(public)/(feed)/@modal/(.)post/[id]/ViewFullProfileButton'
 import type { BookingData } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingInterface'
 import { BookingModal } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingModal'
+import type { Card } from '~/app/types'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { Badge } from '~/components/ui/badge'
-import { getPostById } from '~/server/queries/posts'
-import { getFullProfileByUserId } from '~/server/queries/profiles'
+import { Skeleton } from '~/components/ui/skeleton'
 
-const PostModal = async ({ params }: { params: Promise<{ id: string }> }) => {
-  const { id: postId } = await params
-  const idAsNumber = Number(postId)
+const PostModalContent = ({ postId }: { postId: number }) => {
+  const queryClient = useQueryClient()
 
-  if (Number.isNaN(idAsNumber)) {
-    throw new Error('Invalid post ID')
-  }
+  // Fetch post data - check infinite query cache first for instant loading
+  const { data: post, isLoading: isPostLoading } = useQuery({
+    queryKey: ['post', postId],
+    queryFn: async () => await fetchPostByIdAction(postId),
+    initialData: () => {
+      // Search through all posts infinite queries to find this post
+      const queries = queryClient.getQueriesData<{
+        pages: Array<{ posts: Card[]; nextCursor?: string }>
+      }>({ queryKey: ['posts'] })
 
-  const post = await getPostById(idAsNumber)
+      for (const [, data] of queries) {
+        if (!data?.pages) continue
 
-  // Fetch booking data here instead of in BookingInterface
-  let bookingData: BookingData | null = null
-  if (post.createdById) {
-    const profile = await getFullProfileByUserId(post.createdById)
-    if (profile) {
-      bookingData = {
-        userId: profile.userId,
-        calcomUsername: profile.calcomUsername ?? 'fake-username',
-        name: profile.name ?? 'Mentor',
-        image: profile.image ?? '',
-        bio: profile.bio ?? '',
-        school: profile.school ?? '',
-        major: profile.major ?? '',
+        for (const page of data.pages) {
+          const post = page.posts.find(p => p.id === postId)
+          if (post) return post
+        }
       }
-    }
+      return undefined
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  })
+
+  // Fetch profile data separately for booking functionality
+  const { data: profile } = useQuery({
+    queryKey: ['profile', post?.createdById],
+    queryFn: async () => {
+      if (!post?.createdById) return null
+      return await fetchProfileByUserIdAction(post.createdById)
+    },
+    enabled: !!post?.createdById,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  })
+
+  // Show skeleton while loading
+  if (isPostLoading || !post) {
+    return <PostModalSkeleton />
   }
+
+  // Prepare booking data if profile is available
+  const bookingData: BookingData | null =
+    profile && post.createdById
+      ? {
+          userId: post.createdById,
+          calcomUsername: profile.calcomUsername ?? 'fake-username',
+          name: post.name ?? 'Mentor',
+          image: post.userImage ?? '',
+          bio: post.description ?? '',
+          school: post.school ?? '',
+          major: post.major ?? '',
+        }
+      : null
 
   const footer = (
     <div className="flex flex-row gap-2">
-      {bookingData && (
+      {bookingData ? (
         <BookingModal bookingData={bookingData} className="min-w-0 flex-1">
           <Calendar className="mr-2 h-4 w-4" />
           <span className="inline sm:hidden">Book</span>
           <span className="hidden sm:inline">Schedule Meeting</span>
         </BookingModal>
+      ) : (
+        <Skeleton className="h-10 min-w-0 flex-1" />
       )}
       <ViewFullProfileButton postId={post.id} className="min-w-0 flex-1" />
     </div>
@@ -136,6 +175,44 @@ const PostModal = async ({ params }: { params: Promise<{ id: string }> }) => {
       </div>
     </Modal>
   )
+}
+
+const PostModalSkeleton = () => {
+  return (
+    <Modal footer={<Skeleton className="h-10 w-full" />}>
+      <div className="flex h-full min-h-0 flex-col">
+        <div className="shrink-0 px-6 pt-6">
+          <div className="flex items-start gap-4">
+            <Skeleton className="h-16 w-16 shrink-0 rounded-full" />
+            <div className="min-w-0 flex-1 space-y-2">
+              <Skeleton className="h-8 w-3/4" />
+              <Skeleton className="h-6 w-20" />
+            </div>
+          </div>
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
+          <div className="space-y-5">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              <Skeleton className="h-20 w-full" />
+              <Skeleton className="h-20 w-full" />
+            </div>
+            <Skeleton className="h-32 w-full" />
+          </div>
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
+const PostModal = ({ params }: { params: Promise<{ id: string }> }) => {
+  const unwrappedParams = React.use(params)
+  const postId = Number(unwrappedParams.id)
+
+  if (Number.isNaN(postId)) {
+    throw new Error('Invalid post ID')
+  }
+
+  return <PostModalContent postId={postId} />
 }
 
 export default PostModal
