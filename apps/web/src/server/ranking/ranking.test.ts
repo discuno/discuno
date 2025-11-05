@@ -19,9 +19,13 @@ describe('Ranking System', () => {
     // Create a test user
     const userResult = await testDb
       .insert(schema.user)
-      .values({ name: 'Test User', email: 'test@example.com' })
+      .values({ name: 'Test User', email: 'ranking-test@example.com' })
       .returning()
-    testUser = userResult[0]!
+
+    if (!userResult[0]) {
+      throw new Error('Failed to create test user')
+    }
+    testUser = userResult[0]
 
     await testDb.insert(schema.userProfile).values({
       userId: testUser.id,

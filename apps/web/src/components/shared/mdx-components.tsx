@@ -123,7 +123,13 @@ export const mdxComponents: MDXComponents = {
   // Images with Next.js Image optimization
   // All images use next/image for automatic optimization
   // Configure allowed domains in next.config.js under images.remotePatterns
-  img: ({ src, alt, width: _width, height: _height, ..._props }: ImgHTMLAttributes<HTMLImageElement>) => {
+  img: ({
+    src,
+    alt,
+    width: _width,
+    height: _height,
+    ..._props
+  }: ImgHTMLAttributes<HTMLImageElement>) => {
     if (!src || typeof src !== 'string') return null
 
     return (
