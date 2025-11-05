@@ -1,0 +1,81 @@
+---
+title: 'Data-Driven Mentor Matching with Discuno Analytics'
+description: 'Discover how Discuno uses PostHog analytics, ranking algorithms, and feedback loops to power smarter mentor-mentee matches over time.'
+date: '2025-05-08'
+author: 'Discuno Team'
+tags: ['analytics', 'posthog', 'ranking', 'mentor-matching', 'product']
+published: true
+---
+
+Great mentorship feels magical, but it’s the result of data-driven systems humming in the background. Discuno blends PostHog analytics, Drizzle ORM, and proprietary ranking logic to continuously improve mentor-mentee matches. Here’s how program directors can turn every session into actionable intelligence.
+
+## The Challenge: Getting Matching Right at Scale
+
+When mentorship cohorts grow past a handful of participants, manual matching breaks down:
+
+- Profiles are incomplete or outdated.
+- Demand spikes leave mentors overbooked while others sit idle.
+- Payouts and availability updates live in disconnected systems.
+- There’s no closed loop from session feedback back to matching logic.
+
+Discuno solves each friction point with instrumentation and automation.
+
+## Instrumenting the Mentorship Journey
+
+Discuno tracks the full lifecycle—from application to follow-up—using PostHog and Drizzle-backed tables:
+
+1. **Application intent:** Capture declared goals, industries, and skill gaps via onboarding forms.
+2. **Scheduling behavior:** Analyze which mentors get the most clicks, which time slots convert, and where drop-offs happen.
+3. **Session feedback:** Collect qualitative ratings and structured outcomes (e.g., “resume reviewed,” “mock interview completed”).
+4. **Long-term engagement:** Map repeat bookings, program retention, and referrals back to the mentors who drove them.
+
+Every event is tagged with cohort, institution, and program metadata so you can slice insights without exporting to spreadsheets.
+
+## Ranking Algorithm Signals
+
+Discuno’s ranking engine lives in `apps/web/src/server/ranking/`. It blends qualitative and quantitative inputs:
+
+- **Availability fit:** Cal.com data verifies mentors can actually take the meeting.
+- **Expertise alignment:** Tags and majors stored in Drizzle tables ensure mentors meet mentees’ stated goals.
+- **Engagement score:** PostHog events contribute to a rolling score based on attendance, feedback ratings, and follow-up actions.
+- **Equity balancing:** Weighting prevents the same “celebrity mentors” from receiving every request, distributing opportunities fairly.
+
+You can adjust signal weightings per program by editing server-side configuration and redeploying through Turborepo pipelines.
+
+## Feedback Loops That Improve Over Time
+
+- **Automated nudges:** Cron jobs remind mentors to update expertise tags and availability when engagement drops.
+- **Conversational insights:** Optional text analysis summarises mentee feedback to surface new tags or curriculum gaps.
+- **A/B testing:** Use PostHog cohorts to experiment with different matching rules or onboarding flows, then roll out the winners globally.
+
+## Dashboards That Matter
+
+| Metric                      | Why It Matters                        |
+| --------------------------- | ------------------------------------- |
+| Match time-to-first-session | Reveals onboarding friction           |
+| Mentor utilization          | Shows supply/demand balance           |
+| Session outcome score       | Highlights which mentors drive impact |
+| Retention by cohort         | Measures long-term value              |
+
+Export these metrics into Slide decks, CRM notes, or your data warehouse with Discuno’s scheduled exports.
+
+## Action Plan for Program Leads
+
+1. **Audit existing data:** Ensure mentor tags, bios, and availability are accurate. Discuno flags stale records for you.
+2. **Set baseline KPIs:** Track match conversion, no-show rates, and satisfaction from day one.
+3. **Instrument feedback forms:** Capture structured signals after every session—Discuno feeds them directly into the ranking model.
+4. **Review insights weekly:** Use PostHog dashboards and Discuno’s admin analytics to tweak matching weightings and highlight coaching wins.
+5. **Share the story:** Report improvements to executive sponsors with visual dashboards and testimonials sourced from the data.
+
+## Frequently Asked Questions
+
+**Can we pipe analytics into our BI tool?**  
+Yes. Discuno offers scheduled exports and webhook triggers so you can sync data into Snowflake, BigQuery, or Tableau.
+
+**Do mentors see their own performance?**  
+Mentors receive summary dashboards highlighting utilization, feedback, and payout status—encouraging continuous improvement.
+
+**Is the ranking algorithm customizable?**  
+Absolutely. Adjust weightings, thresholds, and eligibility rules in the ranking configuration while retaining a fully typed codebase.
+
+Discuno turns mentorship data into action. [Request a walkthrough](https://discuno.com/demo) to see the analytics engine in motion and build matches that deliver results.

@@ -1,0 +1,68 @@
+---
+title: 'How to Launch a University Mentorship Program with Discuno'
+description: 'A step-by-step playbook for higher education teams to launch a modern mentorship program powered by Discuno’s Cal.com scheduling, Stripe billing, and PostHog analytics.'
+date: '2025-02-12'
+author: 'Discuno Team'
+tags: ['higher-education', 'mentorship', 'playbook', 'implementation', 'analytics']
+published: true
+---
+
+Universities need more than inspiration quotes to run mentorship at scale—they need a repeatable operating model. Discuno bundles scheduling, onboarding, payments, and analytics so student success teams can deploy programs in weeks, not semesters. Use this implementation playbook to go from idea to impact.
+
+## Phase 1: Define Goals and Governance
+
+1. **Clarify outcomes:** Decide whether you are optimizing for retention, internship placement, or alumni engagement. Tie each outcome to measurable KPIs such as first-year GPA or career center visits.
+2. **Build a cross-functional squad:** Recruit stakeholders from student success, advancement, IT security, and finance. Discuno’s access controls let each team manage their own lane.
+3. **Map compliance requirements:** Document FERPA, GDPR, or state privacy obligations and designate data stewards who will review Discuno’s access logs.
+
+## Phase 2: Recruit and Vet Mentors
+
+- **Import rosters:** Upload spreadsheets of faculty, alumni, or peer mentors directly into Discuno or sync through the API.
+- **Screen efficiently:** Use Discuno’s custom forms and better-auth invite flows to collect bios, certifications, and availability in one step.
+- **Tag expertise:** Apply tags (major, industry, languages) that fuel Discuno’s matching algorithm and refine PostHog dashboards later.
+
+## Phase 3: Design Student Journeys
+
+- **Segment mentees:** Combine major, class year, and goals to personalize scheduling flows and communications.
+- **Create onboarding paths:** Trigger automated welcome emails, orientation modules, and reminder nudges tied to key milestones.
+- **Define success surveys:** Build post-session and end-of-term surveys inside Discuno so you can analyze feedback alongside booking data.
+
+## Phase 4: Configure Discuno
+
+1. **Set up Cal.com routing:** Create event types for office hours, portfolio reviews, and peer coaching, each with custom buffers and location rules.
+2. **Connect Stripe billing:** Collect optional program fees, handle scholarship subsidies, and release mentor stipends automatically after sessions are complete.
+3. **Enable analytics:** Turn on PostHog tracking to monitor funnel conversion (signup → matched → session attended) and identify drop-off points.
+4. **Automate reminders:** Leverage Discuno’s Cron jobs to send nudges before deadlines, surface mentors who are under-booked, and flag mentees who are falling behind.
+
+## Phase 5: Launch and Support
+
+- **Soft launch with a pilot cohort:** Invite a manageable group (15–30 pairings) to validate the flow and capture testimonials.
+- **Staff the help desk:** Use Discuno’s shared inbox integrations to centralize support tickets and common FAQs.
+- **Run weekly health checks:** Review PostHog dashboards for no-show rates, overdue onboarding tasks, and mentor utilization.
+
+## Phase 6: Prove Impact
+
+- **Export clean data:** Pull session counts, satisfaction scores, and mentor utilization into board-ready dashboards—no spreadsheet cobbling required.
+- **Share success stories:** Publish anonymized highlights to recruit additional mentors and inspire future cohorts.
+- **Iterate with confidence:** Adjust ranking weights, add new tags, or tweak automated comms—all while Discuno tracks every change.
+
+## Operational Checklist
+
+- [x] Mentors imported with expertise tags
+- [x] Stripe Connect verified and payout schedule reviewed by finance
+- [x] Cal.com event types with custom questionnaires
+- [x] PostHog dashboards for enrollment, engagement, and outcomes
+- [x] Emergency escalation workflow documented
+
+## Frequently Asked Questions
+
+**Can Discuno handle peer mentoring and alumni mentoring simultaneously?**  
+Absolutely. Organize cohorts with tags or separate event types, then limit booking visibility through Discuno’s availability rules.
+
+**What if we need manual approvals?**  
+Use Discuno’s admin review queue to approve new mentors, vet mentee applications, and prevent mismatches before they reach the scheduling link.
+
+**How do we handle students without credit cards?**  
+Discuno supports zero-cost sessions, department-funded credits, and promo codes so every student can access mentorship, regardless of payment method.
+
+Ready to graduate from spreadsheets and ad-hoc Calendly links? [Talk with our team](https://discuno.com/contact) and launch a mentorship program that proves its value every semester.
