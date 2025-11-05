@@ -168,6 +168,8 @@ const PATTERNS = {
     'apps/web/src/app/**/head.{ts,tsx}',
     'apps/web/src/app/**/default.tsx',
     'apps/web/src/app/global-error.tsx',
+    'apps/web/src/app/robots.ts',
+    'apps/web/src/app/sitemap.ts',
   ],
   ENV: ['**/env.js', '**/env.ts'],
 }

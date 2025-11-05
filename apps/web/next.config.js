@@ -30,6 +30,7 @@ const coreConfig = {
   },
   images: {
     remotePatterns: [
+      // User avatars
       {
         protocol: 'https',
         hostname: 'lh3.googleusercontent.com',
@@ -42,18 +43,22 @@ const coreConfig = {
         port: '',
         pathname: '/**',
       },
+      // Blog & general images
       {
         protocol: 'https',
         hostname: 'images.unsplash.com',
         port: '',
         pathname: '/**',
       },
+      // Vercel blob storage
       {
         protocol: 'https',
         hostname: '**.public.blob.vercel-storage.com',
         port: '',
         pathname: '/**',
       },
+      // Add more image sources here for blog posts as needed
+      // Example: Cloudinary, Imgur, your CDN, etc.
     ],
     formats: ['image/webp', 'image/avif'],
     minimumCacheTTL: 60 * 60, // 1 hour
