@@ -10,6 +10,7 @@ import { Button } from '~/components/ui/button'
 import { Card, CardContent } from '~/components/ui/card'
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '~/components/ui/field'
 import { InputGroup, InputGroupAddon, InputGroupInput } from '~/components/ui/input-group'
+import { validateEmail } from '~/lib/utils/validation'
 
 interface AttendeeDetailsStepProps {
   selectedEventType: EventType | null
@@ -32,11 +33,6 @@ export const AttendeeDetailsStep = ({
 }: AttendeeDetailsStepProps) => {
   const [emailError, setEmailError] = useState<string>('')
   const [nameError, setNameError] = useState<string>('')
-
-  const validateEmail = (email: string): boolean => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    return emailRegex.test(email)
-  }
 
   const handleEmailChange = (email: string) => {
     setFormData({ ...formData, email })
