@@ -292,6 +292,11 @@ Follow [Conventional Commits](https://www.conventionalcommits.org/):
 
 ### Important Development Notes
 
+#### Cache Components
+
+- Next.js Cache Components are enabled (`cacheComponents: true` in `apps/web/next.config.js`)
+- Apply the `'use cache'` directive explicitly where caching is desired; dynamic logic runs per request otherwise
+
 #### Mentor Dashboard Requirements
 
 Reference `.cursor/rules/mentor-dashboard.md` for mentor dashboard specifications including:

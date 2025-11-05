@@ -265,6 +265,11 @@ Use `SKIP_ENV_VALIDATION=1` only when intentionally bypassing validation locally
 
 ## Development Notes
 
+### Cache Components
+
+- Next.js Cache Components are enabled with `cacheComponents: true` in `apps/web/next.config.js`
+- Use the `'use cache'` directive when a component or function should be cached; dynamic logic remains request-scoped by default
+
 ### Mentor Dashboard
 
 Review `.cursor/rules/mentor-dashboard.md` for UX, analytics, and payment expectations across dashboard modules.

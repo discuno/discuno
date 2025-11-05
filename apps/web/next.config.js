@@ -7,6 +7,7 @@ import './src/env.js'
 /** @type {import("next").NextConfig} */
 const coreConfig = {
   serverExternalPackages: ['drizzle-orm'],
+  cacheComponents: true,
   turbopack: {
     rules: {
       '*.svg': {
@@ -17,16 +18,10 @@ const coreConfig = {
   },
   experimental: {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
-    useCache: true,
-    cacheComponents: true,
   },
   typescript: {
     // Only ignore in CI environments, not local development
     ignoreBuildErrors: process.env.CI === 'true',
-  },
-  eslint: {
-    // Only ignore in CI environments, not local development
-    ignoreDuringBuilds: process.env.CI === 'true',
   },
   images: {
     remotePatterns: [

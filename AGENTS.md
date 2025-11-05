@@ -269,6 +269,11 @@ Use `SKIP_ENV_VALIDATION=1` only when local experimentation requires bypassing v
 
 ## Development Notes
 
+### Cache Components
+
+- Next.js Cache Components are enabled with `cacheComponents: true` in `apps/web/next.config.js`
+- Opt into caching explicitly with the `'use cache'` directive; dynamic code still runs at request time by default
+
 ### Mentor Dashboard
 
 Consult `.cursor/rules/mentor-dashboard.md` for UI and data requirements: meeting management, payout visibility, Stripe onboarding state, analytics widgets, and notifications.

@@ -1,10 +1,6 @@
 import 'server-only'
 
-import {
-  unstable_cacheLife as cacheLife,
-  unstable_cacheTag as cacheTag,
-  revalidateTag,
-} from 'next/cache'
+import { cacheLife, cacheTag, revalidateTag } from 'next/cache'
 import { z } from 'zod'
 import type { Card } from '~/app/types'
 import { InternalServerError, NotFoundError } from '~/lib/errors'
@@ -221,5 +217,5 @@ export const getPostById = async (id: number): Promise<Card> => {
  */
 export const revalidatePosts = () => {
   console.log('INVALIDATING POSTS CACHE')
-  revalidateTag('posts')
+  revalidateTag('posts', 'default')
 }
