@@ -6,7 +6,8 @@ import { getAuthSession } from '~/lib/auth/auth-utils'
 import { ratelimit } from '~/lib/rate-limiter'
 import type { ClientAnalyticsEvent } from '~/lib/schemas/db/analyticsEvents'
 import { createAnalyticsEvent } from '~/server/dal/analytics'
-import { getInfiniteScrollPosts, getPostsByFilters } from '~/server/queries/posts'
+import { getInfiniteScrollPosts, getPostById, getPostsByFilters } from '~/server/queries/posts'
+import { getFullProfileByUserId } from '~/server/queries/profiles'
 
 export const logAnalyticsEvent = async (input: ClientAnalyticsEvent) => {
   const res = await getAuthSession()
@@ -50,4 +51,30 @@ export const fetchPostsByFilterAction = async (
     throw new Error('Too many requests')
   }
   return await getPostsByFilters(schoolId, majorId, graduationYear, limit, cursor)
+}
+
+/**
+ * Fetch a single post by ID
+ * Used by the modal to get post details
+ */
+export const fetchPostByIdAction = async (postId: number) => {
+  const ip = await getClientKey()
+  const { success } = await ratelimit.limit(ip)
+  if (!success) {
+    throw new Error('Too many requests')
+  }
+  return await getPostById(postId)
+}
+
+/**
+ * Fetch profile by user ID
+ * Used by the modal to get booking data
+ */
+export const fetchProfileByUserIdAction = async (userId: string) => {
+  const ip = await getClientKey()
+  const { success } = await ratelimit.limit(ip)
+  if (!success) {
+    throw new Error('Too many requests')
+  }
+  return await getFullProfileByUserId(userId)
 }
