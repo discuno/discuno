@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Image from 'next/image'
 import Link from 'next/link'
 import { IconCalendar, IconClock, IconTag } from '@tabler/icons-react'
 import { getAllPosts, formatDate } from '~/lib/blog'
@@ -45,12 +46,13 @@ const BlogPage = () => {
               <Link href={`/blog/${post.slug}`} className="flex flex-col">
                 {/* Featured Image */}
                 {post.image && (
-                  <div className="bg-muted aspect-video w-full overflow-hidden">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
+                  <div className="bg-muted relative aspect-video w-full overflow-hidden">
+                    <Image
                       src={post.image}
                       alt={post.title}
-                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      fill
+                      className="object-cover transition-transform duration-300 group-hover:scale-105"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                     />
                   </div>
                 )}

@@ -14,6 +14,7 @@ export type BlogPost = {
   published: boolean
   content: string
   readingTime: string
+  lastModified: Date
 }
 
 export type BlogPostMetadata = Omit<BlogPost, 'content'>
@@ -22,29 +23,55 @@ const postsDirectory = path.join(process.cwd(), 'content/blog')
 
 /**
  * Get all blog posts sorted by date (newest first)
+ * Optimized to read each file only once
  */
 export const getAllPosts = (): BlogPostMetadata[] => {
-  // Create directory if it doesn't exist
-  if (!fs.existsSync(postsDirectory)) {
-    return []
+  try {
+    // Create directory if it doesn't exist
+    if (!fs.existsSync(postsDirectory)) {
+      return []
+    }
+
+    const fileNames = fs.readdirSync(postsDirectory)
+    const allPostsData = fileNames
+      .filter(fileName => fileName.endsWith('.mdx') || fileName.endsWith('.md'))
+      .map(fileName => {
+        try {
+          const slug = fileName.replace(/\.mdx?$/, '')
+          const fullPath = path.join(postsDirectory, fileName)
+          const fileContents = fs.readFileSync(fullPath, 'utf8')
+          const { data, content } = matter(fileContents)
+          const stats = readingTime(content)
+          const fileStats = fs.statSync(fullPath)
+
+          const post: BlogPostMetadata = {
+            slug,
+            title: data.title ?? 'Untitled',
+            description: data.description ?? '',
+            date: data.date ?? new Date().toISOString(),
+            author: data.author ?? 'Discuno Team',
+            tags: data.tags ?? [],
+            image: data.image,
+            published: data.published ?? false,
+            readingTime: stats.text,
+            lastModified: fileStats.mtime,
+          }
+          return post
+        } catch (err) {
+          // Log and skip malformed/failed files, but don't fail the whole listing
+          console.error('Failed to parse blog post file', fileName, err)
+          return null
+        }
+      })
+      .filter((post): post is BlogPostMetadata => post !== null)
+      .filter(post => post.published)
+      .sort((a, b) => (new Date(a.date) < new Date(b.date) ? 1 : -1))
+
+    return allPostsData
+  } catch (err) {
+    console.error('getAllPosts failed:', err)
+    throw new Error(`getAllPosts failed: ${err instanceof Error ? err.message : String(err)}`)
   }
-
-  const fileNames = fs.readdirSync(postsDirectory)
-  const allPostsData = fileNames
-    .filter(fileName => fileName.endsWith('.mdx') || fileName.endsWith('.md'))
-    .map(fileName => {
-      const slug = fileName.replace(/\.mdx?$/, '')
-      const post = getPostBySlug(slug)
-      if (!post) return null
-
-      const { content: _content, ...metadata } = post
-      return metadata
-    })
-    .filter((post): post is BlogPostMetadata => post !== null)
-    .filter(post => post.published)
-    .sort((a, b) => (new Date(a.date) < new Date(b.date) ? 1 : -1))
-
-  return allPostsData
 }
 
 /**
@@ -65,6 +92,7 @@ export const getPostBySlug = (slug: string): BlogPost | null => {
     const fileContents = fs.readFileSync(fullPath, 'utf8')
     const { data, content } = matter(fileContents)
     const stats = readingTime(content)
+    const fileStats = fs.statSync(fullPath)
 
     return {
       slug,
@@ -77,9 +105,11 @@ export const getPostBySlug = (slug: string): BlogPost | null => {
       published: data.published ?? false,
       content,
       readingTime: stats.text,
+      lastModified: fileStats.mtime,
     }
-  } catch {
-    return null
+  } catch (err) {
+    console.error(`getPostBySlug failed for slug="${slug}":`, err)
+    throw err
   }
 }
 

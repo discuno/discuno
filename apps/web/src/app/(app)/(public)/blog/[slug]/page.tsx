@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { IconArrowLeft, IconCalendar, IconClock, IconTag } from '@tabler/icons-react'
@@ -161,9 +162,15 @@ const BlogPostPage = async ({ params }: Props) => {
 
         {/* Featured Image */}
         {post.image && (
-          <div className="mb-12 overflow-hidden rounded-lg">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={post.image} alt={post.title} className="w-full object-cover" />
+          <div className="relative mb-12 aspect-video overflow-hidden rounded-lg">
+            <Image
+              src={post.image}
+              alt={post.title}
+              fill
+              className="object-cover"
+              priority
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1200px"
+            />
           </div>
         )}
 

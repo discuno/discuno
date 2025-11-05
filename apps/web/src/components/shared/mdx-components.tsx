@@ -121,31 +121,19 @@ export const mdxComponents: MDXComponents = {
   ),
 
   // Images with Next.js Image optimization
-  img: ({ src, alt, ...props }: ImgHTMLAttributes<HTMLImageElement>) => {
+  // All images use next/image for automatic optimization
+  // Configure allowed domains in next.config.js under images.remotePatterns
+  img: ({ src, alt, width: _width, height: _height, ..._props }: ImgHTMLAttributes<HTMLImageElement>) => {
     if (!src || typeof src !== 'string') return null
 
-    // For external images or absolute paths, use regular img
-    if (src.startsWith('http') || src.startsWith('//')) {
-      return (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={src}
-          alt={alt ?? ''}
-          className="my-8 rounded-lg border"
-          loading="lazy"
-          {...props}
-        />
-      )
-    }
-
-    // For local images, use Next.js Image
     return (
       <Image
         src={src}
         alt={alt ?? ''}
         width={800}
-        height={400}
+        height={450}
         className="my-8 rounded-lg border"
+        sizes="(max-width: 768px) 100vw, 800px"
       />
     )
   },

@@ -53,7 +53,7 @@ const sitemap = (): MetadataRoute.Sitemap => {
   const posts = getAllPosts()
   const blogPages: MetadataRoute.Sitemap = posts.map(post => ({
     url: `${baseUrl}/blog/${post.slug}`,
-    lastModified: new Date(post.date),
+    lastModified: post.lastModified,
     changeFrequency: 'monthly' as const,
     priority: 0.7,
   }))
@@ -61,5 +61,4 @@ const sitemap = (): MetadataRoute.Sitemap => {
   return [...staticPages, ...blogPages]
 }
 
-// eslint-disable-next-line import/no-default-export -- Next.js convention for sitemap
 export default sitemap
