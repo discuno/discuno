@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Cross-Agent Coordination
+
+This repository is maintained by multiple AI agents (Gemini, Claude, etc.). When you make a change that renders this file outdated, you are responsible for updating `AGENTS.md`, `CLAUDE.md`, and `GEMINI.md` to reflect the new project state.
+
 ## Project Overview
 
 Discuno is a modern scheduling and mentorship platform built as a monorepo using pnpm workspaces and Turborepo. The platform connects mentors and mentees with integrated calendar management via Cal.com, payment processing through Stripe, and user analytics via PostHog.
