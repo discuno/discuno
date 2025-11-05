@@ -22,6 +22,14 @@ export type BlogPostMetadata = Omit<BlogPost, 'content'>
 const postsDirectory = path.join(process.cwd(), 'content/blog')
 
 /**
+ * Sanitize a slug to only allow URL-safe characters (alphanumeric, dash, underscore)
+ * This prevents XSS vulnerabilities when using slugs in URLs
+ */
+const sanitizeSlug = (raw: string): string => {
+  return raw.replace(/[^a-zA-Z0-9-_]/g, '-')
+}
+
+/**
  * Get all blog posts sorted by date (newest first)
  * Optimized to read each file only once
  */
@@ -37,7 +45,8 @@ export const getAllPosts = (): BlogPostMetadata[] => {
       .filter(fileName => fileName.endsWith('.mdx') || fileName.endsWith('.md'))
       .map(fileName => {
         try {
-          const slug = fileName.replace(/\.mdx?$/, '')
+          const rawSlug = fileName.replace(/\.mdx?$/, '')
+          const slug = sanitizeSlug(rawSlug)
           const fullPath = path.join(postsDirectory, fileName)
           const fileContents = fs.readFileSync(fullPath, 'utf8')
           const { data, content } = matter(fileContents)
@@ -79,10 +88,13 @@ export const getAllPosts = (): BlogPostMetadata[] => {
  */
 export const getPostBySlug = (slug: string): BlogPost | null => {
   try {
+    // Sanitize the slug to prevent path traversal attacks
+    const sanitizedSlug = sanitizeSlug(slug)
+
     // Try .mdx first, then .md
-    let fullPath = path.join(postsDirectory, `${slug}.mdx`)
+    let fullPath = path.join(postsDirectory, `${sanitizedSlug}.mdx`)
     if (!fs.existsSync(fullPath)) {
-      fullPath = path.join(postsDirectory, `${slug}.md`)
+      fullPath = path.join(postsDirectory, `${sanitizedSlug}.md`)
     }
 
     if (!fs.existsSync(fullPath)) {
@@ -95,7 +107,7 @@ export const getPostBySlug = (slug: string): BlogPost | null => {
     const fileStats = fs.statSync(fullPath)
 
     return {
-      slug,
+      slug: sanitizedSlug,
       title: data.title ?? 'Untitled',
       description: data.description ?? '',
       date: data.date ?? new Date().toISOString(),
@@ -124,7 +136,10 @@ export const getAllPostSlugs = (): string[] => {
   const fileNames = fs.readdirSync(postsDirectory)
   return fileNames
     .filter(fileName => fileName.endsWith('.mdx') || fileName.endsWith('.md'))
-    .map(fileName => fileName.replace(/\.mdx?$/, ''))
+    .map(fileName => {
+      const rawSlug = fileName.replace(/\.mdx?$/, '')
+      return sanitizeSlug(rawSlug)
+    })
 }
 
 /**
