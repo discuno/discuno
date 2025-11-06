@@ -3,12 +3,7 @@
 import { Clock, Trash2 } from 'lucide-react'
 import type { TimeInterval } from '~/app/types/availability'
 import { Button } from '~/components/ui/button'
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-  InputGroupText,
-} from '~/components/ui/input-group'
+import { InputGroup, InputGroupAddon, InputGroupInput } from '~/components/ui/input-group'
 
 interface TimeIntervalRowProps {
   interval: TimeInterval
@@ -43,16 +38,16 @@ export const TimeIntervalRow = ({
           onChange={handleStartChange}
           disabled={disabled}
           aria-label="Start time"
+          className="[color-scheme:light]"
         />
-        <InputGroupAddon align="inline-end">
-          <InputGroupText>to</InputGroupText>
-        </InputGroupAddon>
+        <span className="text-muted-foreground px-2 text-sm">to</span>
         <InputGroupInput
           type="time"
           value={interval.end}
           onChange={handleEndChange}
           disabled={disabled}
           aria-label="End time"
+          className="[color-scheme:light]"
         />
       </InputGroup>
       <Button
