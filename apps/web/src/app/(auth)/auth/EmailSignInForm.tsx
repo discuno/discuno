@@ -1,7 +1,6 @@
 'use client'
 
 import { Loader2, Mail } from 'lucide-react'
-import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '~/components/ui/button'
@@ -12,7 +11,6 @@ import { authClient } from '~/lib/auth-client'
 import { validateEmail } from '~/lib/utils/validation'
 
 export function EmailSignInForm() {
-  const router = useRouter()
   const [email, setEmail] = useState('')
   const [emailError, setEmailError] = useState('')
   const [otp, setOtp] = useState('')
@@ -22,7 +20,7 @@ export function EmailSignInForm() {
   const handleEmailChange = (value: string) => {
     setEmail(value)
     if (value && !validateEmail(value)) {
-      setEmailError('Please enter a valid email address')
+      setEmailError('Please enter a valid .edu email address')
     } else {
       setEmailError('')
     }
@@ -74,7 +72,7 @@ export function EmailSignInForm() {
         toast.success('Success!', {
           description: 'You have been signed in successfully.',
         })
-        router.push('/settings')
+        window.location.href = '/settings'
       }
     } catch (error) {
       console.error('Verification error:', error)
