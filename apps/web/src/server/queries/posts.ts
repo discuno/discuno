@@ -3,7 +3,7 @@ import 'server-only'
 import { cacheLife, cacheTag, revalidateTag } from 'next/cache'
 import { z } from 'zod'
 import type { Card } from '~/app/types'
-import { InternalServerError, NotFoundError } from '~/lib/errors'
+import { NotFoundError } from '~/lib/errors'
 import type { PostQueryResult } from '~/server/dal/posts'
 import {
   getPostById as getPostByIdDal,
@@ -32,30 +32,111 @@ const filterSchema = z.object({
 /**
  * Transform post query results to Card type
  */
+type CursorValues = {
+  rankingScore?: number
+  randomSortKey?: number
+  postId?: number
+}
+
+const decodeCursor = (cursor?: string): CursorValues => {
+  if (!cursor) {
+    return {}
+  }
+
+  try {
+    const decoded = JSON.parse(Buffer.from(cursor, 'base64').toString('ascii')) as Record<
+      string,
+      unknown
+    >
+
+    const rankingScore = decoded.ranking_score
+    const randomSortKey = decoded.random_sort_key
+    const postId = decoded.post_id
+
+    return {
+      rankingScore: typeof rankingScore === 'number' ? rankingScore : undefined,
+      randomSortKey: typeof randomSortKey === 'number' ? randomSortKey : undefined,
+      postId: typeof postId === 'number' ? postId : undefined,
+    }
+  } catch (error) {
+    console.error('Failed to decode cursor:', error)
+    return {}
+  }
+}
+
+const createCursorPayload = (post?: PostQueryResult) => {
+  if (!post) {
+    return undefined
+  }
+
+  const payloadEntries: Array<[string, number | null | undefined]> = [
+    ['ranking_score', post.profile?.rankingScore],
+    ['random_sort_key', post.post.random_sort_key],
+    ['post_id', post.post.id],
+  ]
+
+  const definedEntries = payloadEntries.filter(
+    (entry): entry is [string, number] => typeof entry[1] === 'number'
+  )
+
+  if (definedEntries.length === 0) {
+    return undefined
+  }
+
+  return Object.fromEntries(definedEntries)
+}
+
+const encodeCursor = (post?: PostQueryResult) => {
+  const payload = createCursorPayload(post)
+  return payload ? Buffer.from(JSON.stringify(payload)).toString('base64') : undefined
+}
+
+const mapPostToCard = ({
+  post,
+  creator,
+  profile,
+  school,
+  major,
+  hasFreeSessions,
+}: PostQueryResult): Card => ({
+  ...post,
+  name: creator?.name ?? 'Mentor',
+  userImage: creator?.image ?? null,
+  description: profile?.bio ?? null,
+  graduationYear: profile?.graduationYear ?? null,
+  schoolYear: profile?.schoolYear ?? null,
+  school: school?.name ?? null,
+  schoolDomainPrefix: school?.domainPrefix ?? null,
+  major: major?.name ?? null,
+  schoolPrimaryColor: school?.primaryColor ?? null,
+  schoolSecondaryColor: school?.secondaryColor ?? null,
+  hasFreeSessions,
+})
+
 const transformPostResult = (result: PostQueryResult[]): Card[] => {
   // Transform and ensure uniqueness at application level as safety net
   const uniquePosts = new Map<number, Card>()
 
-  for (const { post, creator, profile, school, major, hasFreeSessions } of result) {
-    if (!uniquePosts.has(post.id)) {
-      uniquePosts.set(post.id, {
-        ...post,
-        name: creator?.name ?? 'Mentor',
-        userImage: creator?.image ?? null,
-        description: profile?.bio !== undefined ? profile.bio : null,
-        graduationYear: profile?.graduationYear ?? null,
-        schoolYear: profile?.schoolYear ?? null,
-        school: school?.name ?? null,
-        schoolDomainPrefix: school?.domainPrefix ?? null,
-        major: major?.name ?? null,
-        schoolPrimaryColor: school?.primaryColor ?? null,
-        schoolSecondaryColor: school?.secondaryColor ?? null,
-        hasFreeSessions: hasFreeSessions,
-      })
+  for (const postResult of result) {
+    if (!uniquePosts.has(postResult.post.id)) {
+      uniquePosts.set(postResult.post.id, mapPostToCard(postResult))
     }
   }
 
   return Array.from(uniquePosts.values())
+}
+
+const buildPaginatedResponse = (result: PostQueryResult[], limit: number) => {
+  const hasMore = result.length > limit
+  const postsData = hasMore ? result.slice(0, -1) : result
+  const lastPost = postsData.length > 0 ? postsData[postsData.length - 1] : undefined
+  const nextCursor = hasMore ? encodeCursor(lastPost) : undefined
+
+  return {
+    posts: transformPostResult(postsData),
+    nextCursor,
+    hasMore,
+  }
 }
 
 /**
@@ -75,26 +156,7 @@ export const getInfiniteScrollPosts = async (
 
   console.log('CACHE MISS: Executing getInfiniteScrollPosts with limit:', limit, 'cursor:', cursor)
 
-  let rankingScore: number | undefined
-  let randomSortKey: number | undefined
-  let postId: number | undefined
-
-  if (cursor) {
-    try {
-      const decodedCursor = JSON.parse(Buffer.from(cursor, 'base64').toString('ascii'))
-      if (
-        typeof decodedCursor.ranking_score === 'number' &&
-        typeof decodedCursor.random_sort_key === 'number' &&
-        typeof decodedCursor.post_id === 'number'
-      ) {
-        rankingScore = decodedCursor.ranking_score
-        randomSortKey = decodedCursor.random_sort_key
-        postId = decodedCursor.post_id
-      }
-    } catch (error) {
-      console.error('Failed to decode cursor:', error)
-    }
-  }
+  const { rankingScore, randomSortKey, postId } = decodeCursor(cursor)
 
   const result = await getPostsWithCursor({
     rankingScore,
@@ -103,24 +165,7 @@ export const getInfiniteScrollPosts = async (
     limit,
   })
 
-  const hasMore = result.length > limit
-  const postsData = hasMore ? result.slice(0, -1) : result
-  const nextCursor =
-    hasMore && postsData.length > 0
-      ? Buffer.from(
-          JSON.stringify({
-            ranking_score: postsData[postsData.length - 1]?.profile?.rankingScore,
-            random_sort_key: postsData[postsData.length - 1]?.post.random_sort_key,
-            post_id: postsData[postsData.length - 1]?.post.id,
-          })
-        ).toString('base64')
-      : undefined
-
-  return {
-    posts: transformPostResult(postsData),
-    nextCursor,
-    hasMore,
-  }
+  return buildPaginatedResponse(result, limit)
 }
 
 /**
@@ -166,23 +211,7 @@ export const getPostsByFilters = async (
     limit: validLimit,
   })
 
-  const hasMore = result.length > validLimit
-  const postsData = hasMore ? result.slice(0, -1) : result
-  const nextCursor =
-    hasMore && postsData.length > 0
-      ? Buffer.from(
-          JSON.stringify({
-            ranking_score: postsData[postsData.length - 1]?.profile?.rankingScore,
-            random_sort_key: postsData[postsData.length - 1]?.post.random_sort_key,
-          })
-        ).toString('base64')
-      : undefined
-
-  return {
-    posts: transformPostResult(postsData),
-    nextCursor,
-    hasMore,
-  }
+  return buildPaginatedResponse(result, validLimit)
 }
 
 /**
@@ -204,12 +233,7 @@ export const getPostById = async (id: number): Promise<Card> => {
     throw new NotFoundError('Post not found')
   }
 
-  const transformedPost = transformPostResult([postData])[0]
-  if (!transformedPost) {
-    throw new InternalServerError('Failed to transform post data')
-  }
-
-  return transformedPost
+  return mapPostToCard(postData)
 }
 
 /**
