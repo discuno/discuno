@@ -1,6 +1,6 @@
 'use client'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Dialog, DialogContent, DialogTitle } from '~/components/ui/dialog'
 
 type ModalProps = {
@@ -10,11 +10,8 @@ type ModalProps = {
 
 export const Modal = ({ children, footer }: ModalProps) => {
   const router = useRouter()
+  // Modal opens immediately on mount (no need for useEffect)
   const [open, setOpen] = useState(true)
-
-  useEffect(() => {
-    setOpen(true) // Open the modal when the component mounts
-  }, [])
 
   const onDismiss = () => {
     setOpen(false) // Close the modal

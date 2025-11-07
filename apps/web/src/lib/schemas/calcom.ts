@@ -5,13 +5,13 @@ export const CalcomBookingPayloadSchema = z.object({
   title: z.string(),
   description: z.string().optional(),
   additionalNotes: z.string().optional(),
-  customInputs: z.record(z.any()).optional(),
-  startTime: z.string().datetime(),
-  endTime: z.string().datetime(),
+  customInputs: z.record(z.string(), z.any()).optional(),
+  startTime: z.iso.datetime(),
+  endTime: z.iso.datetime(),
   organizer: z.object({
     id: z.number(),
     name: z.string(),
-    email: z.string().email(),
+    email: z.email(),
     username: z.string(),
     timeZone: z.string(),
     language: z
@@ -21,12 +21,12 @@ export const CalcomBookingPayloadSchema = z.object({
       .optional(),
     timeFormat: z.string().optional(),
   }),
-  responses: z.record(z.any()),
-  userFieldsResponses: z.record(z.any()).optional(),
+  responses: z.record(z.string(), z.any()),
+  userFieldsResponses: z.record(z.string(), z.any()).optional(),
   attendees: z
     .array(
       z.object({
-        email: z.string().email(),
+        email: z.email(),
         phoneNumber: z
           .string()
           .trim()
@@ -49,7 +49,7 @@ export const CalcomBookingPayloadSchema = z.object({
     .object({
       id: z.number(),
       integration: z.string(),
-      externalId: z.string().url(),
+      externalId: z.url(),
       userId: z.number(),
       eventTypeId: z.number().nullable(),
       credentialId: z.number(),
@@ -84,10 +84,10 @@ export const CalcomBookingPayloadSchema = z.object({
     .max(60, 'Length cannot exceed 60 minutes'),
   bookingId: z.number(),
   metadata: z.object({
-    videoCallUrl: z.string().url().optional(),
+    videoCallUrl: z.url().optional(),
     paymentId: z.string().optional(),
-    mentorUserId: z.string().uuid('Mentor user ID must be a valid UUID'),
-    actorUserId: z.string().uuid('Actor user ID must be a valid UUID').optional(),
+    mentorUserId: z.uuid({ error: 'Mentor user ID must be a valid UUID' }),
+    actorUserId: z.uuid({ error: 'Actor user ID must be a valid UUID' }).optional(),
   }),
   status: z.enum(['ACCEPTED', 'PENDING', 'CANCELLED', 'REJECTED']),
 })
@@ -98,11 +98,11 @@ export const CalcomNoShowPayloadSchema = z.object({
   title: z.string(),
   bookingId: z.number(),
   bookingUid: z.string(),
-  startTime: z.string().datetime(),
-  attendees: z.array(z.object({ email: z.string().email(), name: z.string() })),
-  endTime: z.string().datetime(),
-  participants: z.array(z.object({ email: z.string().email(), name: z.string() })),
-  hostEmail: z.string().email().optional(), // Optional for guest no-show events
+  startTime: z.iso.datetime(),
+  attendees: z.array(z.object({ email: z.email(), name: z.string() })),
+  endTime: z.iso.datetime(),
+  participants: z.array(z.object({ email: z.email(), name: z.string() })),
+  hostEmail: z.email().optional(), // Optional for guest no-show events
   eventType: z.object({
     id: z.number(),
     teamId: z.number().nullable(),
@@ -110,7 +110,7 @@ export const CalcomNoShowPayloadSchema = z.object({
   }),
   webhook: z.object({
     id: z.string(),
-    subscriberUrl: z.string().url(),
+    subscriberUrl: z.url(),
     appId: z.string().nullable(),
     time: z.number(),
     timeUnit: z.string(),
@@ -124,7 +124,7 @@ export const CalcomBookingCancelledPayloadSchema = CalcomBookingPayloadSchema.ex
 })
 
 // Generic payload for events we haven't strictly typed yet
-const CalcomUnknownPayloadSchema = z.record(z.any())
+const CalcomUnknownPayloadSchema = z.record(z.string(), z.any())
 
 export const CalcomWebhookSchema = z.discriminatedUnion('triggerEvent', [
   z.object({

@@ -1,3 +1,4 @@
+import { defineConfig, globalIgnores } from 'eslint/config'
 import pluginJs from '@eslint/js'
 import pluginReact from 'eslint-plugin-react'
 import pluginReactHooks from 'eslint-plugin-react-hooks'
@@ -5,8 +6,8 @@ import pluginReactHooks from 'eslint-plugin-react-hooks'
 import pluginImport from 'eslint-plugin-import'
 import globals from 'globals'
 import tseslint from 'typescript-eslint'
-// @ts-expect-error - plugin has no types
-import pluginNext from '@next/eslint-plugin-next'
+import nextVitals from 'eslint-config-next/core-web-vitals'
+import nextTs from 'eslint-config-next/typescript'
 
 // =============================================================================
 // REUSABLE RULE SETS (DRY Principle)
@@ -175,30 +176,35 @@ const PATTERNS = {
 }
 
 /** @type {import('eslint').Linter.Config[]} */
-export default [
+const eslintConfig = defineConfig([
   // =============================================================================
-  // GLOBAL IGNORES
+  // NEXT.JS 16 CONFIGS (Core Web Vitals + TypeScript)
   // =============================================================================
-  {
-    ignores: [
-      '**/node_modules/**',
-      '**/dist/**',
-      '**/.next/**',
-      '**/coverage/**',
-      '**/.turbo/**',
-      '**/.changeset/**',
-      '**/.git/**',
-      '**/build/**',
-      '**/*.tsbuildinfo',
-      '**/.cache/**',
-      '**/.husky/**',
-      '**/public/**',
-      '**/next-env.d.ts',
-      '**/.commitlintrc.*',
-      // Generated UI components excluded from tsconfig
-      '**/src/components/ui/**',
-    ],
-  },
+  ...nextVitals,
+  ...nextTs,
+
+  // Override default ignores of eslint-config-next
+  globalIgnores([
+    // Default ignores from eslint-config-next
+    '.next/**',
+    'out/**',
+    'build/**',
+    'next-env.d.ts',
+    // Additional project-specific ignores
+    '**/node_modules/**',
+    '**/dist/**',
+    '**/coverage/**',
+    '**/.turbo/**',
+    '**/.changeset/**',
+    '**/.git/**',
+    '**/*.tsbuildinfo',
+    '**/.cache/**',
+    '**/.husky/**',
+    '**/public/**',
+    '**/.commitlintrc.*',
+    // Generated UI components excluded from tsconfig
+    '**/src/components/ui/**',
+  ]),
 
   // =============================================================================
   // BASE CONFIGURATIONS
@@ -224,10 +230,6 @@ export default [
   // =============================================================================
   {
     files: PATTERNS.REACT,
-    plugins: {
-      react: pluginReact,
-      'react-hooks': pluginReactHooks,
-    },
     settings: {
       react: {
         version: 'detect',
@@ -242,15 +244,14 @@ export default [
   // =============================================================================
   {
     files: ['apps/web/**/*.{js,jsx,ts,tsx}'],
-    plugins: {
-      import: pluginImport,
-      '@next/next': pluginNext,
+    settings: {
+      next: {
+        rootDir: 'apps/web/',
+      },
     },
     rules: {
       'import/no-default-export': 'error',
-      ...pluginNext.configs.recommended.rules,
-      ...pluginNext.configs['core-web-vitals'].rules,
-      // Override Next.js rules for App Router
+      // Override Next.js rules for App Router (rootDir is set above)
       '@next/next/no-html-link-for-pages': ['error', 'apps/web/src/app'],
     },
   },
@@ -294,4 +295,6 @@ export default [
     files: PATTERNS.JAVASCRIPT,
     ...tseslint.configs.disableTypeChecked,
   },
-]
+])
+
+export default eslintConfig

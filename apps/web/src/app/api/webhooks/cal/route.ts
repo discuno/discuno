@@ -169,6 +169,11 @@ async function storeBooking(event: CalcomBookingPayload) {
 
     const [attendee] = attendees
 
+    // Validation ensures at least one attendee exists
+    if (!attendee) {
+      return Response.json({ error: 'No attendee found in booking' }, { status: 400 })
+    }
+
     const start = new Date(startTime)
 
     const booking = await createLocalBooking({
