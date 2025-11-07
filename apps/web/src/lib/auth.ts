@@ -13,6 +13,20 @@ import { db } from '~/server/db'
 import * as schema from '~/server/db/schema'
 
 /**
+ * Extract the primary domain prefix from an email address
+ * Handles subdomains correctly (e.g., terpmail.umd.edu → umd, umd.edu → umd)
+ */
+function extractDomainPrefix(email: string): string | null {
+  const emailDomain = email.split('@')[1]?.toLowerCase()
+  if (!emailDomain) return null
+
+  // Extract the part immediately before .edu (ignoring subdomains)
+  // Example: terpmail.umd.edu → umd, umd.edu → umd
+  const match = emailDomain.match(/([^.]+)\.edu$/)
+  return match?.[1] ?? null
+}
+
+/**
  * Helper function to validate .edu email and check if school is supported
  * Used for OAuth providers (Google, Microsoft)
  */
@@ -29,12 +43,11 @@ async function validateEduEmail(email: string): Promise<void> {
   }
 
   // Check if school domain is in database
-  const emailDomain = email.split('@')[1]?.toLowerCase()
-  const domainPrefix = emailDomain?.replace('.edu', '')
+  const domainPrefix = extractDomainPrefix(email)
   const allowedDomains = await getAllowedDomains()
 
   if (!domainPrefix || !allowedDomains.has(domainPrefix)) {
-    console.error(`❌ [OAuth] School not supported: ${domainPrefix}`)
+    console.error(`❌ [OAuth] School not supported: ${domainPrefix} (email: ${email})`)
     throw new APIError('FORBIDDEN', {
       message: 'Your school is not yet supported. Please contact support to add your school.',
     })
@@ -146,10 +159,9 @@ export const auth = betterAuth({
           }
 
           // Assign user to school based on email domain
-          const emailDomain = user.email.split('@')[1]?.toLowerCase()
-          if (emailDomain) {
+          const domainPrefix = extractDomainPrefix(user.email)
+          if (domainPrefix) {
             try {
-              const domainPrefix = emailDomain.replace('.edu', '')
               const school = await db.query.school.findFirst({
                 where: eq(schema.school.domainPrefix, domainPrefix),
               })
@@ -157,11 +169,11 @@ export const auth = betterAuth({
               if (school) {
                 await db.insert(schema.userSchool).values({ userId: user.id, schoolId: school.id })
                 console.log(
-                  `[DatabaseHook] Assigned user to school ${school.name} (domain: ${emailDomain})`
+                  `[DatabaseHook] Assigned user to school ${school.name} (domain prefix: ${domainPrefix})`
                 )
               } else {
                 console.error(
-                  `[DatabaseHook] No school found for domain: ${emailDomain}. User not assigned.`
+                  `[DatabaseHook] No school found for domain prefix: ${domainPrefix}. User not assigned.`
                 )
               }
             } catch (error) {
