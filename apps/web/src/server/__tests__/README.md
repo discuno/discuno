@@ -61,10 +61,18 @@ pnpm db:reset:test
 pnpm test
 ```
 
+**Note:** Integration tests are automatically skipped if `.env.test` is not configured. Only unit tests will run in CI/CD without a test database.
+
 ### Run tests in watch mode
 
 ```bash
 pnpm test:watch
+```
+
+### Run only integration tests
+
+```bash
+pnpm --filter @discuno/web vitest run src/server/__tests__/integration/
 ```
 
 ### Run a specific test file
@@ -78,6 +86,15 @@ pnpm --filter @discuno/web vitest run src/server/__tests__/integration/booking-f
 ```bash
 pnpm --filter @discuno/web test:coverage
 ```
+
+### Skip integration tests
+
+Integration tests are automatically skipped if:
+
+- `.env.test` file doesn't exist
+- `DATABASE_URL` is not set in `.env.test`
+
+This ensures CI/CD pipelines can run without requiring a test database.
 
 ## Test Categories
 
