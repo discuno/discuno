@@ -10,6 +10,7 @@ import { Button } from '~/components/ui/button'
 import { Card, CardContent } from '~/components/ui/card'
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '~/components/ui/field'
 import { InputGroup, InputGroupAddon, InputGroupInput } from '~/components/ui/input-group'
+import { Spinner } from '~/components/ui/spinner'
 import { validateEmail } from '~/lib/utils/validation'
 
 interface AttendeeDetailsStepProps {
@@ -182,7 +183,7 @@ export const AttendeeDetailsStep = ({
           >
             {createBookingMutation.isPending ? (
               <>
-                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                <Spinner className="mr-2" />
                 Creating...
               </>
             ) : selectedEventType?.price && selectedEventType.price > 0 ? (

@@ -1,4 +1,4 @@
-import { Loader2 } from 'lucide-react'
+import { Spinner } from '~/components/ui/spinner'
 
 const RootLoading = () => {
   return (
@@ -6,7 +6,7 @@ const RootLoading = () => {
       <div className="border/40 bg-card text-card-foreground dark:shadow-primary/5 mx-auto max-w-md space-y-6 rounded-lg border p-8 shadow-lg backdrop-blur-md transition-all duration-300 sm:p-12">
         <div className="flex flex-col items-center justify-center space-y-4">
           <div className="relative">
-            <Loader2 className="text-primary h-12 w-12 animate-spin" />
+            <Spinner className="text-primary h-12 w-12" />
             <div className="bg-primary/10 absolute inset-0 animate-pulse rounded-full"></div>
           </div>
           <div className="space-y-2 text-center">

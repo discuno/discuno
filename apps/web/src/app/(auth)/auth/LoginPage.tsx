@@ -1,14 +1,6 @@
 'use client'
 
-import {
-  BadgeCheck,
-  Calendar,
-  DollarSign,
-  GraduationCap,
-  Loader2,
-  TrendingUp,
-  Users,
-} from 'lucide-react'
+import { BadgeCheck, Calendar, DollarSign, GraduationCap, TrendingUp, Users } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useState } from 'react'
@@ -25,6 +17,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '~/components/ui/dialog'
+import { Spinner } from '~/components/ui/spinner'
 import { authClient } from '~/lib/auth-client'
 
 const benefits = [
@@ -174,7 +167,7 @@ export function LoginPage() {
                       className="flex h-10 cursor-pointer items-center justify-center"
                     >
                       {isLoading === 'google' ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <Spinner />
                       ) : (
                         <Image
                           src={'/logos/web_light_sq_SI.svg'}
@@ -189,7 +182,7 @@ export function LoginPage() {
                       className="flex h-10 cursor-pointer items-center justify-center"
                     >
                       {isLoading === 'microsoft' ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <Spinner />
                       ) : (
                         <Image
                           src={'/logos/ms-symbollockup_signin_light.svg'}

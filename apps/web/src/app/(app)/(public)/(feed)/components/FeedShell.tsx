@@ -1,5 +1,5 @@
 import { Suspense } from 'react'
-import { LoadingSpinner } from '~/components/shared/LoadingSpinner'
+import { Spinner } from '~/components/ui/spinner'
 import { FeedContent } from './FeedContent'
 
 interface FeedShellProps {
@@ -14,8 +14,9 @@ export const FeedShell = ({ searchParams }: FeedShellProps) => {
         {/* Suspense boundary for dynamic content */}
         <Suspense
           fallback={
-            <div className="flex items-center justify-center">
-              <LoadingSpinner />
+            <div className="flex items-center justify-center gap-2">
+              <Spinner />
+              <span className="text-muted-foreground">Loading...</span>
             </div>
           }
         >

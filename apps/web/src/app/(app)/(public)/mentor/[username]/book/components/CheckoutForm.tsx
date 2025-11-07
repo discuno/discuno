@@ -8,6 +8,7 @@ import type { BookingFormData } from '~/app/(app)/(public)/mentor/[username]/boo
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
 import { Separator } from '~/components/ui/separator'
+import { Spinner } from '~/components/ui/spinner'
 
 interface CheckoutFormProps {
   eventType: EventType
@@ -167,7 +168,7 @@ export const CheckoutForm = ({
             >
               {isLoading ? (
                 <div className="flex items-center gap-2">
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                  <Spinner />
                   Processing...
                 </div>
               ) : (

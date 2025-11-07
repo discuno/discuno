@@ -5,6 +5,7 @@ import { IconLogo } from '~/components/icons/IconLogo'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
+import { Spinner } from '~/components/ui/spinner'
 
 // Component to handle search params
 const ErrorContent = ({ searchParams }: { searchParams: { type?: string; error?: string } }) => {
@@ -248,7 +249,7 @@ const AuthErrorPage = async ({
       fallback={
         <div className="bg-background flex min-h-screen items-center justify-center">
           <div className="text-center">
-            <RefreshCw className="text-muted-foreground mx-auto h-8 w-8 animate-spin" />
+            <Spinner className="text-muted-foreground mx-auto h-8 w-8" />
             <p className="text-muted-foreground mt-2">Loading...</p>
           </div>
         </div>

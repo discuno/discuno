@@ -11,6 +11,7 @@ import {
 import type { Card } from '~/app/types'
 import { AspectRatio } from '~/components/ui/aspect-ratio'
 import { Skeleton } from '~/components/ui/skeleton'
+import { Spinner } from '~/components/ui/spinner'
 
 // Define the PostGridProps interface
 interface PostGridProps {
@@ -202,21 +203,7 @@ export const PostGrid = ({ schoolId, majorId, graduationYear }: PostGridProps) =
       {isFetchingNextPage && (
         <div className="flex justify-center">
           <span className="flex items-center">
-            <svg className="mr-2 h-4 w-4 animate-spin" viewBox="0 0 24 24" aria-hidden="true">
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              />
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-              />
-            </svg>
+            <Spinner className="mr-2" />
             Loading...
           </span>
         </div>

@@ -1,12 +1,13 @@
 'use client'
 
-import { Loader2, Mail } from 'lucide-react'
+import { Mail } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '~/components/ui/button'
 import { Field, FieldDescription, FieldError, FieldLabel } from '~/components/ui/field'
 import { InputGroup, InputGroupAddon, InputGroupInput } from '~/components/ui/input-group'
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '~/components/ui/input-otp'
+import { Spinner } from '~/components/ui/spinner'
 import { authClient } from '~/lib/auth-client'
 import { validateEmail } from '~/lib/utils/validation'
 
@@ -146,7 +147,7 @@ export function EmailSignInForm() {
           />
           {isLoading && (
             <InputGroupAddon align="inline-end">
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Spinner />
             </InputGroupAddon>
           )}
         </InputGroup>
