@@ -8,8 +8,11 @@ import { Button } from '~/components/ui/button'
 export const ModeToggle = () => {
   const { setTheme, resolvedTheme } = useTheme()
   // Check if we're mounted on the client (avoids hydration mismatch)
-  const [mounted] = useState(() => typeof window !== 'undefined')
-
+  const [mounted, setMounted] = useState(false)
+  // Set mounted to true after component mounts (client-side)
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
   const toggleTheme = () => {
     const next = resolvedTheme === 'dark' ? 'light' : 'dark'
     setTheme(next)
