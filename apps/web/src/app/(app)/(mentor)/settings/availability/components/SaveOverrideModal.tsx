@@ -37,9 +37,14 @@ export function SaveOverrideModal({
   const queryClient = useQueryClient()
   const isEditMode = !!overrideToEdit
 
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined)
+  // Initialize state based on edit mode - this runs once per mode change
+  const [selectedDate] = useState<Date | undefined>(() =>
+    overrideToEdit ? new Date(`${overrideToEdit.date}T00:00:00`) : undefined
+  )
   const [selectedDates, setSelectedDates] = useState<Date[]>([])
-  const [intervals, setIntervals] = useState<TimeInterval[]>([DEFAULT_INTERVAL])
+  const [intervals, setIntervals] = useState<TimeInterval[]>(() =>
+    overrideToEdit ? overrideToEdit.intervals : [DEFAULT_INTERVAL]
+  )
 
   // Compute disabled dates: past dates and other existing overrides
   const today = useMemo(() => {
@@ -52,31 +57,6 @@ export function SaveOverrideModal({
     if (!currentAvailability) return []
     return currentAvailability.dateOverrides.map(o => new Date(`${o.date}T00:00:00`))
   }, [currentAvailability])
-
-  // Derive initial state from props to avoid setState in effect
-  // Reset state when switching between edit/create modes
-  const initialDate = useMemo(() => {
-    if (!overrideToEdit) return undefined
-    return new Date(`${overrideToEdit.date}T00:00:00`)
-  }, [overrideToEdit])
-
-  const initialIntervals = useMemo(() => {
-    if (!overrideToEdit) return [DEFAULT_INTERVAL]
-    return overrideToEdit.intervals
-  }, [overrideToEdit])
-
-  // Update state when initial values change (controlled by useMemo above)
-  if (isOpen) {
-    if (isEditMode && selectedDate?.getTime() !== initialDate?.getTime()) {
-      setSelectedDate(initialDate)
-      setIntervals(initialIntervals)
-      setSelectedDates([])
-    } else if (!isEditMode && selectedDate !== undefined) {
-      setSelectedDate(undefined)
-      setIntervals([DEFAULT_INTERVAL])
-      setSelectedDates([])
-    }
-  }
 
   const batchOverrideMutation = useMutation({
     mutationFn: async ({
@@ -172,7 +152,10 @@ export function SaveOverrideModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[90vw] sm:max-w-[800px]">
+      <DialogContent
+        key={overrideToEdit?.date ?? 'create'}
+        className="max-w-[90vw] sm:max-w-[800px]"
+      >
         <DialogHeader>
           <DialogTitle>{isEditMode ? 'Edit Override' : 'Create Overrides'}</DialogTitle>
           <DialogDescription>

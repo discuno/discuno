@@ -2,13 +2,17 @@
 
 import { Moon, Sun } from 'lucide-react'
 import { useTheme } from 'next-themes'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Button } from '~/components/ui/button'
 
 export const ModeToggle = () => {
   const { setTheme, resolvedTheme } = useTheme()
   // Check if we're mounted on the client (avoids hydration mismatch)
-  const [mounted] = useState(() => typeof window !== 'undefined')
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true) // eslint-disable-line react-hooks/set-state-in-effect
+  }, [])
 
   const toggleTheme = () => {
     const next = resolvedTheme === 'dark' ? 'light' : 'dark'
