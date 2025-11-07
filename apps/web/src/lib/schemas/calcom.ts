@@ -5,7 +5,7 @@ export const CalcomBookingPayloadSchema = z.object({
   title: z.string(),
   description: z.string().optional(),
   additionalNotes: z.string().optional(),
-  customInputs: z.record(z.string(), z.any()).optional(),
+  customInputs: z.record(z.string(), z.unknown()).optional(),
   startTime: z.iso.datetime(),
   endTime: z.iso.datetime(),
   organizer: z.object({
@@ -21,8 +21,8 @@ export const CalcomBookingPayloadSchema = z.object({
       .optional(),
     timeFormat: z.string().optional(),
   }),
-  responses: z.record(z.string(), z.any()),
-  userFieldsResponses: z.record(z.string(), z.any()).optional(),
+  responses: z.record(z.string(), z.unknown()),
+  userFieldsResponses: z.record(z.string(), z.unknown()).optional(),
   attendees: z
     .array(
       z.object({
@@ -68,8 +68,8 @@ export const CalcomBookingPayloadSchema = z.object({
         type: z.string(),
         success: z.number(),
         failures: z.number(),
-        errors: z.array(z.any()).optional(),
-        warnings: z.array(z.any()).optional(),
+        errors: z.array(z.unknown()).optional(),
+        warnings: z.array(z.unknown()).optional(),
       })
     )
     .optional(),
@@ -124,7 +124,7 @@ export const CalcomBookingCancelledPayloadSchema = CalcomBookingPayloadSchema.ex
 })
 
 // Generic payload for events we haven't strictly typed yet
-const CalcomUnknownPayloadSchema = z.record(z.string(), z.any())
+const CalcomUnknownPayloadSchema = z.record(z.string(), z.unknown())
 
 export const CalcomWebhookSchema = z.discriminatedUnion('triggerEvent', [
   z.object({

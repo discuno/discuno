@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import type { Stripe } from 'stripe'
 import { handleCheckoutSessionWebhook } from '~/app/(app)/(public)/mentor/[username]/book/actions'
 import { env } from '~/env'
+import { logger } from '~/lib/logger'
 import { stripe } from '~/lib/stripe'
 
 export async function POST(req: Request) {
@@ -13,8 +14,8 @@ export async function POST(req: Request) {
   try {
     event = stripe.webhooks.constructEvent(await req.text(), signature, env.STRIPE_WEBHOOK_SECRET)
   } catch (err) {
+    logger.error('Stripe webhook signature verification failed', err)
     const errorMessage = err instanceof Error ? err.message : 'Unknown error'
-    console.error(`❌ Webhook signature verification failed: ${errorMessage}`)
     return new Response(`Webhook Error: ${errorMessage}`, {
       status: 400,
     })
@@ -27,11 +28,11 @@ export async function POST(req: Request) {
         break
 
       default:
-        console.log(`🤷‍♀️ Unhandled event type: ${event.type}`)
+        logger.info('Unhandled Stripe event type', { eventType: event.type })
     }
   } catch (error) {
+    logger.error('Stripe webhook handler failed', error)
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    console.error(`❌ Webhook handler failed: ${errorMessage}`)
     return new Response(`Webhook handler error: ${errorMessage}`, {
       status: 500,
     })
@@ -44,19 +45,21 @@ export async function POST(req: Request) {
  * Handle successful checkout sessions
  */
 async function handleCheckoutSessionSucceeded(checkoutSession: Stripe.Checkout.Session) {
-  console.log(`Handling successful checkout session: ${checkoutSession.id}`)
+  logger.info('Handling successful checkout session', { sessionId: checkoutSession.id })
   try {
     const result = await handleCheckoutSessionWebhook(checkoutSession)
 
     if (result.success) {
-      console.log(`✅ Successfully handled checkout session: ${checkoutSession.id}`)
+      logger.info('Successfully handled checkout session', { sessionId: checkoutSession.id })
     } else {
-      console.error(`❌ Failed to handle checkout session ${checkoutSession.id}: ${result.error}`)
+      logger.error(`Failed to handle checkout session: ${result.error}`, undefined, {
+        sessionId: checkoutSession.id,
+      })
       // Throw an error to indicate a processing failure
       throw new Error(`Failed to handle checkout session ${checkoutSession.id}: ${result.error}`)
     }
   } catch (error) {
-    console.error(`❌ Error handling checkout session ${checkoutSession.id}:`, error)
+    logger.error('Error handling checkout session', error, { sessionId: checkoutSession.id })
     // Re-throw the error to be caught by the main POST function's error handler
     throw error
   }

@@ -1,6 +1,7 @@
 import crypto from 'crypto'
 import { env } from '~/env'
 import { markAsNoShow } from '~/lib/calcom'
+import { logger } from '~/lib/logger'
 import {
   CalcomBookingPayloadSchema,
   type CalcomBookingPayload,
@@ -27,7 +28,7 @@ export async function POST(req: Request) {
   if (
     !crypto.timingSafeEqual(Buffer.from(expectedSignature, 'utf8'), Buffer.from(signature, 'utf8'))
   ) {
-    console.error('❌ Webhook signature verification failed for Cal.com payload')
+    logger.error('Webhook signature verification failed for Cal.com payload')
     return Response.json({ error: 'Invalid signature' }, { status: 400 })
   }
 
@@ -35,17 +36,15 @@ export async function POST(req: Request) {
   try {
     event = JSON.parse(bodyText)
   } catch (err) {
-    console.error('❌ Failed to parse Cal.com webhook payload:', err)
+    logger.error('Failed to parse Cal.com webhook payload', err)
     return Response.json({ error: 'Invalid payload' }, { status: 400 })
   }
 
-  console.log('Received Cal.com webhook event:', {
-    triggerEvent: event.triggerEvent,
-    payload: event.payload,
-  })
-
   const { triggerEvent, payload } = event
-  console.log(`✅ Received Cal.com webhook event: ${triggerEvent}`)
+  logger.info('Received Cal.com webhook event', {
+    triggerEvent,
+    bookingId: 'bookingId' in payload ? payload.bookingId : undefined,
+  })
 
   try {
     switch (triggerEvent) {
@@ -60,7 +59,7 @@ export async function POST(req: Request) {
             hostNoShow: false,
             attendeeNoShow: true,
           })
-          console.log(`✅ Marked guest as no-show for booking ${bookingUid}`)
+          logger.info('Marked guest as no-show', { bookingUid })
         }
         break
       // Host didn't show up - attempt to mark and potentially refund
@@ -84,31 +83,24 @@ export async function POST(req: Request) {
               })),
               true // Mark the host as absent
             )
-            console.log(`✅ Marked host as no-show in Cal.com for booking ${bookingUid}`)
+            logger.info('Marked host as no-show in Cal.com', { bookingUid })
           } catch (calcomError) {
             // Log the error but continue - we've already updated our local database
-            console.warn(
-              `⚠️ Failed to mark no-show in Cal.com (booking ${bookingUid}):`,
-              calcomError
-            )
+            logger.warn('Failed to mark no-show in Cal.com', calcomError, { bookingUid })
           }
         }
         break
       case 'RECORDING_TRANSCRIPTION_GENERATED':
-        console.log(`✅ Transcription generated for event: ${triggerEvent}`)
-        console.log(`✅ Transcription text: ${JSON.stringify(payload)}`)
+        logger.info('Transcription generated', { triggerEvent })
         break
       case 'RECORDING_READY':
-        console.log(`✅ Recording is ready for event: ${triggerEvent}`)
-        console.log(`✅ Recording details: ${JSON.stringify(payload)}`)
+        logger.info('Recording is ready', { triggerEvent })
         break
       case 'MEETING_STARTED':
-        console.log(`✅ Meeting started for event: ${triggerEvent}`)
-        console.log(`✅ Meeting details: ${JSON.stringify(payload)}`)
+        logger.info('Meeting started', { triggerEvent })
         break
       case 'MEETING_ENDED':
-        console.log(`✅ Meeting ended for event: ${triggerEvent}`)
-        console.log(`✅ Meeting details: ${JSON.stringify(payload)}`)
+        logger.info('Meeting ended', { triggerEvent })
         if (payload?.metadata.mentorUserId) {
           await createAnalyticsEvent({
             eventType: 'COMPLETED_BOOKING',
@@ -116,12 +108,12 @@ export async function POST(req: Request) {
             actorUserId: payload.metadata.actorUserId ?? null,
           })
         } else {
-          console.warn(`⚠️ MEETING_ENDED event missing payload or metadata`)
+          logger.warn('MEETING_ENDED event missing payload or metadata')
         }
         break
       case 'BOOKING_CANCELLED':
         {
-          console.log(`✅ Booking canceled for event: ${triggerEvent}`)
+          logger.info('Booking cancelled', { bookingUid: event.payload.uid })
           await cancelLocalBooking(event.payload.uid)
           const mentorUserId = await getUserIdByCalcomUserId(event.payload.organizer.id)
           if (mentorUserId) {
@@ -134,12 +126,11 @@ export async function POST(req: Request) {
         }
         break
       default:
-        console.log(`ℹ️ Unhandled webhook event type: ${triggerEvent}`)
+        logger.info('Unhandled webhook event type', { triggerEvent })
         break
     }
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    console.error(`❌ Error processing webhook event ${triggerEvent}:`, errorMessage)
+    logger.error(`Error processing webhook event ${triggerEvent}`, error)
     return Response.json({ error: 'Failed to process webhook' }, { status: 500 })
   }
 
@@ -147,11 +138,13 @@ export async function POST(req: Request) {
 }
 
 async function storeBooking(event: CalcomBookingPayload) {
-  console.log('Processing Cal.com BOOKING_CREATED event...')
+  logger.info('Processing BOOKING_CREATED event')
   try {
     const validation = CalcomBookingPayloadSchema.safeParse(event)
     if (!validation.success) {
-      console.warn('❌ Invalid Cal.com booking payload:', validation.error.flatten())
+      logger.warn('Invalid Cal.com booking payload', undefined, {
+        errors: validation.error.flatten(),
+      })
       return Response.json({ error: 'Invalid booking payload' }, { status: 400 })
     }
 
@@ -202,12 +195,12 @@ async function storeBooking(event: CalcomBookingPayload) {
       webhookPayload: event,
     })
 
-    console.log(`✅ Successfully stored booking ${booking.id} for Cal.com event ${uid}`)
+    logger.info('Successfully stored booking', { bookingId: booking.id, calcomUid: uid })
     return Response.json(booking, { status: 201 })
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    console.error(`❌ Failed to store booking for Cal.com event:`, errorMessage)
-    console.error('Raw payload:', JSON.stringify(event, null, 2))
+    logger.error('Failed to store booking for Cal.com event', error, {
+      bookingId: event.bookingId,
+    })
     return Response.json({ error: 'Failed to process booking' }, { status: 500 })
   }
 }

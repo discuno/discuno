@@ -84,13 +84,6 @@ export const NavUser = ({ user: data }: NavUserProps) => {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            {/* <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <Sparkles />
-                Upgrade to Pro
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator /> */}
             <DropdownMenuGroup>
               <Link href="/support" onClick={handleClick}>
                 <DropdownMenuItem>
