@@ -30,13 +30,19 @@ type NavUserProps = {
 
 export const NavUser = ({ user: data }: NavUserProps) => {
   const router = useRouter()
-  const { isMobile } = useSidebar()
+  const { isMobile, setOpenMobile } = useSidebar()
   const { setTheme, resolvedTheme } = useTheme()
 
   const user = {
     name: data?.name ?? 'User',
     email: data?.email ?? '',
     avatar: data?.image ?? undefined,
+  }
+
+  const handleClick = () => {
+    if (isMobile) {
+      setOpenMobile(false)
+    }
   }
 
   return (
@@ -86,7 +92,7 @@ export const NavUser = ({ user: data }: NavUserProps) => {
             </DropdownMenuGroup>
             <DropdownMenuSeparator /> */}
             <DropdownMenuGroup>
-              <Link href="/support">
+              <Link href="/support" onClick={handleClick}>
                 <DropdownMenuItem>
                   <HelpCircle className="mr-2 size-4" />
                   Support
