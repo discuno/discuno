@@ -145,7 +145,7 @@ export const OnboardingDashboard = ({ initialStatus }: OnboardingDashboardProps)
           return (
             <div key={step.id}>
               {showPaidSessionHeader && (
-                <div className="mb-4 mt-6">
+                <div className="mt-6 mb-4">
                   <div className="flex items-center gap-3">
                     <Separator className="flex-1" />
                     <Badge variant="secondary" className="text-xs">
