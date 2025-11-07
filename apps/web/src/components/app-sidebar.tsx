@@ -1,20 +1,18 @@
-import Link from 'next/link'
 import { connection } from 'next/server'
 import { Suspense } from 'react'
 import {
   getFullProfileAction,
   getMentorOnboardingStatus,
 } from '~/app/(app)/(mentor)/settings/actions'
+import { AppSidebarHeader } from '~/components/app-sidebar-header'
 import { NavMain, type NavMainProps } from '~/components/nav-main'
 import { NavUser } from '~/components/nav-user'
-import { ThemeAwareIconLogo } from '~/components/shared/ThemeAwareIconLogo'
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
   SidebarMenu,
-  SidebarMenuButton,
   SidebarMenuItem,
 } from '~/components/ui/sidebar'
 import { Skeleton } from '~/components/ui/skeleton'
@@ -126,17 +124,7 @@ export const AppSidebar = ({ ...props }: React.ComponentProps<typeof Sidebar>) =
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
-              <Link href="/">
-                <div className="bg-background text-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                  <ThemeAwareIconLogo />
-                </div>
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">Discuno</span>
-                  <span className="truncate text-xs">Mentor Dashboard</span>
-                </div>
-              </Link>
-            </SidebarMenuButton>
+            <AppSidebarHeader />
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>

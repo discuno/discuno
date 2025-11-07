@@ -18,6 +18,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from '~/components/ui/sidebar'
 import { StatusDot } from '~/components/ui/status-dot'
 
@@ -55,6 +56,14 @@ export type NavMainProps = {
 }
 
 export function NavMain({ items }: NavMainProps) {
+  const { isMobile, setOpenMobile } = useSidebar()
+
+  const handleClick = () => {
+    if (isMobile) {
+      setOpenMobile(false)
+    }
+  }
+
   return (
     <>
       <SidebarMenu>
@@ -69,7 +78,11 @@ export function NavMain({ items }: NavMainProps) {
                   tooltip={item.title}
                   className={item.isOnboarding && item.badge ? 'font-semibold' : ''}
                 >
-                  <Link href={item.url} className="flex items-center justify-between">
+                  <Link
+                    href={item.url}
+                    className="flex items-center justify-between"
+                    onClick={handleClick}
+                  >
                     <div className="flex items-center gap-2">
                       <Icon />
                       <span>{item.title}</span>
@@ -119,7 +132,7 @@ export function NavMain({ items }: NavMainProps) {
                       </SidebarMenuButton>
                     ) : (
                       <SidebarMenuButton asChild tooltip={subItem.title}>
-                        <Link href={subItem.url}>
+                        <Link href={subItem.url} onClick={handleClick}>
                           <SubIcon />
                           <div className="flex flex-col items-start">
                             <span>{subItem.title}</span>

@@ -5,16 +5,13 @@ import { cva, VariantProps } from 'class-variance-authority'
 import { PanelLeftIcon } from 'lucide-react'
 import * as React from 'react'
 
+import * as SheetPrimitive from '@radix-ui/react-dialog'
+import { XIcon } from 'lucide-react'
+
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
 import { Separator } from '~/components/ui/separator'
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from '~/components/ui/sheet'
+import { Sheet } from '~/components/ui/sheet'
 import { Skeleton } from '~/components/ui/skeleton'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '~/components/ui/tooltip'
 import { useIsMobile } from '~/hooks/use-mobile'
@@ -175,24 +172,45 @@ function Sidebar({
   if (isMobile) {
     return (
       <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
-        <SheetContent
-          data-sidebar="sidebar"
-          data-slot="sidebar"
-          data-mobile="true"
-          className="bg-sidebar text-sidebar-foreground w-(--sidebar-width) p-0 [&>button]:hidden"
-          style={
-            {
-              '--sidebar-width': SIDEBAR_WIDTH_MOBILE,
-            } as React.CSSProperties
-          }
-          side={side}
-        >
-          <SheetHeader className="sr-only">
-            <SheetTitle>Sidebar</SheetTitle>
-            <SheetDescription>Displays the mobile sidebar.</SheetDescription>
-          </SheetHeader>
-          <div className="flex h-full w-full flex-col">{children}</div>
-        </SheetContent>
+        <SheetPrimitive.Portal>
+          {/* Overlay with instant close */}
+          <SheetPrimitive.Overlay
+            className={cn(
+              'data-[state=open]:animate-in data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50',
+              'data-[state=closed]:animate-none data-[state=closed]:duration-0'
+            )}
+          />
+          {/* Sheet content with instant close */}
+          <SheetPrimitive.Content
+            data-sidebar="sidebar"
+            data-slot="sidebar"
+            data-mobile="true"
+            className={cn(
+              'bg-sidebar text-sidebar-foreground w-(--sidebar-width) fixed z-50 flex flex-col gap-4 p-0 shadow-lg',
+              'data-[state=open]:animate-in data-[state=open]:duration-500',
+              'data-[state=closed]:animate-none data-[state=closed]:duration-0',
+              side === 'left' &&
+                'data-[state=open]:slide-in-from-left inset-y-0 left-0 h-full border-r',
+              side === 'right' &&
+                'data-[state=open]:slide-in-from-right inset-y-0 right-0 h-full border-l'
+            )}
+            style={
+              {
+                '--sidebar-width': SIDEBAR_WIDTH_MOBILE,
+              } as React.CSSProperties
+            }
+          >
+            <div className="sr-only">
+              <SheetPrimitive.Title>Sidebar</SheetPrimitive.Title>
+              <SheetPrimitive.Description>Displays the mobile sidebar.</SheetPrimitive.Description>
+            </div>
+            <div className="flex h-full w-full flex-col">{children}</div>
+            <SheetPrimitive.Close className="ring-offset-background focus:ring-ring data-[state=open]:bg-secondary rounded-xs focus:outline-hidden absolute right-4 top-4 hidden opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 disabled:pointer-events-none">
+              <XIcon className="size-4" />
+              <span className="sr-only">Close</span>
+            </SheetPrimitive.Close>
+          </SheetPrimitive.Content>
+        </SheetPrimitive.Portal>
       </Sheet>
     )
   }
