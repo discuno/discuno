@@ -105,6 +105,17 @@ const createCursorPayload = (post?: PostQueryResult) => {
   return Object.fromEntries(definedEntries)
 }
 
+/**
+ * Encodes a cursor for pagination based on fields from the given post.
+ *
+ * The cursor encodes the following fields (if present):
+ *   - ranking_score: The ranking score of the post's profile.
+ *   - random_sort_key: The random sort key of the post.
+ *   - post_id: The unique identifier of the post.
+ *
+ * @param {PostQueryResult | undefined} post - The post to encode fields from.
+ * @returns {string | undefined} A base64-encoded string representing the cursor, or undefined if no fields are available to encode.
+ */
 const encodeCursor = (post?: PostQueryResult) => {
   const payload = createCursorPayload(post)
   return payload ? Buffer.from(JSON.stringify(payload)).toString('base64') : undefined
