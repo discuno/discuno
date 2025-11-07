@@ -1,6 +1,7 @@
 import crypto from 'crypto'
 import { env } from '~/env'
 import { markAsNoShow } from '~/lib/calcom'
+import { trackServerEvent } from '~/lib/posthog-server'
 import {
   CalcomBookingPayloadSchema,
   type CalcomBookingPayload,
@@ -13,6 +14,18 @@ import {
 } from '~/lib/services/booking-service'
 import { getUserIdByCalcomUserId } from '~/lib/services/calcom-tokens-service'
 import { createAnalyticsEvent } from '~/server/dal/analytics'
+
+type MentorMetadataPayload = Partial<CalcomBookingPayload> & {
+  metadata: { mentorUserId: string; actorUserId?: string }
+}
+
+const hasMentorMetadata = (data: unknown): data is MentorMetadataPayload => {
+  if (typeof data !== 'object' || data === null) return false
+  if (!('metadata' in data)) return false
+  const metadata = (data as { metadata?: unknown }).metadata
+  if (!metadata || typeof metadata !== 'object') return false
+  return typeof (metadata as { mentorUserId?: unknown }).mentorUserId === 'string'
+}
 
 export async function POST(req: Request) {
   const signature = req.headers.get('x-cal-signature-256') ?? ''
@@ -102,23 +115,52 @@ export async function POST(req: Request) {
         console.log(`✅ Recording is ready for event: ${triggerEvent}`)
         console.log(`✅ Recording details: ${JSON.stringify(payload)}`)
         break
-      case 'MEETING_STARTED':
+      case 'MEETING_STARTED': {
         console.log(`✅ Meeting started for event: ${triggerEvent}`)
         console.log(`✅ Meeting details: ${JSON.stringify(payload)}`)
-        break
-      case 'MEETING_ENDED':
-        console.log(`✅ Meeting ended for event: ${triggerEvent}`)
-        console.log(`✅ Meeting details: ${JSON.stringify(payload)}`)
-        if (payload?.metadata.mentorUserId) {
-          await createAnalyticsEvent({
-            eventType: 'COMPLETED_BOOKING',
-            targetUserId: payload.metadata.mentorUserId,
-            actorUserId: payload.metadata.actorUserId ?? null,
+        if (!hasMentorMetadata(payload)) {
+          console.warn(`⚠️ MEETING_STARTED event missing payload metadata`)
+          break
+        }
+        const mentorUserId = payload.metadata.mentorUserId
+        try {
+          await trackServerEvent(mentorUserId, 'meeting_started', {
+            calcomUid: payload.uid,
+            calcomBookingId: payload.bookingId,
+            startTime: payload.startTime,
           })
-        } else {
-          console.warn(`⚠️ MEETING_ENDED event missing payload or metadata`)
+        } catch (error) {
+          console.error(`❌ Failed to track meeting started event:`, error)
         }
         break
+      }
+      case 'MEETING_ENDED': {
+        console.log(`✅ Meeting ended for event: ${triggerEvent}`)
+        console.log(`✅ Meeting details: ${JSON.stringify(payload)}`)
+        if (!hasMentorMetadata(payload)) {
+          console.warn(`⚠️ MEETING_ENDED event missing payload metadata`)
+          break
+        }
+        const mentorUserId = payload.metadata.mentorUserId
+        await createAnalyticsEvent({
+          eventType: 'COMPLETED_BOOKING',
+          targetUserId: mentorUserId,
+          actorUserId: payload.metadata.actorUserId ?? null,
+        })
+
+        // Track meeting ended in PostHog
+        try {
+          await trackServerEvent(mentorUserId, 'meeting_ended', {
+            calcomUid: payload.uid,
+            calcomBookingId: payload.bookingId,
+            startTime: payload.startTime,
+            endTime: payload.endTime,
+          })
+        } catch (error) {
+          console.error(`❌ Failed to track meeting ended event:`, error)
+        }
+        break
+      }
       case 'BOOKING_CANCELLED':
         {
           console.log(`✅ Booking canceled for event: ${triggerEvent}`)
@@ -130,6 +172,17 @@ export async function POST(req: Request) {
               targetUserId: mentorUserId,
               actorUserId: mentorUserId,
             })
+
+            // Track booking cancellation in PostHog
+            try {
+              await trackServerEvent(mentorUserId, 'booking_cancelled', {
+                calcomUid: event.payload.uid,
+                calcomBookingId: event.payload.bookingId,
+                organizerEmail: event.payload.organizer.email,
+              })
+            } catch (error) {
+              console.error(`❌ Failed to track booking cancellation event:`, error)
+            }
           }
         }
         break
@@ -203,6 +256,36 @@ async function storeBooking(event: CalcomBookingPayload) {
     })
 
     console.log(`✅ Successfully stored booking ${booking.id} for Cal.com event ${uid}`)
+
+    // Track booking creation in PostHog
+    try {
+      if (metadata.mentorUserId) {
+        await trackServerEvent(metadata.mentorUserId, 'booking_created', {
+          bookingId: booking.id,
+          calcomBookingId: bookingId,
+          calcomUid: uid,
+          eventTypeId,
+          duration: length,
+          startTime: start.toISOString(),
+          attendeeEmail: attendee.email,
+        })
+      }
+      // Also track for the attendee if we have their user ID
+      if (metadata.actorUserId) {
+        await trackServerEvent(metadata.actorUserId, 'booking_created', {
+          bookingId: booking.id,
+          calcomBookingId: bookingId,
+          calcomUid: uid,
+          eventTypeId,
+          duration: length,
+          startTime: start.toISOString(),
+          mentorUserId: metadata.mentorUserId,
+        })
+      }
+    } catch (error) {
+      console.error(`❌ Failed to track booking creation event:`, error)
+    }
+
     return Response.json(booking, { status: 201 })
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'

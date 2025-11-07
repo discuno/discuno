@@ -46,14 +46,16 @@ export async function POST(req: Request) {
 async function handleCheckoutSessionSucceeded(checkoutSession: Stripe.Checkout.Session) {
   console.log(`Handling successful checkout session: ${checkoutSession.id}`)
   try {
-    const result = await handleCheckoutSessionWebhook(checkoutSession)
+    const response = await handleCheckoutSessionWebhook(checkoutSession)
 
-    if (result.success) {
+    // Check if the response is 200 OK
+    if (response.status === 200) {
       console.log(`✅ Successfully handled checkout session: ${checkoutSession.id}`)
     } else {
-      console.error(`❌ Failed to handle checkout session ${checkoutSession.id}: ${result.error}`)
-      // Throw an error to indicate a processing failure
-      throw new Error(`Failed to handle checkout session ${checkoutSession.id}: ${result.error}`)
+      // Response was not 200, log error and throw
+      const errorText = await response.text()
+      console.error(`❌ Failed to handle checkout session ${checkoutSession.id}: ${errorText}`)
+      throw new Error(`Failed to handle checkout session ${checkoutSession.id}: ${errorText}`)
     }
   } catch (error) {
     console.error(`❌ Error handling checkout session ${checkoutSession.id}:`, error)

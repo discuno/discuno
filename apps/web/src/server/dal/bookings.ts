@@ -4,7 +4,7 @@ import { desc, eq } from 'drizzle-orm'
 import { NotFoundError } from '~/lib/errors'
 import type { NewBooking, NewBookingAttendee, NewBookingOrganizer } from '~/lib/schemas/db'
 import { db } from '~/server/db'
-import * as schema from '~/server/db/schema'
+import * as schema from '~/server/db/schema/index'
 
 /**
  * Data Access Layer for bookings

@@ -1,7 +1,7 @@
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod'
 import { type z } from 'zod/v4'
 import { excludeFields } from '~/lib/schemas/db/helpers'
-import { payment } from '~/server/db/schema'
+import { payment } from '~/server/db/schema/index'
 
 const insertExcludedFields = {
   ...excludeFields(payment, ['id', 'createdAt', 'updatedAt']),

@@ -2,7 +2,7 @@ import 'server-only'
 
 import { eq, inArray, sql } from 'drizzle-orm'
 import { db } from '~/server/db'
-import { analyticEvent, userProfile } from '~/server/db/schema'
+import { analyticEvent, userProfile } from '~/server/db/schema/index'
 import { revalidatePosts } from '~/server/queries/posts'
 
 export const RANKING_EVENT_WEIGHTS = {

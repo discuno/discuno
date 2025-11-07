@@ -1,5 +1,5 @@
-import { getTableName, isTable, sql } from 'drizzle-orm'
-import * as schema from '~/server/db/schema'
+import { getTableName, sql } from 'drizzle-orm'
+import { tables } from '~/server/db/schema/index'
 import { testDb } from '~/server/db/test-db'
 
 /**
@@ -8,11 +8,7 @@ import { testDb } from '~/server/db/test-db'
  * NOTE: This is a destructive operation and should only be used in tests.
  */
 export async function clearDatabase() {
-  const tableNames = Object.values(schema)
-    .filter(isTable)
-    // @ts-expect-error - ignore non-table exports
-    .map(table => getTableName(table))
-    .filter(Boolean)
+  const tableNames = tables.map(table => getTableName(table)).filter(Boolean)
 
   if (tableNames.length === 0) {
     return

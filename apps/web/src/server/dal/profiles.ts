@@ -3,7 +3,7 @@ import 'server-only'
 import { eq } from 'drizzle-orm'
 import type { UpdateUserProfile } from '~/lib/schemas/db'
 import { db } from '~/server/db'
-import { userProfile } from '~/server/db/schema'
+import { userProfile } from '~/server/db/schema/index'
 
 /**
  * Data Access Layer for user_profiles table

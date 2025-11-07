@@ -2,7 +2,7 @@ import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'driz
 import { z } from 'zod/v4'
 import { excludeFields } from '~/lib/schemas/db/helpers'
 import { updateUserSchema } from '~/lib/schemas/db/users'
-import { userProfile } from '~/server/db/schema'
+import { userProfile } from '~/server/db/schema/index'
 
 const insertExcludedFields = {
   ...excludeFields(userProfile, ['id', 'createdAt', 'updatedAt', 'deletedAt']),

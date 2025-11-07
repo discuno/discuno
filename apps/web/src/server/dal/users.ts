@@ -5,7 +5,7 @@ import { NotFoundError } from '~/lib/errors'
 import type { UpdateUser } from '~/lib/schemas/db'
 import { updateUserSchema } from '~/lib/schemas/db'
 import { db } from '~/server/db'
-import { user } from '~/server/db/schema'
+import { user } from '~/server/db/schema/index'
 
 /**
  * Data Access Layer for users table

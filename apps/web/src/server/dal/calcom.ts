@@ -5,7 +5,7 @@ import { InternalServerError } from '~/lib/errors'
 import type { NewCalcomToken, UpdateCalcomToken } from '~/lib/schemas/db'
 import { insertCalcomTokenSchema, updateCalcomTokenSchema } from '~/lib/schemas/db'
 import { db } from '~/server/db'
-import { calcomToken } from '~/server/db/schema'
+import { calcomToken } from '~/server/db/schema/index'
 
 /**
  * Data Access Layer for Cal.com tokens

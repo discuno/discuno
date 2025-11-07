@@ -56,7 +56,8 @@ const main = async () => {
 
   loadEnvironmentConfig(environment)
 
-  const configFile = `drizzle.${environment}.config.ts`
+  // Drizzle configs are at root level
+  const configFile = `../../drizzle.${environment}.config.ts`
 
   try {
     const result = await new Promise<{ code: number; stdout: string; stderr: string }>(

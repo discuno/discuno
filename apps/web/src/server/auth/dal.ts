@@ -4,7 +4,7 @@ import { and, eq, inArray, sql } from 'drizzle-orm'
 import { cache } from 'react'
 import { createCalcomUser, fetchCalcomEventTypesByUsername } from '~/lib/calcom'
 import { db } from '~/server/db'
-import { calcomToken, mentorEventType } from '~/server/db/schema'
+import { calcomToken, mentorEventType } from '~/server/db/schema/index'
 import { getCalcomUsernameByUserId } from '~/server/queries/calcom'
 
 /**

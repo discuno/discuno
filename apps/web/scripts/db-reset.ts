@@ -297,13 +297,13 @@ const pushSchema = async (environment: Environment) => {
   try {
     const { spawn } = await import('child_process')
 
-    // Determine config file based on environment
+    // Determine config file based on environment (configs are at root level)
     const configFile =
       environment === 'local'
-        ? 'drizzle.local.config.ts'
+        ? '../../drizzle.local.config.ts'
         : environment === 'preview'
-          ? 'drizzle.preview.config.ts'
-          : 'drizzle.test.config.ts'
+          ? '../../drizzle.preview.config.ts'
+          : '../../drizzle.test.config.ts'
 
     console.log(`📂 Using config file: ${configFile}`)
 

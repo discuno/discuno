@@ -1,13 +1,11 @@
-import { defineConfig, globalIgnores } from 'eslint/config'
 import pluginJs from '@eslint/js'
-import pluginReact from 'eslint-plugin-react'
-import pluginReactHooks from 'eslint-plugin-react-hooks'
-// @ts-expect-error - plugin has no types
-import pluginImport from 'eslint-plugin-import'
-import globals from 'globals'
-import tseslint from 'typescript-eslint'
 import nextVitals from 'eslint-config-next/core-web-vitals'
 import nextTs from 'eslint-config-next/typescript'
+import pluginReact from 'eslint-plugin-react'
+import pluginReactHooks from 'eslint-plugin-react-hooks'
+import { defineConfig, globalIgnores } from 'eslint/config'
+import globals from 'globals'
+import tseslint from 'typescript-eslint'
 
 // =============================================================================
 // REUSABLE RULE SETS (DRY Principle)

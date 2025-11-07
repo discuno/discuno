@@ -2,7 +2,7 @@ import { config } from 'dotenv'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 import Stripe from 'stripe'
-import * as schema from '~/server/db/schema'
+import * as schema from '~/server/db/schema/index'
 
 /**
  * Database seeding utility for Railway PostgreSQL using manual insertion

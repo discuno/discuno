@@ -4,7 +4,7 @@ import { eq } from 'drizzle-orm'
 import type { NewMentorStripeAccount } from '~/lib/schemas/db'
 import { insertMentorStripeAccountSchema } from '~/lib/schemas/db'
 import { db } from '~/server/db'
-import { mentorStripeAccount } from '~/server/db/schema'
+import { mentorStripeAccount } from '~/server/db/schema/index'
 
 /**
  * Data Access Layer for Stripe accounts
