@@ -564,16 +564,21 @@ export const handleCheckoutSessionWebhook = async (
       })
     )
   } catch (inngestError) {
-    // Log error but don't fail webhook - Inngest will retry
+    // This is a critical failure. If we can't queue the job, we need Stripe to retry.
+    // The database insert is idempotent, so retries are safe.
     console.error(
       JSON.stringify({
         tag: 'CheckoutWebhook',
-        level: 'error',
+        level: 'critical',
         event: 'inngest_event_failed',
         sessionId,
+        paymentIntentId,
         error: inngestError instanceof Error ? inngestError.message : 'Unknown error',
+        message: 'Failed to queue side-effects. Stripe will retry this webhook.',
       })
     )
+    // Return a 500 error to signal failure to Stripe, so it can retry the webhook
+    return new Response('Failed to send event to Inngest', { status: 500 })
   }
 
   // Return success immediately to Stripe

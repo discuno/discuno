@@ -20,28 +20,6 @@ describe('Checkout Side Effects (Inngest)', () => {
     debug: vi.fn(),
   })
 
-  // Mock event data
-  const mockEventData = {
-    paymentId: 1,
-    paymentIntentId: 'pi_test_123',
-    sessionId: 'cs_test_123',
-    metadata: {
-      mentorUserId: 'user_mentor_123',
-      eventTypeId: '456',
-      startTime: '2025-02-01T10:00:00Z',
-      attendeeName: 'John Doe',
-      attendeeEmail: 'john@example.edu',
-      attendeeTimeZone: 'America/New_York',
-      mentorUsername: 'mentor-jane',
-      mentorFee: '750',
-      menteeFee: '250',
-      mentorAmount: '4250',
-      mentorStripeAccountId: 'acct_test_123',
-    },
-    sessionAmount: 5000,
-    sessionCurrency: 'usd',
-  }
-
   // Mock external services
   const mockTrackPostHog = vi.fn().mockResolvedValue(undefined)
   const mockCreateBooking = vi.fn().mockResolvedValue({ id: 789, uid: 'booking_123' })
@@ -56,9 +34,6 @@ describe('Checkout Side Effects (Inngest)', () => {
 
   describe('Happy Path', () => {
     it('should complete all steps when booking succeeds', async () => {
-      const step = createMockStep()
-      const logger = createMockLogger()
-
       // Act - simulate function execution
       await mockTrackPostHog('user_mentor_123', 'payment_succeeded', {})
       await mockCreateBooking({
@@ -209,7 +184,6 @@ describe('Checkout Side Effects (Inngest)', () => {
       mockCreateBooking.mockReset().mockResolvedValue({ id: 789 })
 
       const step = createMockStep()
-      const logger = createMockLogger()
       const executionOrder: string[] = []
 
       step.run.mockImplementation(async (name: string, fn: () => Promise<unknown>) => {

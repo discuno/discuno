@@ -1,22 +1,21 @@
 import { PostHog } from 'posthog-node'
 import { env } from '~/env'
 
-let posthogClient: PostHog | null = null
-
 /**
- * Get or create the server-side PostHog client
+ * Creates a new PostHog client instance, configured for serverless environments.
+ * Each call creates a fresh client to avoid issues with shutdown in serverless contexts.
  */
-export const getPostHogClient = (): PostHog => {
-  posthogClient ??= new PostHog(env.NEXT_PUBLIC_POSTHOG_KEY, {
+const createPostHogClient = () => {
+  return new PostHog(env.NEXT_PUBLIC_POSTHOG_KEY, {
     host: env.NEXT_PUBLIC_POSTHOG_HOST,
     flushAt: 1, // Flush after each event in serverless environments
     flushInterval: 0, // Don't use interval-based flushing in serverless
   })
-  return posthogClient
 }
 
 /**
- * Track a server-side event in PostHog
+ * Track a server-side event in PostHog.
+ * A new client is created for each call to ensure proper flushing in a serverless environment.
  * @param distinctId - User ID or session ID
  * @param event - Event name
  * @param properties - Event properties
@@ -26,8 +25,8 @@ export const trackServerEvent = async (
   event: string,
   properties?: Record<string, unknown>
 ) => {
+  const client = createPostHogClient()
   try {
-    const client = getPostHogClient()
     client.capture({
       distinctId,
       event,
@@ -38,17 +37,22 @@ export const trackServerEvent = async (
     console.log(`✅ PostHog event tracked: ${event}`, { distinctId, properties })
   } catch (error) {
     console.error(`❌ Failed to track PostHog event: ${event}`, error)
+    // Attempt to shut down even if capture fails
+    await client.shutdown().catch(shutdownError => {
+      console.error(`Error shutting down PostHog client after a capture error:`, shutdownError)
+    })
   }
 }
 
 /**
- * Identify a user in PostHog
+ * Identify a user in PostHog.
+ * A new client is created for each call to ensure proper flushing in a serverless environment.
  * @param distinctId - User ID
  * @param properties - User properties
  */
 export const identifyUser = async (distinctId: string, properties?: Record<string, unknown>) => {
+  const client = createPostHogClient()
   try {
-    const client = getPostHogClient()
     client.identify({
       distinctId,
       properties,
@@ -57,5 +61,9 @@ export const identifyUser = async (distinctId: string, properties?: Record<strin
     console.log(`✅ PostHog user identified: ${distinctId}`, properties)
   } catch (error) {
     console.error(`❌ Failed to identify PostHog user: ${distinctId}`, error)
+    // Attempt to shut down even if identify fails
+    await client.shutdown().catch(shutdownError => {
+      console.error(`Error shutting down PostHog client after an identify error:`, shutdownError)
+    })
   }
 }
