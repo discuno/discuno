@@ -1,7 +1,7 @@
 'use client'
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { toast } from 'sonner'
 import { updateSchedule } from '~/app/(app)/(mentor)/settings/actions'
 import { TimeIntervalRow } from '~/app/(app)/(mentor)/settings/availability/components/TimeIntervalRow'
@@ -37,46 +37,27 @@ export function SaveOverrideModal({
   const queryClient = useQueryClient()
   const isEditMode = !!overrideToEdit
 
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined)
+  // Initialize state from props - component will remount when key changes
+  const [selectedDate] = useState<Date | undefined>(() => {
+    if (!overrideToEdit) return undefined
+    return new Date(`${overrideToEdit.date}T00:00:00`)
+  })
   const [selectedDates, setSelectedDates] = useState<Date[]>([])
-  const [intervals, setIntervals] = useState<TimeInterval[]>([DEFAULT_INTERVAL])
+  const [intervals, setIntervals] = useState<TimeInterval[]>(() => {
+    if (!overrideToEdit) return [DEFAULT_INTERVAL]
+    return overrideToEdit.intervals
+  })
 
   // Compute disabled dates: past dates and other existing overrides
-  const today = useMemo(() => {
+  const today = (() => {
     const d = new Date()
     d.setHours(0, 0, 0, 0)
     return d
-  }, [])
+  })()
 
-  const disabledDates: Date[] = useMemo(() => {
-    if (!currentAvailability) return []
-    return currentAvailability.dateOverrides.map(o => new Date(`${o.date}T00:00:00`))
-  }, [currentAvailability])
-
-  // Derive initial state from props to avoid setState in effect
-  // Reset state when switching between edit/create modes
-  const initialDate = useMemo(() => {
-    if (!overrideToEdit) return undefined
-    return new Date(`${overrideToEdit.date}T00:00:00`)
-  }, [overrideToEdit])
-
-  const initialIntervals = useMemo(() => {
-    if (!overrideToEdit) return [DEFAULT_INTERVAL]
-    return overrideToEdit.intervals
-  }, [overrideToEdit])
-
-  // Update state when initial values change (controlled by useMemo above)
-  if (isOpen) {
-    if (isEditMode && selectedDate?.getTime() !== initialDate?.getTime()) {
-      setSelectedDate(initialDate)
-      setIntervals(initialIntervals)
-      setSelectedDates([])
-    } else if (!isEditMode && selectedDate !== undefined) {
-      setSelectedDate(undefined)
-      setIntervals([DEFAULT_INTERVAL])
-      setSelectedDates([])
-    }
-  }
+  const disabledDates: Date[] = currentAvailability
+    ? currentAvailability.dateOverrides.map(o => new Date(`${o.date}T00:00:00`))
+    : []
 
   const batchOverrideMutation = useMutation({
     mutationFn: async ({

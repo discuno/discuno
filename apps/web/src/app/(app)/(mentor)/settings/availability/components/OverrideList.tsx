@@ -56,6 +56,7 @@ export function OverrideList({ availability, onOverridesChange }: OverrideListPr
         )}
       </div>
       <SaveOverrideModal
+        key={selectedOverride?.date ?? 'create'}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         overrideToEdit={selectedOverride}
