@@ -38,6 +38,18 @@ type CursorValues = {
   postId?: number
 }
 
+/**
+ * Decodes a pagination cursor from a base64-encoded JSON string.
+ *
+ * The cursor is expected to be a base64-encoded JSON object with the following possible fields:
+ *   - ranking_score: number
+ *   - random_sort_key: number
+ *   - post_id: number
+ *
+ * @param {string | undefined} cursor - The base64-encoded cursor string to decode.
+ * @returns {CursorValues} An object containing the decoded cursor values. If decoding fails or the cursor is invalid,
+ *   returns an empty object. Returning an empty object allows safe fallback in pagination logic.
+ */
 const decodeCursor = (cursor?: string): CursorValues => {
   if (!cursor) {
     return {}
@@ -64,6 +76,13 @@ const decodeCursor = (cursor?: string): CursorValues => {
   }
 }
 
+/**
+ * Creates a cursor payload object from a post, to be used for pagination.
+ *
+ * @param {PostQueryResult | undefined} post - The post object from which to extract cursor values.
+ * @returns {Record<string, number> | undefined} An object containing defined cursor fields (ranking_score, random_sort_key, post_id),
+ *   or undefined if no valid fields are present or if post is undefined.
+ */
 const createCursorPayload = (post?: PostQueryResult) => {
   if (!post) {
     return undefined
