@@ -9,7 +9,7 @@ import { InputGroup, InputGroupAddon, InputGroupInput } from '~/components/ui/in
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '~/components/ui/input-otp'
 import { Spinner } from '~/components/ui/spinner'
 import { authClient } from '~/lib/auth-client'
-import { validateEmail } from '~/lib/utils/validation'
+import { validateEduEmail } from '~/lib/utils/validation'
 
 export function EmailSignInForm() {
   const [email, setEmail] = useState('')
@@ -20,7 +20,7 @@ export function EmailSignInForm() {
 
   const handleEmailChange = (value: string) => {
     setEmail(value)
-    if (value && !validateEmail(value)) {
+    if (value && !validateEduEmail(value)) {
       setEmailError('Please enter a valid .edu email address')
     } else {
       setEmailError('')
