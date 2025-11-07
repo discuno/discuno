@@ -105,7 +105,7 @@ export function WeeklyScheduler({ schedule, onScheduleChange }: WeeklySchedulerP
             />
             <Label
               htmlFor="disable-availability"
-              className="cursor-pointer whitespace-nowrap font-normal"
+              className="cursor-pointer font-normal whitespace-nowrap"
             >
               Disable all
             </Label>

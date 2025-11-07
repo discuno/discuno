@@ -35,7 +35,7 @@ const AvatarPic = ({
         </AvatarFallback>
       </Avatar>
       {showStatusDot && (
-        <div className="absolute -right-0.5 -top-1">
+        <div className="absolute -top-1 -right-0.5">
           <StatusDot status={isActive ? 'active' : 'inactive'} size="md" />
         </div>
       )}

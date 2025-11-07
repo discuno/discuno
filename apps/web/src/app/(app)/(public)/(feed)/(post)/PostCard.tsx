@@ -39,7 +39,7 @@ export const PostCard = ({ card }: { card: Card }) => {
   return (
     <div className="animate-in fade-in-50 zoom-in-95 bg-card/90 hover:shadow-primary/10 dark:bg-card/90 dark:shadow-primary/5 dark:hover:bg-card/95 dark:hover:shadow-primary/15 group relative overflow-hidden rounded-xl p-0 shadow-lg transition-all duration-100 hover:scale-[1.02] hover:shadow-xl dark:shadow-lg">
       {/* Badges */}
-      <div className="absolute right-2 top-2 z-10 flex flex-col gap-2">
+      <div className="absolute top-2 right-2 z-10 flex flex-col gap-2">
         {isNewMentor && (
           <div className="bg-primary/90 text-primary-foreground rounded-full px-3 py-1 text-xs font-semibold shadow-lg">
             NEW
@@ -113,7 +113,7 @@ export const PostCard = ({ card }: { card: Card }) => {
           </div>
 
           {/* School Year Badge */}
-          <div className="bg-primary/10 text-primary border-primary/20 whitespace-nowrap rounded-full border px-3 py-1 text-xs font-medium">
+          <div className="bg-primary/10 text-primary border-primary/20 rounded-full border px-3 py-1 text-xs font-medium whitespace-nowrap">
             {card.schoolYear}
           </div>
         </div>

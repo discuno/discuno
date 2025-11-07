@@ -64,7 +64,7 @@ interface NavBarBaseProps {
  */
 export function NavBarBase({ profilePic, isAuthenticated, onboardingStatus }: NavBarBaseProps) {
   return (
-    <div className="border/40 bg-background/80 text-foreground backdrop-blur-xs fixed left-0 right-0 top-0 z-20 flex items-center justify-between border-b p-4 pr-6 transition-colors duration-300">
+    <div className="border/40 bg-background/80 text-foreground fixed top-0 right-0 left-0 z-20 flex items-center justify-between border-b p-4 pr-6 backdrop-blur-xs transition-colors duration-300">
       {/* Left: Mobile hamburger + Desktop menu */}
       <div className="flex items-center gap-2">
         {/* Mobile menu trigger */}
@@ -88,10 +88,10 @@ export function NavBarBase({ profilePic, isAuthenticated, onboardingStatus }: Na
                   <li className="row-span-3">
                     <NavigationMenuLink asChild>
                       <Link
-                        className="from-primary/10 to-primary/5 hover:bg-primary/10 dark:from-primary/20 dark:to-primary/10 dark:hover:bg-primary/20 bg-linear-to-b outline-hidden flex h-full w-full select-none flex-col justify-end rounded-md p-6 no-underline transition-colors focus:shadow-md"
+                        className="from-primary/10 to-primary/5 hover:bg-primary/10 dark:from-primary/20 dark:to-primary/10 dark:hover:bg-primary/20 flex h-full w-full flex-col justify-end rounded-md bg-linear-to-b p-6 no-underline outline-hidden transition-colors select-none focus:shadow-md"
                         href="/"
                       >
-                        <div className="text-foreground mb-2 mt-4 text-lg font-medium">
+                        <div className="text-foreground mt-4 mb-2 text-lg font-medium">
                           Browse Mentors
                         </div>
                         <p className="text-muted-foreground text-sm leading-tight">
@@ -181,7 +181,7 @@ export function NavBarBase({ profilePic, isAuthenticated, onboardingStatus }: Na
 // Loading skeleton for navbar
 export function NavBarSkeleton() {
   return (
-    <div className="border/40 bg-background/80 text-foreground backdrop-blur-xs fixed left-0 right-0 top-0 z-20 flex items-center justify-between border-b p-4 transition-colors duration-300">
+    <div className="border/40 bg-background/80 text-foreground fixed top-0 right-0 left-0 z-20 flex items-center justify-between border-b p-4 backdrop-blur-xs transition-colors duration-300">
       <div className="flex items-center space-x-6">
         <Skeleton className="h-6 w-20" />
         <Skeleton className="h-6 w-20" />
@@ -208,14 +208,14 @@ const ListItem = forwardRef<React.ComponentRef<'a'>, ListItemProps>(
           <a
             ref={ref}
             className={cn(
-              'outline-hidden block select-none space-y-1 rounded-md p-3 leading-none no-underline transition-colors',
+              'block space-y-1 rounded-md p-3 leading-none no-underline outline-hidden transition-colors select-none',
               'hover:bg-accent hover:text-accent-foreground',
-              'focus:bg-accent focus:text-accent-foreground focus:ring-primary focus:outline-hidden focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-900',
+              'focus:bg-accent focus:text-accent-foreground focus:ring-primary focus:ring-2 focus:ring-offset-2 focus:outline-hidden dark:focus:ring-offset-gray-900',
               className
             )}
             {...props}
           >
-            <div className="text-foreground text-sm font-medium leading-none">{title}</div>
+            <div className="text-foreground text-sm leading-none font-medium">{title}</div>
             <p className="text-muted-foreground line-clamp-2 text-sm leading-snug">{children}</p>
           </a>
         </NavigationMenuLink>

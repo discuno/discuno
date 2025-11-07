@@ -30,7 +30,7 @@ function DialogOverlay({
     <DialogPrimitive.Overlay
       data-slot="dialog-overlay"
       className={cn(
-        'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 bg-foreground/60 backdrop-blur-xs fixed inset-0 z-50',
+        'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 bg-foreground/60 fixed inset-0 z-50 backdrop-blur-xs',
         className
       )}
       {...props}
@@ -52,7 +52,7 @@ function DialogContent({
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          'bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed left-1/2 top-[20%] z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-[20%] gap-4 rounded-xl p-6 shadow-2xl duration-200 sm:top-1/2 sm:max-w-lg sm:-translate-y-1/2',
+          'bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[20%] left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-[20%] gap-4 rounded-xl p-6 shadow-2xl duration-200 sm:top-1/2 sm:max-w-lg sm:-translate-y-1/2',
           className
         )}
         {...props}
@@ -61,7 +61,7 @@ function DialogContent({
         {showCloseButton && (
           <DialogPrimitive.Close
             data-slot="dialog-close"
-            className="text-foreground/80 bg-card/75 ring-border hover:bg-card/85 absolute right-3 top-3 inline-flex size-7 cursor-pointer items-center justify-center rounded-full shadow-md ring-1 transition focus:outline-none disabled:pointer-events-none"
+            className="text-foreground/80 bg-card/75 ring-border hover:bg-card/85 absolute top-3 right-3 inline-flex size-7 cursor-pointer items-center justify-center rounded-full shadow-md ring-1 transition focus:outline-none disabled:pointer-events-none"
             aria-label="Close"
           >
             <X className="h-3 w-3" />
@@ -97,7 +97,7 @@ function DialogTitle({ className, ...props }: React.ComponentProps<typeof Dialog
   return (
     <DialogPrimitive.Title
       data-slot="dialog-title"
-      className={cn('text-lg font-semibold leading-none', className)}
+      className={cn('text-lg leading-none font-semibold', className)}
       {...props}
     />
   )

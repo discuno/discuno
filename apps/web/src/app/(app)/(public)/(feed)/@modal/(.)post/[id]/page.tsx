@@ -100,7 +100,7 @@ const PostModalContent = ({ postId }: { postId: number }) => {
               </AvatarFallback>
             </Avatar>
             <div className="min-w-0 flex-1">
-              <h1 className="text-balance text-xl font-bold leading-tight sm:text-2xl">
+              <h1 className="text-xl leading-tight font-bold text-balance sm:text-2xl">
                 {post.name ?? 'Student Name'}
               </h1>
               {post.schoolYear && (

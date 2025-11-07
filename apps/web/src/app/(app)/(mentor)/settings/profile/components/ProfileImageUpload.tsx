@@ -118,7 +118,7 @@ export const ProfileImageUpload = ({ currentImageUrl, userName }: ProfileImageUp
                 type="button"
                 variant="destructive"
                 size="icon"
-                className="absolute -right-1 -top-1 h-9 w-9 rounded-full shadow-lg"
+                className="absolute -top-1 -right-1 h-9 w-9 rounded-full shadow-lg"
                 onClick={handleRemoveImage}
                 disabled={isUploading}
               >

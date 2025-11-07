@@ -10,32 +10,32 @@ import type { AnchorHTMLAttributes, HTMLAttributes, ImgHTMLAttributes } from 're
 export const mdxComponents: MDXComponents = {
   // Custom heading components with anchor links
   h1: ({ children, ...props }: HTMLAttributes<HTMLHeadingElement>) => (
-    <h1 className="mb-6 mt-8 text-4xl font-bold tracking-tight" {...props}>
+    <h1 className="mt-8 mb-6 text-4xl font-bold tracking-tight" {...props}>
       {children}
     </h1>
   ),
   h2: ({ children, ...props }: HTMLAttributes<HTMLHeadingElement>) => (
-    <h2 className="mb-4 mt-8 text-3xl font-semibold tracking-tight" {...props}>
+    <h2 className="mt-8 mb-4 text-3xl font-semibold tracking-tight" {...props}>
       {children}
     </h2>
   ),
   h3: ({ children, ...props }: HTMLAttributes<HTMLHeadingElement>) => (
-    <h3 className="mb-3 mt-6 text-2xl font-semibold tracking-tight" {...props}>
+    <h3 className="mt-6 mb-3 text-2xl font-semibold tracking-tight" {...props}>
       {children}
     </h3>
   ),
   h4: ({ children, ...props }: HTMLAttributes<HTMLHeadingElement>) => (
-    <h4 className="mb-2 mt-4 text-xl font-semibold tracking-tight" {...props}>
+    <h4 className="mt-4 mb-2 text-xl font-semibold tracking-tight" {...props}>
       {children}
     </h4>
   ),
   h5: ({ children, ...props }: HTMLAttributes<HTMLHeadingElement>) => (
-    <h5 className="mb-2 mt-4 text-lg font-semibold tracking-tight" {...props}>
+    <h5 className="mt-4 mb-2 text-lg font-semibold tracking-tight" {...props}>
       {children}
     </h5>
   ),
   h6: ({ children, ...props }: HTMLAttributes<HTMLHeadingElement>) => (
-    <h6 className="mb-2 mt-4 text-base font-semibold tracking-tight" {...props}>
+    <h6 className="mt-4 mb-2 text-base font-semibold tracking-tight" {...props}>
       {children}
     </h6>
   ),
@@ -113,7 +113,7 @@ export const mdxComponents: MDXComponents = {
   },
   pre: ({ children, ...props }: HTMLAttributes<HTMLPreElement>) => (
     <pre
-      className="bg-muted mb-4 mt-6 overflow-x-auto rounded-lg border p-4 font-mono text-sm"
+      className="bg-muted mt-6 mb-4 overflow-x-auto rounded-lg border p-4 font-mono text-sm"
       {...props}
     >
       {children}
