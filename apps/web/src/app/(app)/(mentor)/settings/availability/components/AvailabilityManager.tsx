@@ -1,7 +1,7 @@
 'use client'
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { toast } from 'sonner'
 import { updateSchedule } from '~/app/(app)/(mentor)/settings/actions'
 import type { Availability, DateOverride } from '~/app/types/availability'
@@ -29,7 +29,10 @@ interface AvailabilityManagerProps {
 
 export function AvailabilityManager({ initialAvailability }: AvailabilityManagerProps) {
   const queryClient = useQueryClient()
-  const [availability, setAvailability] = useState<Availability | null>(null)
+  // Initialize state with prop value or default (avoids setState in effect)
+  const [availability, setAvailability] = useState<Availability | null>(
+    () => initialAvailability ?? defaultAvailability
+  )
 
   const { mutate: saveSchedule, isPending } = useMutation({
     mutationFn: async (scheduleData: Availability) => {
@@ -46,14 +49,6 @@ export function AvailabilityManager({ initialAvailability }: AvailabilityManager
       }
     },
   })
-
-  useEffect(() => {
-    if (initialAvailability) {
-      setAvailability(initialAvailability)
-    } else {
-      setAvailability(defaultAvailability)
-    }
-  }, [initialAvailability])
 
   const handleSave = () => {
     if (!availability) return

@@ -1,7 +1,7 @@
 'use client'
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { updateSchedule } from '~/app/(app)/(mentor)/settings/actions'
 import { TimeIntervalRow } from '~/app/(app)/(mentor)/settings/availability/components/TimeIntervalRow'
@@ -53,18 +53,30 @@ export function SaveOverrideModal({
     return currentAvailability.dateOverrides.map(o => new Date(`${o.date}T00:00:00`))
   }, [currentAvailability])
 
-  useEffect(() => {
-    if (!isOpen) return
-    if (isEditMode) {
-      setSelectedDate(new Date(`${overrideToEdit.date}T00:00:00`))
-      setIntervals(overrideToEdit.intervals)
+  // Derive initial state from props to avoid setState in effect
+  // Reset state when switching between edit/create modes
+  const initialDate = useMemo(() => {
+    if (!overrideToEdit) return undefined
+    return new Date(`${overrideToEdit.date}T00:00:00`)
+  }, [overrideToEdit])
+
+  const initialIntervals = useMemo(() => {
+    if (!overrideToEdit) return [DEFAULT_INTERVAL]
+    return overrideToEdit.intervals
+  }, [overrideToEdit])
+
+  // Update state when initial values change (controlled by useMemo above)
+  if (isOpen) {
+    if (isEditMode && selectedDate?.getTime() !== initialDate?.getTime()) {
+      setSelectedDate(initialDate)
+      setIntervals(initialIntervals)
       setSelectedDates([])
-    } else {
+    } else if (!isEditMode && selectedDate !== undefined) {
       setSelectedDate(undefined)
       setIntervals([DEFAULT_INTERVAL])
       setSelectedDates([])
     }
-  }, [isOpen, isEditMode, overrideToEdit])
+  }
 
   const batchOverrideMutation = useMutation({
     mutationFn: async ({
