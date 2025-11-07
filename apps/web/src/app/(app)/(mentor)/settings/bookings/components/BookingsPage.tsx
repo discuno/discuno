@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { getBookings } from '~/app/(app)/(mentor)/settings/actions'
 import { BookingList } from '~/app/(app)/(mentor)/settings/bookings/components/BookingList'
+import { Spinner } from '~/components/ui/spinner'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs'
 import type { getMentorBookings } from '~/server/queries/bookings'
 
@@ -42,7 +43,10 @@ export const BookingsPage = () => {
         </TabsList>
         <TabsContent value="upcoming">
           {isLoading ? (
-            <p>Loading...</p>
+            <div className="flex items-center justify-center gap-2 py-8">
+              <Spinner />
+              <span className="text-muted-foreground">Loading...</span>
+            </div>
           ) : error ? (
             <p className="text-destructive">{error.message}</p>
           ) : (
@@ -51,7 +55,10 @@ export const BookingsPage = () => {
         </TabsContent>
         <TabsContent value="past">
           {isLoading ? (
-            <p>Loading...</p>
+            <div className="flex items-center justify-center gap-2 py-8">
+              <Spinner />
+              <span className="text-muted-foreground">Loading...</span>
+            </div>
           ) : error ? (
             <p className="text-destructive">{error.message}</p>
           ) : (

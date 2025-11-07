@@ -1,5 +1,5 @@
 import { Suspense } from 'react'
-import { LoadingSpinner } from '~/components/shared/LoadingSpinner'
+import { Spinner } from '~/components/ui/spinner'
 
 interface ProfileShellProps {
   title: string
@@ -19,8 +19,9 @@ export const ProfileShell = ({ title, description, children }: ProfileShellProps
       {/* Dynamic content wrapped in Suspense */}
       <Suspense
         fallback={
-          <div className="flex items-center justify-center py-16">
-            <LoadingSpinner />
+          <div className="flex items-center justify-center gap-2 py-16">
+            <Spinner />
+            <span className="text-muted-foreground">Loading...</span>
           </div>
         }
       >
