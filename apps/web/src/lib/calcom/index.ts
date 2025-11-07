@@ -8,6 +8,11 @@ import {
   type CreateCalcomUserResponse,
   type UpdateCalcomUserInput,
 } from '~/lib/calcom/schemas'
+import {
+  CALCOM_API_VERSION,
+  CALCOM_API_VERSION_2024_06_14,
+} from '~/lib/constants'
+import { logger } from '~/lib/logger'
 import { storeCalcomTokensForUser } from '~/lib/services/calcom-tokens-service'
 
 /**
@@ -44,7 +49,10 @@ export const createCalcomUser = async (
 
     if (!userResponse.ok) {
       const errorText = await userResponse.text()
-      console.error('Cal.com user creation failed:', userResponse.status, errorText)
+      logger.error('Cal.com user creation failed', undefined, {
+        status: userResponse.status,
+        error: errorText,
+      })
       throw new ExternalApiError(`Cal.com API error: ${userResponse.status} - ${errorText}`)
     }
 
@@ -53,14 +61,16 @@ export const createCalcomUser = async (
     const parsedResponse = CreateCalcomUserResponseSchema.safeParse(userResponseData)
 
     if (!parsedResponse.success) {
-      console.error('Invalid Cal.com user creation response:', parsedResponse.error.flatten())
+      logger.error('Invalid Cal.com user creation response', undefined, {
+        errors: parsedResponse.error.flatten(),
+      })
       throw new ExternalApiError('Invalid Cal.com user creation response')
     }
 
     const calcomUser = parsedResponse.data.data
 
     // Step 2: Add user to college-mentors team
-    console.log(`Adding user ${calcomUser.user.id} to college-mentors team...`)
+    logger.info('Adding user to college-mentors team', { calcomUserId: calcomUser.user.id })
     const membershipResponse = await fetch(
       `${env.NEXT_PUBLIC_CALCOM_API_URL}/organizations/${env.CALCOM_ORG_ID}/teams/${env.COLLEGE_MENTOR_TEAM_ID}/memberships`,
       {
@@ -213,7 +223,7 @@ export const createCalcomBooking = async (input: {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'cal-api-version': '2024-08-13',
+      'cal-api-version': CALCOM_API_VERSION,
       'x-cal-client-id': env.NEXT_PUBLIC_X_CAL_ID,
       'x-cal-secret-key': env.X_CAL_SECRET_KEY,
     },
@@ -253,7 +263,7 @@ export const fetchCalcomEventTypesByUsername = async (
     {
       headers: {
         Authorization: `Bearer ${accessToken}`,
-        'cal-api-version': '2024-06-14',
+        'cal-api-version': CALCOM_API_VERSION_2024_06_14,
       },
     }
   )
@@ -293,7 +303,7 @@ export const markAsNoShow = async (
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'cal-api-version': '2024-08-13',
+        'cal-api-version': CALCOM_API_VERSION,
         Authorization: `Bearer ${env.X_CAL_SECRET_KEY}`,
       },
       body: JSON.stringify({

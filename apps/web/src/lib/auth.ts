@@ -7,6 +7,7 @@ import { eq } from 'drizzle-orm'
 import { env } from '~/env'
 import { downloadAndUploadProfileImage } from '~/lib/blob'
 import { OtpEmail } from '~/lib/emails/templates/OtpEmail'
+import { logger } from '~/lib/logger'
 import { enforceCalcomIntegration, syncMentorEventTypesForUser } from '~/server/auth/dal'
 import { getAllowedDomains } from '~/server/auth/domain-cache'
 import { db } from '~/server/db'
@@ -31,12 +32,12 @@ function extractDomainPrefix(email: string): string | null {
  * Used for OAuth providers (Google, Microsoft)
  */
 async function validateEduEmail(email: string): Promise<void> {
-  console.log(`[OAuth] Validating email: ${email}`)
+  logger.debug('Validating OAuth email', { email })
 
   // Validate .edu email format
   const eduEmailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.edu$/
   if (!eduEmailRegex.test(email)) {
-    console.error(`❌ [OAuth] Rejected non-.edu email: ${email}`)
+    logger.warn('Rejected non-.edu email', undefined, { email })
     throw new APIError('FORBIDDEN', {
       message: 'You must use a valid .edu email address to sign up.',
     })
@@ -47,13 +48,13 @@ async function validateEduEmail(email: string): Promise<void> {
   const allowedDomains = await getAllowedDomains()
 
   if (!domainPrefix || !allowedDomains.has(domainPrefix)) {
-    console.error(`❌ [OAuth] School not supported: ${domainPrefix} (email: ${email})`)
+    logger.warn('School not supported', undefined, { domainPrefix, email })
     throw new APIError('FORBIDDEN', {
       message: 'Your school is not yet supported. Please contact support to add your school.',
     })
   }
 
-  console.log(`✅ [OAuth] Approved email for school: ${domainPrefix}`)
+  logger.debug('Approved email for school', { domainPrefix, email })
 }
 
 export const auth = betterAuth({
@@ -90,10 +91,10 @@ export const auth = betterAuth({
         },
         after: async user => {
           // This runs after a new user is created in the database
-          console.log(`[DatabaseHook] New user created: ${user.email}`)
+          logger.info('New user created', { email: user.email })
 
           if (!user.id || !user.email) {
-            console.error('[DatabaseHook] User missing id or email')
+            logger.error('User missing id or email')
             return
           }
 
@@ -102,23 +103,20 @@ export const auth = betterAuth({
             try {
               const newImageUrl = await downloadAndUploadProfileImage(user.image, user.id)
               if (newImageUrl !== user.image) {
-                console.log(`[DatabaseHook] Updating user image for: ${user.email}`)
+                logger.info('Updating user image', { email: user.email })
                 await db
                   .update(schema.user)
                   .set({ image: newImageUrl })
                   .where(eq(schema.user.id, user.id))
               }
             } catch (error) {
-              console.error(
-                `[DatabaseHook] Error processing profile image for ${user.email}:`,
-                error
-              )
+              logger.error('Error processing profile image', error, { email: user.email })
             }
           }
 
           // Setup Cal.com integration
           try {
-            console.log(`[DatabaseHook] Creating Cal.com integration for: ${user.email}`)
+            logger.info('Creating Cal.com integration', { email: user.email })
             const result = await enforceCalcomIntegration({
               userId: user.id,
               email: user.email,
@@ -127,35 +125,32 @@ export const auth = betterAuth({
             })
 
             if (result.success) {
-              console.log(
-                `[DatabaseHook] Cal.com integration created successfully for: ${user.email}`
-              )
+              logger.info('Cal.com integration created successfully', { email: user.email })
 
               try {
                 const syncResult = await syncMentorEventTypesForUser(user.id, result.accessToken)
                 if (syncResult.success) {
-                  console.log(
-                    `[DatabaseHook] Synced Cal.com event types for ${user.email}: ` +
-                      `created=${syncResult.created}, updated=${syncResult.updated}, deleted=${syncResult.deleted}`
-                  )
+                  logger.info('Synced Cal.com event types', {
+                    email: user.email,
+                    created: syncResult.created,
+                    updated: syncResult.updated,
+                    deleted: syncResult.deleted,
+                  })
                 } else {
-                  console.error(
-                    `[DatabaseHook] Failed to sync event types for ${user.email}: ${syncResult.error}`
-                  )
+                  logger.error(`Failed to sync event types: ${syncResult.error}`, undefined, {
+                    email: user.email,
+                  })
                 }
               } catch (err) {
-                console.error('[DatabaseHook] Unexpected error syncing mentor event types:', err)
+                logger.error('Unexpected error syncing mentor event types', err)
               }
             } else {
-              console.error(
-                `[DatabaseHook] Cal.com integration failed for: ${user.email} - ${result.error}`
-              )
+              logger.error(`Cal.com integration failed: ${result.error}`, undefined, {
+                email: user.email,
+              })
             }
           } catch (error) {
-            console.error(
-              `[DatabaseHook] Error setting up Cal.com integration for ${user.email}:`,
-              error
-            )
+            logger.error('Error setting up Cal.com integration', error, { email: user.email })
           }
 
           // Assign user to school based on email domain
@@ -168,19 +163,20 @@ export const auth = betterAuth({
 
               if (school) {
                 await db.insert(schema.userSchool).values({ userId: user.id, schoolId: school.id })
-                console.log(
-                  `[DatabaseHook] Assigned user to school ${school.name} (domain prefix: ${domainPrefix})`
-                )
+                logger.info('Assigned user to school', {
+                  schoolName: school.name,
+                  domainPrefix,
+                })
               } else {
-                console.error(
-                  `[DatabaseHook] No school found for domain prefix: ${domainPrefix}. User not assigned.`
-                )
+                logger.error('No school found for domain prefix', undefined, {
+                  domainPrefix,
+                })
               }
             } catch (error) {
-              console.error(`[DatabaseHook] Error assigning school for ${user.email}:`, error)
+              logger.error('Error assigning school', error, { email: user.email })
             }
           } else {
-            console.error(`[DatabaseHook] Cannot assign school: invalid email ${user.email}`)
+            logger.error('Cannot assign school: invalid email', undefined, { email: user.email })
           }
 
           // Create initial post for the user
@@ -188,9 +184,9 @@ export const auth = betterAuth({
             await db.insert(schema.post).values({
               createdById: user.id,
             })
-            console.log(`[DatabaseHook] Created initial post for user: ${user.email}`)
+            logger.info('Created initial post for user', { email: user.email })
           } catch (error) {
-            console.error(`[DatabaseHook] Error creating initial post for ${user.email}:`, error)
+            logger.error('Error creating initial post', error, { email: user.email })
           }
         },
       },
@@ -245,7 +241,7 @@ export const auth = betterAuth({
   hooks: {
     before: createAuthMiddleware(async ctx => {
       // Log the path for debugging
-      console.log(`[AuthHook] Processing path: ${ctx.path}`)
+      logger.debug('Processing auth path', { path: ctx.path })
     }),
   },
 })
