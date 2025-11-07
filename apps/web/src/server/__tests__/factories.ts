@@ -167,12 +167,12 @@ export const createTestMentorEventType = async (
   const eventType = await testDb
     .insert(schema.mentorEventType)
     .values({
-      userId,
+      mentorUserId: userId,
       calcomEventTypeId: Math.floor(Math.random() * 1000000),
       title: 'Test Mentorship Session',
       description: 'A test mentorship session',
-      length: 30,
-      price: 2500, // $25.00
+      duration: 30,
+      customPrice: 2500, // $25.00
       ...options,
     })
     .returning()
@@ -295,8 +295,11 @@ export const createTestPayment = async (
       amount: 2500,
       mentorFee: 2000,
       menteeFee: 500,
+      mentorAmount: 2000,
       currency: 'USD',
-      status: 'PENDING',
+      platformStatus: 'PENDING',
+      stripeStatus: 'open',
+      disputePeriodEnds: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
       ...options,
     })
     .returning()

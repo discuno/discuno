@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm'
-import { expect } from 'vitest'
+import { expect, vi } from 'vitest'
 import * as schema from '~/server/db/schema'
 import { testDb } from '~/server/db/test-db'
 
@@ -52,14 +52,14 @@ export const assertBookingExists = async (bookingId: number) => {
 }
 
 /**
- * Asserts that a payment exists with the correct status
+ * Asserts that a payment exists with the correct platform status
  */
 export const assertPaymentStatus = async (paymentId: number, expectedStatus: string) => {
   const payment = await testDb.query.payment.findFirst({
     where: eq(schema.payment.id, paymentId),
   })
   expect(payment).toBeDefined()
-  expect(payment?.status).toBe(expectedStatus)
+  expect(payment?.platformStatus).toBe(expectedStatus)
   return payment!
 }
 
@@ -213,17 +213,17 @@ export const getMentorEarnings = async (mentorId: string) => {
     where: eq(schema.payment.mentorUserId, mentorId),
   })
 
-  const total = payments.reduce((sum, p) => sum + p.mentorFee, 0)
-  const succeeded = payments.filter(p => p.status === 'SUCCEEDED')
-  const transferred = payments.filter(p => p.transferredAt !== null)
+  const total = payments.reduce((sum, p) => sum + p.mentorAmount, 0)
+  const succeeded = payments.filter(p => p.platformStatus === 'SUCCEEDED')
+  const transferred = payments.filter(p => p.transferStatus === 'transferred')
 
   return {
     total,
     succeededCount: succeeded.length,
     transferredCount: transferred.length,
     pendingAmount: payments
-      .filter(p => p.status === 'SUCCEEDED' && p.transferredAt === null)
-      .reduce((sum, p) => sum + p.mentorFee, 0),
+      .filter(p => p.platformStatus === 'SUCCEEDED' && p.transferStatus !== 'transferred')
+      .reduce((sum, p) => sum + p.mentorAmount, 0),
   }
 }
 

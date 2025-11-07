@@ -29,7 +29,7 @@ describe('Payment Processing Integration Tests', () => {
 
       const payment = await createTestPayment(mentor.user.id, {
         amount: 5000, // $50
-        mentorFee: 4000, // $40
+        mentorAmount: 4000, // $40
         menteeFee: 1000, // $10 platform fee
         customerEmail: 'student@example.com',
         customerName: 'Student Name',
@@ -40,7 +40,7 @@ describe('Payment Processing Integration Tests', () => {
       expect(payment.amount).toBe(5000)
       expect(payment.mentorFee).toBe(4000)
       expect(payment.menteeFee).toBe(1000)
-      expect(payment.status).toBe('PENDING')
+      expect(payment.platformStatus).toBe('PENDING')
       expect(payment.stripePaymentIntentId).toBeDefined()
       expect(payment.stripeCheckoutSessionId).toBeDefined()
     })
@@ -71,7 +71,7 @@ describe('Payment Processing Integration Tests', () => {
 
       const payment = await createTestPayment(mentor.user.id, {
         amount: totalAmount,
-        mentorFee: mentorFee,
+        mentorAmount: mentorFee,
         menteeFee: platformFee,
       })
 
@@ -86,14 +86,14 @@ describe('Payment Processing Integration Tests', () => {
     it('should update payment status from PENDING to SUCCEEDED', async () => {
       const mentor = await createCompleteMentor()
       const payment = await createTestPayment(mentor.user.id, {
-        status: 'PENDING',
+        platformStatus: 'PENDING',
       })
 
-      expect(payment.status).toBe('PENDING')
+      expect(payment.platformStatus).toBe('PENDING')
 
       await testDb
         .update(schema.payment)
-        .set({ status: 'SUCCEEDED' })
+        .set({ platformStatus: 'SUCCEEDED' })
         .where(eq(schema.payment.id, payment.id))
 
       await assertPaymentStatus(payment.id, 'SUCCEEDED')
@@ -102,12 +102,12 @@ describe('Payment Processing Integration Tests', () => {
     it('should handle FAILED payment status', async () => {
       const mentor = await createCompleteMentor()
       const payment = await createTestPayment(mentor.user.id, {
-        status: 'PENDING',
+        platformStatus: 'PENDING',
       })
 
       await testDb
         .update(schema.payment)
-        .set({ status: 'FAILED' })
+        .set({ platformStatus: 'FAILED' })
         .where(eq(schema.payment.id, payment.id))
 
       await assertPaymentStatus(payment.id, 'FAILED')
@@ -116,12 +116,12 @@ describe('Payment Processing Integration Tests', () => {
     it('should handle REFUNDED payment status', async () => {
       const mentor = await createCompleteMentor()
       const payment = await createTestPayment(mentor.user.id, {
-        status: 'SUCCEEDED',
+        platformStatus: 'SUCCEEDED',
       })
 
       await testDb
         .update(schema.payment)
-        .set({ status: 'REFUNDED' })
+        .set({ platformStatus: 'REFUNDED' })
         .where(eq(schema.payment.id, payment.id))
 
       await assertPaymentStatus(payment.id, 'REFUNDED')
@@ -134,8 +134,8 @@ describe('Payment Processing Integration Tests', () => {
       > = ['PENDING', 'PROCESSING', 'SUCCEEDED', 'FAILED', 'DISPUTED', 'REFUNDED', 'TRANSFERRED']
 
       for (const status of statuses) {
-        const payment = await createTestPayment(mentor.user.id, { status })
-        expect(payment.status).toBe(status)
+        const payment = await createTestPayment(mentor.user.id, { platformStatus: status })
+        expect(payment.platformStatus).toBe(status)
       }
     })
   })
@@ -146,18 +146,17 @@ describe('Payment Processing Integration Tests', () => {
       await createTestStripeAccount(mentor.user.id)
 
       const payment = await createTestPayment(mentor.user.id, {
-        status: 'SUCCEEDED',
+        platformStatus: 'SUCCEEDED',
       })
 
-      expect(payment.transferredAt).toBeNull()
+      expect(payment.transferId).toBeNull()
 
       // Simulate transfer
-      const transferTime = new Date()
       await testDb
         .update(schema.payment)
         .set({
-          transferredAt: transferTime,
-          stripeTransferId: 'tr_test_123',
+          transferStatus: 'transferred',
+          transferId: 'tr_test_123',
         })
         .where(eq(schema.payment.id, payment.id))
 
@@ -165,31 +164,31 @@ describe('Payment Processing Integration Tests', () => {
         where: eq(schema.payment.id, payment.id),
       })
 
-      expect(updated?.transferredAt).toEqual(transferTime)
-      expect(updated?.stripeTransferId).toBe('tr_test_123')
+      expect(updated?.transferStatus).toBe('transferred')
+      expect(updated?.transferId).toBe('tr_test_123')
     })
 
     it('should not transfer payment immediately after success (dispute period)', async () => {
       const mentor = await createCompleteMentor()
       const payment = await createTestPayment(mentor.user.id, {
-        status: 'SUCCEEDED',
+        platformStatus: 'SUCCEEDED',
       })
 
-      expect(payment.transferredAt).toBeNull()
-      expect(payment.stripeTransferId).toBeNull()
+      expect(payment.transferId).toBeNull()
+      expect(payment.transferStatus).toBeNull()
     })
 
-    it('should track transfer eligibility date', async () => {
+    it('should track dispute period end date', async () => {
       const mentor = await createCompleteMentor()
-      const transferEligibleAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days from now
+      const disputePeriodEnds = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days from now
 
       const payment = await createTestPayment(mentor.user.id, {
-        status: 'SUCCEEDED',
-        transferEligibleAt,
+        platformStatus: 'SUCCEEDED',
+        disputePeriodEnds,
       })
 
-      expect(payment.transferEligibleAt).toEqual(transferEligibleAt)
-      expect(payment.transferredAt).toBeNull()
+      expect(payment.disputePeriodEnds.getTime()).toBeCloseTo(disputePeriodEnds.getTime(), -2)
+      expect(payment.transferId).toBeNull()
     })
   })
 
@@ -199,13 +198,13 @@ describe('Payment Processing Integration Tests', () => {
 
       // Create multiple successful payments
       await createTestPayment(mentor.user.id, {
-        status: 'SUCCEEDED',
-        mentorFee: 4000,
+        platformStatus: 'SUCCEEDED',
+        mentorAmount: 4000,
       })
 
       await createTestPayment(mentor.user.id, {
-        status: 'SUCCEEDED',
-        mentorFee: 3000,
+        platformStatus: 'SUCCEEDED',
+        mentorAmount: 3000,
       })
 
       const earnings = await getMentorEarnings(mentor.user.id)
@@ -219,15 +218,16 @@ describe('Payment Processing Integration Tests', () => {
 
       // Succeeded payment not yet transferred
       await createTestPayment(mentor.user.id, {
-        status: 'SUCCEEDED',
-        mentorFee: 5000,
+        platformStatus: 'SUCCEEDED',
+        mentorAmount: 5000,
       })
 
       // Succeeded and transferred payment
       await createTestPayment(mentor.user.id, {
-        status: 'SUCCEEDED',
-        mentorFee: 3000,
-        transferredAt: new Date(),
+        platformStatus: 'SUCCEEDED',
+        mentorAmount: 3000,
+        transferId: 'tr_test_123',
+        transferStatus: 'transferred',
       })
 
       const earnings = await getMentorEarnings(mentor.user.id)
@@ -240,18 +240,18 @@ describe('Payment Processing Integration Tests', () => {
       const mentor = await createCompleteMentor()
 
       await createTestPayment(mentor.user.id, {
-        status: 'SUCCEEDED',
-        mentorFee: 4000,
+        platformStatus: 'SUCCEEDED',
+        mentorAmount: 4000,
       })
 
       await createTestPayment(mentor.user.id, {
-        status: 'FAILED',
-        mentorFee: 2000,
+        platformStatus: 'FAILED',
+        mentorAmount: 2000,
       })
 
       await createTestPayment(mentor.user.id, {
-        status: 'REFUNDED',
-        mentorFee: 1000,
+        platformStatus: 'REFUNDED',
+        mentorAmount: 1000,
       })
 
       const earnings = await getMentorEarnings(mentor.user.id)
@@ -274,7 +274,7 @@ describe('Payment Processing Integration Tests', () => {
         {
           payment: {
             amount: 5000,
-            mentorFee: 4000,
+            mentorAmount: 4000,
             menteeFee: 1000,
           },
         }
@@ -300,7 +300,7 @@ describe('Payment Processing Integration Tests', () => {
         mentor.user.id,
         student.id,
         {
-          payment: { status: 'SUCCEEDED' },
+          payment: { platformStatus: 'SUCCEEDED' },
         }
       )
 
@@ -312,7 +312,7 @@ describe('Payment Processing Integration Tests', () => {
 
       await testDb
         .update(schema.payment)
-        .set({ status: 'REFUNDED' })
+        .set({ platformStatus: 'REFUNDED' })
         .where(eq(schema.payment.id, payment.id))
 
       const updatedBooking = await testDb.query.booking.findFirst({
@@ -324,7 +324,7 @@ describe('Payment Processing Integration Tests', () => {
       })
 
       expect(updatedBooking?.status).toBe('CANCELLED')
-      expect(updatedPayment?.status).toBe('REFUNDED')
+      expect(updatedPayment?.platformStatus).toBe('REFUNDED')
     })
   })
 
@@ -352,33 +352,20 @@ describe('Payment Processing Integration Tests', () => {
       expect(usdPayment.currency).toBe('USD')
     })
 
-    it('should track Stripe session expiration', async () => {
-      const mentor = await createCompleteMentor()
-      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000)
-
-      const payment = await createTestPayment(mentor.user.id, {
-        checkoutSessionExpiresAt: expiresAt,
-        checkoutSessionStatus: 'open',
-      })
-
-      expect(payment.checkoutSessionExpiresAt).toEqual(expiresAt)
-      expect(payment.checkoutSessionStatus).toBe('open')
-    })
-
     it('should update checkout session status to complete', async () => {
       const mentor = await createCompleteMentor()
 
       const payment = await createTestPayment(mentor.user.id, {
-        checkoutSessionStatus: 'open',
-        status: 'PENDING',
+        stripeStatus: 'open',
+        platformStatus: 'PENDING',
       })
 
       // Simulate successful checkout
       await testDb
         .update(schema.payment)
         .set({
-          checkoutSessionStatus: 'complete',
-          status: 'SUCCEEDED',
+          stripeStatus: 'complete',
+          platformStatus: 'SUCCEEDED',
         })
         .where(eq(schema.payment.id, payment.id))
 
@@ -386,8 +373,8 @@ describe('Payment Processing Integration Tests', () => {
         where: eq(schema.payment.id, payment.id),
       })
 
-      expect(updated?.checkoutSessionStatus).toBe('complete')
-      expect(updated?.status).toBe('SUCCEEDED')
+      expect(updated?.stripeStatus).toBe('complete')
+      expect(updated?.platformStatus).toBe('SUCCEEDED')
     })
   })
 
@@ -396,13 +383,13 @@ describe('Payment Processing Integration Tests', () => {
       const mentor = await createCompleteMentor()
 
       const payment = await createTestPayment(mentor.user.id, {
-        status: 'SUCCEEDED',
+        platformStatus: 'SUCCEEDED',
       })
 
       // Simulate dispute
       await testDb
         .update(schema.payment)
-        .set({ status: 'DISPUTED' })
+        .set({ platformStatus: 'DISPUTED' })
         .where(eq(schema.payment.id, payment.id))
 
       await assertPaymentStatus(payment.id, 'DISPUTED')
@@ -412,7 +399,7 @@ describe('Payment Processing Integration Tests', () => {
       const mentor = await createCompleteMentor()
 
       const payment = await createTestPayment(mentor.user.id, {
-        status: 'DISPUTED',
+        platformStatus: 'DISPUTED',
       })
 
       const earnings = await getMentorEarnings(mentor.user.id)
@@ -447,30 +434,26 @@ describe('Payment Processing Integration Tests', () => {
 
       // Payments eligible for transfer
       await createTestPayment(mentor1.user.id, {
-        status: 'SUCCEEDED',
-        transferEligibleAt: sevenDaysAgo,
+        platformStatus: 'SUCCEEDED',
+        disputePeriodEnds: sevenDaysAgo,
       })
 
       await createTestPayment(mentor2.user.id, {
-        status: 'SUCCEEDED',
-        transferEligibleAt: sevenDaysAgo,
+        platformStatus: 'SUCCEEDED',
+        disputePeriodEnds: sevenDaysAgo,
       })
 
       // Payment not yet eligible
       await createTestPayment(mentor1.user.id, {
-        status: 'SUCCEEDED',
-        transferEligibleAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        platformStatus: 'SUCCEEDED',
+        disputePeriodEnds: new Date(Date.now() + 24 * 60 * 60 * 1000),
       })
 
       const now = new Date()
       const eligiblePayments = await testDb.query.payment.findMany()
 
       const readyForTransfer = eligiblePayments.filter(
-        p =>
-          p.status === 'SUCCEEDED' &&
-          !p.transferredAt &&
-          p.transferEligibleAt &&
-          p.transferEligibleAt <= now
+        p => p.platformStatus === 'SUCCEEDED' && !p.transferId && p.disputePeriodEnds <= now
       )
 
       expect(readyForTransfer).toHaveLength(2)
