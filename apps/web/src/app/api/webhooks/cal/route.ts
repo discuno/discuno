@@ -43,7 +43,7 @@ export async function POST(req: Request) {
   const { triggerEvent, payload } = event
   logger.info('Received Cal.com webhook event', {
     triggerEvent,
-    bookingId: 'bookingId' in payload ? payload.bookingId : undefined,
+    bookingId: payload && 'bookingId' in payload ? payload.bookingId : undefined,
   })
 
   try {

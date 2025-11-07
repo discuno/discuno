@@ -40,17 +40,24 @@ export const logger = {
     }
   },
 
-  warn: (message: string, context?: LogContext) => {
+  warn: (message: string, error?: unknown, context?: LogContext) => {
     if (shouldLog('warn')) {
-      console.warn(formatMessage('warn', message, context))
+      const warnContext =
+        error instanceof Error
+          ? { ...context, error: error.message, stack: error.stack }
+          : error !== undefined
+            ? { ...context, error }
+            : context
+      console.warn(formatMessage('warn', message, warnContext))
     }
   },
 
-  error: (message: string, error?: Error | unknown, context?: LogContext) => {
+  error: (message: string, error?: unknown, context?: LogContext) => {
     if (shouldLog('error')) {
-      const errorContext = error instanceof Error
-        ? { ...context, error: error.message, stack: error.stack }
-        : { ...context, error }
+      const errorContext =
+        error instanceof Error
+          ? { ...context, error: error.message, stack: error.stack }
+          : { ...context, error }
       console.error(formatMessage('error', message, errorContext))
 
       // TODO: Send to error tracking service (Sentry) in production
