@@ -38,7 +38,9 @@ export const env = createEnv({
     UPSTASH_REDIS_REST_TOKEN: z.string(),
     RESEND_API_KEY: z.string(),
     BETTER_AUTH_SECRET: z.string(),
-    BETTER_AUTH_URL: z.string().url().optional(),
+    BETTER_AUTH_URL: z.url().optional(),
+    INNGEST_SIGNING_KEY: z.string(),
+    INNGEST_EVENT_KEY: z.string(),
   },
 
   /**
@@ -98,6 +100,8 @@ export const env = createEnv({
     RESEND_API_KEY: process.env.RESEND_API_KEY,
     BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
     BETTER_AUTH_URL: process.env.BETTER_AUTH_URL,
+    INNGEST_SIGNING_KEY: process.env.INNGEST_SIGNING_KEY,
+    INNGEST_EVENT_KEY: process.env.INNGEST_EVENT_KEY,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

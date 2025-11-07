@@ -157,3 +157,6 @@ copilot-instructions.md
 .gemini-clipboard
 .gemini-clipboard
 .gemini-clipboard
+
+.gemini/
+gha-creds-*.json

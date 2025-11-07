@@ -42,12 +42,15 @@ discuno/
 │       │   ├── components/  # UI primitives and business components
 │       │   ├── lib/         # Shared utilities, providers, integrations
 │       │   ├── server/      # Auth DAL, Drizzle schema, queries, ranking
+│       │   │   ├── __tests__/  # Test setup & global configuration
+│       │   │   └── db/      # Drizzle schema & database utilities
 │       │   └── styles/      # Tailwind tokens and global styles
 │       ├── scripts/         # Database and environment scripts
 │       └── public/          # Static assets
+├── drizzle.*.config.ts      # Root-level Drizzle configs (all environments)
 ├── .github/                 # GitHub Actions & templates
 ├── docs/                    # Documentation
-└── [config files]          # Monorepo configuration
+└── [config files]          # Monorepo configuration (Turbo, TypeScript, etc.)
 ```
 
 ## 🚀 Quick Start

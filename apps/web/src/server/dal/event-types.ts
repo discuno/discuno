@@ -5,7 +5,7 @@ import { NotFoundError } from '~/lib/errors'
 import type { UpdateMentorEventType } from '~/lib/schemas/db'
 import { updateMentorEventTypeSchema } from '~/lib/schemas/db'
 import { db } from '~/server/db'
-import { mentorEventType, mentorStripeAccount } from '~/server/db/schema'
+import { mentorEventType, mentorStripeAccount } from '~/server/db/schema/index'
 
 /**
  * Data Access Layer for mentor event types

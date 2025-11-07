@@ -7,14 +7,11 @@ import { z } from 'zod'
 import { env } from '~/env'
 import { createCalcomBooking } from '~/lib/calcom'
 import { MINIMUM_PAID_BOOKING_PRICE } from '~/lib/constants'
-import {
-  alertAdminForManualRefund,
-  sendBookingFailureEmail,
-} from '~/lib/emails/booking-notifications'
 import { BadRequestError, ExternalApiError, StripeError } from '~/lib/errors'
 import { stripe } from '~/lib/stripe'
+import { inngest } from '~/inngest/client'
 import { db } from '~/server/db'
-import { mentorStripeAccount, payment } from '~/server/db/schema'
+import { mentorStripeAccount, payment } from '~/server/db/schema/index'
 import { getMentorCalcomTokensByUsername } from '~/server/queries/calcom'
 import { getMentorEnabledEventTypes } from '~/server/queries/event-types'
 
@@ -378,20 +375,61 @@ export const createStripeCheckoutSession = async (
   }
 }
 
+// processCheckoutSessionSideEffects removed - now handled by Inngest
+// See ~/inngest/functions.ts for the implementation
+
 /**
- * Handle completed payment intents and create bookings
+ * Handle completed checkout sessions - Webhook handler
+ *
+ * ✅ STEP 1: Transactional Core (must succeed or fail fast)
+ * - Validate event
+ * - Persist payment to DB (with idempotency)
+ * - Return 200 OK to Stripe immediately
+ *
+ * ✅ STEP 2: Deferred Side Effects (via Inngest)
+ * - Triggers Inngest function for:
+ *   - PostHog tracking
+ *   - Cal.com booking creation
+ *   - Email notifications
+ *   - Refunds if needed
+ *
+ * Inngest provides:
+ * - Automatic retries with exponential backoff
+ * - Step-by-step execution with durability
+ * - Built-in observability and debugging UI
+ * - Event cancellation (if checkout is cancelled)
  */
 export const handleCheckoutSessionWebhook = async (
   session: Stripe.Checkout.Session
-): Promise<{ success: boolean; error?: string }> => {
+): Promise<Response> => {
   const { metadata, id: sessionId } = session
+
+  // ============================================
+  // STEP 1: TRANSACTIONAL CORE - Validate & Persist
+  // ============================================
+
   if (!metadata) {
-    console.error('Missing metadata in checkout session:', sessionId)
-    return { success: false, error: 'Missing metadata' }
+    console.error(
+      JSON.stringify({
+        tag: 'CheckoutWebhook',
+        level: 'error',
+        event: 'missing_metadata',
+        sessionId,
+      })
+    )
+    return new Response(JSON.stringify({ error: 'Missing metadata' }), { status: 400 })
   }
 
-  console.log(`Handling checkout session webhook for: ${sessionId}`)
+  console.info(
+    JSON.stringify({
+      tag: 'CheckoutWebhook',
+      level: 'info',
+      event: 'webhook_received',
+      sessionId,
+    })
+  )
 
+  // Validate required metadata
   if (
     !metadata.mentorUserId ||
     !metadata.attendeeEmail ||
@@ -404,8 +442,16 @@ export const handleCheckoutSessionWebhook = async (
     !metadata.attendeeTimeZone ||
     !metadata.mentorStripeAccountId
   ) {
-    console.error('Missing required metadata in checkout session:', sessionId)
-    return { success: false, error: 'Missing required metadata' }
+    console.error(
+      JSON.stringify({
+        tag: 'CheckoutWebhook',
+        level: 'error',
+        event: 'missing_required_metadata',
+        sessionId,
+        metadata: Object.keys(metadata),
+      })
+    )
+    return new Response(JSON.stringify({ error: 'Missing required metadata' }), { status: 400 })
   }
 
   const disputePeriodEnd = new Date()
@@ -415,10 +461,18 @@ export const handleCheckoutSessionWebhook = async (
     typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id
 
   if (!paymentIntentId) {
-    console.error('Missing payment intent id in checkout session:', sessionId)
-    return { success: false, error: 'Missing payment intent id' }
+    console.error(
+      JSON.stringify({
+        tag: 'CheckoutWebhook',
+        level: 'error',
+        event: 'missing_payment_intent_id',
+        sessionId,
+      })
+    )
+    return new Response(JSON.stringify({ error: 'Missing payment intent id' }), { status: 400 })
   }
 
+  // Persist payment record to database (canonical state) with idempotency
   const insertData: typeof payment.$inferInsert = {
     stripeCheckoutSessionId: sessionId,
     stripePaymentIntentId: paymentIntentId,
@@ -436,102 +490,100 @@ export const handleCheckoutSessionWebhook = async (
     metadata: { checkoutSessionMetadata: metadata },
   }
 
-  const paymentRecord = await db.insert(payment).values(insertData).returning()
+  // Use onConflictDoNothing for idempotency - if Stripe retries webhook, we skip duplicate insert
+  const paymentRecord = await db
+    .insert(payment)
+    .values(insertData)
+    .onConflictDoNothing({ target: payment.stripePaymentIntentId })
+    .returning()
 
   if (!paymentRecord[0]) {
-    console.error('Failed to create payment record for checkout session:', sessionId)
-    return { success: false, error: 'Failed to create payment record' }
-  }
-
-  console.log(`Payment record created for checkout session: ${sessionId}`)
-
-  const bookingArgs = {
-    calcomEventTypeId: Number(metadata.eventTypeId),
-    start: new Date(metadata.startTime).toISOString(),
-    attendeeName: metadata.attendeeName,
-    attendeeEmail: metadata.attendeeEmail,
-    attendeePhone: metadata.attendeePhone,
-    timeZone: metadata.attendeeTimeZone,
-    paymentId: paymentRecord[0].id,
-    mentorUserId: metadata.mentorUserId,
-  }
-
-  console.log('Calling createCalcomBooking with:', JSON.stringify(bookingArgs, null, 2))
-
-  try {
-    await createCalcomBooking(bookingArgs)
-    console.log(`Successfully created Cal.com booking for checkout session: ${sessionId}`)
-    return { success: true }
-  } catch (error) {
-    console.error(
-      `Cal.com booking failed for checkout session ${sessionId}. Initiating refund.`,
-      error
+    // Payment already exists (webhook retry) - still return 200 OK
+    console.info(
+      JSON.stringify({
+        tag: 'CheckoutWebhook',
+        level: 'info',
+        event: 'payment_already_exists',
+        sessionId,
+        paymentIntentId,
+        message: 'Idempotent webhook retry detected',
+      })
     )
-
-    const refundResult = await refundStripePaymentIntent(paymentIntentId)
-
-    if (!refundResult.success) {
-      // Alert admin for manual refund if automatic refund fails
-      console.error(
-        `❌ CRITICAL: Automatic refund failed for ${sessionId}. Manual intervention required!`
-      )
-
-      try {
-        await alertAdminForManualRefund(
-          sessionId,
-          error instanceof Error ? error : new Error('Cal.com booking failed'),
-          new Error(refundResult.error ?? 'Unknown refund error')
-        )
-      } catch (alertError) {
-        console.error('Failed to send admin alert:', alertError)
-      }
-    }
-
-    await db
-      .update(payment)
-      .set({ platformStatus: 'FAILED' })
-      .where(eq(payment.stripePaymentIntentId, paymentIntentId))
-
-    // Send failure email
-    await sendBookingFailureEmail({
-      attendeeEmail: metadata.attendeeEmail,
-      attendeeName: metadata.attendeeName,
-      mentorName: metadata.mentorUsername,
-      reason: refundResult.success
-        ? 'An unexpected error occurred while creating your booking. Your payment has been refunded.'
-        : 'An unexpected error occurred while creating your booking. Please contact support regarding your payment.',
-    })
-
-    return {
-      success: false,
-      error: refundResult.success
-        ? 'Failed to create booking, payment has been refunded.'
-        : 'Failed to create booking and refund. Please contact support.',
-    }
+    return new Response('ok', { status: 200 })
   }
-}
 
-/**
- * Refund a Stripe payment intent
- */
-export const refundStripePaymentIntent = async (
-  paymentIntentId: string
-): Promise<{ success: boolean; error?: string }> => {
+  console.info(
+    JSON.stringify({
+      tag: 'CheckoutWebhook',
+      level: 'info',
+      event: 'payment_record_created',
+      sessionId,
+      paymentIntentId,
+      paymentId: paymentRecord[0].id,
+    })
+  )
+
+  // ============================================
+  // STEP 2: DEFERRED SIDE EFFECTS - Trigger Inngest
+  // ============================================
+
+  // Trigger Inngest function for side effects (Cal.com booking, PostHog, refunds, emails)
+  // Inngest provides automatic retries, observability, and error handling
   try {
-    const refund = await stripe.refunds.create({
-      payment_intent: paymentIntentId,
-      // refund full amount
-      refund_application_fee: true,
-      reverse_transfer: true,
+    await inngest.send({
+      name: 'stripe/checkout.completed',
+      data: {
+        paymentId: paymentRecord[0].id,
+        paymentIntentId,
+        sessionId,
+        metadata: {
+          mentorUserId: metadata.mentorUserId,
+          eventTypeId: metadata.eventTypeId,
+          startTime: metadata.startTime,
+          attendeeName: metadata.attendeeName,
+          attendeeEmail: metadata.attendeeEmail,
+          attendeePhone: metadata.attendeePhone,
+          attendeeTimeZone: metadata.attendeeTimeZone,
+          mentorUsername: metadata.mentorUsername,
+          mentorFee: metadata.mentorFee,
+          menteeFee: metadata.menteeFee,
+          mentorAmount: metadata.mentorAmount,
+          mentorStripeAccountId: metadata.mentorStripeAccountId,
+        },
+        sessionAmount: session.amount_total,
+        sessionCurrency: session.currency,
+      },
     })
-
-    console.log(`Successfully created refund ${refund.id} for payment intent ${paymentIntentId}`)
-    return { success: true }
-  } catch (error) {
-    console.error(`Failed to refund payment intent ${paymentIntentId}:`, error)
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown refund error',
-    }
+    console.info(
+      JSON.stringify({
+        tag: 'CheckoutWebhook',
+        level: 'info',
+        event: 'inngest_event_sent',
+        sessionId,
+        paymentIntentId,
+      })
+    )
+  } catch (inngestError) {
+    // Log error but don't fail webhook - Inngest will retry
+    console.error(
+      JSON.stringify({
+        tag: 'CheckoutWebhook',
+        level: 'error',
+        event: 'inngest_event_failed',
+        sessionId,
+        error: inngestError instanceof Error ? inngestError.message : 'Unknown error',
+      })
+    )
   }
+
+  // Return success immediately to Stripe
+  console.info(
+    JSON.stringify({
+      tag: 'CheckoutWebhook',
+      level: 'info',
+      event: 'webhook_response_sent',
+      sessionId,
+    })
+  )
+  return new Response('ok', { status: 200 })
 }

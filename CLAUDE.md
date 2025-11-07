@@ -34,6 +34,35 @@ pnpm build:web
 pnpm preview
 ```
 
+### Vercel CLI
+
+This project uses the Vercel CLI for deployment and environment management:
+
+```bash
+# Run local development with Vercel environment variables
+vercel dev
+
+# Pull environment variables from Vercel
+vercel env pull
+
+# View and manage environment variables
+vercel env ls
+vercel env add
+vercel env rm
+
+# View deployment logs
+vercel logs [deployment-url]
+
+# Deploy to preview
+vercel
+
+# Deploy to production
+vercel --prod
+
+# Link local project to Vercel project
+vercel link
+```
+
 ### Quality Checks
 
 ```bash
@@ -111,7 +140,8 @@ pnpm --filter @discuno/web vitest watch src/path/to/file.test.ts
 - **pnpm workspaces** for package management
 - **Turborepo** for build orchestration and caching
 - Single application: `apps/web` (Next.js 15)
-- All configuration files at root level
+- **Centralized configuration at root level**: Drizzle configs (`drizzle.*.config.ts`), TypeScript, ESLint, Prettier
+- Database scripts in `apps/web/scripts/` reference root-level Drizzle configurations with `../../` paths
 
 ### Web Application (`apps/web`)
 
@@ -133,6 +163,7 @@ apps/web/
 │   │   ├── ui/            # Base Radix UI primitives
 │   │   └── shared/        # Shared business components
 │   ├── server/            # Server-side code
+│   │   ├── __tests__/     # Test setup & global configuration
 │   │   ├── auth/          # Auth data-access helpers (Cal.com sync, domain cache)
 │   │   ├── dal/           # Data access layer modules per domain
 │   │   ├── db/            # Drizzle ORM schema & column helpers
@@ -147,7 +178,7 @@ apps/web/
 │   ├── hooks/             # Custom React hooks
 │   └── styles/            # Global styles
 ├── drizzle/               # Database migrations
-├── scripts/               # Database scripts & utilities
+├── scripts/               # Database scripts & utilities (reference root configs)
 └── public/                # Static assets
 ```
 
@@ -164,9 +195,9 @@ apps/web/
 
 ### Database Architecture
 
-#### Schema Organization (`apps/web/src/server/db/schema.ts`)
+#### Schema Organization (`apps/web/src/server/db/schema/`)
 
-The database schema uses Drizzle ORM with snake*case naming convention and the `discuno*` table prefix.
+Schemas are organized by domain modules (`user.ts`, `mentor.ts`, `booking.ts`, `payment.ts`, `post.ts`, `analytics.ts`, `reference.ts`) and re-exported through `index.ts` (which also exposes `allTables`/`tables`). Everything uses Drizzle ORM with snake*case naming conventions and the `discuno*\*` table prefix.
 
 **Core Tables**:
 
@@ -251,11 +282,14 @@ Use `SKIP_ENV_VALIDATION=1` to bypass validation during development.
 ### Testing Conventions
 
 - Tests are colocated with source files using `.test.ts` or `.spec.ts` extensions
-- Test configuration in `apps/web/vitest.config.ts`
-- Setup files in `apps/web/src/server/__tests__/setup.ts`
+- Test configuration in `apps/web/vitest.config.ts` with path alias resolution
+- **Global setup** in `apps/web/src/server/__tests__/global-setup.ts` - runs once before all tests to reset database (prevents race conditions)
+- **Per-file setup** in `apps/web/src/server/__tests__/setup.ts` - runs for each test file (mocks, cleanup)
+- Tests run sequentially (`singleThread: true`) to prevent database conflicts
 - Use `.env.test` for test environment variables
 - Test database operations use separate test database URLs
 - Coverage thresholds: 80% statements, 70% branches, 80% functions/lines
+- Test files excluded from main TypeScript build via `tsconfig.json` exclude patterns
 
 ### Code Style & Conventions
 
@@ -308,11 +342,13 @@ Reference `.cursor/rules/mentor-dashboard.md` for mentor dashboard specification
 
 #### Database Migrations
 
+- **Drizzle configs live at root level**: `drizzle.config.ts`, `drizzle.local.config.ts`, `drizzle.preview.config.ts`, `drizzle.production.config.ts`, `drizzle.test.config.ts`
+- Database scripts in `apps/web/scripts/` reference root configs with relative paths (`../../drizzle.*.config.ts`)
 - Never edit generated migration files in `drizzle/`
-- Always modify `apps/web/src/server/db/schema.ts` and regenerate
-- Use `pnpm db:generate` to create new migrations
+- Always modify the appropriate file under `apps/web/src/server/db/schema/` (and update `index.ts`) before regenerating
+- Use `pnpm db:generate` to create new migrations (references root-level config)
 - Test migrations in local environment before deploying
-- Drizzle uses snake_case for column names (configured in drizzle.config.ts)
+- Drizzle uses snake_case for column names (configured in root-level drizzle configs)
 
 #### Webhook Development
 
@@ -354,10 +390,12 @@ GitHub Actions workflows in `.github/workflows/`:
 
 The application is optimized for Vercel deployment:
 
-- Environment variables configured in Vercel dashboard
+- **Vercel CLI** used for local development and manual deployments
+- Environment variables managed via Vercel dashboard or `vercel env` commands
 - Automatic deployments from `main` branch
 - Preview deployments for all PRs
 - Railway database branching for preview environments
+- Use `vercel --prod` for manual production deployments (when needed)
 
 ### Known Patterns
 

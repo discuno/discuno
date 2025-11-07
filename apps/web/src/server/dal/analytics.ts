@@ -3,7 +3,7 @@ import 'server-only'
 import type { NewAnalyticsEvent, NewMentorReview } from '~/lib/schemas/db'
 import { insertAnalyticsEventSchema, insertMentorReviewSchema } from '~/lib/schemas/db'
 import { db } from '~/server/db'
-import { analyticEvent, mentorReview } from '~/server/db/schema'
+import { analyticEvent, mentorReview } from '~/server/db/schema/index'
 
 /**
  * Data Access Layer for analytics and reviews

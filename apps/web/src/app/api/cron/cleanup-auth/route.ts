@@ -2,7 +2,7 @@ import { lt } from 'drizzle-orm'
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { db } from '~/server/db'
-import { session, verification } from '~/server/db/schema'
+import { session, verification } from '~/server/db/schema/index'
 
 export const GET = async (req: NextRequest) => {
   const auth = req.headers.get('Authorization')

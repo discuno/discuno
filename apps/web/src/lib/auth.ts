@@ -7,10 +7,11 @@ import { eq } from 'drizzle-orm'
 import { env } from '~/env'
 import { downloadAndUploadProfileImage } from '~/lib/blob'
 import { OtpEmail } from '~/lib/emails/templates/OtpEmail'
+import { identifyUser, trackServerEvent } from '~/lib/posthog-server'
 import { enforceCalcomIntegration, syncMentorEventTypesForUser } from '~/server/auth/dal'
 import { getAllowedDomains } from '~/server/auth/domain-cache'
 import { db } from '~/server/db'
-import * as schema from '~/server/db/schema'
+import * as schema from '~/server/db/schema/index'
 
 /**
  * Extract the primary domain prefix from an email address
@@ -191,6 +192,22 @@ export const auth = betterAuth({
             console.log(`[DatabaseHook] Created initial post for user: ${user.email}`)
           } catch (error) {
             console.error(`[DatabaseHook] Error creating initial post for ${user.email}:`, error)
+          }
+
+          // Track user signup in PostHog
+          try {
+            await identifyUser(user.id, {
+              email: user.email,
+              name: user.name,
+              createdAt: new Date().toISOString(),
+            })
+            await trackServerEvent(user.id, 'user_signed_up', {
+              email: user.email,
+              name: user.name,
+              hasImage: !!user.image,
+            })
+          } catch (error) {
+            console.error(`[DatabaseHook] Error tracking signup event for ${user.email}:`, error)
           }
         },
       },

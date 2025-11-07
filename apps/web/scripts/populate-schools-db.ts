@@ -12,7 +12,7 @@
 import { config } from 'dotenv'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
-import { school } from '../src/server/db/schema'
+import { school } from '../src/server/db/schema/index'
 import schoolData from './us_schools_sorted.json'
 
 type Environment = 'local' | 'preview' | 'production'

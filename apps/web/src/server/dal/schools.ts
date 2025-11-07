@@ -3,7 +3,7 @@ import 'server-only'
 import { eq } from 'drizzle-orm'
 import { selectMajorSchema, selectSchoolSchema } from '~/lib/schemas/db'
 import { db } from '~/server/db'
-import * as schema from '~/server/db/schema'
+import * as schema from '~/server/db/schema/index'
 
 /**
  * Data Access Layer for schools, majors, and user associations

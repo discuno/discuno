@@ -12,7 +12,7 @@ import {
   userMajor,
   userProfile,
   userSchool,
-} from '~/server/db/schema'
+} from '~/server/db/schema/index'
 
 /**
  * Data Access Layer for posts table

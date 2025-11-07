@@ -9,7 +9,7 @@ import type { UserProfile } from '~/lib/schemas/db'
 import { getProfileByUserId } from '~/server/dal/profiles'
 import { getUserById, getUserImageById } from '~/server/dal/users'
 import { db } from '~/server/db'
-import * as schema from '~/server/db/schema'
+import * as schema from '~/server/db/schema/index'
 
 /**
  * Query Layer for profiles

@@ -1,6 +1,6 @@
 import { createSelectSchema } from 'drizzle-zod'
 import type { z } from 'zod/v4'
-import { major } from '~/server/db/schema'
+import { major } from '~/server/db/schema/index'
 
 export const selectMajorSchema = createSelectSchema(major)
 

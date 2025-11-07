@@ -25,5 +25,12 @@
     ".next/types/**/*.ts",
     "prettier.config.mjs"
   ],
-  "exclude": ["node_modules", "coverage", ".next"]
+  "exclude": [
+    "node_modules",
+    "coverage",
+    ".next",
+    "**/*.test.*",
+    "**/*.spec.*",
+    "src/__tests__/**/*"
+  ]
 }
