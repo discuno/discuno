@@ -1,14 +1,13 @@
-import { requireAuth } from '~/lib/auth/auth-utils'
 import { fetchCalcomEventTypesByUsername } from '~/lib/calcom'
 import type { UpdateMentorEventType } from '~/lib/schemas/db'
 import {
   deleteEventTypesByCalcomIds,
   getExistingEventTypesForSync,
-  updateEventType as updateEventTypeDal,
   upsertEventTypes,
 } from '~/server/dal/event-types'
 import { db } from '~/server/db'
 import { getCalcomUsernameByUserId } from '~/server/queries/calcom'
+import { updateMentorEventType as updateMentorEventTypeQuery } from '~/server/queries/event-types'
 
 /**
  * Services Layer for Cal.com integration
@@ -195,6 +194,5 @@ export const updateMentorEventType = async (
   eventTypeId: number,
   data: UpdateMentorEventType
 ): Promise<void> => {
-  await requireAuth()
-  return updateEventTypeDal(eventTypeId, data)
+  return updateMentorEventTypeQuery(eventTypeId, data)
 }
