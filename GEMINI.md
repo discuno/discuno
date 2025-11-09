@@ -240,6 +240,61 @@ better-auth lives in `apps/web/src/lib/auth.ts` with helpers in `apps/web/src/li
 - Client surfaces import `signIn`, `signOut`, and `useSession` from `authClient`
 - Database hooks handle Cal.com onboarding, initial post seeding, and school assignment during first login
 
+## Access Control (ACL)
+
+Uses BetterAuth's ACL for permission-based access control. **Use `requirePermission()`, not role checks.**
+
+### Key Points
+
+- Check permissions (`requirePermission({ resource: ['action'] })`), not roles (`user.role === 'mentor'`)
+- Resources: availability, eventType, booking, stripeAccount, payment, profile, post, analytics
+- Roles: user (basic), mentor (.edu, +scheduling/payments), admin (all)
+
+### Server Functions
+
+```typescript
+await requirePermission({ availability: ['read'] }) // Throws
+await hasPermission({ eventType: ['update'] }) // Boolean
+```
+
+### Client Functions
+
+```typescript
+authClient.admin.hasPermission({ permissions: { ... } })           // Async
+authClient.admin.checkRolePermission({ permissions, role })       // Sync
+```
+
+See `apps/web/src/lib/auth/permissions.ts` for full model.
+
+### Data Access Layer Protection Pattern
+
+**CRITICAL**: Permission checks are enforced at the DATA ACCESS LAYER (`apps/web/src/server/queries/`), NOT in layouts/actions/services.
+
+**Security Architecture:**
+
+- Query layer = security boundary (all mentor data queries check permissions)
+- Layouts = optional UX (early redirect for better experience)
+- Actions/Services = delegate to queries (no permission checks)
+
+**Example:**
+
+```typescript
+// apps/web/src/server/queries/calcom.ts
+export const getMentorCalcomTokens = cache(async () => {
+  await requirePermission({ availability: ['read'] }) // ← SECURITY HERE
+  const { user } = await requireAuth()
+  return getTokensByUserId(user.id)
+})
+
+// apps/web/src/app/(app)/(mentor)/settings/actions.ts
+export async function getSchedule() {
+  // No permission check - protected by getMentorCalcomTokens()
+  const tokens = await getMentorCalcomTokens() // ← Protected by query
+}
+```
+
+The system is now production-ready with proper data-layer security.
+
 ## API Integration Patterns
 
 ### Cal.com (`apps/web/src/lib/calcom/`)
@@ -359,6 +414,18 @@ GitHub Actions manage lint, typecheck, test, and build. Husky + lint-staged run 
 - Use `vercel --prod` for manual production deployments (when needed)
 
 ## Known Patterns
+
+### BetterAuth Tables
+
+**IMPORTANT**: Never directly manipulate BetterAuth core tables (`user`, `session`, `account`, `verification`) using Drizzle ORM. Always use BetterAuth's API methods:
+
+- **Set user role**: Use `auth.api.setRole({ body: { userId, role } })`
+- **Update user data**: Use `auth.api.adminUpdateUser({ body: { userId, data } })`
+- **Create user**: Use `auth.api.createUser({ body: { email, password, name, role } })`
+- **Ban/unban user**: Use `auth.api.banUser()` / `auth.api.unbanUser()`
+- **Manage sessions**: Use `auth.api.revokeUserSession()` / `auth.api.revokeUserSessions()`
+
+Custom tables (`userProfile`, `userSchool`, `userMajor`, etc.) can be manipulated directly with Drizzle.
 
 ### Server Actions
 

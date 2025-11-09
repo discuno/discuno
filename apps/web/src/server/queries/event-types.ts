@@ -1,23 +1,27 @@
 import 'server-only'
 
 import { cache } from 'react'
-import { requireAuth } from '~/lib/auth/auth-utils'
-import type { MentorEventType } from '~/lib/schemas/db'
+import { requirePermission } from '~/lib/auth/auth-utils'
+import type { MentorEventType, UpdateMentorEventType } from '~/lib/schemas/db'
 import {
   getEnabledEventTypesWithStripeStatus,
   getEventTypesByUserId,
+  updateEventType,
 } from '~/server/dal/event-types'
 
 /**
  * Query Layer for mentor event types
- * Includes caching and auth checks
+ *
+ * SECURITY: Permission checks enforced here (data access layer)
+ * Layouts/actions/services delegate to these functions for protection
  */
 
 /**
  * Get mentor's event type preferences with details
+ * Protected by mentor permission (data access layer)
  */
 export const getMentorEventTypes = cache(async (): Promise<MentorEventType[]> => {
-  const { user } = await requireAuth()
+  const { user } = await requirePermission({ mentor: ['manage'] })
   const currentUserId = user.id
 
   const result = await getEventTypesByUserId(currentUserId)
@@ -47,6 +51,18 @@ export const getMentorEnabledEventTypes = cache(
     return getMentorEnabledEventTypesWithStripeStatus(userId)
   }
 )
+
+/**
+ * Update mentor event type preference
+ * Protected by mentor permission (data access layer)
+ */
+export const updateMentorEventType = async (
+  eventTypeId: number,
+  data: UpdateMentorEventType
+): Promise<void> => {
+  await requirePermission({ mentor: ['manage'] })
+  return updateEventType(eventTypeId, data)
+}
 
 /**
  * Get mentor's enabled event types with Stripe status check

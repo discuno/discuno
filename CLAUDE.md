@@ -240,6 +240,147 @@ better-auth is configured in `apps/web/src/lib/auth.ts` with helpers in `apps/we
 - Client components import `signIn`, `signOut`, and `useSession` from `authClient`
 - Database hooks provision Cal.com integration, seed default posts, and assign school metadata on first login
 
+### Access Control (ACL) System
+
+Discuno implements a comprehensive permission-based access control system using BetterAuth's ACL framework. **Always use permission checks instead of role-based checks.**
+
+#### Permission Model (`apps/web/src/lib/auth/permissions.ts`)
+
+**Resources & Actions:**
+
+- `availability`: read, update - Mentor schedule management
+- `eventType`: read, update - Event type configuration
+- `booking`: read, create, cancel - Booking management
+- `stripeAccount`: create, read, update - Payment account management
+- `payment`: read - Payment history
+- `profile`: read, update, delete - User profile management
+- `post`: create, read, update, delete - Content management
+- `analytics`: track, read - Analytics events
+
+**Roles:**
+
+- `user`: Basic authenticated user (.edu and non-.edu emails)
+  - Can manage own profile, create posts, book sessions, track analytics
+- `mentor`: Users with .edu email addresses (inherits user permissions)
+  - Additional: manage availability, event types, bookings, Stripe account, view payments
+- `admin`: Full system access (all permissions for all resources)
+
+#### Permission-Based Auth Functions
+
+**Server-Side (Server Components, Actions, API Routes):**
+
+```typescript
+// Require specific permissions (throws if missing)
+import { requirePermission } from '~/lib/auth/auth-utils'
+
+await requirePermission({ availability: ['read'] })
+await requirePermission({ availability: ['read', 'update'] })
+await requirePermission({
+  availability: ['read'],
+  eventType: ['update'],
+})
+
+// Check permissions without throwing
+import { hasPermission } from '~/lib/auth/auth-utils'
+
+const canManage = await hasPermission({ availability: ['update'] })
+if (canManage) {
+  // Show management UI
+}
+```
+
+**Client-Side (React Components):**
+
+```typescript
+import { authClient } from '~/lib/auth-client'
+
+// Check permissions
+const { data: canManage } = await authClient.admin.hasPermission({
+  permissions: { availability: ['update'] },
+})
+
+// Check role permissions (synchronous, no server call)
+const canCreate = authClient.admin.checkRolePermission({
+  permissions: { post: ['create'] },
+  role: 'user',
+})
+```
+
+#### Permission Check Patterns
+
+**Layout-Level Protection:**
+
+```typescript
+// apps/web/src/app/(app)/(mentor)/settings/layout.tsx
+await requirePermission({ availability: ['read'] })
+```
+
+**Server Action Protection:**
+
+```typescript
+export const updateSchedule = async (schedule: Availability) => {
+  await requirePermission({ availability: ['update'] })
+  // ... implementation
+}
+```
+
+**Service Layer Protection:**
+
+```typescript
+export const updateMentorEventType = async (id: number, data: UpdateData) => {
+  await requirePermission({ eventType: ['update'] })
+  return updateEventTypeDal(id, data)
+}
+```
+
+**Query Layer Protection:**
+
+```typescript
+export const getMentorEventTypes = cache(async () => {
+  const { user } = await requirePermission({ eventType: ['read'] })
+  return getEventTypesByUserId(user.id)
+})
+```
+
+#### Role Assignment
+
+Roles are automatically assigned during user creation (`apps/web/src/lib/auth.ts`):
+
+- `.edu` email → `mentor` role
+- Other emails → `user` role
+- Anonymous users → no role (skipped)
+
+Uses `auth.api.setRole()` via BetterAuth admin API with DB fallback.
+
+#### Data Access Layer Protection Pattern
+
+**CRITICAL**: Permission checks are enforced at the DATA ACCESS LAYER (`apps/web/src/server/queries/`), NOT in layouts/actions/services.
+
+**Security Architecture:**
+
+- Query layer = security boundary (all mentor data queries check permissions)
+- Layouts = optional UX (early redirect for better experience)
+- Actions/Services = delegate to queries (no permission checks)
+
+**Example:**
+
+```typescript
+// apps/web/src/server/queries/calcom.ts
+export const getMentorCalcomTokens = cache(async () => {
+  await requirePermission({ availability: ['read'] }) // ← SECURITY HERE
+  const { user } = await requireAuth()
+  return getTokensByUserId(user.id)
+})
+
+// apps/web/src/app/(app)/(mentor)/settings/actions.ts
+export async function getSchedule() {
+  // No permission check - protected by getMentorCalcomTokens()
+  const tokens = await getMentorCalcomTokens() // ← Protected by query
+}
+```
+
+The system is now production-ready with proper data-layer security.
+
 ### API Integration Patterns
 
 #### Cal.com Integration (`apps/web/src/lib/calcom/`)
@@ -398,6 +539,18 @@ The application is optimized for Vercel deployment:
 - Use `vercel --prod` for manual production deployments (when needed)
 
 ### Known Patterns
+
+#### BetterAuth Tables
+
+**IMPORTANT**: Never directly manipulate BetterAuth core tables (`user`, `session`, `account`, `verification`) using Drizzle ORM. Always use BetterAuth's API methods:
+
+- **Set user role**: Use `auth.api.setRole({ body: { userId, role } })`
+- **Update user data**: Use `auth.api.adminUpdateUser({ body: { userId, data } })`
+- **Create user**: Use `auth.api.createUser({ body: { email, password, name, role } })`
+- **Ban/unban user**: Use `auth.api.banUser()` / `auth.api.unbanUser()`
+- **Manage sessions**: Use `auth.api.revokeUserSession()` / `auth.api.revokeUserSessions()`
+
+Custom tables (`userProfile`, `userSchool`, `userMajor`, etc.) can be manipulated directly with Drizzle.
 
 #### Server Actions
 

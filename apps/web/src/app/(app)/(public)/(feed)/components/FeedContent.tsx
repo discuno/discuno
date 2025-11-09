@@ -3,6 +3,7 @@ import { PostGrid } from '~/app/(app)/(public)/(feed)/(post)/PostGrid'
 import { FilterButton } from '~/app/(app)/(public)/(feed)/components/FilterButton'
 import { Button } from '~/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '~/components/ui/popover'
+import { decodeUrlParam } from '~/lib/utils'
 import { getMajors, getSchools } from '~/server/queries/reference-data'
 
 interface FeedContentProps {
@@ -25,14 +26,14 @@ export const FeedContent = async ({ searchParams }: FeedContentProps) => {
     }
   })
 
-  const schoolId = searchParams.school
-    ? (schools.find(s => s.value === searchParams.school)?.id ?? null)
-    : null
-  const majorId = searchParams.major
-    ? (majors.find(m => m.value === searchParams.major)?.id ?? null)
-    : null
-  const graduationYear = searchParams.gradYear
-    ? (gradYears.find(g => g.label === searchParams.gradYear)?.id ?? null)
+  const decodedSchool = decodeUrlParam(searchParams.school)
+  const decodedMajor = decodeUrlParam(searchParams.major)
+  const decodedGradYear = decodeUrlParam(searchParams.gradYear)
+
+  const schoolId = decodedSchool ? (schools.find(s => s.value === decodedSchool)?.id ?? null) : null
+  const majorId = decodedMajor ? (majors.find(m => m.value === decodedMajor)?.id ?? null) : null
+  const graduationYear = decodedGradYear
+    ? (gradYears.find(g => g.label === decodedGradYear)?.id ?? null)
     : null
 
   return (

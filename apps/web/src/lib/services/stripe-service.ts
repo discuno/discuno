@@ -1,4 +1,3 @@
-import { requireAuth } from '~/lib/auth/auth-utils'
 import type { NewMentorStripeAccount } from '~/lib/schemas/db'
 import { upsertStripeAccount } from '~/server/dal/stripe'
 
@@ -11,6 +10,5 @@ import { upsertStripeAccount } from '~/server/dal/stripe'
  * Upsert mentor Stripe account
  */
 export const upsertMentorStripeAccount = async (data: NewMentorStripeAccount): Promise<void> => {
-  await requireAuth()
   return upsertStripeAccount(data)
 }

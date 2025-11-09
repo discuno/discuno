@@ -44,6 +44,7 @@ interface OnboardingStatus {
 interface NavBarBaseProps {
   profilePic: string | null
   isAuthenticated: boolean
+  isMentor: boolean
   onboardingStatus: OnboardingStatus | null
 }
 
@@ -62,7 +63,12 @@ interface NavBarBaseProps {
  * @param isAuthenticated - Whether user is authenticated
  * @param onboardingStatus - Mentor onboarding completion status
  */
-export function NavBarBase({ profilePic, isAuthenticated, onboardingStatus }: NavBarBaseProps) {
+export function NavBarBase({
+  profilePic,
+  isAuthenticated,
+  isMentor,
+  onboardingStatus,
+}: NavBarBaseProps) {
   return (
     <div className="border/40 bg-background/80 text-foreground fixed top-0 right-0 left-0 z-20 flex items-center justify-between border-b p-4 pr-6 backdrop-blur-xs transition-colors duration-300">
       {/* Left: Mobile hamburger + Desktop menu */}
@@ -71,6 +77,7 @@ export function NavBarBase({ profilePic, isAuthenticated, onboardingStatus }: Na
         <MobileMenu
           className="md:hidden"
           isAuthenticated={isAuthenticated}
+          isMentor={isMentor}
           onboardingStatus={onboardingStatus}
         />
         <Link href="/" className="flex items-center">
@@ -133,8 +140,8 @@ export function NavBarBase({ profilePic, isAuthenticated, onboardingStatus }: Na
               </NavigationMenuContent>
             </NavigationMenuItem>
 
-            {/* Dashboard Link */}
-            {isAuthenticated && (
+            {/* Dashboard Link - Only for mentors */}
+            {isAuthenticated && isMentor && (
               <NavigationMenuItem>
                 <NavigationMenuLink asChild>
                   <Link href="/settings" className={navigationMenuTriggerStyle()}>
@@ -228,11 +235,12 @@ ListItem.displayName = 'ListItem'
 interface MobileMenuProps {
   className?: string
   isAuthenticated: boolean
+  isMentor: boolean
   onboardingStatus: OnboardingStatus | null
 }
 
-function MobileMenu({ className, isAuthenticated, onboardingStatus }: MobileMenuProps) {
-  const showOnboardingCTA = onboardingStatus && !onboardingStatus.isComplete
+function MobileMenu({ className, isAuthenticated, isMentor, onboardingStatus }: MobileMenuProps) {
+  const showOnboardingCTA = isMentor && onboardingStatus && !onboardingStatus.isComplete
 
   return (
     <DropdownMenu>

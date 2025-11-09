@@ -14,7 +14,7 @@ import {
   CommandList,
 } from '~/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '~/components/ui/popover'
-import { cn } from '~/lib/utils'
+import { cn, decodeUrlParam } from '~/lib/utils'
 
 interface FilterValue {
   value: string
@@ -29,10 +29,11 @@ interface FilterProps {
 }
 
 export const FilterButton = ({ filterItems, queryName, startValue }: FilterProps) => {
+  const decodedStartValue = decodeUrlParam(startValue)
+  const foundItem = filterItems.find(item => item.value === decodedStartValue)
+
   const [open, setOpen] = useState(false)
-  const [value, setValue] = useState(
-    filterItems.find(item => item.value === startValue)?.value ?? ''
-  )
+  const [value, setValue] = useState(foundItem?.value ?? '')
   const router = useRouter()
 
   const handleFilterChange = (itemId: number) => {
@@ -48,7 +49,7 @@ export const FilterButton = ({ filterItems, queryName, startValue }: FilterProps
       url.searchParams.set(queryName, selectedItem?.value ?? '')
     }
 
-    router.push(url.toString())
+    router.push(url.pathname + url.search)
     setOpen(false)
   }
 
@@ -57,7 +58,7 @@ export const FilterButton = ({ filterItems, queryName, startValue }: FilterProps
     const url = new URL(window.location.href)
     url.searchParams.delete(queryName)
     setValue('')
-    router.push(url.toString())
+    router.push(url.pathname + url.search)
   }
 
   return (

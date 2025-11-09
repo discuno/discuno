@@ -3,7 +3,7 @@ import 'server-only'
 import { eq } from 'drizzle-orm'
 import { cache } from 'react'
 import type { FullUserProfile } from '~/app/types'
-import { getAuthSession, requireAuth } from '~/lib/auth/auth-utils'
+import { getAuthSession, requirePermission } from '~/lib/auth/auth-utils'
 import { NotFoundError } from '~/lib/errors'
 import type { UserProfile } from '~/lib/schemas/db'
 import { getProfileByUserId } from '~/server/dal/profiles'
@@ -13,14 +13,20 @@ import * as schema from '~/server/db/schema/index'
 
 /**
  * Query Layer for profiles
- * Includes caching, joins, transformations, and auth checks
+ *
+ * SECURITY: Permission checks enforced here (data access layer)
+ * Layouts/actions/services delegate to these functions for protection
+ *
+ * NOTE: Profiles in Discuno are mentor-specific (public-facing profiles with bio, school, etc.)
+ * Regular users don't have profiles. Profile access requires mentor permission.
  */
 
 /**
- * Get profile picture URL for current user
+ * Get profile picture URL for current mentor
+ * Protected by mentor permission (data access layer)
  */
 export const getProfilePic = cache(async (): Promise<string> => {
-  const { user } = await requireAuth()
+  const { user } = await requirePermission({ mentor: ['manage'] })
   const id = user.id
 
   const image = await getUserImageById(id)
@@ -33,11 +39,12 @@ export const getProfilePic = cache(async (): Promise<string> => {
 })
 
 /**
- * Get basic profile for current user
+ * Get basic profile for current mentor
+ * Protected by mentor permission (data access layer)
  */
 export const getProfile = cache(
   async (): Promise<{ profile: UserProfile | null; userId: string }> => {
-    const { user } = await requireAuth()
+    const { user } = await requirePermission({ mentor: ['manage'] })
     const userId = user.id
 
     const profile = await getProfileByUserId(userId)
@@ -145,10 +152,11 @@ const getFullProfileById = async (userId: string): Promise<FullUserProfile | nul
 export const getFullProfileByUserId = cache(getFullProfileById)
 
 /**
- * Get full profile for current user (cached)
+ * Get full profile for current mentor (cached)
+ * Protected by mentor permission (data access layer)
  */
 export const getFullProfile = cache(async (): Promise<FullUserProfile | null> => {
-  const { user } = await requireAuth()
+  const { user } = await requirePermission({ mentor: ['manage'] })
   const userId = user.id
   const profile = await getFullProfileById(userId)
   if (!profile) {
@@ -158,10 +166,11 @@ export const getFullProfile = cache(async (): Promise<FullUserProfile | null> =>
 })
 
 /**
- * Get user ID for current user
+ * Get user ID for current mentor
+ * Protected by mentor permission (data access layer)
  */
 export const getUserId = async (): Promise<string> => {
-  const { user } = await requireAuth()
+  const { user } = await requirePermission({ mentor: ['manage'] })
   const userId = user.id
   return userId
 }

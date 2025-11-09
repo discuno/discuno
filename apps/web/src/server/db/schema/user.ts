@@ -22,6 +22,13 @@ export const user = pgTable('discuno_user', {
   email: varchar({ length: 255 }).unique(),
   emailVerified: boolean().default(false),
   image: varchar({ length: 255 }),
+  // Anonymous plugin fields
+  isAnonymous: boolean(),
+  // Admin plugin fields
+  role: text(),
+  banned: boolean().default(false),
+  banReason: text(),
+  banExpires: timestamp(),
   ...timestamps,
   ...softDeleteTimestamps,
 })
@@ -35,6 +42,8 @@ export const session = pgTable('discuno_user_session', {
   userId: uuid()
     .notNull()
     .references(() => user.id, { onDelete: 'cascade' }),
+  // Admin plugin field
+  impersonatedBy: text(),
   ...timestamps,
 })
 

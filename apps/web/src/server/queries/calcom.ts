@@ -1,21 +1,24 @@
 import 'server-only'
 
 import { cache } from 'react'
-import { requireAuth } from '~/lib/auth/auth-utils'
+import { requirePermission } from '~/lib/auth/auth-utils'
 import { NotFoundError } from '~/lib/errors'
 import type { CalcomToken } from '~/lib/schemas/db'
 import { getTokensByUserId, getTokensByUsername, getUsernameByUserId } from '~/server/dal/calcom'
 
 /**
  * Query Layer for Cal.com tokens
- * Includes caching and auth checks
+ *
+ * SECURITY: Permission checks enforced here (data access layer)
+ * Layouts/actions/services delegate to these functions for protection
  */
 
 /**
- * Get mentor's Cal.com tokens (requires auth)
+ * Get mentor's Cal.com tokens
+ * Protected by mentor permission (data access layer)
  */
 export const getMentorCalcomTokens = cache(async (): Promise<CalcomToken | null> => {
-  const { user } = await requireAuth()
+  const { user } = await requirePermission({ mentor: ['manage'] })
   const userId = user.id
 
   const tokens = await getTokensByUserId(userId)

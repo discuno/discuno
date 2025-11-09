@@ -6,7 +6,7 @@ import Stripe from 'stripe'
 import type { Availability, DateOverride, WeeklySchedule } from '~/app/types/availability'
 import { availabilitySchema, dateOverrideSchema } from '~/app/types/availability'
 import { env } from '~/env'
-import { ExternalApiError, requireAuth } from '~/lib/auth/auth-utils'
+import { ExternalApiError } from '~/lib/auth/auth-utils'
 import {
   createCalcomUser as createCalcomUserCore,
   updateCalcomUser as updateCalcomUserCore,
@@ -306,6 +306,7 @@ export async function getSchedule(): Promise<{
   data?: Availability
   error?: string
 }> {
+  // Permission check removed - protected by query layer (getMentorCalcomTokens)
   try {
     const tokenResult = await getValidCalcomToken()
 
@@ -426,6 +427,7 @@ export async function updateSchedule(schedule: Availability): Promise<{
   data?: Availability
   error?: string
 }> {
+  // Permission check removed - protected by query layer (getMentorCalcomTokens)
   console.log('updateSchedule called with:', schedule)
   try {
     // Validate input using canonical schema with safeParse
@@ -752,12 +754,18 @@ export const createStripeConnectAccount = async (): Promise<{
   onboardingUrl?: string
   error?: string
 }> => {
+  // Permission check removed - protected by query layer (getFullProfile)
   try {
-    const { user } = await requireAuth()
-    const userId = user.id
     const profile = await getFullProfile()
+    if (!profile) {
+      return {
+        success: false,
+        error: 'Profile not found',
+      }
+    }
+    const userId = profile.userId
 
-    if (!profile?.email) {
+    if (!profile.email) {
       return {
         success: false,
         error: 'Email is required for Stripe account creation',
@@ -1009,9 +1017,16 @@ export const getBookings = async (): Promise<{
   data?: Awaited<ReturnType<typeof getMentorBookings>>
   error?: string
 }> => {
+  // Permission check removed - protected by query layer (getFullProfile)
   try {
-    const { user } = await requireAuth()
-    const userId = user.id
+    const profile = await getFullProfile()
+    if (!profile) {
+      return {
+        success: false,
+        error: 'Profile not found',
+      }
+    }
+    const userId = profile.userId
     const bookings = await getMentorBookings(userId)
 
     return {

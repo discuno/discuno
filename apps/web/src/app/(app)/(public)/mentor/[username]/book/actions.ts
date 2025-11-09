@@ -5,11 +5,12 @@ import { eq } from 'drizzle-orm'
 import type Stripe from 'stripe'
 import { z } from 'zod'
 import { env } from '~/env'
+import { inngest } from '~/inngest/client'
+import { requireNonAnonymousAuth } from '~/lib/auth/auth-utils'
 import { createCalcomBooking } from '~/lib/calcom'
 import { MINIMUM_PAID_BOOKING_PRICE } from '~/lib/constants'
 import { BadRequestError, ExternalApiError, StripeError } from '~/lib/errors'
 import { stripe } from '~/lib/stripe'
-import { inngest } from '~/inngest/client'
 import { db } from '~/server/db'
 import { mentorStripeAccount, payment } from '~/server/db/schema/index'
 import { getMentorCalcomTokensByUsername } from '~/server/queries/calcom'
@@ -30,6 +31,9 @@ export interface CreateBookingInput {
 }
 
 export const createBooking = async (input: CreateBookingInput): Promise<string> => {
+  // Require authenticated user (not anonymous) to create booking
+  await requireNonAnonymousAuth()
+
   const { eventTypeId, startTime, attendee, mentorUserId } = input
 
   const booking = await createCalcomBooking({
@@ -199,6 +203,9 @@ export const createStripeCheckoutSession = async (
   clientSecret?: string
   checkoutSessionId?: string
 }> => {
+  // Require authenticated user (not anonymous) to create booking
+  await requireNonAnonymousAuth()
+
   try {
     const validatedInput = BookingFormInputSchema.parse(input)
     const {
