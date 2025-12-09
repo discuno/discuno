@@ -16,36 +16,47 @@ import { softDeleteTimestamps, timestamps } from '~/server/db/columns.helpers'
 import { major, school } from './reference'
 
 // User authentication tables
-export const user = pgTable('discuno_user', {
-  id: uuid().defaultRandom().primaryKey(),
-  name: varchar({ length: 255 }),
-  email: varchar({ length: 255 }).unique(),
-  emailVerified: boolean().default(false),
-  image: varchar({ length: 255 }),
-  // Anonymous plugin fields
-  isAnonymous: boolean(),
-  // Admin plugin fields
-  role: text(),
-  banned: boolean().default(false),
-  banReason: text(),
-  banExpires: timestamp(),
-  ...timestamps,
-  ...softDeleteTimestamps,
-})
+export const user = pgTable(
+  'discuno_user',
+  {
+    id: uuid().defaultRandom().primaryKey(),
+    name: varchar({ length: 255 }),
+    email: varchar({ length: 255 }).unique(),
+    emailVerified: boolean().default(false),
+    image: varchar({ length: 255 }),
+    // Anonymous plugin fields
+    isAnonymous: boolean(),
+    // Admin plugin fields
+    role: text(),
+    banned: boolean().default(false),
+    banReason: text(),
+    banExpires: timestamp(),
+    ...timestamps,
+    ...softDeleteTimestamps,
+  },
+  user => [index('user_email_idx').on(user.email)]
+)
 
-export const session = pgTable('discuno_user_session', {
-  id: text().primaryKey(),
-  expiresAt: timestamp().notNull(),
-  token: text().notNull().unique(),
-  ipAddress: text(),
-  userAgent: text(),
-  userId: uuid()
-    .notNull()
-    .references(() => user.id, { onDelete: 'cascade' }),
-  // Admin plugin field
-  impersonatedBy: text(),
-  ...timestamps,
-})
+export const session = pgTable(
+  'discuno_user_session',
+  {
+    id: text().primaryKey(),
+    expiresAt: timestamp().notNull(),
+    token: text().notNull().unique(),
+    ipAddress: text(),
+    userAgent: text(),
+    userId: uuid()
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    // Admin plugin field
+    impersonatedBy: text(),
+    ...timestamps,
+  },
+  session => [
+    index('session_user_id_idx').on(session.userId),
+    index('session_token_idx').on(session.token),
+  ]
+)
 
 export const account = pgTable(
   'discuno_account',
@@ -68,13 +79,17 @@ export const account = pgTable(
   account => [index('account_user_id_idx').on(account.userId)]
 )
 
-export const verification = pgTable('discuno_verification', {
-  id: text().primaryKey(),
-  identifier: text().notNull(),
-  value: text().notNull(),
-  expiresAt: timestamp().notNull(),
-  ...timestamps,
-})
+export const verification = pgTable(
+  'discuno_verification',
+  {
+    id: text().primaryKey(),
+    identifier: text().notNull(),
+    value: text().notNull(),
+    expiresAt: timestamp().notNull(),
+    ...timestamps,
+  },
+  verification => [index('verification_identifier_idx').on(verification.identifier)]
+)
 
 // User profile and metadata
 export const schoolYearEnum = pgEnum('school_year', [

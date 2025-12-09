@@ -542,15 +542,14 @@ The application is optimized for Vercel deployment:
 
 #### BetterAuth Tables
 
-**IMPORTANT**: Never directly manipulate BetterAuth core tables (`user`, `session`, `account`, `verification`) using Drizzle ORM. Always use BetterAuth's API methods:
+**IMPORTANT**: For MVP simplicity, we directly update the `user` table using Drizzle ORM for role and image updates. The admin plugin is kept for ACL permission checking (`userHasPermission`) but not for user management.
 
-- **Set user role**: Use `auth.api.setRole({ body: { userId, role } })`
-- **Update user data**: Use `auth.api.adminUpdateUser({ body: { userId, data } })`
-- **Create user**: Use `auth.api.createUser({ body: { email, password, name, role } })`
-- **Ban/unban user**: Use `auth.api.banUser()` / `auth.api.unbanUser()`
-- **Manage sessions**: Use `auth.api.revokeUserSession()` / `auth.api.revokeUserSessions()`
+- **Set user role**: Update directly via Drizzle: `db.update(schema.user).set({ role }).where(eq(schema.user.id, userId))`
+- **Update user image**: Update directly via Drizzle: `db.update(schema.user).set({ image }).where(eq(schema.user.id, userId))`
 
 Custom tables (`userProfile`, `userSchool`, `userMajor`, etc.) can be manipulated directly with Drizzle.
+
+Note: The admin plugin is still enabled for permission checking via `auth.api.userHasPermission()` used in the ACL system.
 
 #### Server Actions
 

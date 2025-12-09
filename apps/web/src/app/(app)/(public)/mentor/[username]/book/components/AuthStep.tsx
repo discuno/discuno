@@ -1,0 +1,148 @@
+'use client'
+
+import { format } from 'date-fns'
+import Image from 'next/image'
+import { useState } from 'react'
+import { toast } from 'sonner'
+import type { EventType } from '~/app/(app)/(public)/mentor/[username]/book/actions'
+import type { BookingFormData } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingEmbed'
+import { Button } from '~/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
+import { Spinner } from '~/components/ui/spinner'
+import { authClient } from '~/lib/auth-client'
+import { bookingStateManager } from '~/lib/booking-state-manager'
+
+interface AuthStepProps {
+  selectedEventType: EventType
+  selectedTimeSlot: string
+  selectedDate: Date
+  mentorUsername: string
+  formData: BookingFormData
+  onBack: () => void
+}
+
+export const AuthStep = ({
+  selectedEventType,
+  selectedTimeSlot,
+  selectedDate,
+  mentorUsername,
+  formData,
+  onBack,
+}: AuthStepProps) => {
+  const [isLoading, setIsLoading] = useState<string | null>(null)
+
+  const handleOAuthSignIn = async (provider: 'google' | 'microsoft') => {
+    try {
+      setIsLoading(provider)
+
+      // Save booking state before OAuth redirect
+      const stateId = bookingStateManager.save({
+        mentorUsername,
+        selectedEventType,
+        selectedTimeSlot,
+        selectedDate: selectedDate.toISOString(),
+        formData,
+        resumeStep: 'booking', // Resume at booking step after auth
+      })
+
+      // Build callback URL with booking state as query param
+      const callbackURL = `/mentor/${mentorUsername}/book?bookingState=${stateId}`
+
+      await authClient.signIn.social({
+        provider,
+        callbackURL,
+        errorCallbackURL: `/mentor/${mentorUsername}/book?error=oauth_failed`,
+      })
+    } catch (error) {
+      console.error('OAuth sign in error:', error)
+      setIsLoading(null)
+      toast.error('Sign In Failed', {
+        description: 'Something went wrong. Please try again.',
+      })
+    }
+  }
+
+  return (
+    <div className="flex h-full items-center justify-center p-6">
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <CardTitle className="text-xl font-bold">Sign in to complete your booking</CardTitle>
+          <CardDescription className="text-sm">
+            Choose a sign-in method to continue with your session booking
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent className="space-y-4">
+          {/* Google OAuth Button */}
+          <button
+            onClick={() => handleOAuthSignIn('google')}
+            disabled={!!isLoading}
+            className="flex h-12 w-full items-center justify-center rounded-lg border border-gray-300 bg-white transition-colors hover:bg-gray-50 disabled:opacity-50"
+          >
+            {isLoading === 'google' ? (
+              <Spinner />
+            ) : (
+              <Image
+                src="/logos/web_light_sq_SI.svg"
+                alt="Sign in with Google"
+                width={175}
+                height={40}
+              />
+            )}
+          </button>
+
+          {/* Microsoft OAuth Button */}
+          <button
+            onClick={() => handleOAuthSignIn('microsoft')}
+            disabled={!!isLoading}
+            className="flex h-12 w-full items-center justify-center rounded-lg border border-gray-300 bg-white transition-colors hover:bg-gray-50 disabled:opacity-50"
+          >
+            {isLoading === 'microsoft' ? (
+              <Spinner />
+            ) : (
+              <Image
+                src="/logos/ms-symbollockup_signin_light.svg"
+                alt="Sign in with Microsoft"
+                width={200}
+                height={40}
+              />
+            )}
+          </button>
+
+          {/* Booking Summary */}
+          <div className="bg-muted mt-6 rounded-lg p-4">
+            <h3 className="mb-2 text-sm font-semibold">Your Selected Session</h3>
+            <div className="text-muted-foreground space-y-1 text-xs">
+              <div className="flex justify-between">
+                <span>Session:</span>
+                <span className="font-medium">{selectedEventType.title}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Time:</span>
+                <span className="font-medium">{format(new Date(selectedTimeSlot), 'PPp')}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Duration:</span>
+                <span className="font-medium">{selectedEventType.length} minutes</span>
+              </div>
+              {selectedEventType.price !== undefined && selectedEventType.price > 0 && (
+                <div className="flex justify-between">
+                  <span>Price:</span>
+                  <span className="font-medium">
+                    ${(selectedEventType.price / 100).toFixed(2)}{' '}
+                    {selectedEventType.currency ?? 'USD'}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Back Button */}
+          <Button variant="ghost" onClick={onBack} className="w-full" disabled={!!isLoading}>
+            Back to Calendar
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}

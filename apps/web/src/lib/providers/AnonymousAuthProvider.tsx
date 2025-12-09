@@ -1,73 +1,39 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 import { useEffect, useRef } from 'react'
 import { authClient, useSession } from '~/lib/auth-client'
 
 /**
- * AnonymousAuthProvider automatically initializes anonymous sessions
- * and shows Google One Tap for unauthenticated visitors
+ * AnonymousAuthProvider enforces that all visitors have at least an anonymous session,
+ * and shows Google One Tap for anonymous users to optionally upgrade to a real account.
  */
 export const AnonymousAuthProvider = ({ children }: { children: React.ReactNode }) => {
   const { data: session, isPending } = useSession()
   const hasInitialized = useRef(false)
-  const hasShownOneTap = useRef(false)
+  const router = useRouter()
 
   useEffect(() => {
     // Wait for session check to complete
     if (isPending) return
 
-    // If no session exists, create an anonymous session
-    if (!session && !hasInitialized.current) {
+    // Prevent duplicate initialization
+    if (hasInitialized.current) return
+
+    // No session at all - create anonymous session
+    if (!session) {
       hasInitialized.current = true
-      console.log('[AnonymousAuth] Creating anonymous session...')
-      authClient.signIn
-        .anonymous()
-        .then(response => {
-          console.log('[AnonymousAuth] Anonymous session created successfully', response)
-        })
-        .catch(error => {
-          console.error('[AnonymousAuth] Error creating anonymous session:', error)
-          hasInitialized.current = false // Allow retry
-        })
+      authClient.signIn.anonymous().catch(() => {
+        hasInitialized.current = false // Allow retry on error
+      })
     }
-  }, [session, isPending])
-
-  useEffect(() => {
-    // Wait for session check to complete
-    if (isPending) return
-
-    // Show Google One Tap if user is anonymous
-    if (session?.user && 'isAnonymous' in session.user && session.user.isAnonymous) {
-      if (!hasShownOneTap.current) {
-        hasShownOneTap.current = true
-        console.log('[AnonymousAuth] Showing Google One Tap for anonymous user...')
-
-        // Add a small delay to ensure DOM is ready
-        setTimeout(() => {
-          authClient
-            .oneTap({
-              fetchOptions: {
-                onSuccess: () => {
-                  console.log('[AnonymousAuth] User authenticated via One Tap')
-                  // Reload to get new session
-                  window.location.reload()
-                },
-                onError: error => {
-                  console.error('[AnonymousAuth] One Tap authentication error:', error)
-                },
-              },
-            })
-            .then(() => {
-              console.log('[AnonymousAuth] One Tap initialized')
-            })
-            .catch(error => {
-              console.error('[AnonymousAuth] Error showing One Tap:', error)
-              hasShownOneTap.current = false // Allow retry
-            })
-        }, 500)
-      }
+    // Has anonymous session - show Google One Tap
+    else if (session.user.isAnonymous) {
+      hasInitialized.current = true
+      void authClient.oneTap({})
     }
-  }, [session, isPending])
+    // Has real session - do nothing
+  }, [session, isPending, router])
 
   return <>{children}</>
 }

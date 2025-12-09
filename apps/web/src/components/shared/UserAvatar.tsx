@@ -117,14 +117,14 @@ export const AvatarIcon = ({
                 await authClient.signOut({
                   fetchOptions: {
                     onSuccess: () => {
-                      router.push('/auth')
+                      router.push('/')
                     },
                   },
                 })
               } catch (error) {
                 console.error('Sign out error:', error)
                 // Fallback redirect
-                router.push('/auth')
+                router.push('/')
               }
             }}
             className="text-red-600 focus:text-red-600 dark:text-red-400 dark:focus:text-red-400"
