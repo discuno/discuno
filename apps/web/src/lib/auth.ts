@@ -2,9 +2,9 @@ import { render } from '@react-email/render'
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { APIError, createAuthMiddleware } from 'better-auth/api'
+import { nextCookies } from 'better-auth/next-js'
 import { admin, anonymous, emailOTP, oAuthProxy, oneTap } from 'better-auth/plugins'
 import { eq } from 'drizzle-orm'
-import { headers } from 'next/headers'
 import { env } from '~/env'
 import { ac, admin as adminRole, mentor, user as userRole } from '~/lib/auth/permissions'
 import { downloadAndUploadProfileImage } from '~/lib/blob'
@@ -61,6 +61,12 @@ async function validateEduEmail(email: string): Promise<void> {
 
 export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL ?? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`,
+  session: {
+    cookieCache: {
+      enabled: true,
+      maxAge: 60 * 60 * 24 * 30, // 30 days
+    },
+  },
   database: drizzleAdapter(db, {
     provider: 'pg',
     schema,
@@ -114,26 +120,11 @@ export const auth = betterAuth({
           const isAnonymous = user.email.includes('@discuno.com')
           if (!isAnonymous) {
             const role = user.email.endsWith('.edu') ? 'mentor' : 'user'
-            console.log(`[DatabaseHook] Attempting to assign role '${role}' to user: ${user.email}`)
+            console.log(`[DatabaseHook] Assigning role '${role}' to user: ${user.email}`)
 
-            try {
-              // Use BetterAuth's admin API to set role
-              const result = await auth.api.setRole({
-                body: {
-                  userId: user.id,
-                  role,
-                },
-
-                headers: await headers(),
-              })
-              console.log(`[DatabaseHook] ✅ Role assignment result:`, result)
-            } catch (error) {
-              console.error(`[DatabaseHook] ❌ Error assigning role for ${user.email}:`, error)
-              // Fallback to direct DB update if admin API fails
-              console.log(`[DatabaseHook] Falling back to direct DB update for role assignment`)
-              await db.update(schema.user).set({ role }).where(eq(schema.user.id, user.id))
-              console.log(`[DatabaseHook] ✅ Role assigned via fallback for: ${user.email}`)
-            }
+            // Update role directly in database
+            await db.update(schema.user).set({ role }).where(eq(schema.user.id, user.id))
+            console.log(`[DatabaseHook] ✅ Role assigned: ${role} for ${user.email}`)
           }
 
           // Skip post-creation setup for anonymous users
@@ -148,13 +139,11 @@ export const auth = betterAuth({
               const newImageUrl = await downloadAndUploadProfileImage(user.image, user.id)
               if (newImageUrl !== user.image) {
                 console.log(`[DatabaseHook] Updating user image for: ${user.email}`)
-                // Use BetterAuth's admin API to update user data
-                await auth.api.adminUpdateUser({
-                  body: {
-                    userId: user.id,
-                    data: { image: newImageUrl },
-                  },
-                })
+                // Update image directly in database
+                await db
+                  .update(schema.user)
+                  .set({ image: newImageUrl })
+                  .where(eq(schema.user.id, user.id))
               }
             } catch (error) {
               console.error(
@@ -265,6 +254,7 @@ export const auth = betterAuth({
       clientId: env.AUTH_GOOGLE_ID,
       clientSecret: env.AUTH_GOOGLE_SECRET,
       redirectURI: 'https://discuno.com/api/auth/callback/google',
+      prompt: 'select_account',
     },
     microsoft: {
       clientId: env.AUTH_MICROSOFT_ENTRA_ID_ID,
@@ -332,19 +322,13 @@ export const auth = betterAuth({
           console.log(`[Anonymous] 🔧 Assigning role '${role}' to linked user: ${linkedUser.email}`)
 
           try {
-            // Use BetterAuth's admin API to set role
-            await auth.api.setRole({
-              body: {
-                userId: linkedUser.id,
-                role,
-              },
-              headers: await headers(),
-            })
+            // Update role directly in database
+            await db.update(schema.user).set({ role }).where(eq(schema.user.id, linkedUser.id))
             console.log(
               `[Anonymous] ✅ Role '${role}' assigned successfully to ${linkedUser.email}`
             )
           } catch (error) {
-            console.error(`[Anonymous] ❌ Error assigning role via BetterAuth API:`, error)
+            console.error(`[Anonymous] ❌ Error assigning role:`, error)
           }
         }
 
@@ -378,6 +362,7 @@ export const auth = betterAuth({
       ac,
       roles: { admin: adminRole, user: userRole, mentor },
     }),
+    nextCookies(),
   ],
   hooks: {
     before: createAuthMiddleware(async ctx => {

@@ -14,6 +14,7 @@ export const authClient = createAuthClient({
     anonymousClient(),
     oneTapClient({
       clientId: env.NEXT_PUBLIC_AUTH_GOOGLE_ID,
+      cancelOnTapOutside: false,
     }),
     adminClient({
       ac,

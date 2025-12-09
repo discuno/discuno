@@ -1,12 +1,15 @@
 'use client'
 
 import Image from 'next/image'
+import { useSearchParams } from 'next/navigation'
 import { Suspense, useState } from 'react'
+import { toast } from 'sonner'
 import { BookingEmbed } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingEmbed'
 import { BookingEmbedSkeleton } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingEmbedSkeleton'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '~/components/ui/dialog'
+import { bookingStateManager } from '~/lib/booking-state-manager'
 
 export interface BookingData {
   userId: string
@@ -25,7 +28,32 @@ interface BookingModalProps {
 }
 
 export const BookingModal = ({ bookingData, children, className }: BookingModalProps) => {
-  const [isOpen, setIsOpen] = useState(false)
+  const searchParams = useSearchParams()
+
+  // Auto-open modal if returning from OAuth (success or error)
+  const [isOpen, setIsOpen] = useState(() => {
+    const bookingStateId = searchParams.get('bookingState')
+    const error = searchParams.get('error')
+
+    // Handle OAuth success with booking state
+    if (bookingStateId) {
+      const state = bookingStateManager.restore(bookingStateId)
+      if (state && state.mentorUsername === bookingData.calcomUsername) {
+        console.log('[BookingModal] Auto-opening modal after OAuth redirect')
+        return true
+      }
+    }
+
+    // Handle OAuth error
+    if (error === 'oauth_failed') {
+      toast.error('Sign In Failed', {
+        description: 'OAuth authentication failed. Please try again.',
+      })
+      return true
+    }
+
+    return false
+  })
 
   return (
     <>

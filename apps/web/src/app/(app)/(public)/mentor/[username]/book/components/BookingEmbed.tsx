@@ -28,6 +28,9 @@ import type { BookingData } from '~/app/(app)/(public)/mentor/[username]/book/co
 import { CheckoutForm } from '~/app/(app)/(public)/mentor/[username]/book/components/CheckoutForm'
 import { BadRequestError, ExternalApiError } from '~/lib/errors'
 import { stripePromise } from '~/lib/stripe/client'
+import { useSession } from '~/lib/auth-client'
+import { bookingStateManager } from '~/lib/booking-state-manager'
+import { AuthStep } from '~/app/(app)/(public)/mentor/[username]/book/components/AuthStep'
 
 export interface BookingFormData {
   name: string
@@ -35,13 +38,14 @@ export interface BookingFormData {
   phone?: string
 }
 
-type BookingStep = 'calendar' | 'booking' | 'payment' | 'confirmation'
+type BookingStep = 'calendar' | 'auth' | 'booking' | 'payment' | 'confirmation'
 
 export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
   const { resolvedTheme } = useTheme()
   const { calcomUsername } = bookingData
   const timeZone = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC', [])
   const today = useMemo(() => new TZDate(new Date(), timeZone), [timeZone])
+  const { data: session } = useSession()
 
   // State management
   const [selectedEventType, setSelectedEventType] = useState<EventType | null>(null)
@@ -113,18 +117,60 @@ export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
     }
   }, [isSlotsFetched, availableSlots])
 
+  // Restore booking state after OAuth authentication
+  useEffect(() => {
+    if (!session || session.user.isAnonymous) return
+
+    const pending = bookingStateManager.getPending()
+    if (pending) {
+      const { state, stateId } = pending
+
+      // Only restore if we're on the correct mentor's page
+      if (state.mentorUsername === calcomUsername) {
+        console.log('[BookingEmbed] Restoring booking state after OAuth')
+
+        setSelectedEventType(state.selectedEventType)
+        setSelectedTimeSlot(state.selectedTimeSlot)
+        setSelectedDate(new Date(state.selectedDate))
+        setFormData(state.formData ?? formData)
+        setCurrentStep(state.resumeStep)
+
+        // Clear state after restoration
+        bookingStateManager.clear(stateId)
+
+        // Show success toast
+        toast.success('Signed in successfully!', {
+          description: 'Continue with your booking below.',
+        })
+      }
+    }
+  }, [session, calcomUsername, formData])
+
+  // Clean up stale booking states on mount
+  useEffect(() => {
+    bookingStateManager.cleanupStale()
+  }, [])
+
   // Event handlers
   const handleEventTypeSelect = useCallback((eventType: EventType | null) => {
     setSelectedEventType(eventType)
     setSelectedTimeSlot(null)
   }, [])
 
-  const handleTimeSlotSelect = useCallback((timeSlot: string | null) => {
-    setSelectedTimeSlot(timeSlot)
-    if (timeSlot) {
-      setCurrentStep('booking')
-    }
-  }, [])
+  const handleTimeSlotSelect = useCallback(
+    (timeSlot: string | null) => {
+      setSelectedTimeSlot(timeSlot)
+      if (timeSlot) {
+        // Check if user is anonymous - if so, show auth step
+        if (session?.user.isAnonymous) {
+          setCurrentStep('auth')
+        } else {
+          setCurrentStep('booking')
+        }
+      }
+    },
+    [session]
+  )
 
   const handlePaymentConfirmed = useCallback(() => {
     toast.success('Payment successful! Your booking will be confirmed via email shortly.')
@@ -217,6 +263,15 @@ export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
           onSelectDate={setSelectedDate}
           onSelectTimeSlot={handleTimeSlotSelect}
           timeZone={timeZone}
+        />
+      ) : currentStep === 'auth' && selectedEventType && selectedTimeSlot && selectedDate ? (
+        <AuthStep
+          selectedEventType={selectedEventType}
+          selectedTimeSlot={selectedTimeSlot}
+          selectedDate={selectedDate}
+          mentorUsername={calcomUsername}
+          formData={formData}
+          onBack={() => setCurrentStep('calendar')}
         />
       ) : currentStep === 'booking' ? (
         <AttendeeDetailsStep
