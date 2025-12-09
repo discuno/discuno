@@ -77,7 +77,7 @@ export const AuthStep = ({
           <button
             onClick={() => handleOAuthSignIn('google')}
             disabled={!!isLoading}
-            className="flex h-12 w-full items-center justify-center rounded-lg border border-gray-300 bg-white transition-colors hover:bg-gray-50 disabled:opacity-50"
+            className="flex w-full items-center justify-center transition-opacity hover:opacity-80 disabled:opacity-50"
           >
             {isLoading === 'google' ? (
               <Spinner />
@@ -95,7 +95,7 @@ export const AuthStep = ({
           <button
             onClick={() => handleOAuthSignIn('microsoft')}
             disabled={!!isLoading}
-            className="flex h-12 w-full items-center justify-center rounded-lg border border-gray-300 bg-white transition-colors hover:bg-gray-50 disabled:opacity-50"
+            className="flex w-full items-center justify-center transition-opacity hover:opacity-80 disabled:opacity-50"
           >
             {isLoading === 'microsoft' ? (
               <Spinner />

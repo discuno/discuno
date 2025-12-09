@@ -30,7 +30,7 @@ export const AnonymousAuthProvider = ({ children }: { children: React.ReactNode 
     // Has anonymous session - show Google One Tap
     else if (session.user.isAnonymous) {
       hasInitialized.current = true
-      void authClient.oneTap({})
+      void authClient.oneTap({ cancelOnTapOutside: false })
     }
     // Has real session - do nothing
   }, [session, isPending, router])
