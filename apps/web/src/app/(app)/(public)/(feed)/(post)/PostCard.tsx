@@ -151,16 +151,22 @@ export const PostCard = ({ card }: { card: Card }) => {
         </div>
 
         {/* View Profile Link */}
-        <Button
-          asChild
-          variant="tinted"
-          className="mt-3 w-full hover:shadow-sm"
-          onClick={handleProfileView}
-        >
-          <Link href={card.username ? `/mentor/${card.username}` : `/post/${card.id}`} scroll={false}>
-            View Profile
-          </Link>
-        </Button>
+        {card.username ? (
+          <Button
+            asChild
+            variant="tinted"
+            className="mt-3 w-full hover:shadow-sm"
+            onClick={handleProfileView}
+          >
+            <Link href={`/mentor/${card.username}`} scroll={false}>
+              View Profile
+            </Link>
+          </Button>
+        ) : (
+          <Button variant="tinted" className="mt-3 w-full" disabled>
+            Profile Unavailable
+          </Button>
+        )}
       </div>
     </div>
   )

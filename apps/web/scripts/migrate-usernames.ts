@@ -64,15 +64,15 @@ async function migrateUsernames() {
     .from(user)
     .where(sql`username IS NULL`)
 
-  console.log(`Migrating ${users.length} users...`)
+  console.log(`Found ${users.length} users without usernames...`)
 
   let migrated = 0
   let skipped = 0
 
   for (const u of users) {
-    // Skip anonymous users (email contains @discuno.com) or users without email
+    // Skip anonymous users (check email domain) or users without email
     if (!u.email || u.email.includes('@discuno.com')) {
-      console.log(`Skipping anonymous/email-less user: ${u.id}`)
+      console.log(`Skipping anonymous user: ${u.email || u.id}`)
       skipped++
       continue
     }
