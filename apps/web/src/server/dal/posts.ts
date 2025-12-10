@@ -36,6 +36,7 @@ export const buildPostsQuery = () => {
       },
       creator: {
         name: user.name,
+        username: user.username,
         image: user.image,
       },
       profile: {

@@ -41,6 +41,7 @@ const transformPostResult = (result: PostQueryResult[]): Card[] => {
       uniquePosts.set(post.id, {
         ...post,
         name: creator?.name ?? 'Mentor',
+        username: creator?.username ?? null,
         userImage: creator?.image ?? null,
         description: profile?.bio !== undefined ? profile.bio : null,
         graduationYear: profile?.graduationYear ?? null,

@@ -78,3 +78,12 @@ export const removeUserImage = async (userId: string): Promise<void> => {
     throw new NotFoundError('User not found')
   }
 }
+
+/**
+ * Get user by username
+ */
+export const getUserByUsername = async (username: string) => {
+  return await db.query.user.findFirst({
+    where: eq(user.username, username),
+  })
+}

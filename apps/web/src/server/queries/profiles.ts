@@ -7,7 +7,7 @@ import { getAuthSession, requirePermission } from '~/lib/auth/auth-utils'
 import { NotFoundError } from '~/lib/errors'
 import type { UserProfile } from '~/lib/schemas/db'
 import { getProfileByUserId } from '~/server/dal/profiles'
-import { getUserById, getUserImageById } from '~/server/dal/users'
+import { getUserById, getUserImageById, getUserByUsername } from '~/server/dal/users'
 import { db } from '~/server/db'
 import * as schema from '~/server/db/schema/index'
 
@@ -174,3 +174,15 @@ export const getUserId = async (): Promise<string> => {
   const userId = user.id
   return userId
 }
+
+/**
+ * Get public profile by username (no auth required)
+ * Used for public mentor profile pages
+ */
+export const getPublicProfileByUsername = cache(
+  async (username: string): Promise<FullUserProfile | null> => {
+    const userRecord = await getUserByUsername(username)
+    if (!userRecord) return null
+    return getFullProfileById(userRecord.id)
+  }
+)

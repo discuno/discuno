@@ -3,7 +3,7 @@ import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { APIError, createAuthMiddleware } from 'better-auth/api'
 import { nextCookies } from 'better-auth/next-js'
-import { admin, anonymous, emailOTP, oAuthProxy, oneTap } from 'better-auth/plugins'
+import { admin, anonymous, emailOTP, oAuthProxy, oneTap, username } from 'better-auth/plugins'
 import { eq } from 'drizzle-orm'
 import { env } from '~/env'
 import { ac, admin as adminRole, mentor, user as userRole } from '~/lib/auth/permissions'
@@ -361,6 +361,18 @@ export const auth = betterAuth({
       defaultRole: 'user',
       ac,
       roles: { admin: adminRole, user: userRole, mentor },
+    }),
+    username({
+      minUsernameLength: 3,
+      maxUsernameLength: 30,
+      usernameValidator: (uname) => {
+        // Allow alphanumeric, underscores, hyphens
+        return /^[a-z0-9_-]+$/.test(uname)
+      },
+      usernameNormalization: (uname) => {
+        // Lowercase and replace special chars
+        return uname.toLowerCase().replace(/[^a-z0-9_-]/g, '-')
+      },
     }),
     nextCookies(),
   ],

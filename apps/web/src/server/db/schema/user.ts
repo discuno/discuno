@@ -22,6 +22,9 @@ export const user = pgTable(
     id: uuid().defaultRandom().primaryKey(),
     name: varchar({ length: 255 }),
     email: varchar({ length: 255 }).unique(),
+    // Username plugin fields
+    username: varchar({ length: 30 }).unique(),
+    displayUsername: varchar('display_username', { length: 30 }),
     emailVerified: boolean().default(false),
     image: varchar({ length: 255 }),
     // Anonymous plugin fields
@@ -34,7 +37,10 @@ export const user = pgTable(
     ...timestamps,
     ...softDeleteTimestamps,
   },
-  user => [index('user_email_idx').on(user.email)]
+  user => [
+    index('user_email_idx').on(user.email),
+    index('user_username_idx').on(user.username),
+  ]
 )
 
 export const session = pgTable(

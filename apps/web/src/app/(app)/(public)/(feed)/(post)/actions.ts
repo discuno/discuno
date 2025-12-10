@@ -7,7 +7,7 @@ import { ratelimit } from '~/lib/rate-limiter'
 import type { ClientAnalyticsEvent } from '~/lib/schemas/db/analyticsEvents'
 import { createAnalyticsEvent } from '~/server/dal/analytics'
 import { getInfiniteScrollPosts, getPostById, getPostsByFilters } from '~/server/queries/posts'
-import { getFullProfileByUserId } from '~/server/queries/profiles'
+import { getFullProfileByUserId, getPublicProfileByUsername } from '~/server/queries/profiles'
 
 export const logAnalyticsEvent = async (input: ClientAnalyticsEvent) => {
   const res = await getAuthSession()
@@ -77,4 +77,13 @@ export const fetchProfileByUserIdAction = async (userId: string) => {
     throw new Error('Too many requests')
   }
   return await getFullProfileByUserId(userId)
+}
+
+export const fetchProfileByUsernameAction = async (username: string) => {
+  const ip = await getClientKey()
+  const { success } = await ratelimit.limit(ip)
+  if (!success) {
+    throw new Error('Too many requests')
+  }
+  return await getPublicProfileByUsername(username)
 }
