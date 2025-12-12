@@ -66,7 +66,17 @@ export const AuthStep = ({
       }
     } catch (error) {
       // Only show error if it wasn't a user cancellation
-      if (error instanceof Error && error.message === 'Auth window closed by user') {
+      if (error instanceof Error && error.message === 'Popup blocked') {
+        toast.error('Sign-in Popup Blocked', {
+          description: 'Please allow popups for this site to sign in.',
+          action: {
+            label: 'Try Again',
+            onClick: () => {
+              void handleOAuthSignIn(provider)
+            },
+          },
+        })
+      } else if (error instanceof Error && error.message === 'Auth window closed by user') {
         // User closed the window, just reset loading state
         console.log('User cancelled auth')
       } else {

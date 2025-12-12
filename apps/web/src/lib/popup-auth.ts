@@ -24,8 +24,8 @@ export const openAuthWindow = (authUrl: string): Promise<'success'> => {
     const authWindow = openCenteredWindow(authUrl, 'Discuno Sign In', 600, 700)
 
     if (!authWindow) {
-      // Fallback if popup is blocked
-      window.location.href = authUrl
+      // Reject if popup is blocked
+      reject(new Error('Popup blocked'))
       return
     }
 
