@@ -83,6 +83,7 @@ const MentorModalContent = ({ username }: { username: string }) => {
   const bookingData: BookingData | null = displayData.calcomUsername
     ? {
         userId: displayData.userId,
+        username,
         calcomUsername: displayData.calcomUsername,
         name: displayData.name ?? 'Mentor',
         image: displayData.image ?? '',

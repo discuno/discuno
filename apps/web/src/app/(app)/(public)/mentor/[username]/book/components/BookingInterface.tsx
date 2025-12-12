@@ -14,7 +14,8 @@ interface BookingInterfaceProps {
 
 export type BookingData = {
   userId: string
-  calcomUsername: string
+  username: string // Discuno username for routing
+  calcomUsername: string // Cal.com username for API calls
   name: string
   image: string
   bio: string

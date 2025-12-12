@@ -13,7 +13,8 @@ import { bookingStateManager } from '~/lib/booking-state-manager'
 
 export interface BookingData {
   userId: string
-  calcomUsername: string
+  username: string // Discuno username for routing
+  calcomUsername: string // Cal.com username for API calls
   name: string
   image: string
   bio: string
@@ -38,7 +39,7 @@ export const BookingModal = ({ bookingData, children, className }: BookingModalP
     // Handle OAuth success with booking state
     if (bookingStateId) {
       const state = bookingStateManager.restore(bookingStateId)
-      if (state && state.mentorUsername === bookingData.calcomUsername) {
+      if (state && state.mentorUsername === bookingData.username) {
         console.log('[BookingModal] Auto-opening modal after OAuth redirect')
         return true
       }

@@ -22,6 +22,7 @@ export default async function MentorProfilePage({
   const bookingData = hasBooking
     ? {
         userId: profile.userId,
+        username,
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         calcomUsername: profile.calcomUsername!,
         name: profile.name ?? 'Mentor',

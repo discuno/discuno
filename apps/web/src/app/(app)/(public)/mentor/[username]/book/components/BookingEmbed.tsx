@@ -126,7 +126,7 @@ export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
       const { state, stateId } = pending
 
       // Only restore if we're on the correct mentor's page
-      if (state.mentorUsername === calcomUsername) {
+      if (state.mentorUsername === bookingData.username) {
         console.log('[BookingEmbed] Restoring booking state after OAuth')
 
         setSelectedEventType(state.selectedEventType)
@@ -144,7 +144,7 @@ export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
         })
       }
     }
-  }, [session, calcomUsername, formData])
+  }, [session, bookingData.username, formData])
 
   // Clean up stale booking states on mount
   useEffect(() => {
@@ -269,7 +269,7 @@ export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
           selectedEventType={selectedEventType}
           selectedTimeSlot={selectedTimeSlot}
           selectedDate={selectedDate}
-          mentorUsername={calcomUsername}
+          mentorUsername={bookingData.username}
           formData={formData}
           onBack={() => setCurrentStep('calendar')}
         />

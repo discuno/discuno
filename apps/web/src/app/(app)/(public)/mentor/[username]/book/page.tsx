@@ -20,6 +20,7 @@ const BookingPage = async ({ params }: BookingPageProps) => {
 
   const bookingData = {
     userId: profile.userId,
+    username,
     calcomUsername: profile.calcomUsername,
     name: profile.name ?? 'Mentor',
     image: profile.image ?? '',
