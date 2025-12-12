@@ -11,15 +11,15 @@ import { toast } from 'sonner'
 import { BookingSidebar } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingSidebar'
 
 import type {
-    BookingFormInput,
-    TimeSlot,
+  BookingFormInput,
+  TimeSlot,
 } from '~/app/(app)/(public)/mentor/[username]/book/actions'
 import {
-    createBooking as createBookingAction,
-    createStripeCheckoutSession,
-    fetchEventTypes as fetchEventTypesAction,
-    fetchAvailableSlots as fetchSlotsAction,
-    type EventType,
+  createBooking as createBookingAction,
+  createStripeCheckoutSession,
+  fetchEventTypes as fetchEventTypesAction,
+  fetchAvailableSlots as fetchSlotsAction,
+  type EventType,
 } from '~/app/(app)/(public)/mentor/[username]/book/actions'
 import { AttendeeDetailsStep } from '~/app/(app)/(public)/mentor/[username]/book/components/AttendeeDetailsStep'
 import { AuthStep } from '~/app/(app)/(public)/mentor/[username]/book/components/AuthStep'
@@ -29,7 +29,6 @@ import { BookingEmbedSkeleton } from '~/app/(app)/(public)/mentor/[username]/boo
 import type { BookingData } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingModal'
 import { CheckoutForm } from '~/app/(app)/(public)/mentor/[username]/book/components/CheckoutForm'
 import { useSession } from '~/lib/auth-client'
-import { bookingStateManager } from '~/lib/booking-state-manager'
 import { BadRequestError, ExternalApiError } from '~/lib/errors'
 import { stripePromise } from '~/lib/stripe/client'
 
@@ -124,34 +123,13 @@ export const BookingEmbed = ({
     }
   }, [isSlotsFetched, availableSlots])
 
-  // Restore booking state after OAuth authentication
+  // Auto-advance to booking step when authenticated
   useEffect(() => {
-    if (!session || session.user.isAnonymous) return
-
-    const pending = bookingStateManager.getPending()
-    if (pending) {
-      const { state, stateId } = pending
-
-      // Only restore if we're on the correct mentor's page
-      if (state.mentorUsername === bookingData.username) {
-        console.log('[BookingEmbed] Restoring booking state after OAuth')
-
-        setSelectedEventType(state.selectedEventType)
-        setSelectedTimeSlot(state.selectedTimeSlot)
-        setSelectedDate(new Date(state.selectedDate))
-        setFormData(state.formData ?? formData)
-        setCurrentStep(state.resumeStep)
-
-        // Clear state after restoration
-        bookingStateManager.clear(stateId)
-
-        // Show success toast
-        toast.success('Signed in successfully!', {
-          description: 'Continue with your booking below.',
-        })
-      }
+    if (currentStep === 'auth' && session && !session.user.isAnonymous) {
+      console.log('[BookingEmbed] User authenticated, advancing to booking step')
+      setCurrentStep('booking')
     }
-  }, [session, bookingData.username, formData])
+  }, [currentStep, session])
 
   // Prefill form with user's name and email when logged in
   useEffect(() => {
@@ -164,10 +142,7 @@ export const BookingEmbed = ({
     }))
   }, [session])
 
-  // Clean up stale booking states on mount
-  useEffect(() => {
-    bookingStateManager.cleanupStale()
-  }, [])
+
 
   // Event handlers
   const handleEventTypeSelect = useCallback((eventType: EventType | null) => {
