@@ -16,7 +16,7 @@ export const Modal = ({ children, footer }: ModalProps) => {
 
   return (
     <Dialog open={true} onOpenChange={isOpen => !isOpen && onDismiss()}>
-      <DialogContent className="max-h-[85vh] w-full max-w-[85vw] overflow-hidden p-0 focus:outline-none sm:rounded-xl md:max-w-lg">
+      <DialogContent className="h-[85vh] w-full max-w-[85vw] overflow-hidden p-0 focus:outline-none sm:max-w-lg sm:rounded-xl">
         <DialogTitle className="sr-only">Mentor Profile</DialogTitle>
         <div className="flex h-full min-h-0 flex-col">
           <div className="flex-1 overflow-hidden [padding-bottom:env(safe-area-inset-bottom)]">
