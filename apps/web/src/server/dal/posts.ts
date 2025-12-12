@@ -3,6 +3,7 @@ import 'server-only'
 import { and, desc, eq, exists, gt, isNotNull, isNull, lt, or, sql } from 'drizzle-orm'
 import { db } from '~/server/db'
 import {
+  calcomToken,
   major,
   mentorEventType,
   mentorStripeAccount,
@@ -38,6 +39,7 @@ export const buildPostsQuery = () => {
         name: user.name,
         username: user.username,
         image: user.image,
+        calcomUsername: calcomToken.calcomUsername,
       },
       profile: {
         graduationYear: userProfile.graduationYear,
@@ -101,6 +103,7 @@ export const buildPostsQuery = () => {
     .leftJoin(major, eq(userMajor.majorId, major.id))
     .leftJoin(mentorEventType, eq(user.id, mentorEventType.mentorUserId))
     .leftJoin(mentorStripeAccount, eq(user.id, mentorStripeAccount.userId))
+    .leftJoin(calcomToken, eq(user.id, calcomToken.userId))
 
   return baseQuery
 }

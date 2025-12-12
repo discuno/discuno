@@ -9,6 +9,7 @@ import {
 export interface Card extends Post {
   name: string | null
   username: string | null
+  calcomUsername: string | null
   description: string | null
   random_sort_key: number
   userImage?: string | null
