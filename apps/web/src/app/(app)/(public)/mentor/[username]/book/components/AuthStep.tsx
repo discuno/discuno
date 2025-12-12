@@ -19,6 +19,7 @@ interface AuthStepProps {
   mentorUsername: string
   formData: BookingFormData
   onBack: () => void
+  onSuccess: () => void
 }
 
 export const AuthStep = ({
@@ -28,6 +29,7 @@ export const AuthStep = ({
   // mentorUsername,
   // formData,
   onBack,
+  onSuccess,
 }: AuthStepProps) => {
   const [isLoading, setIsLoading] = useState<string | null>(null)
 
@@ -57,24 +59,22 @@ export const AuthStep = ({
           fetchOptions: {
             onSuccess: () => {
               toast.success('Signed in successfully!')
-              // Session is updated automatically by authClient
-              // The parent component (BookingEmbed) tracks session changes and will likely
-              // advance the step, but we can also manually trigger something if needed.
+              onSuccess()
             },
           },
         })
       }
     } catch (error) {
-       // Only show error if it wasn't a user cancellation
-       if (error instanceof Error && error.message === 'Auth window closed by user') {
-         // User closed the window, just reset loading state
-         console.log('User cancelled auth')
-       } else {
-         console.error('OAuth sign in error:', error)
-         toast.error('Sign In Failed', {
-           description: 'Something went wrong. Please try again.',
-         })
-       }
+      // Only show error if it wasn't a user cancellation
+      if (error instanceof Error && error.message === 'Auth window closed by user') {
+        // User closed the window, just reset loading state
+        console.log('User cancelled auth')
+      } else {
+        console.error('OAuth sign in error:', error)
+        toast.error('Sign In Failed', {
+          description: 'Something went wrong. Please try again.',
+        })
+      }
     } finally {
       setIsLoading(null)
     }

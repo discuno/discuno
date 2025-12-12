@@ -142,8 +142,6 @@ export const BookingEmbed = ({
     }))
   }, [session])
 
-
-
   // Event handlers
   const handleEventTypeSelect = useCallback((eventType: EventType | null) => {
     setSelectedEventType(eventType)
@@ -265,6 +263,10 @@ export const BookingEmbed = ({
           mentorUsername={bookingData.username}
           formData={formData}
           onBack={() => setCurrentStep('calendar')}
+          onSuccess={() => {
+            console.log('[BookingEmbed] AuthStep reported success')
+            setCurrentStep('booking')
+          }}
         />
       ) : currentStep === 'booking' ? (
         <AttendeeDetailsStep
