@@ -1,29 +1,19 @@
 'use client'
 
-import { Menu, Rocket } from 'lucide-react'
+import { BookOpen, LayoutDashboard, LogOut, Menu, Search, User, X } from 'lucide-react'
 import Link from 'next/link'
-import { forwardRef } from 'react'
+import { useEffect, useState } from 'react'
 import { ThemeAwareIconLogo } from '~/components/shared/ThemeAwareIconLogo'
 import { AvatarIcon } from '~/components/shared/UserAvatar'
+import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '~/components/ui/dropdown-menu'
-import {
-  NavigationMenu,
-  NavigationMenuContent,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  NavigationMenuTrigger,
-  navigationMenuTriggerStyle,
-} from '~/components/ui/navigation-menu'
-import { Skeleton } from '~/components/ui/skeleton'
 import { cn } from '~/lib/utils'
 
 interface OnboardingStatus {
@@ -48,292 +38,237 @@ interface NavBarBaseProps {
   onboardingStatus: OnboardingStatus | null
 }
 
-/**
- * Enhanced Navigation Bar Component for Discuno
- *
- * Features:
- * - Dynamic menu items based on mentor status
- * - Onboarding progress indicator
- * - Proper authentication state handling
- * - Responsive design with modern UI
- * - Accessibility improvements
- * - Loading skeleton support
- *
- * @param profilePic - User's profile picture URL
- * @param isAuthenticated - Whether user is authenticated
- * @param onboardingStatus - Mentor onboarding completion status
- */
 export function NavBarBase({
   profilePic,
   isAuthenticated,
   isMentor,
   onboardingStatus,
 }: NavBarBaseProps) {
+  const [isScrolled, setIsScrolled] = useState(false)
+
+  // Detect scroll for subtle styling changes
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20)
+    }
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
   return (
-    <div className="border/40 bg-background/80 text-foreground fixed top-0 right-0 left-0 z-20 flex items-center justify-between border-b p-4 pr-6 backdrop-blur-xs transition-colors duration-300">
-      {/* Left: Mobile hamburger + Desktop menu */}
-      <div className="flex items-center gap-2">
-        {/* Mobile menu trigger */}
-        <MobileMenu
-          className="md:hidden"
-          isAuthenticated={isAuthenticated}
-          isMentor={isMentor}
-          onboardingStatus={onboardingStatus}
-        />
-        <Link href="/" className="flex items-center">
-          <ThemeAwareIconLogo />
-        </Link>
-        {/* Desktop navigation */}
-        <NavigationMenu className="hidden md:block">
-          <NavigationMenuList>
-            {/* Find Mentors Menu */}
-            <NavigationMenuItem>
-              <NavigationMenuTrigger>Find Mentors</NavigationMenuTrigger>
-              <NavigationMenuContent>
-                <ComingSoonOverlay />
-                <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2">
-                  <li className="row-span-3">
-                    <NavigationMenuLink asChild>
-                      <Link
-                        className="from-primary/10 to-primary/5 hover:bg-primary/10 dark:from-primary/20 dark:to-primary/10 dark:hover:bg-primary/20 flex h-full w-full flex-col justify-end rounded-md bg-linear-to-b p-6 no-underline outline-hidden transition-colors select-none focus:shadow-md"
-                        href="/"
-                      >
-                        <div className="text-foreground mt-4 mb-2 text-lg font-medium">
-                          Browse Mentors
-                        </div>
-                        <p className="text-muted-foreground text-sm leading-tight">
-                          Find college students who match your interests and goals
-                        </p>
-                      </Link>
-                    </NavigationMenuLink>
-                  </li>
-                  <ListItem title="Search by School">
-                    Find mentors from specific colleges and universities
-                  </ListItem>
-                  <ListItem title="Search by Major">
-                    Connect with students in your intended field of study
-                  </ListItem>
-                  <ListItem title="Search by Interests">
-                    Discover mentors who share your passions
-                  </ListItem>
-                </ul>
-              </NavigationMenuContent>
-            </NavigationMenuItem>
-
-            {/* Resources Menu */}
-            <NavigationMenuItem>
-              <NavigationMenuTrigger>Resources</NavigationMenuTrigger>
-              <NavigationMenuContent>
-                <ComingSoonOverlay />
-                <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2">
-                  <ListItem title="Application Guide">
-                    Step-by-step guide to college applications
-                  </ListItem>
-                  <ListItem title="Essay Writing">
-                    Tips for writing compelling college essays
-                  </ListItem>
-                  <ListItem title="Interview Prep">Prepare for college interviews</ListItem>
-                  <ListItem title="Financial Aid">
-                    Understanding scholarships and aid options
-                  </ListItem>
-                </ul>
-              </NavigationMenuContent>
-            </NavigationMenuItem>
-
-            {/* Dashboard Link - Only for mentors */}
-            {isAuthenticated && isMentor && (
-              <NavigationMenuItem>
-                <NavigationMenuLink asChild>
-                  <Link href="/settings" className={navigationMenuTriggerStyle()}>
-                    Dashboard
-                  </Link>
-                </NavigationMenuLink>
-              </NavigationMenuItem>
-            )}
-
-            {/* My Account Menu */}
-            <NavigationMenuItem>
-              <NavigationMenuTrigger>My Account</NavigationMenuTrigger>
-              <NavigationMenuContent>
-                <ComingSoonOverlay />
-                <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2">
-                  <ListItem href="/dashboard" title="Dashboard">
-                    View your mentorship connections and messages
-                  </ListItem>
-                  <ListItem href="/scheduling" title="My Schedule">
-                    Manage your scheduled video meetings
-                  </ListItem>
-                  <ListItem href="/profile/view" title="View Profile">
-                    See how others view your profile
-                  </ListItem>
-                </ul>
-              </NavigationMenuContent>
-            </NavigationMenuItem>
-          </NavigationMenuList>
-        </NavigationMenu>
-      </div>
-
-      {/* Right side: Avatar */}
-      <div className="flex items-center gap-3">
-        <AvatarIcon
-          profilePic={profilePic}
-          isAuthenticated={isAuthenticated}
-          onboardingStatus={onboardingStatus}
-        />
-      </div>
-    </div>
-  )
-}
-
-// Loading skeleton for navbar
-export function NavBarSkeleton() {
-  return (
-    <div className="border/40 bg-background/80 text-foreground fixed top-0 right-0 left-0 z-20 flex items-center justify-between border-b p-4 backdrop-blur-xs transition-colors duration-300">
-      <div className="flex items-center space-x-6">
-        <Skeleton className="h-6 w-20" />
-        <Skeleton className="h-6 w-20" />
-        <Skeleton className="h-6 w-20" />
-      </div>
-      <div className="flex items-center space-x-4">
-        <Skeleton className="h-8 w-8 rounded" />
-        <Skeleton className="h-10 w-10 rounded-full" />
-      </div>
-    </div>
-  )
-}
-
-interface ListItemProps extends React.ComponentPropsWithoutRef<'a'> {
-  title: string
-  className?: string
-}
-
-const ListItem = forwardRef<React.ComponentRef<'a'>, ListItemProps>(
-  ({ className, title, children, ...props }, ref) => {
-    return (
-      <li>
-        <NavigationMenuLink asChild>
-          <a
-            ref={ref}
-            className={cn(
-              'block space-y-1 rounded-md p-3 leading-none no-underline outline-hidden transition-colors select-none',
-              'hover:bg-accent hover:text-accent-foreground',
-              'focus:bg-accent focus:text-accent-foreground focus:ring-primary focus:ring-2 focus:ring-offset-2 focus:outline-hidden dark:focus:ring-offset-gray-900',
-              className
-            )}
-            {...props}
+    <>
+      {/*
+        Floating "Pill" Navbar
+        Centered, detached from edges, high z-index.
+      */}
+      <div className="pointer-events-none fixed inset-x-0 top-4 z-50 flex justify-center px-4">
+        <nav
+          className={cn(
+            'pointer-events-auto flex items-center justify-between gap-2 p-1.5 transition-all duration-500 ease-out',
+            'border-border/40 bg-background/80 supports-[backdrop-filter]:bg-background/60 shadow-lg backdrop-blur-xl',
+            'w-full max-w-4xl rounded-full', // Pill shape
+            isScrolled ? 'border-border/60 shadow-xl' : 'border-border/20'
+          )}
+        >
+          {/* Logo Section */}
+          <Link
+            href="/"
+            className="group bg-background/50 hover:bg-accent flex aspect-square h-10 w-10 items-center justify-center rounded-full transition-colors"
           >
-            <div className="text-foreground text-sm leading-none font-medium">{title}</div>
-            <p className="text-muted-foreground line-clamp-2 text-sm leading-snug">{children}</p>
-          </a>
-        </NavigationMenuLink>
-      </li>
+            <ThemeAwareIconLogo />
+            <span className="sr-only">Home</span>
+          </Link>
+
+          {/* Desktop Links - Managed as a clean row */}
+          <div className="hidden items-center gap-1 md:flex">
+            <NavLink href="/" icon={<Search className="h-4 w-4" />} label="Find Mentors" />
+            <div className="bg-border/50 mx-1 h-4 w-px" />
+            <NavLink
+              href="/resources"
+              icon={<BookOpen className="h-4 w-4" />}
+              label="Resources"
+              disabled
+              badge="Soon"
+            />
+          </div>
+
+          {/* Mobile Spacer / Center replacement */}
+          <div className="flex flex-1 md:hidden" />
+
+          {/* Right Action Section */}
+          <div className="flex items-center gap-2 pl-2">
+            {!isAuthenticated ? (
+              <>
+                <Link href="/auth" className="hidden sm:block">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-muted-foreground hover:text-foreground rounded-full px-4"
+                  >
+                    Sign In
+                  </Button>
+                </Link>
+                <Link href="/auth?mode=signup">
+                  <Button size="sm" className="rounded-full px-5 font-medium shadow-sm">
+                    Get Started
+                  </Button>
+                </Link>
+              </>
+            ) : (
+              <>
+                {isMentor && (
+                  <Link href="/settings" className="hidden sm:block">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-muted-foreground hover:bg-accent hover:text-foreground h-9 w-9 rounded-full"
+                      title="Dashboard"
+                    >
+                      <LayoutDashboard className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                )}
+                <AvatarIcon
+                  profilePic={profilePic}
+                  isAuthenticated={isAuthenticated}
+                  onboardingStatus={onboardingStatus}
+                />
+              </>
+            )}
+
+            {/* Mobile Menu Trigger */}
+            <div className="md:hidden">
+              <MobileMenu isAuthenticated={isAuthenticated} isMentor={isMentor} />
+            </div>
+          </div>
+        </nav>
+      </div>
+    </>
+  )
+}
+
+function NavLink({
+  href,
+  icon,
+  label,
+  disabled,
+  badge,
+}: {
+  href: string
+  icon: React.ReactNode
+  label: string
+  disabled?: boolean
+  badge?: string
+}) {
+  if (disabled) {
+    return (
+      <div className="text-muted-foreground/50 flex cursor-not-allowed items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors">
+        {icon}
+        <span>{label}</span>
+        {badge && (
+          <Badge
+            variant="outline"
+            className="border-muted-foreground/20 text-muted-foreground/50 ml-0.5 h-4 px-1 text-[9px]"
+          >
+            {badge}
+          </Badge>
+        )}
+      </div>
     )
   }
-)
-ListItem.displayName = 'ListItem'
-
-interface MobileMenuProps {
-  className?: string
-  isAuthenticated: boolean
-  isMentor: boolean
-  onboardingStatus: OnboardingStatus | null
+  return (
+    <Link
+      href={href}
+      className="text-muted-foreground hover:bg-accent hover:text-foreground flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors"
+    >
+      {icon}
+      <span>{label}</span>
+    </Link>
+  )
 }
 
-function MobileMenu({ className, isAuthenticated, isMentor, onboardingStatus }: MobileMenuProps) {
-  const showOnboardingCTA = isMentor && onboardingStatus && !onboardingStatus.isComplete
+// Simplified Mobile Menu
+function MobileMenu({
+  isAuthenticated,
+  isMentor,
+}: {
+  isAuthenticated: boolean
+  isMentor: boolean
+}) {
+  const [open, setOpen] = useState(false)
 
   return (
-    <DropdownMenu>
+    <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
-        <Button size="icon" variant="outline" className={className} aria-label="Open menu">
-          <Menu className="h-5 w-5" />
+        <Button size="icon" variant="ghost" className="h-9 w-9 rounded-full" aria-label="Menu">
+          {open ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" sideOffset={8} className="w-64">
-        <ComingSoonOverlay />
-
-        {/* Activate Profile CTA for Mobile */}
-        {showOnboardingCTA && (
-          <>
-            <Link href="/settings">
-              <DropdownMenuItem className="bg-destructive/5 hover:bg-destructive/10 flex items-center gap-2 p-3">
-                <Rocket className="text-destructive h-4 w-4" />
-                <span className="font-semibold">Activate Profile</span>
-              </DropdownMenuItem>
-            </Link>
-            <DropdownMenuSeparator />
-          </>
-        )}
-
-        <DropdownMenuLabel>Find Mentors</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <Link href="/">
-          <DropdownMenuItem>Browse Mentors</DropdownMenuItem>
-        </Link>
-        <Link href="/?filter=school">
-          <DropdownMenuItem>Search by School</DropdownMenuItem>
-        </Link>
-        <Link href="/?filter=major">
-          <DropdownMenuItem>Search by Major</DropdownMenuItem>
-        </Link>
-        <Link href="/?filter=interests">
-          <DropdownMenuItem>Search by Interests</DropdownMenuItem>
-        </Link>
-
-        <DropdownMenuSeparator />
-        <DropdownMenuLabel>Resources</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <Link href="/guides/application">
-          <DropdownMenuItem>Application Guide</DropdownMenuItem>
-        </Link>
-        <Link href="/guides/essays">
-          <DropdownMenuItem>Essay Writing</DropdownMenuItem>
-        </Link>
-        <Link href="/guides/interviews">
-          <DropdownMenuItem>Interview Prep</DropdownMenuItem>
-        </Link>
-        <Link href="/guides/financial-aid">
-          <DropdownMenuItem>Financial Aid</DropdownMenuItem>
-        </Link>
-
-        {/* Dashboard Link */}
-        {isAuthenticated && (
-          <>
-            <DropdownMenuSeparator />
-            <Link href="/settings">
-              <DropdownMenuItem>Dashboard</DropdownMenuItem>
-            </Link>
-          </>
-        )}
-
-        <DropdownMenuSeparator />
-        <DropdownMenuLabel>My Account</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <Link href="/dashboard">
-          <DropdownMenuItem>Dashboard</DropdownMenuItem>
-        </Link>
-        <Link href="/scheduling">
-          <DropdownMenuItem>My Schedule</DropdownMenuItem>
-        </Link>
-        <Link href="/profile/view">
-          <DropdownMenuItem>View Profile</DropdownMenuItem>
-        </Link>
-        {!isAuthenticated && (
-          <Link href="/auth">
-            <DropdownMenuItem>Mentor Sign In</DropdownMenuItem>
+      <DropdownMenuContent align="end" sideOffset={10} className="w-64 rounded-xl p-2">
+        <DropdownMenuItem asChild>
+          <Link href="/" className="flex w-full items-center gap-2 rounded-lg p-2 font-medium">
+            <Search className="h-4 w-4" />
+            Find Mentors
           </Link>
+        </DropdownMenuItem>
+
+        <DropdownMenuItem
+          disabled
+          className="flex w-full items-center gap-2 rounded-lg p-2 font-medium opacity-50"
+        >
+          <BookOpen className="h-4 w-4" />
+          Resources
+          <Badge variant="outline" className="ml-auto h-5">
+            Soon
+          </Badge>
+        </DropdownMenuItem>
+
+        <DropdownMenuSeparator className="my-1" />
+
+        {isAuthenticated ? (
+          <>
+            {isMentor && (
+              <DropdownMenuItem asChild>
+                <Link
+                  href="/settings"
+                  className="flex w-full items-center gap-2 rounded-lg p-2 font-medium"
+                >
+                  <LayoutDashboard className="h-4 w-4" />
+                  Mentor Dashboard
+                </Link>
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuItem asChild>
+              <Link
+                href="/dashboard"
+                className="flex w-full items-center gap-2 rounded-lg p-2 font-medium"
+              >
+                <User className="h-4 w-4" />
+                My Account
+              </Link>
+            </DropdownMenuItem>
+          </>
+        ) : (
+          <DropdownMenuItem asChild>
+            <Link
+              href="/auth"
+              className="flex w-full items-center gap-2 rounded-lg p-2 font-medium"
+            >
+              <LogOut className="h-4 w-4" />
+              Sign In
+            </Link>
+          </DropdownMenuItem>
         )}
       </DropdownMenuContent>
     </DropdownMenu>
   )
 }
 
-function ComingSoonOverlay() {
+// Minimal Skeleton for the Pill
+export function NavBarSkeleton() {
   return (
-    <div className="bg-background/80 absolute inset-0 z-10 flex items-center justify-center">
-      <div className="text-foreground rounded-full bg-gray-400/60 px-4 py-2 text-lg font-semibold">
-        Coming Soon!
-      </div>
+    <div className="fixed inset-x-0 top-4 z-50 flex justify-center px-4">
+      <div className="border-border/20 bg-background/80 h-14 w-full max-w-4xl rounded-full border shadow-lg backdrop-blur-xl" />
     </div>
   )
 }

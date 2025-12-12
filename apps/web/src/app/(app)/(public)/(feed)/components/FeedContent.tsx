@@ -38,21 +38,39 @@ export const FeedContent = async ({ searchParams }: FeedContentProps) => {
 
   return (
     <>
-      {/* Filter Popover */}
-      <div className="sticky top-[80px] z-10 flex justify-start px-4">
+      <div className="container mx-auto flex flex-col items-start justify-between gap-4 px-4 pt-24 pb-6 sm:flex-row sm:items-center">
+        <div>
+          <h1 className="text-foreground text-3xl font-bold tracking-tight sm:text-4xl">
+            Explore Mentors
+          </h1>
+          <p className="text-muted-foreground mt-2 text-lg">
+            Connect with students from top universities.
+          </p>
+        </div>
+      </div>
+
+      {/* Smart Filter Bar */}
+      {/*
+        Container ensures matching margin with the header (px-4 mx-auto container).
+        The component itself handles the transition to 'fixed' state.
+      */}
+      {/* Sticky Filter Bar */}
+      {/* Sticks below the floating header when scrolling */}
+      <div className="sticky top-20 z-40 flex justify-start px-4 sm:container sm:mx-auto">
         <Popover>
           <PopoverTrigger asChild>
             <Button
               variant="outline"
-              className="border/70 bg-background/60 shadow-lg backdrop-blur-md transition-colors duration-300"
+              className="border-border/40 bg-background/80 supports-[backdrop-filter]:bg-background/60 hover:bg-background/90 shadow-lg backdrop-blur-xl transition-all duration-300"
             >
               <Filter className="ml-2 h-4 w-4" />
-              Filters
+              <span className="mx-2">Filters</span>
             </Button>
           </PopoverTrigger>
           <PopoverContent
-            className="border/40 bg-background/60 ml-2 w-80 p-4 shadow-lg backdrop-blur-md"
-            align="end"
+            className="border-border/40 bg-background/80 supports-[backdrop-filter]:bg-background/80 ml-2 w-80 p-4 shadow-xl backdrop-blur-xl"
+            align="start"
+            sideOffset={10}
           >
             <div className="space-y-4">
               <h2 className="text-foreground font-semibold">Filter Mentors</h2>
@@ -61,19 +79,19 @@ export const FeedContent = async ({ searchParams }: FeedContentProps) => {
                   filterItems={schools}
                   startValue={searchParams.school ?? ''}
                   queryName="school"
-                  aria-label="Filter by school"
+                  label="Select School..."
                 />
                 <FilterButton
                   filterItems={majors}
                   startValue={searchParams.major ?? ''}
                   queryName="major"
-                  aria-label="Filter by major"
+                  label="Select Major..."
                 />
                 <FilterButton
                   filterItems={gradYears}
                   startValue={searchParams.gradYear ?? ''}
                   queryName="gradYear"
-                  aria-label="Filter by graduation year"
+                  label="Select Year..."
                 />
               </div>
             </div>
@@ -82,7 +100,9 @@ export const FeedContent = async ({ searchParams }: FeedContentProps) => {
       </div>
 
       {/* Post Grid */}
-      <PostGrid schoolId={schoolId} majorId={majorId} graduationYear={graduationYear} />
+      <div className="container mx-auto px-4 pb-12">
+        <PostGrid schoolId={schoolId} majorId={majorId} graduationYear={graduationYear} />
+      </div>
     </>
   )
 }

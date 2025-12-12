@@ -26,9 +26,17 @@ interface FilterProps {
   filterItems: FilterValue[]
   queryName: string
   startValue: string
+  label?: string
+  className?: string
 }
 
-export const FilterButton = ({ filterItems, queryName, startValue }: FilterProps) => {
+export const FilterButton = ({
+  filterItems,
+  queryName,
+  startValue,
+  label,
+  className,
+}: FilterProps) => {
   const decodedStartValue = decodeUrlParam(startValue)
   const foundItem = filterItems.find(item => item.value === decodedStartValue)
 
@@ -62,19 +70,19 @@ export const FilterButton = ({ filterItems, queryName, startValue }: FilterProps
   }
 
   return (
-    <div className="flex items-center gap-1">
+    <div className={cn('flex items-center gap-1', className)}>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            className="focus:ring-primary w-[225px] justify-between focus:ring-2 dark:bg-gray-700 dark:text-gray-200"
+            className="focus:ring-primary w-full justify-between focus:ring-2 dark:bg-gray-700 dark:text-gray-200"
           >
             <span className="truncate">
               {value
                 ? filterItems.find(item => item.value === value)?.label
-                : `Select ${queryName}...`}
+                : (label ?? `Select ${queryName}...`)}
             </span>
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>

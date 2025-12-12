@@ -11,8 +11,8 @@ const PublicLayout = ({ children }: Readonly<{ children: React.ReactNode }>) => 
         <NavBar />
       </Suspense>
 
-      <main className="flex-1 pt-[var(--navbar-height)]">
-        <div className="min-h-[calc(100vh-var(--navbar-height))]">{children}</div>
+      <main className="flex-1">
+        <div className="min-h-screen">{children}</div>
       </main>
 
       <Footer />
