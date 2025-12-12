@@ -2,7 +2,6 @@
 
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Calendar, GraduationCap, School, User } from 'lucide-react'
-import Link from 'next/link'
 import React from 'react'
 import { fetchProfileByUsernameAction } from '~/app/(app)/(public)/(feed)/(post)/actions'
 import { Modal } from '~/app/(app)/(public)/(feed)/@modal/(.)mentor/[username]/modal'
@@ -97,7 +96,15 @@ const MentorModalContent = ({ username }: { username: string }) => {
         <Skeleton className="h-10 min-w-0 flex-1" />
       )}
       <Button asChild variant="outline" className="min-w-0 flex-1">
-        <Link href={`/mentor/${username}`}>View Full Profile</Link>
+        <a
+          href={`/mentor/${username}`}
+          onClick={e => {
+            e.preventDefault()
+            window.location.href = `/mentor/${username}`
+          }}
+        >
+          View Full Profile
+        </a>
       </Button>
     </div>
   )
