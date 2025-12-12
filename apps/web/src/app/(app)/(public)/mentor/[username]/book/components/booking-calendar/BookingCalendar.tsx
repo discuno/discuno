@@ -81,7 +81,7 @@ export const BookingCalendar = ({
     <div className="slide-in-up flex h-full flex-col">
       {/* Header - Mobile Only */}
       {selectedEventType && (
-        <div className="bg-background/95 supports-[backdrop-filter]:bg-background/80 sticky top-0 z-30 border-b px-4 py-3 backdrop-blur md:hidden">
+        <div className="bg-background/95 supports-[backdrop-filter]:bg-background/80 sticky top-0 z-30 border-b px-4 py-3 backdrop-blur lg:hidden">
           <div className="flex items-center gap-3">
             {bookingData.image && (
               <Image
@@ -118,7 +118,7 @@ export const BookingCalendar = ({
         )}
 
         {/* Event Type Selection */}
-        <div className={`slide-in-up ${selectedEventType ? 'mb-6 hidden md:block' : 'mb-6'}`}>
+        <div className={`slide-in-up ${selectedEventType ? 'mb-6 hidden lg:block' : 'mb-6'}`}>
           <Label className="mb-3 block text-sm font-medium">Session Type</Label>
           <EventTypeSelector
             selectedEventType={selectedEventType}
@@ -130,31 +130,39 @@ export const BookingCalendar = ({
 
         {selectedEventType && (
           <>
-            {/* Calendar Section */}
-            <div className="slide-in-up mb-6">
-              <Label className="mb-3 block text-sm font-medium">Select Date</Label>
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={handleDateSelect}
-                onMonthChange={handleMonthChange}
-                disabled={isDateDisabled}
-                className="slide-in-up rounded-md border"
-                startMonth={startMonth}
-                endMonth={endMonth}
-              />
-            </div>
+            <div className="flex flex-col gap-8 xl:flex-row">
+              {/* Calendar Section */}
+              <div className="bg-card rounded-xl border p-4 shadow-sm xl:flex-1">
+                <Label className="mb-4 block text-base font-medium">Select Date</Label>
+                <div className="flex justify-center">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={handleDateSelect}
+                    onMonthChange={handleMonthChange}
+                    disabled={isDateDisabled}
+                    className="p-0"
+                    startMonth={startMonth}
+                    endMonth={endMonth}
+                  />
+                </div>
+              </div>
 
-            <Separator className="my-6" />
+              <Separator className="my-6 xl:hidden" />
 
-            {/* Time Slots Section */}
-            <div className="slide-in-up">
-              <Label className="mb-3 block text-sm font-medium">Available Times</Label>
-              <TimeSlotsList
-                slots={slotsForSelectedDate}
-                isFetchingSlots={isFetchingSlots}
-                onSelectTimeSlot={onSelectTimeSlot}
-              />
+              {/* Time Slots Section */}
+              <div className="flex-1">
+                <Label className="mb-4 block text-base font-medium">
+                  Available Times <span className="text-muted-foreground font-normal">({timeZone})</span>
+                </Label>
+                <div className="h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                  <TimeSlotsList
+                    slots={slotsForSelectedDate}
+                    isFetchingSlots={isFetchingSlots}
+                    onSelectTimeSlot={onSelectTimeSlot}
+                  />
+                </div>
+              </div>
             </div>
           </>
         )}

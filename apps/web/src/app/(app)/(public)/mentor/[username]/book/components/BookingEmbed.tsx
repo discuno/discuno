@@ -8,29 +8,30 @@ import { CalendarIcon } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
+import { BookingSidebar } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingSidebar'
 
 import type {
-  BookingFormInput,
-  TimeSlot,
+    BookingFormInput,
+    TimeSlot,
 } from '~/app/(app)/(public)/mentor/[username]/book/actions'
 import {
-  createBooking as createBookingAction,
-  createStripeCheckoutSession,
-  fetchEventTypes as fetchEventTypesAction,
-  fetchAvailableSlots as fetchSlotsAction,
-  type EventType,
+    createBooking as createBookingAction,
+    createStripeCheckoutSession,
+    fetchEventTypes as fetchEventTypesAction,
+    fetchAvailableSlots as fetchSlotsAction,
+    type EventType,
 } from '~/app/(app)/(public)/mentor/[username]/book/actions'
 import { AttendeeDetailsStep } from '~/app/(app)/(public)/mentor/[username]/book/components/AttendeeDetailsStep'
+import { AuthStep } from '~/app/(app)/(public)/mentor/[username]/book/components/AuthStep'
 import { BookingCalendar } from '~/app/(app)/(public)/mentor/[username]/book/components/booking-calendar/BookingCalendar'
 import { BookingConfirmationStep } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingConfirmationStep'
 import { BookingEmbedSkeleton } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingEmbedSkeleton'
 import type { BookingData } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingModal'
 import { CheckoutForm } from '~/app/(app)/(public)/mentor/[username]/book/components/CheckoutForm'
-import { BadRequestError, ExternalApiError } from '~/lib/errors'
-import { stripePromise } from '~/lib/stripe/client'
 import { useSession } from '~/lib/auth-client'
 import { bookingStateManager } from '~/lib/booking-state-manager'
-import { AuthStep } from '~/app/(app)/(public)/mentor/[username]/book/components/AuthStep'
+import { BadRequestError, ExternalApiError } from '~/lib/errors'
+import { stripePromise } from '~/lib/stripe/client'
 
 export interface BookingFormData {
   name: string
@@ -40,7 +41,13 @@ export interface BookingFormData {
 
 type BookingStep = 'calendar' | 'auth' | 'booking' | 'payment' | 'confirmation'
 
-export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
+export const BookingEmbed = ({
+  bookingData,
+  isFullPage = false,
+}: {
+  bookingData: BookingData
+  isFullPage?: boolean
+}) => {
   const { resolvedTheme } = useTheme()
   const { calcomUsername } = bookingData
   const timeZone = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC', [])
@@ -256,7 +263,7 @@ export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
     )
   }
 
-  return (
+  const renderContent = () => (
     <div className="bg-background flex h-full w-full flex-col">
       {currentStep === 'calendar' ? (
         <BookingCalendar
@@ -350,4 +357,30 @@ export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
       )}
     </div>
   )
+
+  if (isFullPage) {
+    // Import dynamically or assume it's available (since I can't strict mode imports in this tool easily without top-level)
+    // Actually I need to add import at top. I'll rely on the previous content helper to be just a function.
+    // I can't easily add top-level imports with replace_file_content if I only replace specific specific section.
+    // I'm replacing lines 43-end, so the top level imports (1-42) are untouched.
+    // I need to add BookingSidebar import.
+    // I'll do a MultiReplace to add import and change body.
+    return (
+      <div className="flex h-[800px] w-full flex-col overflow-hidden rounded-2xl border shadow-xl lg:flex-row">
+        <div className="bg-muted/30 hidden w-full shrink-0 border-r lg:block lg:w-[320px] xl:w-[380px]">
+          <BookingSidebar
+            bookingData={bookingData}
+            selectedEventType={selectedEventType}
+            selectedDate={selectedDate}
+            selectedTimeSlot={selectedTimeSlot}
+            currentStep={currentStep}
+            timeZone={timeZone}
+          />
+        </div>
+        <div className="flex-1 overflow-y-auto">{renderContent()}</div>
+      </div>
+    )
+  }
+
+  return renderContent()
 }

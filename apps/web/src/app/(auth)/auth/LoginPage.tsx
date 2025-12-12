@@ -58,6 +58,7 @@ export function LoginPage() {
       await authClient.signIn.social({
         provider,
         callbackURL: '/settings',
+        disableRedirect: true,
       })
     } catch (error) {
       console.error('Sign in error:', error)

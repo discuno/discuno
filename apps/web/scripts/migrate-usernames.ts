@@ -1,6 +1,6 @@
 import { config } from 'dotenv'
-import { drizzle } from 'drizzle-orm/postgres-js'
 import { eq, sql } from 'drizzle-orm'
+import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 import * as schema from '../src/server/db/schema/index.js'
 
@@ -72,7 +72,7 @@ async function migrateUsernames() {
   for (const u of users) {
     // Skip anonymous users (check email domain) or users without email
     if (!u.email || u.email.includes('@discuno.com')) {
-      console.log(`Skipping anonymous user: ${u.email || u.id}`)
+      console.log(`Skipping anonymous user: ${u.email ?? u.id}`)
       skipped++
       continue
     }

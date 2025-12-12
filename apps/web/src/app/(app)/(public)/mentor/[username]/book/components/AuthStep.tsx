@@ -10,7 +10,7 @@ import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
 import { Spinner } from '~/components/ui/spinner'
 import { authClient } from '~/lib/auth-client'
-import { bookingStateManager } from '~/lib/booking-state-manager'
+import { openAuthWindow } from '~/lib/popup-auth'
 
 interface AuthStepProps {
   selectedEventType: EventType
@@ -24,9 +24,9 @@ interface AuthStepProps {
 export const AuthStep = ({
   selectedEventType,
   selectedTimeSlot,
-  selectedDate,
-  mentorUsername,
-  formData,
+  // selectedDate,
+  // mentorUsername,
+  // formData,
   onBack,
 }: AuthStepProps) => {
   const [isLoading, setIsLoading] = useState<string | null>(null)
@@ -35,30 +35,48 @@ export const AuthStep = ({
     try {
       setIsLoading(provider)
 
-      // Save booking state before OAuth redirect
-      const stateId = bookingStateManager.save({
-        mentorUsername,
-        selectedEventType,
-        selectedTimeSlot,
-        selectedDate: selectedDate.toISOString(),
-        formData,
-        resumeStep: 'booking', // Resume at booking step after auth
-      })
+      // Use popup callback URL
+      const callbackURL = `${window.location.origin}/oauth/success`
 
-      // Build callback URL with booking state as query param
-      const callbackURL = `/mentor/${mentorUsername}/book?bookingState=${stateId}`
-
-      await authClient.signIn.social({
+      const { data, error } = await authClient.signIn.social({
         provider,
         callbackURL,
-        errorCallbackURL: `/mentor/${mentorUsername}/book?error=oauth_failed`,
+        disableRedirect: true,
       })
+
+      if (error) {
+        throw new Error(error.message ?? 'Authentication failed')
+      }
+
+      if (data.url) {
+        // Open popup and wait for success
+        await openAuthWindow(data.url)
+
+        // Refresh session to get user data
+        await authClient.getSession({
+          fetchOptions: {
+            onSuccess: () => {
+              toast.success('Signed in successfully!')
+              // Session is updated automatically by authClient
+              // The parent component (BookingEmbed) tracks session changes and will likely
+              // advance the step, but we can also manually trigger something if needed.
+            },
+          },
+        })
+      }
     } catch (error) {
-      console.error('OAuth sign in error:', error)
+       // Only show error if it wasn't a user cancellation
+       if (error instanceof Error && error.message === 'Auth window closed by user') {
+         // User closed the window, just reset loading state
+         console.log('User cancelled auth')
+       } else {
+         console.error('OAuth sign in error:', error)
+         toast.error('Sign In Failed', {
+           description: 'Something went wrong. Please try again.',
+         })
+       }
+    } finally {
       setIsLoading(null)
-      toast.error('Sign In Failed', {
-        description: 'Something went wrong. Please try again.',
-      })
     }
   }
 

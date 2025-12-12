@@ -67,7 +67,7 @@ const BookingInline = ({ bookingData }: { bookingData: BookingData }) => {
   return (
     <div className="w-full">
       <Suspense fallback={<BookingEmbedSkeleton />}>
-        <BookingEmbed bookingData={bookingData} />
+        <BookingEmbed bookingData={bookingData} isFullPage={true} />
       </Suspense>
     </div>
   )
