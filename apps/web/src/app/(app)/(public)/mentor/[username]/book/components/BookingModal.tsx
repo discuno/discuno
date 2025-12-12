@@ -36,7 +36,7 @@ export const BookingModal = ({ bookingData, children, className }: BookingModalP
       </Button>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="aspect-[9/16] max-h-[85vh] w-full max-w-[85vw] overflow-hidden p-0 focus:outline-none sm:rounded-xl">
+        <DialogContent className="max-h-[85vh] w-full max-w-[85vw] overflow-hidden p-0 focus:outline-none sm:rounded-xl md:max-w-3xl">
           <div className="flex h-full min-h-0 flex-col">
             {/* Enhanced Header */}
             <div className="slide-in-down from-primary/10 via-primary/5 relative hidden flex-shrink-0 border-b bg-gradient-to-r to-transparent p-6 md:block">
