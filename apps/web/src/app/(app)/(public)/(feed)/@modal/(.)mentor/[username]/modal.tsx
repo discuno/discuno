@@ -1,6 +1,5 @@
 'use client'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
 import { Dialog, DialogContent, DialogTitle } from '~/components/ui/dialog'
 
 type ModalProps = {
@@ -11,15 +10,12 @@ type ModalProps = {
 export const Modal = ({ children, footer }: ModalProps) => {
   const router = useRouter()
   // Modal opens immediately on mount (no need for useEffect)
-  const [open, setOpen] = useState(true)
-
   const onDismiss = () => {
-    setOpen(false) // Close the modal
-    router.back() // Navigate back
+    router.back()
   }
 
   return (
-    <Dialog open={open} onOpenChange={isOpen => !isOpen && onDismiss()}>
+    <Dialog open={true} onOpenChange={isOpen => !isOpen && onDismiss()}>
       <DialogContent className="aspect-[9/16] max-h-[85vh] w-full max-w-[85vw] overflow-hidden p-0 focus:outline-none sm:rounded-xl">
         <DialogTitle className="sr-only">Mentor Profile</DialogTitle>
         <div className="flex h-full min-h-0 flex-col">
