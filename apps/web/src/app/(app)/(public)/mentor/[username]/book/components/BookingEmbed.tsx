@@ -91,6 +91,14 @@ export const BookingEmbed = ({
     staleTime: 1000 * 60 * 5, // 5 minutes
   })
 
+  // Auto-select first event type to skip selection step
+  useEffect(() => {
+    const firstEvent = eventTypes[0]
+    if (eventTypes.length > 0 && !selectedEventType && firstEvent) {
+      setSelectedEventType(firstEvent)
+    }
+  }, [eventTypes, selectedEventType])
+
   const currentEventId = selectedEventType?.id
   const {
     data: availableSlots,

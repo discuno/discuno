@@ -137,7 +137,7 @@ export const BookingCalendar = ({
         <div className="flex-1 overflow-y-auto border-r-0 p-4 pb-32 md:border-r md:p-6 md:pb-6">
           <div className="mx-auto max-w-sm space-y-8">
             {/* Session Type Select (Desktop) */}
-            <div className={selectedEventType ? 'hidden md:block' : ''}>
+            <div className="hidden md:block">
               <Label className="text-foreground/80 mb-3 block text-sm font-medium">
                 Session Type
               </Label>
