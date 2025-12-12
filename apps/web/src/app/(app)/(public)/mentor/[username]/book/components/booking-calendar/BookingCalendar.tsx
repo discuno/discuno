@@ -107,7 +107,7 @@ export const BookingCalendar = ({
     <div className="flex h-full flex-col">
       {/* Header - Mobile Only (Sticky) */}
       {selectedEventType && (
-        <div className="bg-background/95 supports-[backdrop-filter]:bg-background/80 sticky top-0 z-30 border-b px-4 py-3 backdrop-blur md:hidden">
+        <div className="bg-background/95 supports-backdrop-filter:bg-background/80 sticky top-0 z-30 border-b px-4 py-3 backdrop-blur md:hidden">
           <div className="flex items-center gap-3">
             {bookingData.image && (
               <Image
@@ -134,7 +134,7 @@ export const BookingCalendar = ({
       {/* Main Content Area */}
       <div className="flex h-full flex-col overflow-hidden md:flex-row">
         {/* Left Side: Session Type & Calendar */}
-        <div className="flex-1 overflow-y-auto border-r-0 p-4 pb-20 md:border-r md:p-6 md:pb-6">
+        <div className="flex-1 overflow-y-auto border-r-0 p-4 pb-32 md:border-r md:p-6 md:pb-6">
           <div className="mx-auto max-w-sm space-y-8">
             {/* Session Type Select (Desktop) */}
             <div className={selectedEventType ? 'hidden md:block' : ''}>
