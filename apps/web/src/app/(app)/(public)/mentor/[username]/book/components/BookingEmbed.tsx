@@ -146,6 +146,17 @@ export const BookingEmbed = ({ bookingData }: { bookingData: BookingData }) => {
     }
   }, [session, bookingData.username, formData])
 
+  // Prefill form with user's name and email when logged in
+  useEffect(() => {
+    if (!session || session.user.isAnonymous) return
+
+    setFormData(prev => ({
+      ...prev,
+      name: prev.name || session.user.name || '',
+      email: prev.email || session.user.email || '',
+    }))
+  }, [session])
+
   // Clean up stale booking states on mount
   useEffect(() => {
     bookingStateManager.cleanupStale()
