@@ -7,7 +7,7 @@ import { getAuthSession, requirePermission } from '~/lib/auth/auth-utils'
 import { NotFoundError } from '~/lib/errors'
 import type { UserProfile } from '~/lib/schemas/db'
 import { getProfileByUserId } from '~/server/dal/profiles'
-import { getUserById, getUserImageById, getUserByUsername } from '~/server/dal/users'
+import { getUserById, getUserByUsername, getUserImageById } from '~/server/dal/users'
 import { db } from '~/server/db'
 import * as schema from '~/server/db/schema/index'
 
@@ -65,15 +65,16 @@ const getProfileWithImage = async (): Promise<{
 } | null> => {
   const res = await getAuthSession()
   const session = res?.session
+  const user = res?.user
 
-  if (!session?.userId) {
+  if (!session?.userId || user?.isAnonymous) {
     return null
   }
 
-  const user = await getUserById(session.userId)
+  const userRecord = await getUserById(session.userId)
 
   return {
-    profilePic: user?.image ?? null,
+    profilePic: userRecord?.image ?? null,
   }
 }
 

@@ -3,6 +3,7 @@
 import { BookOpen, LayoutDashboard, LogOut, Menu, Search, User, X } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import { LoginModal } from '~/components/auth/LoginModal'
 import { ThemeAwareIconLogo } from '~/components/shared/ThemeAwareIconLogo'
 import { AvatarIcon } from '~/components/shared/UserAvatar'
 import { Badge } from '~/components/ui/badge'
@@ -45,6 +46,13 @@ export function NavBarBase({
   onboardingStatus,
 }: NavBarBaseProps) {
   const [isScrolled, setIsScrolled] = useState(false)
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false)
+  const [loginMode, setLoginMode] = useState<'signin' | 'signup'>('signin')
+
+  const openLoginModal = (mode: 'signin' | 'signup') => {
+    setLoginMode(mode)
+    setIsLoginModalOpen(true)
+  }
 
   // Detect scroll for subtle styling changes
   useEffect(() => {
@@ -57,6 +65,8 @@ export function NavBarBase({
 
   return (
     <>
+      <LoginModal isOpen={isLoginModalOpen} onOpenChange={setIsLoginModalOpen} mode={loginMode} />
+
       {/*
         Floating "Pill" Navbar
         Centered, detached from edges, high z-index.
@@ -99,20 +109,21 @@ export function NavBarBase({
           <div className="flex items-center gap-2 pl-2">
             {!isAuthenticated ? (
               <>
-                <Link href="/auth" className="hidden sm:block">
+                <div className="hidden sm:block">
                   <Button
                     variant="ghost"
                     size="sm"
                     className="text-muted-foreground hover:text-foreground rounded-full px-4"
+                    onClick={() => openLoginModal('signin')}
                   >
                     Sign In
                   </Button>
-                </Link>
-                <Link href="/auth?mode=signup">
+                </div>
+                <div onClick={() => openLoginModal('signup')}>
                   <Button size="sm" className="rounded-full px-5 font-medium shadow-sm">
                     Get Started
                   </Button>
-                </Link>
+                </div>
               </>
             ) : (
               <>
@@ -138,7 +149,11 @@ export function NavBarBase({
 
             {/* Mobile Menu Trigger */}
             <div className="md:hidden">
-              <MobileMenu isAuthenticated={isAuthenticated} isMentor={isMentor} />
+              <MobileMenu
+                isAuthenticated={isAuthenticated}
+                isMentor={isMentor}
+                onLoginClick={openLoginModal}
+              />
             </div>
           </div>
         </nav>
@@ -191,9 +206,11 @@ function NavLink({
 function MobileMenu({
   isAuthenticated,
   isMentor,
+  onLoginClick,
 }: {
   isAuthenticated: boolean
   isMentor: boolean
+  onLoginClick: (mode: 'signin' | 'signup') => void
 }) {
   const [open, setOpen] = useState(false)
 
@@ -249,15 +266,28 @@ function MobileMenu({
             </DropdownMenuItem>
           </>
         ) : (
-          <DropdownMenuItem asChild>
-            <Link
-              href="/auth"
-              className="flex w-full items-center gap-2 rounded-lg p-2 font-medium"
+          <>
+            <DropdownMenuItem
+              className="flex w-full cursor-pointer items-center gap-2 rounded-lg p-2 font-medium"
+              onClick={() => {
+                onLoginClick('signup')
+                setOpen(false)
+              }}
+            >
+              <User className="h-4 w-4" />
+              Get Started
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="flex w-full cursor-pointer items-center gap-2 rounded-lg p-2 font-medium"
+              onClick={() => {
+                onLoginClick('signin')
+                setOpen(false)
+              }}
             >
               <LogOut className="h-4 w-4" />
               Sign In
-            </Link>
-          </DropdownMenuItem>
+            </DropdownMenuItem>
+          </>
         )}
       </DropdownMenuContent>
     </DropdownMenu>
