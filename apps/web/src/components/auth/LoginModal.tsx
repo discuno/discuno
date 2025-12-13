@@ -37,7 +37,6 @@ export function LoginModal({
       await authClient.signIn.social({
         provider,
         callbackURL: '/settings',
-        disableRedirect: true,
       })
     } catch (error) {
       console.error('Sign in error:', error)
@@ -51,16 +50,16 @@ export function LoginModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="border-zinc-800 bg-zinc-950 p-6 sm:max-w-[400px]">
+      <DialogContent className="bg-background p-6 sm:max-w-[400px]">
         <DialogHeader className="flex flex-col items-center space-y-4 pb-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-zinc-900 ring-1 ring-zinc-800">
+          <div className="bg-muted ring-border flex h-12 w-12 items-center justify-center rounded-xl ring-1">
             <ThemeAwareIconLogo />
           </div>
           <div className="space-y-1.5 text-center">
-            <DialogTitle className="text-xl font-semibold tracking-tight text-zinc-100">
+            <DialogTitle className="text-xl font-semibold tracking-tight">
               {mode === 'signin' ? 'Welcome back' : 'Create an account'}
             </DialogTitle>
-            <DialogDescription className="text-sm text-zinc-400">
+            <DialogDescription className="text-muted-foreground text-sm">
               {mode === 'signin'
                 ? 'Sign in to your account'
                 : 'Join Discuno to connect with mentors'}
@@ -69,18 +68,12 @@ export function LoginModal({
         </DialogHeader>
 
         <Tabs value={userType} onValueChange={setUserType} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 rounded-lg border border-zinc-800/50 bg-zinc-900/50 p-1">
-            <TabsTrigger
-              value="student"
-              className="gap-2 rounded-md font-medium transition-all data-[state=active]:bg-zinc-100 data-[state=active]:text-zinc-900 data-[state=inactive]:text-zinc-400 data-[state=inactive]:hover:bg-zinc-800/50 data-[state=inactive]:hover:text-zinc-300"
-            >
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="student" className="gap-2">
               <GraduationCap className="h-4 w-4" />
               Student
             </TabsTrigger>
-            <TabsTrigger
-              value="mentor"
-              className="gap-2 rounded-md font-medium transition-all data-[state=active]:bg-zinc-100 data-[state=active]:text-zinc-900 data-[state=inactive]:text-zinc-400 data-[state=inactive]:hover:bg-zinc-800/50 data-[state=inactive]:hover:text-zinc-300"
-            >
+            <TabsTrigger value="mentor" className="gap-2">
               <Briefcase className="h-4 w-4" />
               Mentor
             </TabsTrigger>
