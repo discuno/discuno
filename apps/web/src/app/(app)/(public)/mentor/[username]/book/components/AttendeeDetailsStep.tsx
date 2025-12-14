@@ -8,7 +8,6 @@ import type { EventType } from '~/app/(app)/(public)/mentor/[username]/book/acti
 import type { BookingFormData } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingEmbed'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent } from '~/components/ui/card'
-import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '~/components/ui/field'
 import { InputGroup, InputGroupAddon, InputGroupInput } from '~/components/ui/input-group'
 import { Spinner } from '~/components/ui/spinner'
 import { validateEmail } from '~/lib/utils/validation'
@@ -64,9 +63,8 @@ export const AttendeeDetailsStep = ({
         </p>
       </div>
 
-      <FieldGroup className="max-w-md space-y-2">
-        <Field data-invalid={!!nameError} className="gap-1">
-          <FieldLabel htmlFor="name">Full Name</FieldLabel>
+      <div className="max-w-sm space-y-4">
+        <div className="space-y-3">
           <InputGroup>
             <InputGroupAddon>
               <User className="h-4 w-4" />
@@ -87,11 +85,8 @@ export const AttendeeDetailsStep = ({
               </InputGroupAddon>
             )}
           </InputGroup>
-          <FieldError>{nameError}</FieldError>
-        </Field>
+          {nameError && <p className="text-destructive text-xs">{nameError}</p>}
 
-        <Field data-invalid={!!emailError} className="gap-1">
-          <FieldLabel htmlFor="email">Email Address</FieldLabel>
           <InputGroup>
             <InputGroupAddon>
               <Mail className="h-4 w-4" />
@@ -111,28 +106,27 @@ export const AttendeeDetailsStep = ({
               </InputGroupAddon>
             )}
           </InputGroup>
-          <FieldError>{emailError}</FieldError>
-        </Field>
+          {emailError && <p className="text-destructive text-xs">{emailError}</p>}
 
-        <Field className="gap-1">
-          <FieldLabel htmlFor="phone">Phone Number</FieldLabel>
-          <InputGroup>
-            <InputGroupAddon>
-              <PhoneIcon className="h-4 w-4" />
-            </InputGroupAddon>
-            <PhoneInput
-              id="phone"
-              international
-              defaultCountry="US"
-              value={formData.phone}
-              onChange={value => setFormData({ ...formData, phone: value })}
-              placeholder="Your phone number"
-              className="flex-1 rounded-none border-0 bg-transparent shadow-none focus-visible:ring-0 dark:bg-transparent"
-              data-slot="input-group-control"
-            />
-          </InputGroup>
-          <FieldDescription className="text-xs">Optional - for SMS reminders</FieldDescription>
-        </Field>
+          <div>
+            <InputGroup>
+              <InputGroupAddon>
+                <PhoneIcon className="h-4 w-4" />
+              </InputGroupAddon>
+              <PhoneInput
+                id="phone"
+                international
+                defaultCountry="US"
+                value={formData.phone}
+                onChange={value => setFormData({ ...formData, phone: value })}
+                placeholder="Phone number (optional)"
+                className="flex-1 rounded-none border-0 bg-transparent shadow-none focus-visible:ring-0 dark:bg-transparent"
+                data-slot="input-group-control"
+              />
+            </InputGroup>
+            <p className="text-muted-foreground mt-1 text-xs">Optional - for SMS reminders</p>
+          </div>
+        </div>
 
         {/* Booking Summary */}
         {selectedEventType && selectedTimeSlot && (
@@ -193,7 +187,7 @@ export const AttendeeDetailsStep = ({
             )}
           </Button>
         </div>
-      </FieldGroup>
+      </div>
     </div>
   )
 }

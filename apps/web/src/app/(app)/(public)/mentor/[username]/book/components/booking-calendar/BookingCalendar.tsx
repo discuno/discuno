@@ -132,7 +132,7 @@ export const BookingCalendar = ({
       )}
 
       {/* Main Content Area */}
-      <div className="flex h-full flex-col overflow-hidden md:flex-row">
+      <div className="flex h-full flex-col overflow-hidden md:min-w-[700px] md:flex-row">
         {/* Left Side: Session Type & Calendar */}
         <div className="flex-1 overflow-y-auto border-r-0 p-4 pb-32 md:border-r md:p-6 md:pb-6">
           <div className="mx-auto max-w-sm space-y-8">
@@ -221,7 +221,7 @@ export const BookingCalendar = ({
 
         {/* Right Side: Available Times (Desktop Only) */}
         {selectedEventType && (
-          <div className="bg-muted/10 hidden flex-1 p-6 md:block md:max-w-xs md:min-w-[300px]">
+          <div className="bg-muted/10 hidden flex-1 p-6 md:block md:min-w-[300px]">
             <div className="flex h-full flex-col">
               <Label className="mb-4 block text-base font-medium">Available Times</Label>
               <p className="text-muted-foreground mb-4 text-xs font-medium">

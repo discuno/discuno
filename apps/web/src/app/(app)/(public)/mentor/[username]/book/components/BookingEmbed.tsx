@@ -245,7 +245,7 @@ export const BookingEmbed = ({
   }
 
   const renderContent = () => (
-    <div className="bg-background flex h-full w-full flex-col">
+    <div className="bg-background flex min-h-full w-full flex-col">
       {currentStep === 'calendar' ? (
         <BookingCalendar
           selectedEventType={selectedEventType}
