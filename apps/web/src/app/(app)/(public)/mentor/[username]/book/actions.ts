@@ -200,7 +200,7 @@ export const createStripeCheckoutSession = async (
   input: BookingFormInput
 ): Promise<{
   success: boolean
-  clientSecret?: string
+  url?: string
   checkoutSessionId?: string
 }> => {
   // Require authenticated user (not anonymous) to create booking
@@ -279,11 +279,10 @@ export const createStripeCheckoutSession = async (
         },
       ],
       mode: 'payment',
-      ui_mode: 'custom',
+      // ui_mode: 'hosted', // Default is hosted
       allow_promotion_codes: true,
       adaptive_pricing: { enabled: true },
       consent_collection: {
-        payment_method_reuse_agreement: { position: 'auto' },
         promotions: 'auto',
       },
       billing_address_collection: 'required',
@@ -328,7 +327,8 @@ export const createStripeCheckoutSession = async (
         payment_method_remove: 'enabled',
         payment_method_save: 'enabled',
       },
-      return_url: `${env.NEXT_PUBLIC_BASE_URL}/bookings/success`,
+      success_url: `${env.NEXT_PUBLIC_BASE_URL}/booking/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${env.NEXT_PUBLIC_BASE_URL}/mentor/${mentorUsername}`,
 
       metadata: {
         mentorUserId: mentorUserId.toString(),
@@ -349,9 +349,14 @@ export const createStripeCheckoutSession = async (
     const session = await stripe.checkout.sessions.create(createParams)
 
     console.log(`Successfully created Checkout Session: ${session.id}`)
+
+    if (!session.url) {
+      throw new ExternalApiError('Failed to create checkout session URL')
+    }
+
     return {
-      success: session.client_secret !== null,
-      clientSecret: session.client_secret ?? undefined,
+      success: true,
+      url: session.url,
       checkoutSessionId: session.id,
     }
   } catch (error) {

@@ -1,11 +1,9 @@
 'use client'
 
 import { TZDate } from '@date-fns/tz'
-import { CheckoutProvider } from '@stripe/react-stripe-js'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { addDays, endOfMonth, endOfWeek, format, startOfMonth, startOfWeek } from 'date-fns'
 import { CalendarIcon } from 'lucide-react'
-import { useTheme } from 'next-themes'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { BookingSidebar } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingSidebar'
@@ -27,10 +25,9 @@ import { BookingCalendar } from '~/app/(app)/(public)/mentor/[username]/book/com
 import { BookingConfirmationStep } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingConfirmationStep'
 import { BookingEmbedSkeleton } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingEmbedSkeleton'
 import type { BookingData } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingModal'
-import { CheckoutForm } from '~/app/(app)/(public)/mentor/[username]/book/components/CheckoutForm'
+
 import { useSession } from '~/lib/auth-client'
 import { BadRequestError, ExternalApiError } from '~/lib/errors'
-import { stripePromise } from '~/lib/stripe/client'
 
 export interface BookingFormData {
   name: string
@@ -38,7 +35,7 @@ export interface BookingFormData {
   phone?: string
 }
 
-type BookingStep = 'calendar' | 'auth' | 'booking' | 'payment' | 'confirmation'
+type BookingStep = 'calendar' | 'auth' | 'booking' | 'confirmation'
 
 export const BookingEmbed = ({
   bookingData,
@@ -47,7 +44,6 @@ export const BookingEmbed = ({
   bookingData: BookingData
   isFullPage?: boolean
 }) => {
-  const { resolvedTheme } = useTheme()
   const { calcomUsername } = bookingData
   const timeZone = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC', [])
   const today = useMemo(() => new TZDate(new Date(), timeZone), [timeZone])
@@ -171,15 +167,6 @@ export const BookingEmbed = ({
     [session]
   )
 
-  const handlePaymentConfirmed = useCallback(() => {
-    toast.success('Payment successful! Your booking will be confirmed via email shortly.')
-    setCurrentStep('confirmation')
-  }, [])
-
-  const handlePaymentError = useCallback((error: string) => {
-    toast.error(error)
-  }, [])
-
   // Mutations
   const createBookingMutation = useMutation({
     mutationFn: async () => {
@@ -190,10 +177,31 @@ export const BookingEmbed = ({
       const startTime = new TZDate(selectedTimeSlot, timeZone)
       console.log('Booking startTime:', startTime.toISOString())
 
-      // For paid sessions, proceed to the embedded Checkout step
+      // For paid sessions, redirect to Stripe Hosted Checkout
       if ((selectedEventType.price ?? 0) > 0) {
-        setCurrentStep('payment')
-        return
+        toast.loading('Redirecting to secure checkout...')
+
+        const bookingPayload: BookingFormInput = {
+          eventTypeId: selectedEventType.id,
+          startTimeIso: startTime.toISOString(),
+          attendeeName: formData.name,
+          attendeeEmail: formData.email,
+          attendeePhone: formData.phone,
+          mentorUsername: calcomUsername,
+          mentorUserId: bookingData.userId,
+          price: selectedEventType.price ?? 0,
+          currency: selectedEventType.currency ?? 'USD',
+          timeZone: timeZone,
+        }
+
+        const response = await createStripeCheckoutSession(bookingPayload)
+
+        if (response.url) {
+          window.location.href = response.url
+          return
+        }
+
+        throw new Error('Failed to initiate secure checkout')
       }
 
       // For free bookings, create the booking directly
@@ -286,59 +294,8 @@ export const BookingEmbed = ({
           setCurrentStep={setCurrentStep}
           createBookingMutation={createBookingMutation}
         />
-      ) : currentStep === 'confirmation' ? (
-        <BookingConfirmationStep />
       ) : (
-        selectedEventType &&
-        selectedDate && (
-          <div className="animate-in fade-in slide-in-from-bottom-2 p-6 duration-200">
-            <CheckoutProvider
-              stripe={stripePromise}
-              options={{
-                fetchClientSecret: async () => {
-                  if (!selectedTimeSlot) throw new Error('Missing selected time slot')
-                  const startTime = new TZDate(selectedTimeSlot, timeZone)
-                  if (isNaN(startTime.getTime())) throw new Error('Invalid time slot')
-
-                  const bookingPayload: BookingFormInput = {
-                    eventTypeId: selectedEventType.id,
-                    startTimeIso: startTime.toISOString(),
-                    attendeeName: formData.name,
-                    attendeeEmail: formData.email,
-                    attendeePhone: formData.phone,
-                    mentorUsername: calcomUsername,
-                    mentorUserId: bookingData.userId,
-                    price: selectedEventType.price ?? 0,
-                    currency: selectedEventType.currency ?? 'USD',
-                    timeZone: timeZone,
-                  }
-
-                  const response = await createStripeCheckoutSession(bookingPayload)
-                  if (!response.clientSecret) {
-                    throw new Error('Failed to create checkout session')
-                  }
-                  return response.clientSecret
-                },
-                elementsOptions: {
-                  appearance: {
-                    theme: resolvedTheme === 'dark' ? 'night' : 'stripe',
-                  },
-                },
-              }}
-            >
-              <CheckoutForm
-                eventType={selectedEventType}
-                selectedDate={selectedDate}
-                selectedTimeSlot={selectedTimeSlot ?? ''}
-                formData={formData}
-                onBack={() => setCurrentStep('booking')}
-                onPaymentConfirmed={handlePaymentConfirmed}
-                onPaymentError={handlePaymentError}
-                timeZone={timeZone}
-              />
-            </CheckoutProvider>
-          </div>
-        )
+        <BookingConfirmationStep />
       )}
     </div>
   )

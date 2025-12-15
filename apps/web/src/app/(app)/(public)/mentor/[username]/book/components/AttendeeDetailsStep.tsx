@@ -18,7 +18,7 @@ interface AttendeeDetailsStepProps {
   selectedTimeSlot: string | null
   formData: BookingFormData
   setFormData: (formData: BookingFormData) => void
-  setCurrentStep: (step: 'calendar' | 'payment' | 'booking') => void
+  setCurrentStep: (step: 'calendar' | 'booking') => void
   createBookingMutation: UseMutationResult<void, Error, void>
 }
 
