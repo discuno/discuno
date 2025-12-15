@@ -68,7 +68,7 @@ export const BookingModal = ({ bookingData, children, className }: BookingModalP
             </div>
 
             {/* Booking Interface */}
-            <div className="bg-background flex-1 overflow-hidden [padding-bottom:env(safe-area-inset-bottom)]">
+            <div className="bg-background flex-1 overflow-x-hidden overflow-y-auto [padding-bottom:env(safe-area-inset-bottom)]">
               <Suspense fallback={<BookingEmbedSkeleton />}>
                 <BookingEmbed bookingData={bookingData} />
               </Suspense>
