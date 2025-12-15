@@ -187,7 +187,7 @@ export const BookingEmbed = ({
           attendeeName: formData.name,
           attendeeEmail: formData.email,
           attendeePhone: formData.phone,
-          mentorUsername: calcomUsername,
+          mentorUsername: bookingData.username,
           mentorUserId: bookingData.userId,
           price: selectedEventType.price ?? 0,
           currency: selectedEventType.currency ?? 'USD',
