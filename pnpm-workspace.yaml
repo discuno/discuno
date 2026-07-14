@@ -10,6 +10,16 @@ preferWorkspacePackages: true
 resolutionMode: highest
 sharedWorkspaceLockfile: true
 strictPeerDependencies: false
+supportedArchitectures:
+  os:
+    - current
+    - linux
+  cpu:
+    - current
+    - x64
+  libc:
+    - current
+    - glibc
 
 # These versions were intentionally selected during this modernization and
 # landed within pnpm 11's default 24-hour publication holdback window.

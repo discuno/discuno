@@ -11,6 +11,14 @@ const workspaceRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)),
 /** @type {import("next").NextConfig} */
 const coreConfig = {
   serverExternalPackages: ['drizzle-orm'],
+  outputFileTracingRoot: workspaceRoot,
+  outputFileTracingIncludes: {
+    '/*': [
+      '../../node_modules/.pnpm/sharp@*/node_modules/sharp/**/*',
+      '../../node_modules/.pnpm/@img+sharp-linux-x64@*/node_modules/@img/sharp-linux-x64/**/*',
+      '../../node_modules/.pnpm/@img+sharp-libvips-linux-x64@*/node_modules/@img/sharp-libvips-linux-x64/**/*',
+    ],
+  },
   cacheComponents: true,
   turbopack: {
     root: workspaceRoot,
