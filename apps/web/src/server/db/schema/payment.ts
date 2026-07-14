@@ -1,4 +1,4 @@
-import { relations } from 'drizzle-orm'
+import { relations, sql } from 'drizzle-orm'
 import {
   boolean,
   index,
@@ -62,13 +62,20 @@ export const payment = pgTable(
     transferStatus: varchar({ length: 50 }), // Transfer status
     transferRetryCount: integer().notNull().default(0), // Number of transfer retry attempts
 
+    // Set only after Inngest accepts the durable fulfillment event. A null value
+    // lets a Stripe webhook retry safely requeue work after a transient failure.
+    fulfillmentQueuedAt: timestamp({
+      mode: 'date',
+      withTimezone: true,
+    }),
+
     disputeRequested: boolean().notNull().default(false), // Admin flag to prevent auto-transfer
     disputePeriodEnds: timestamp({
       mode: 'date',
       withTimezone: true,
     }).notNull(),
 
-    metadata: jsonb().default('{}'),
+    metadata: jsonb().default(sql`'{}'::jsonb`),
 
     ...timestamps,
   },

@@ -1,4 +1,5 @@
 import { type Metadata } from 'next'
+import { env } from '~/env'
 
 export const siteConfig = {
   name: 'Discuno',
@@ -32,7 +33,7 @@ export const siteConfig = {
 }
 
 export const defaultMetadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? siteConfig.url),
+  metadataBase: new URL(env.NEXT_PUBLIC_APP_URL ?? siteConfig.url),
   title: {
     default: `${siteConfig.name} - ${siteConfig.tagline}`,
     template: `%s | ${siteConfig.name}`,

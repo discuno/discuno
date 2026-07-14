@@ -24,23 +24,23 @@ export const calcomToken = pgTable(
       .notNull()
       .unique()
       .references(() => user.id, { onDelete: 'cascade' }),
-    calcomUserId: integer().notNull(), // Cal.com managed user ID
-    calcomUsername: varchar({ length: 255 }).notNull(), // Cal.com generated username
-    accessToken: text().notNull(),
-    refreshToken: text().notNull(),
+    calcomUserId: integer().notNull(), // Cal.com organization user ID
+    calcomUsername: varchar({ length: 255 }).notNull(), // Organization profile username
+    // Legacy managed-user credentials. New organization users use platform credentials.
+    accessToken: text(),
+    refreshToken: text(),
     accessTokenExpiresAt: timestamp({
       mode: 'date',
       withTimezone: true,
-    }).notNull(),
+    }),
     refreshTokenExpiresAt: timestamp({
       mode: 'date',
       withTimezone: true,
-    }).notNull(),
+    }),
     ...timestamps,
   },
   table => [
     index('calcom_tokens_user_id_idx').on(table.userId),
-    index('calcom_tokens_access_token_idx').on(table.accessToken),
     index('calcom_tokens_username_idx').on(table.calcomUsername),
   ]
 )
@@ -70,7 +70,7 @@ export const mentorStripeAccount = pgTable(
     payoutsEnabled: boolean().notNull().default(false),
     chargesEnabled: boolean().notNull().default(false),
     detailsSubmitted: boolean().notNull().default(false),
-    requirements: jsonb().default('{}'),
+    requirements: jsonb().default(sql`'{}'::jsonb`),
     ...timestamps,
   },
   table => [

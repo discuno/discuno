@@ -97,7 +97,7 @@ export const BookingSidebar = ({
       {selectedEventType && (
         <div className="bg-background/50 mb-8 rounded-xl border p-4 shadow-sm backdrop-blur-sm">
           <div className="mb-3 flex items-center justify-between">
-            <h3 className="font-semibold text-primary">{selectedEventType.title}</h3>
+            <h3 className="text-primary font-semibold">{selectedEventType.title}</h3>
             {selectedEventType.price && selectedEventType.price > 0 ? (
               <Badge variant="default">
                 {(selectedEventType.price / 100).toLocaleString('en-US', {
@@ -111,24 +111,24 @@ export const BookingSidebar = ({
           </div>
 
           <div className="space-y-2 text-sm">
-            <div className="flex items-center gap-2 text-muted-foreground">
+            <div className="text-muted-foreground flex items-center gap-2">
               <Clock className="h-4 w-4" />
               <span>{selectedEventType.length} minutes</span>
             </div>
-            <div className="flex items-center gap-2 text-muted-foreground">
+            <div className="text-muted-foreground flex items-center gap-2">
               <Video className="h-4 w-4" />
               <span>Video Call</span>
             </div>
 
             {dateDisplay && timeDisplay && (
               <div className="mt-3 border-t pt-3">
-                 <div className="flex items-center gap-2 font-medium">
-                  <Calendar className="h-4 w-4 text-primary" />
+                <div className="flex items-center gap-2 font-medium">
+                  <Calendar className="text-primary h-4 w-4" />
                   <span>{dateDisplay}</span>
-                 </div>
-                 <div className="ml-6 text-muted-foreground">
-                   {timeDisplay} ({timeZone})
-                 </div>
+                </div>
+                <div className="text-muted-foreground ml-6">
+                  {timeDisplay} ({timeZone})
+                </div>
               </div>
             )}
           </div>
@@ -155,7 +155,7 @@ export const BookingSidebar = ({
                 className={cn(
                   'flex h-8 w-8 items-center justify-center rounded-full border text-xs font-semibold transition-all',
                   step.isActive
-                    ? 'border-primary bg-primary text-primary-foreground ring-4 ring-primary/10'
+                    ? 'border-primary bg-primary text-primary-foreground ring-primary/10 ring-4'
                     : step.isCompleted
                       ? 'border-primary bg-primary text-primary-foreground'
                       : 'border-muted-foreground/30 bg-background'

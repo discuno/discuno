@@ -37,10 +37,7 @@ export const user = pgTable(
     ...timestamps,
     ...softDeleteTimestamps,
   },
-  user => [
-    index('user_email_idx').on(user.email),
-    index('user_username_idx').on(user.username),
-  ]
+  user => [index('user_email_idx').on(user.email), index('user_username_idx').on(user.username)]
 )
 
 export const session = pgTable(

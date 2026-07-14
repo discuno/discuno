@@ -71,18 +71,11 @@ export interface FullUserProfile {
   major: string | null
   calcomUserId: number | null
   calcomUsername: string | null
-  accessToken: string | null
-  refreshToken: string | null
 }
 
 // Booking related types
 export type BookingStatus =
-  | 'confirmed'
-  | 'pending'
-  | 'cancelled'
-  | 'completed'
-  | 'no_show'
-  | 'rescheduled'
+  'confirmed' | 'pending' | 'cancelled' | 'completed' | 'no_show' | 'rescheduled'
 
 export type BookingAttendee = DbBookingAttendee
 

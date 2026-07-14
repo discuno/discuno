@@ -12,21 +12,21 @@ Mentorship marketplaces require flawless coordination between scheduling and pay
 ## Architecture Overview
 
 ```
-Mentee ➜ Discuno (Next.js 15) ➜ Cal.com API ➜ Booking Webhooks
+Mentee ➜ Discuno (Next.js 16) ➜ Cal.com API ➜ Booking Webhooks
                                   │
                                   └➜ Stripe Checkout ➜ Stripe Connect Payouts
 ```
 
-- **Frontend:** Discuno’s Next.js 15 app renders dynamic scheduling flows with React Server Components and Tailwind CSS.
+- **Frontend:** Discuno’s Next.js 16 app renders dynamic scheduling flows with React Server Components and Tailwind CSS.
 - **Backend:** Drizzle ORM (PostgreSQL) stores bookings, mentors, and payout states with audit logs.
 - **Integrations:** Cal.com handles availability. Stripe Connect powers payments. PostHog logs analytics across both flows.
 
 ## Cal.com Integration Pattern
 
-1. **Managed users:** Discuno provisions mentors as managed users within a Cal.com organization, ensuring availability policies are centrally enforced.
+1. **Organization users:** Discuno provisions eligible mentors in a Cal.com organization and manages their team membership and default schedule from the server.
 2. **Event types:** Each mentorship format (intro session, project review, career roadmap) maps to a Cal.com event type with custom forms and location rules.
-3. **Webhooks:** Cal.com webhooks hit `apps/web/src/app/api/webhooks/cal/` to persist bookings, attendees, and cancellations. Discuno’s handlers enforce idempotency and emit analytics events.
-4. **Token refresh:** OAuth tokens live in the `discuno_calcom_token` table with automatic refresh jobs to avoid unexpected 401 errors.
+3. **Webhooks:** Cal.com webhooks hit `apps/web/src/app/api/webhooks/cal/` to persist bookings, attendees, reschedules, no-shows, and cancellations. Discuno verifies each HMAC signature and makes state transitions idempotent.
+4. **Server credentials:** A server-only organization API key replaces the deprecated per-user OAuth-token flow. No Cal.com credential is returned to the browser.
 
 ### Sample Booking Flow
 
@@ -48,46 +48,47 @@ await db.insert(discuno_booking).values({
 
 ## Stripe Connect Integration Pattern
 
-1. **Product catalog:** Discuno maps Cal.com event types to Stripe prices so every session has a predictable SKU and revenue split.
+1. **Session pricing:** Discuno stores prices on mentorship event types and builds Stripe Checkout line items server-side.
 2. **Checkout session:** The mentee is routed through Stripe Checkout using signed URLs generated server-side with Zod validation.
-3. **Holding funds:** After payment succeeds, funds sit in a pending state while the mentorship session completes and the dispute window closes.
-4. **Automated transfers:** Cron jobs trigger after the hold period to transfer mentor earnings and platform fees via Stripe Connect’s `transfer` API.
-5. **Refunds:** Cancellations within policy automatically trigger partial or full refunds, sync back to the booking record, and notify both participants.
+3. **Destination charge:** Checkout creates a destination charge for the mentor’s Express account while Discuno retains its configured platform share.
+4. **Durable fulfillment:** Signed Checkout webhooks persist the payment once, then enqueue retry-safe Cal.com booking work through Inngest. Both immediate and asynchronous payment success events use the same fulfillment path.
+5. **Failure recovery:** If Cal.com booking creation ultimately fails, Discuno refunds the PaymentIntent and alerts support if the refund needs manual intervention.
 
 ### Sample Payout Flow
 
 ```typescript
-await stripe.transfers.create({
-  amount: mentorPayoutInCents,
-  currency: 'usd',
-  destination: mentor.stripeAccountId,
-  metadata: {
-    bookingId,
-    mentorId,
-    program: programSlug,
+await stripe.checkout.sessions.create({
+  mode: 'payment',
+  line_items: [{ price_data: sessionPrice, quantity: 1 }],
+  payment_intent_data: {
+    transfer_data: {
+      destination: mentor.stripeAccountId,
+      amount: mentorAmountInCents,
+    },
   },
 })
 ```
 
 ## Security and Compliance Considerations
 
-- **Least privilege:** Discuno stores signed webhooks in encrypted columns and scopes API keys to specific environments (local, preview, production).
-- **Audit trails:** Every booking change runs through Drizzle migrations with soft deletes and timestamp columns for compliance reporting.
-- **Tax reporting:** Stripe Connect handles 1099 tax form generation. Discuno syncs status to mentor dashboards for transparency.
-- **Privacy:** Better-auth ensures OAuth flows stay within your organization’s identity requirements, including SSO and domain restrictions.
+- **Least privilege:** Integration secrets remain server-only and are scoped independently for local, preview, and production environments.
+- **Webhook integrity:** Cal.com and Stripe requests are rejected unless their signatures validate against the raw request body.
+- **Auditability:** Canonical payment and booking state is stored with timestamps and provider IDs, and webhook replays are idempotent.
+- **Tax:** Stripe Automatic Tax is enabled at Checkout. Marketplace operators should still confirm their own filing and connected-account obligations with qualified advisers.
+- **Privacy:** Better Auth keeps email and Google sign-in behind the same server-side session and role controls.
 
 ## Monitoring and Observability
 
 - **PostHog dashboards** track conversion rates from session selection to completed payment.
 - **Sentry alerts** flag integration errors, webhook failures, or API rate-limit issues to engineering teams.
-- **Cron job logs** help support teams trace payout triggers and identify blocked mentors.
+- **Inngest runs** let support teams trace payment fulfillment, Cal.com booking retries, refunds, and alerts.
 
 ## Implementation Checklist
 
 - [x] Configure Cal.com webhooks with secret verification
 - [x] Store Stripe secrets in environment variables validated by `apps/web/src/env.js`
 - [x] Seed mentors with Stripe onboarding URLs before launch
-- [x] Enable dispute monitoring and cancellation policies
+- [ ] Confirm payout timing, platform-fee, refund, and cancellation policies before production rollout
 - [x] Add PostHog event tracking for `checkout_started` and `session_completed`
 
 ## When to Use Discuno as Your Baseline

@@ -1,6 +1,7 @@
-import { relations } from 'drizzle-orm'
+import { relations, sql } from 'drizzle-orm'
 import {
   boolean,
+  foreignKey,
   index,
   integer,
   jsonb,
@@ -51,15 +52,13 @@ export const booking = pgTable(
     attendeeNoShow: boolean().default(false),
 
     // Event type reference
-    mentorEventTypeId: integer().references(() => mentorEventType.id, {
-      onDelete: 'set null',
-    }),
+    mentorEventTypeId: integer(),
 
     // Payment reference (will be set after payment is processed)
     paymentId: integer().references(() => payment.id, { onDelete: 'set null' }),
 
     // Response data (name, email, location, notes, etc.)
-    responses: jsonb().default('{}'),
+    responses: jsonb().default(sql`'{}'::jsonb`),
 
     // Full webhook payload for auditing and future-proofing
     webhookPayload: jsonb().notNull(),
@@ -67,6 +66,11 @@ export const booking = pgTable(
     ...softDeleteTimestamps,
   },
   table => [
+    foreignKey({
+      name: 'booking_mentor_event_type_fk',
+      columns: [table.mentorEventTypeId],
+      foreignColumns: [mentorEventType.id],
+    }).onDelete('set null'),
     index('bookings_calcom_booking_id_idx').on(table.calcomBookingId),
     index('bookings_calcom_uid_idx').on(table.calcomUid),
     index('bookings_start_time_idx').on(table.startTime),

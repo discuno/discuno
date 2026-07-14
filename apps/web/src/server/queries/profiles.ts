@@ -109,8 +109,6 @@ const getFullProfileById = async (userId: string): Promise<FullUserProfile | nul
       // Cal.com integration
       calcomUserId: schema.calcomToken.calcomUserId,
       calcomUsername: schema.calcomToken.calcomUsername,
-      accessToken: schema.calcomToken.accessToken,
-      refreshToken: schema.calcomToken.refreshToken,
     })
     .from(schema.user)
     .leftJoin(schema.userProfile, eq(schema.user.id, schema.userProfile.userId))
@@ -142,8 +140,6 @@ const getFullProfileById = async (userId: string): Promise<FullUserProfile | nul
     major: userData.majorName,
     calcomUserId: userData.calcomUserId,
     calcomUsername: userData.calcomUsername,
-    accessToken: userData.accessToken,
-    refreshToken: userData.refreshToken,
   }
 }
 

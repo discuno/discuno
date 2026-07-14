@@ -46,11 +46,7 @@ const MentorModalContent = ({ username }: { username: string }) => {
           emailVerified: false,
           bio: cachedPost.description,
           schoolYear: cachedPost.schoolYear as
-            | 'Freshman'
-            | 'Sophomore'
-            | 'Junior'
-            | 'Senior'
-            | 'Graduate',
+            'Freshman' | 'Sophomore' | 'Junior' | 'Senior' | 'Graduate',
           graduationYear: cachedPost.graduationYear ?? new Date().getFullYear(),
           image: cachedPost.userImage ?? null,
           name: cachedPost.name,
@@ -58,8 +54,6 @@ const MentorModalContent = ({ username }: { username: string }) => {
           major: cachedPost.major ?? null,
           calcomUserId: null,
           calcomUsername: cachedPost.calcomUsername,
-          accessToken: null,
-          refreshToken: null,
         }
       : undefined,
     staleTime: 5 * 60 * 1000, // 5 minutes

@@ -55,6 +55,7 @@ export const processCheckoutSideEffects = inngest.createFunction(
   {
     id: 'process-checkout-side-effects',
     name: 'Process Checkout Session Side Effects',
+    triggers: { event: 'stripe/checkout.completed' },
     retries: 3,
     cancelOn: [
       {
@@ -63,7 +64,6 @@ export const processCheckoutSideEffects = inngest.createFunction(
       },
     ],
   },
-  { event: 'stripe/checkout.completed' },
   async ({ event, step, logger }) => {
     const { paymentId, paymentIntentId, sessionId, metadata, sessionAmount, sessionCurrency } =
       event.data

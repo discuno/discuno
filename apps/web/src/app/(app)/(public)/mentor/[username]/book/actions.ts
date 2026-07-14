@@ -8,12 +8,18 @@ import { env } from '~/env'
 import { inngest } from '~/inngest/client'
 import { requireNonAnonymousAuth } from '~/lib/auth/auth-utils'
 import { createCalcomBooking } from '~/lib/calcom'
+import { CALCOM_API_VERSIONS } from '~/lib/calcom/client'
 import { MINIMUM_PAID_BOOKING_PRICE } from '~/lib/constants'
 import { BadRequestError, ExternalApiError, StripeError } from '~/lib/errors'
 import { stripe } from '~/lib/stripe'
+import {
+  getCheckoutFulfillmentEventId,
+  getCheckoutPaymentIntentId,
+  isCheckoutSessionReadyForFulfillment,
+} from '~/lib/stripe/checkout'
 import { db } from '~/server/db'
 import { mentorStripeAccount, payment } from '~/server/db/schema/index'
-import { getMentorCalcomTokensByUsername } from '~/server/queries/calcom'
+import { getCalcomConnectionByUsername } from '~/server/queries/calcom'
 import { getMentorEnabledEventTypes } from '~/server/queries/event-types'
 
 interface BookingData {
@@ -122,13 +128,8 @@ type AvailableSlotsResponse = {
  * Fetch available event types for a given username (using database with joins)
  */
 export const fetchEventTypes = async (username: string): Promise<EventType[]> => {
-  const mentorTokens = await getMentorCalcomTokensByUsername(username)
-
-  if (!mentorTokens) {
-    throw new ExternalApiError(`No Cal.com tokens found for user: ${username}`)
-  }
-
-  const mentorPrefs = await getMentorEnabledEventTypes(mentorTokens.userId)
+  const mentorConnection = await getCalcomConnectionByUsername(username)
+  const mentorPrefs = await getMentorEnabledEventTypes(mentorConnection.userId)
 
   if (!mentorPrefs.length) {
     console.log(`No enabled event types found for user: ${username}`)
@@ -162,8 +163,7 @@ export const fetchAvailableSlots = async (
 
   const response = await fetch(url.toString(), {
     headers: {
-      Authorization: `Bearer ${env.X_CAL_SECRET_KEY}`,
-      'cal-api-version': '2024-09-04',
+      'cal-api-version': CALCOM_API_VERSIONS.slots,
     },
   })
 
@@ -416,6 +416,21 @@ export const handleCheckoutSessionWebhook = async (
 ): Promise<Response> => {
   const { metadata, id: sessionId } = session
 
+  // checkout.session.completed can arrive before delayed payment methods settle.
+  // Stripe will later send checkout.session.async_payment_succeeded when paid.
+  if (!isCheckoutSessionReadyForFulfillment(session.payment_status)) {
+    console.info(
+      JSON.stringify({
+        tag: 'CheckoutWebhook',
+        level: 'info',
+        event: 'payment_not_ready_for_fulfillment',
+        sessionId,
+        paymentStatus: session.payment_status,
+      })
+    )
+    return new Response('ok', { status: 200 })
+  }
+
   // ============================================
   // STEP 1: TRANSACTIONAL CORE - Validate & Persist
   // ============================================
@@ -469,8 +484,7 @@ export const handleCheckoutSessionWebhook = async (
   const disputePeriodEnd = new Date()
   disputePeriodEnd.setHours(disputePeriodEnd.getHours() + 72)
 
-  const paymentIntentId =
-    typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id
+  const paymentIntentId = getCheckoutPaymentIntentId(session.payment_intent)
 
   if (!paymentIntentId) {
     console.error(
@@ -503,14 +517,36 @@ export const handleCheckoutSessionWebhook = async (
   }
 
   // Use onConflictDoNothing for idempotency - if Stripe retries webhook, we skip duplicate insert
-  const paymentRecord = await db
+  const insertedPayments = await db
     .insert(payment)
     .values(insertData)
     .onConflictDoNothing({ target: payment.stripePaymentIntentId })
     .returning()
 
-  if (!paymentRecord[0]) {
-    // Payment already exists (webhook retry) - still return 200 OK
+  const paymentRecord =
+    insertedPayments[0] ??
+    (
+      await db
+        .select()
+        .from(payment)
+        .where(eq(payment.stripePaymentIntentId, paymentIntentId))
+        .limit(1)
+    )[0]
+
+  if (!paymentRecord) {
+    console.error(
+      JSON.stringify({
+        tag: 'CheckoutWebhook',
+        level: 'critical',
+        event: 'payment_record_unavailable',
+        sessionId,
+        paymentIntentId,
+      })
+    )
+    return new Response('Failed to persist payment', { status: 500 })
+  }
+
+  if (!insertedPayments[0]) {
     console.info(
       JSON.stringify({
         tag: 'CheckoutWebhook',
@@ -521,19 +557,33 @@ export const handleCheckoutSessionWebhook = async (
         message: 'Idempotent webhook retry detected',
       })
     )
-    return new Response('ok', { status: 200 })
   }
 
-  console.info(
-    JSON.stringify({
-      tag: 'CheckoutWebhook',
-      level: 'info',
-      event: 'payment_record_created',
-      sessionId,
-      paymentIntentId,
-      paymentId: paymentRecord[0].id,
-    })
-  )
+  if (insertedPayments[0]) {
+    console.info(
+      JSON.stringify({
+        tag: 'CheckoutWebhook',
+        level: 'info',
+        event: 'payment_record_created',
+        sessionId,
+        paymentIntentId,
+        paymentId: paymentRecord.id,
+      })
+    )
+  }
+
+  if (paymentRecord.fulfillmentQueuedAt) {
+    console.info(
+      JSON.stringify({
+        tag: 'CheckoutWebhook',
+        level: 'info',
+        event: 'fulfillment_already_queued',
+        sessionId,
+        paymentIntentId,
+      })
+    )
+    return new Response('ok', { status: 200 })
+  }
 
   // ============================================
   // STEP 2: DEFERRED SIDE EFFECTS - Trigger Inngest
@@ -543,9 +593,10 @@ export const handleCheckoutSessionWebhook = async (
   // Inngest provides automatic retries, observability, and error handling
   try {
     await inngest.send({
+      id: getCheckoutFulfillmentEventId(sessionId),
       name: 'stripe/checkout.completed',
       data: {
-        paymentId: paymentRecord[0].id,
+        paymentId: paymentRecord.id,
         paymentIntentId,
         sessionId,
         metadata: {
@@ -566,6 +617,10 @@ export const handleCheckoutSessionWebhook = async (
         sessionCurrency: session.currency,
       },
     })
+    await db
+      .update(payment)
+      .set({ fulfillmentQueuedAt: new Date(), updatedAt: new Date() })
+      .where(eq(payment.id, paymentRecord.id))
     console.info(
       JSON.stringify({
         tag: 'CheckoutWebhook',

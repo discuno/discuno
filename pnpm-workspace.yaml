@@ -1,2 +1,40 @@
 packages:
   - 'apps/*'
+
+autoInstallPeers: false
+dedupePeerDependents: false
+enablePrePostScripts: true
+gitChecks: true
+nodeOptions: '--max-old-space-size=4096'
+preferWorkspacePackages: true
+resolutionMode: highest
+sharedWorkspaceLockfile: true
+strictPeerDependencies: false
+
+# These versions were intentionally selected during this modernization and
+# landed within pnpm 11's default 24-hour publication holdback window.
+minimumReleaseAgeExclude:
+  - '@stripe/stripe-js'
+  - '@turbo/*'
+  - '@typescript-eslint/*'
+  - ast-v8-to-istanbul
+  - posthog-js
+  - react-email
+  - turbo
+  - typescript-eslint
+
+overrides:
+  esbuild: ^0.25.5
+  postcss: ^8.5.10
+  react-is: ^19.2.0
+  '@types/react': ^19.2.2
+  '@types/react-dom': ^19.2.2
+
+# pnpm 11 blocks unreviewed dependency install scripts. Native packages needed
+# by the build are approved explicitly; informational legacy scripts stay off.
+allowBuilds:
+  core-js: false
+  esbuild: true
+  protobufjs: false
+  sharp: true
+  unrs-resolver: true

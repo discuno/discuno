@@ -32,6 +32,11 @@ pnpm build:web
 
 # Preview production build
 pnpm preview
+
+# Read-only connectivity checks (local, preview, production)
+pnpm integrations:check:local
+pnpm integrations:check:preview
+pnpm integrations:check:prod
 ```
 
 ### Vercel CLI
@@ -66,11 +71,14 @@ vercel link
 ### Quality Checks
 
 ```bash
-# Run all tests
-pnpm test
+# Run unit tests once
+pnpm test:run
 
-# Run tests in watch mode
-pnpm test:watch
+# Run guarded database integration tests
+railway run --environment test --service Postgres zsh -c 'export DATABASE_URL="$DATABASE_PUBLIC_URL"; pnpm test:integration'
+
+# Run unit tests in watch mode
+pnpm --filter @discuno/web test
 
 # Run tests with coverage
 pnpm --filter @discuno/web test:coverage
@@ -90,16 +98,10 @@ pnpm format:check
 ### Database Operations
 
 ```bash
-# Generate Drizzle schema from database
-pnpm db:generate
-
-# Generate for specific environments
-pnpm db:generate:local
-pnpm db:generate:preview
-pnpm db:generate:prod
-
-# Push schema changes to database
-pnpm db:push
+# Push schema changes to a named database and inspect the interactive diff
+pnpm db:push:local
+pnpm db:push:preview
+pnpm db:push:prod
 
 # Open Drizzle Studio (database GUI)
 pnpm db:studio
@@ -127,10 +129,10 @@ pnpm db:test:prod
 
 ```bash
 # Run a specific test file
-pnpm --filter @discuno/web vitest run src/path/to/file.test.ts
+pnpm --filter @discuno/web exec vitest run src/path/to/file.test.ts
 
 # Run tests in watch mode for a specific file
-pnpm --filter @discuno/web vitest watch src/path/to/file.test.ts
+pnpm --filter @discuno/web exec vitest src/path/to/file.test.ts
 ```
 
 ## Architecture
@@ -139,7 +141,7 @@ pnpm --filter @discuno/web vitest watch src/path/to/file.test.ts
 
 - **pnpm workspaces** for package management
 - **Turborepo** for build orchestration and caching
-- Single application: `apps/web` (Next.js 15)
+- Single application: `apps/web` (Next.js 16)
 - **Centralized configuration at root level**: Drizzle configs (`drizzle.*.config.ts`), TypeScript, ESLint, Prettier
 - Database scripts in `apps/web/scripts/` reference root-level Drizzle configurations with `../../` paths
 
@@ -177,14 +179,13 @@ apps/web/
 │   │   └── providers/     # React context providers
 │   ├── hooks/             # Custom React hooks
 │   └── styles/            # Global styles
-├── drizzle/               # Database migrations
 ├── scripts/               # Database scripts & utilities (reference root configs)
 └── public/                # Static assets
 ```
 
 #### Key Technologies
 
-- **Framework**: Next.js 15 with App Router
+- **Framework**: Next.js 16 with App Router and Turbopack
 - **React**: v19 with Server Components
 - **Database**: PostgreSQL (Railway) with Drizzle ORM
 - **Authentication**: better-auth with Drizzle adapter
@@ -209,7 +210,7 @@ Schemas are organized by domain modules (`user.ts`, `mentor.ts`, `booking.ts`, `
 
 **Cal.com Integration**:
 
-- `discuno_calcom_token` - OAuth tokens for Cal.com API
+- `discuno_calcom_token` - Cal.com organization-user identity; nullable token columns are legacy only
 - `discuno_mentor_event_type` - Mentor availability & pricing snapshots
 - `discuno_booking` - Booking snapshots from Cal.com webhooks
 - `discuno_booking_attendee`, `discuno_booking_organizer` - Normalized booking participants
@@ -366,16 +367,16 @@ Uses `auth.api.setRole()` via BetterAuth admin API with DB fallback.
 
 ```typescript
 // apps/web/src/server/queries/calcom.ts
-export const getMentorCalcomTokens = cache(async () => {
+export const getMentorCalcomConnection = cache(async () => {
   await requirePermission({ availability: ['read'] }) // ← SECURITY HERE
   const { user } = await requireAuth()
-  return getTokensByUserId(user.id)
+  return getCalcomConnectionByUserId(user.id)
 })
 
 // apps/web/src/app/(app)/(mentor)/settings/actions.ts
 export async function getSchedule() {
-  // No permission check - protected by getMentorCalcomTokens()
-  const tokens = await getMentorCalcomTokens() // ← Protected by query
+  // No permission check - protected by getMentorCalcomConnection()
+  const connection = await getMentorCalcomConnection() // ← Protected by query
 }
 ```
 
@@ -385,15 +386,16 @@ The system is now production-ready with proper data-layer security.
 
 #### Cal.com Integration (`apps/web/src/lib/calcom/`)
 
-- OAuth 2.0 flow for managed users in Cal.com organization
-- Token refresh logic with expiration handling
+- Supported Cal.com organization-user/team APIs with platform credentials
+- Version-pinned schedules, event types, slots, bookings, and cancellation endpoints
 - Webhook handlers in `apps/web/src/app/api/webhooks/cal/`
 - All booking state stored locally with Cal.com IDs as foreign keys
 
 #### Stripe Integration (`apps/web/src/lib/stripe/`)
 
 - Stripe Connect for mentor payouts
-- Checkout Session flow for bookings
+- Controller-property accounts preserve the Express Dashboard experience
+- Checkout fulfills paid sessions (including delayed methods) through idempotent Inngest events
 - Webhook handlers in `apps/web/src/app/api/webhooks/stripe/`
 - Payment lifecycle: pending → processing → succeeded → transferred
 - Dispute period enforced before automatic transfers
@@ -407,28 +409,26 @@ The system is now production-ready with proper data-layer security.
 
 Environment variables are validated using `@t3-oss/env-nextjs` in `apps/web/src/env.js`. The validation runs at build time and provides type-safe access to environment variables.
 
-**Required Variables**:
+See `apps/web/.env.example` for the canonical list and optional values. Core runtime groups are:
 
-- Auth & email: `BETTER_AUTH_SECRET`, optional `BETTER_AUTH_URL`, `AUTH_EMAIL_FROM`, `AUTH_EMAIL_SERVER`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `AUTH_MICROSOFT_ENTRA_ID_ID`, `AUTH_MICROSOFT_ENTRA_ID_SECRET`, `AUTH_MICROSOFT_ENTRA_ID_ISSUER`, `AUTH_DISCORD_ID`, `AUTH_DISCORD_SECRET`, `RESEND_API_KEY`
-- Platform URLs: `NEXT_PUBLIC_BASE_URL`, `NEXT_PUBLIC_CALCOM_API_URL`
+- Auth & email: `BETTER_AUTH_SECRET`, optional `BETTER_AUTH_URL`, `AUTH_EMAIL_FROM`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `AUTH_MICROSOFT_ENTRA_ID_ID`, `AUTH_MICROSOFT_ENTRA_ID_SECRET`, `RESEND_API_KEY`
+- Platform URLs: `NEXT_PUBLIC_BASE_URL`, optional `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_CALCOM_API_URL`
 - Database: `DATABASE_URL` (Railway PostgreSQL connection string)
-- Cal.com: `CALCOM_ORG_ID`, `CALCOM_ORG_SLUG`, `CALCOM_COLLEGE_MENTORS_TEAM_SLUG`, `CALCOM_WEBHOOK_SECRET`, `X_CAL_SECRET_KEY`, `NEXT_PUBLIC_X_CAL_ID`
+- Cal.com: `CALCOM_ORG_ID`, `COLLEGE_MENTOR_TEAM_ID`, `CALCOM_WEBHOOK_SECRET`, `X_CAL_SECRET_KEY`, `NEXT_PUBLIC_X_CAL_ID`
 - Stripe: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_CONNECT_WEBHOOK_SECRET`, `NEXT_PUBLIC_STRIPE_PUBLIC_KEY`
 - PostHog: `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST`, `NEXT_PUBLIC_POSTHOG_UI_HOST`
 - Redis: `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`
-- Misc: `CRON_SECRET`, `BLOB_READ_WRITE_TOKEN`, `COLLEGE_MENTOR_TEAM_ID`, `SENTRY_DSN`, `SENTRY_ENVIRONMENT`, `SENTRY_AUTH_TOKEN`
+- Misc: `CRON_SECRET`, `BLOB_READ_WRITE_TOKEN`, `INNGEST_EVENT_KEY`, `INNGEST_SIGNING_KEY`, `SENTRY_AUTH_TOKEN`
 
 Use `SKIP_ENV_VALIDATION=1` to bypass validation during development.
 
 ### Testing Conventions
 
 - Tests are colocated with source files using `.test.ts` or `.spec.ts` extensions
-- Test configuration in `apps/web/vitest.config.ts` with path alias resolution
-- **Global setup** in `apps/web/src/server/__tests__/global-setup.ts` - runs once before all tests to reset database (prevents race conditions)
-- **Per-file setup** in `apps/web/src/server/__tests__/setup.ts` - runs for each test file (mocks, cleanup)
-- Tests run sequentially (`singleThread: true`) to prevent database conflicts
-- Use `.env.test` for test environment variables
-- Test database operations use separate test database URLs
+- `apps/web/vitest.config.ts` runs unit tests and never resets a database
+- `apps/web/vitest.integration.config.ts` runs database specs sequentially
+- Integration setup resets only a database containing the expected `_discuno_test_environment_guard` marker
+- `.env.test` is optional; Railway-injected `DATABASE_URL` values are supported
 - Coverage thresholds: 80% statements, 70% branches, 80% functions/lines
 - Test files excluded from main TypeScript build via `tsconfig.json` exclude patterns
 
@@ -485,17 +485,17 @@ Reference `.cursor/rules/mentor-dashboard.md` for mentor dashboard specification
 
 - **Drizzle configs live at root level**: `drizzle.config.ts`, `drizzle.local.config.ts`, `drizzle.preview.config.ts`, `drizzle.production.config.ts`, `drizzle.test.config.ts`
 - Database scripts in `apps/web/scripts/` reference root configs with relative paths (`../../drizzle.*.config.ts`)
-- Never edit generated migration files in `drizzle/`
-- Always modify the appropriate file under `apps/web/src/server/db/schema/` (and update `index.ts`) before regenerating
-- Use `pnpm db:generate` to create new migrations (references root-level config)
-- Test migrations in local environment before deploying
+- Always modify the appropriate file under `apps/web/src/server/db/schema/` (and update `index.ts`)
+- This repository uses reviewed Drizzle schema pushes, not generated migration files
+- Run `pnpm db:push:local` first and confirm a second run reports no changes
+- Preview shared-environment diffs and coordinate schema application with deployment
 - Drizzle uses snake_case for column names (configured in root-level drizzle configs)
 
 #### Webhook Development
 
 - Cal.com webhooks: Verify signature using `CALCOM_WEBHOOK_SECRET`
 - Stripe webhooks: Verify using `stripe.webhooks.constructEvent()`
-- Always store raw webhook payload in database for auditing
+- Store validated webhook payloads for auditing; never log full payloads or secrets
 - Use idempotency keys to prevent duplicate processing
 
 #### Rate Limiting
@@ -505,7 +505,7 @@ Rate limiting is implemented using Upstash Redis in `apps/web/src/lib/rate-limit
 #### Payment Processing
 
 - Platform fee calculations in payment creation logic
-- Dispute period: 7 days after booking completion
+- Payments use the configured 72-hour dispute hold before transfer eligibility
 - Automatic transfers via cron job after dispute period
 - Refund handling for cancelled bookings
 

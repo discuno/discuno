@@ -14,7 +14,7 @@ export default function OAuthSuccessPage() {
   }, [])
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4 text-center">
+    <div className="bg-background flex min-h-screen flex-col items-center justify-center p-4 text-center">
       <h1 className="text-2xl font-bold">Sign In Successful</h1>
       <p className="text-muted-foreground mt-2">
         You can now close this window and continue your booking.

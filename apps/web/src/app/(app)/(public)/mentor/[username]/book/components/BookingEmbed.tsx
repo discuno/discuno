@@ -4,14 +4,11 @@ import { TZDate } from '@date-fns/tz'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { addDays, endOfMonth, endOfWeek, format, startOfMonth, startOfWeek } from 'date-fns'
 import { CalendarIcon } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { BookingSidebar } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingSidebar'
 
-import type {
-  BookingFormInput,
-  TimeSlot,
-} from '~/app/(app)/(public)/mentor/[username]/book/actions'
+import type { BookingFormInput } from '~/app/(app)/(public)/mentor/[username]/book/actions'
 import {
   createBooking as createBookingAction,
   createStripeCheckoutSession,
@@ -50,8 +47,8 @@ export const BookingEmbed = ({
   const { data: session } = useSession()
 
   // State management
-  const [selectedEventType, setSelectedEventType] = useState<EventType | null>(null)
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(today)
+  const [selectedEventTypeOverride, setSelectedEventTypeOverride] = useState<EventType | null>(null)
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(() => today)
   const [currentMonth, setCurrentMonth] = useState(today)
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string | null>(null)
   const [currentStep, setCurrentStep] = useState<BookingStep>('calendar')
@@ -60,7 +57,6 @@ export const BookingEmbed = ({
     email: '',
     phone: '',
   })
-  const [monthlyAvailability, setMonthlyAvailability] = useState<Record<string, TimeSlot[]>>({})
 
   // Date range for calendar
   const { startMonth, endMonth } = useMemo(
@@ -70,11 +66,6 @@ export const BookingEmbed = ({
     }),
     [today]
   )
-
-  // Initialize selected date
-  useEffect(() => {
-    setSelectedDate(today)
-  }, [today])
 
   // Queries
   const {
@@ -87,18 +78,22 @@ export const BookingEmbed = ({
     staleTime: 1000 * 60 * 5, // 5 minutes
   })
 
-  // Auto-select first event type to skip selection step
-  useEffect(() => {
-    const firstEvent = eventTypes[0]
-    if (eventTypes.length > 0 && !selectedEventType && firstEvent) {
-      setSelectedEventType(firstEvent)
-    }
-  }, [eventTypes, selectedEventType])
+  // Default to the first event type while preserving an explicit user selection.
+  const selectedEventType = selectedEventTypeOverride ?? eventTypes[0] ?? null
+  const displayedStep: BookingStep =
+    currentStep === 'auth' && session && !session.user.isAnonymous ? 'booking' : currentStep
+  const displayedFormData = useMemo<BookingFormData>(
+    () => ({
+      ...formData,
+      name: formData.name || (session && !session.user.isAnonymous ? session.user.name : ''),
+      email: formData.email || (session && !session.user.isAnonymous ? session.user.email : ''),
+    }),
+    [formData, session]
+  )
 
   const currentEventId = selectedEventType?.id
   const {
-    data: availableSlots,
-    isSuccess: isSlotsFetched,
+    data: monthlyAvailability = {},
     isFetching,
     error,
   } = useQuery({
@@ -117,38 +112,12 @@ export const BookingEmbed = ({
       return fetchSlotsAction(currentEventId, startDate, endDate, timeZone)
     },
     staleTime: 1000 * 60, // 1 minute
-    enabled: currentStep === 'calendar' && !!currentEventId,
+    enabled: displayedStep === 'calendar' && !!currentEventId,
   })
-
-  // Update monthly availability when slots are fetched
-  useEffect(() => {
-    if (isSlotsFetched) {
-      setMonthlyAvailability(availableSlots)
-    }
-  }, [isSlotsFetched, availableSlots])
-
-  // Auto-advance to booking step when authenticated
-  useEffect(() => {
-    if (currentStep === 'auth' && session && !session.user.isAnonymous) {
-      console.log('[BookingEmbed] User authenticated, advancing to booking step')
-      setCurrentStep('booking')
-    }
-  }, [currentStep, session])
-
-  // Prefill form with user's name and email when logged in
-  useEffect(() => {
-    if (!session || session.user.isAnonymous) return
-
-    setFormData(prev => ({
-      ...prev,
-      name: prev.name || session.user.name || '',
-      email: prev.email || session.user.email || '',
-    }))
-  }, [session])
 
   // Event handlers
   const handleEventTypeSelect = useCallback((eventType: EventType | null) => {
-    setSelectedEventType(eventType)
+    setSelectedEventTypeOverride(eventType)
     setSelectedTimeSlot(null)
   }, [])
 
@@ -184,9 +153,9 @@ export const BookingEmbed = ({
         const bookingPayload: BookingFormInput = {
           eventTypeId: selectedEventType.id,
           startTimeIso: startTime.toISOString(),
-          attendeeName: formData.name,
-          attendeeEmail: formData.email,
-          attendeePhone: formData.phone,
+          attendeeName: displayedFormData.name,
+          attendeeEmail: displayedFormData.email,
+          attendeePhone: displayedFormData.phone,
           mentorUsername: bookingData.username,
           mentorUserId: bookingData.userId,
           price: selectedEventType.price ?? 0,
@@ -210,8 +179,8 @@ export const BookingEmbed = ({
         eventTypeId: selectedEventType.id,
         startTime: startTime.toISOString(),
         attendee: {
-          name: formData.name,
-          email: formData.email,
+          name: displayedFormData.name,
+          email: displayedFormData.email,
           timeZone,
         },
         mentorUserId: bookingData.userId,
@@ -254,7 +223,7 @@ export const BookingEmbed = ({
 
   const renderContent = () => (
     <div className="bg-background flex min-h-full w-full flex-col">
-      {currentStep === 'calendar' ? (
+      {displayedStep === 'calendar' ? (
         <BookingCalendar
           selectedEventType={selectedEventType}
           eventTypes={eventTypes}
@@ -271,25 +240,25 @@ export const BookingEmbed = ({
           onSelectTimeSlot={handleTimeSlotSelect}
           timeZone={timeZone}
         />
-      ) : currentStep === 'auth' && selectedEventType && selectedTimeSlot && selectedDate ? (
+      ) : displayedStep === 'auth' && selectedEventType && selectedTimeSlot && selectedDate ? (
         <AuthStep
           selectedEventType={selectedEventType}
           selectedTimeSlot={selectedTimeSlot}
           selectedDate={selectedDate}
           mentorUsername={bookingData.username}
-          formData={formData}
+          formData={displayedFormData}
           onBack={() => setCurrentStep('calendar')}
           onSuccess={() => {
             console.log('[BookingEmbed] AuthStep reported success')
             setCurrentStep('booking')
           }}
         />
-      ) : currentStep === 'booking' ? (
+      ) : displayedStep === 'booking' ? (
         <AttendeeDetailsStep
           selectedEventType={selectedEventType}
           selectedDate={selectedDate}
           selectedTimeSlot={selectedTimeSlot}
-          formData={formData}
+          formData={displayedFormData}
           setFormData={setFormData}
           setCurrentStep={setCurrentStep}
           createBookingMutation={createBookingMutation}
@@ -315,7 +284,7 @@ export const BookingEmbed = ({
             selectedEventType={selectedEventType}
             selectedDate={selectedDate}
             selectedTimeSlot={selectedTimeSlot}
-            currentStep={currentStep}
+            currentStep={displayedStep}
             timeZone={timeZone}
           />
         </div>

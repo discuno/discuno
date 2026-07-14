@@ -1,316 +1,109 @@
 # Discuno Web App
 
-> 🚀 **Modern mentorship platform connecting college students with high schoolers worldwide**
+Discuno connects students with verified college mentors for paid or free advice sessions. This is the production Next.js application behind [discuno.com](https://discuno.com).
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![TypeScript](https://img.shields.io/badge/%3C%2F%3E-TypeScript-%230074c1.svg)](https://www.typescriptlang.org/)
-[![Next.js](https://img.shields.io/badge/Next.js-000000?logo=nextdotjs&logoColor=white)](https://nextjs.org/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+## What it includes
 
----
+- Better Auth with email OTP, Google, Microsoft, anonymous-to-user linking, and permission-based access control
+- Cal.com organization users, mentor availability, event types, slots, bookings, and webhook synchronization
+- Stripe Checkout plus Connect accounts for booking payments and mentor payouts
+- Durable booking fulfillment and retries through Inngest
+- PostgreSQL on Railway with Drizzle ORM
+- PostHog analytics, Sentry monitoring, Resend email, Upstash rate limiting, and Vercel Blob storage
 
-## 📋 Overview
+## Stack
 
-**Discuno Web App** is the main Next.js application providing a comprehensive mentorship platform. Built with modern technologies and best practices, it offers seamless scheduling, video calls, and payment processing for educational mentorship.
+| Area       | Technology                                                   |
+| ---------- | ------------------------------------------------------------ |
+| Framework  | Next.js 16, React 19, Turbopack, Cache Components            |
+| Language   | TypeScript 5.9 in strict mode                                |
+| UI         | Tailwind CSS 4, Radix UI                                     |
+| Data       | PostgreSQL, Drizzle ORM, Zod                                 |
+| Auth       | Better Auth 1.6                                              |
+| Scheduling | Cal.com API v2 organization APIs                             |
+| Payments   | Stripe Checkout and Connect                                  |
+| Tests      | Vitest 4, Testing Library, guarded Railway integration tests |
 
-### 🌟 Key Features
+## Local setup
 
-- **📅 Smart Scheduling** - Integrated Cal.com booking system
-- **🎥 Video Conferencing** - Built-in video calls with screen sharing
-- **💳 Payment Processing** - Secure Stripe integration
-- **👥 User Management** - Role-based access control
-- **📊 Analytics Dashboard** - Comprehensive usage insights
-- **🔐 Security-First** - Enterprise-grade authentication
-- **📱 Mobile Responsive** - Progressive Web App capabilities
-- **🌍 Global Ready** - Multi-timezone support
-
----
-
-## 🛠️ Tech Stack
-
-| Category           | Technologies                 |
-| ------------------ | ---------------------------- |
-| **Framework**      | Next.js 15, React 19         |
-| **Styling**        | Tailwind CSS 4, Radix UI     |
-| **Database**       | Neon PostgreSQL, Drizzle ORM |
-| **Authentication** | NextAuth.js 5                |
-| **Payments**       | Stripe                       |
-| **Scheduling**     | Cal.com API v2               |
-| **Monitoring**     | Sentry                       |
-| **Testing**        | Vitest, Testing Library      |
-| **Type Safety**    | TypeScript 5.8               |
-| **Code Quality**   | ESLint 9, Prettier           |
-
----
-
-## 🚀 Quick Start
-
-### Prerequisites
-
-- **Node.js** 18+
-- **pnpm** 8+
-- **PostgreSQL** database (Neon recommended)
-
-### Installation
+From the repository root:
 
 ```bash
-# Clone repository
-git clone https://github.com/discuno/discuno.git
-cd discuno/apps/web
-
-# Install dependencies
 pnpm install
-
-# Set up environment variables
-cp .env.example .env.local
-# Edit .env.local with your configuration
-
-# Run database migrations
-pnpm db:migrate
-
-# Start development server
-pnpm dev
+cp apps/web/.env.example apps/web/.env.local
+# Fill in apps/web/.env.local, or pull the linked Vercel development environment.
+cd apps/web && vercel env pull .env.local && cd ../..
+pnpm db:push:local
+pnpm dev:web
 ```
 
-Visit [http://localhost:3000](http://localhost:3000) 🎉
+Requirements are Node.js 24, pnpm 11+, and access to the linked development services. Environment variables are validated in `src/env.js`; `.env.example` is the canonical inventory.
 
----
+## Quality checks
 
-## 📁 Project Structure
-
-```
-apps/web/
-├── src/
-│   ├── app/                 # Next.js App Router
-│   │   ├── (dashboard)/     # Dashboard routes
-│   │   ├── (public)/        # Public pages
-│   │   └── api/             # API routes
-│   ├── components/          # Reusable UI components
-│   │   ├── shared/          # Shared components
-│   │   └── ui/              # Base UI components
-│   ├── lib/                 # Utility libraries
-│   │   ├── auth/            # Authentication logic
-│   │   └── providers/       # React providers
-│   └── server/              # Server-side code
-│       ├── auth/            # Auth configuration
-│       └── db/              # Database schema & queries
-├── public/                  # Static assets
-└── docs/                    # Documentation
-```
-
----
-
-## 🔧 Development
-
-### Available Scripts
+Run these from the repository root:
 
 ```bash
-# Development
-pnpm dev              # Start dev server
-pnpm build            # Production build
-pnpm start            # Start production server
-
-# Code Quality
-pnpm lint             # Lint code
-pnpm lint:fix         # Fix linting issues
-pnpm typecheck        # Check TypeScript
-pnpm format:write     # Format code
-pnpm format:check     # Check formatting
-
-# Testing
-pnpm test             # Run tests
-pnpm test:coverage    # Test with coverage
-pnpm test:ui          # Vitest UI
-
-# Database
-pnpm db:generate      # Generate migrations
-pnpm db:migrate       # Run migrations
-pnpm db:push          # Push schema changes
-pnpm db:studio        # Open Drizzle Studio
-```
-
-### Environment Variables
-
-```bash
-# Database
-DATABASE_URL="postgresql://..."
-DIRECT_URL="postgresql://..."
-
-# Authentication
-NEXTAUTH_SECRET="your-secret"
-NEXTAUTH_URL="http://localhost:3000"
-
-# Cal.com Integration
-NEXT_PUBLIC_CAL_API_URL="https://api.cal.com/v2"
-CAL_ACCESS_TOKEN="cal_live_..."
-
-# Stripe (optional)
-STRIPE_SECRET_KEY="sk_test_..."
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="pk_test_..."
-
-# Monitoring (optional)
-SENTRY_DSN="https://..."
-```
-
----
-
-## 📋 Features in Detail
-
-### 🔐 Authentication System
-
-- **Multi-provider auth** (Google, GitHub, Magic Links)
-- **Role-based permissions** (Student, Mentor, Admin)
-- **Session management** with NextAuth.js
-- **Email verification** workflow
-
-### 📅 Scheduling Integration
-
-- **Cal.com API v2** integration
-- **Custom booking flows**
-- **Timezone handling**
-- **Calendar synchronization**
-
-### 💳 Payment Processing
-
-- **Stripe Connect** for mentors
-- **Subscription management**
-- **Payment history tracking**
-- **Automated payouts**
-
-### 📊 Admin Dashboard
-
-- **User management**
-- **Booking analytics**
-- **Revenue tracking**
-- **Content moderation**
-
----
-
-## 🧪 Testing
-
-```bash
-# Run all tests
-pnpm test
-
-# Run tests with coverage
-pnpm test:coverage
-
-# Run tests in watch mode
-pnpm test:watch
-
-# Open Vitest UI
-pnpm test:ui
-```
-
-### Test Organization
-
-- **Unit tests** - `src/**/*.test.ts`
-- **Integration tests** - `src/__tests__/integration/`
-- **E2E tests** - `tests/e2e/`
-
----
-
-## 🚀 Deployment
-
-### Vercel (Recommended)
-
-```bash
-# Deploy to Vercel
-vercel --prod
-
-# Or connect GitHub repository in Vercel dashboard
-```
-
-### Docker
-
-```bash
-# Build Docker image
-docker build -t discuno-web .
-
-# Run container
-docker run -p 3000:3000 discuno-web
-```
-
-### Environment Setup
-
-1. Configure environment variables in your deployment platform
-2. Set up database with migrations: `pnpm db:migrate`
-3. Configure domain and SSL certificates
-
----
-
-## 🤝 Contributing
-
-We welcome contributions! Please see our [Contributing Guide](../../CONTRIBUTING.md).
-
-### Development Workflow
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Make your changes with tests
-4. Run quality checks: `pnpm lint && pnpm typecheck && pnpm test`
-5. Commit using conventional commits
-6. Push and create a Pull Request
-
----
-
-## 📚 Documentation
-
-For more information, see:
-
-- **[Main README](../../README.md)** - Project overview and quick start
-- **[Contributing Guide](../../CONTRIBUTING.md)** - How to contribute
-- **[Security Policy](../../SECURITY.md)** - Security guidelines
-
----
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-**Database connection errors:**
-
-```bash
-# Check environment variables
-pnpm db:push
-```
-
-**Build failures:**
-
-```bash
-# Clear Next.js cache
-pnpm clean
-pnpm install
-```
-
-**Type errors:**
-
-```bash
-# Regenerate types
+pnpm lint
 pnpm typecheck
+pnpm test:run
+pnpm build:web
+pnpm audit
+pnpm integrations:check:local
 ```
 
----
+Unit tests never reset a database. Database integration tests must use Railway's dedicated guarded `test` environment:
 
-## 📄 License
+```bash
+railway run --environment test --service Postgres zsh -c \
+  'export DATABASE_URL="$DATABASE_PUBLIC_URL"; pnpm test:integration'
+```
 
-This project is licensed under the MIT License - see the [LICENSE](../../LICENSE) file for details.
+The integration reset refuses to run unless `_discuno_test_environment_guard` contains the expected marker.
 
----
+## Database workflow
 
-## 🔗 Links
+This repository uses reviewed Drizzle schema pushes rather than generated migration files:
 
-- **🌐 Website:** [discuno.com](https://discuno.com)
-- **📧 Support:** [support@discuno.com](mailto:support@discuno.com)
-- **🐛 Issues:** [GitHub Issues](https://github.com/discuno/discuno/issues)
-- **💬 Discussions:** [GitHub Discussions](https://github.com/discuno/discuno/discussions)
+```bash
+pnpm db:push:local
+pnpm db:push:preview
+pnpm db:push:prod
+```
 
----
+Always inspect the interactive SQL diff. Validate locally first, run it again to confirm there is no remaining diff, and coordinate shared-environment changes with the matching application deployment.
 
-<div align="center">
+Normal seeding is database-only. Creating or deleting external Cal.com and Stripe test accounts requires explicit opt-in environment flags; Stripe cleanup also refuses live-mode keys.
 
-**[⬆ Back to Top](#discuno-web-app)**
+## Integration notes
 
-Made with ❤️ by the [Discuno Team](https://github.com/discuno)
+### Cal.com
 
-</div>
+- Platform credentials authenticate organization-user and team APIs; per-user OAuth refresh tokens are no longer used.
+- API versions are centralized in `src/lib/calcom/client.ts`.
+- The production webhook is `/api/webhooks/cal` and must use `CALCOM_WEBHOOK_SECRET`.
+
+### Stripe
+
+- The server API version is pinned in `src/lib/stripe/index.ts`.
+- New connected accounts use controller properties equivalent to the Express configuration.
+- `/api/webhooks/stripe` handles both immediate and delayed Checkout success events.
+- `/api/webhooks/stripe-connect` tracks connected-account capability and restriction changes.
+
+### Deployment
+
+Vercel hosts the application and Railway hosts PostgreSQL. Preview and production environments have separate pulled env files locally. Never commit `.env*` credentials or webhook signing secrets.
+
+## Project layout
+
+```text
+src/
+├── app/                 App Router pages, Server Actions, API routes, webhooks
+├── components/          Shared and Radix-based UI components
+├── inngest/             Durable background functions
+├── lib/                 Auth, Cal.com, Stripe, email, analytics, and utilities
+└── server/              Drizzle schema, DAL, protected queries, ranking, tests
+scripts/                 Guarded database push/reset/seed utilities
+```
+
+See the [main README](../../README.md), [contributing guide](../../CONTRIBUTING.md), and [security policy](../../SECURITY.md) for repository-wide guidance.

@@ -3,12 +3,17 @@
  * for Docker builds.
  */
 import './src/env.js'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const workspaceRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 
 /** @type {import("next").NextConfig} */
 const coreConfig = {
   serverExternalPackages: ['drizzle-orm'],
   cacheComponents: true,
   turbopack: {
+    root: workspaceRoot,
     rules: {
       '*.svg': {
         loaders: ['@svgr/webpack'],
@@ -18,10 +23,6 @@ const coreConfig = {
   },
   experimental: {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
-  },
-  typescript: {
-    // Only ignore in CI environments, not local development
-    ignoreBuildErrors: process.env.CI === 'true',
   },
   images: {
     remotePatterns: [

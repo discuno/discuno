@@ -19,7 +19,7 @@ export async function POST(req: Request) {
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : 'Unknown error'
     console.error(`❌ Webhook signature verification failed: ${errorMessage}`)
-    return new Response(`Webhook Error: ${errorMessage}`, {
+    return new Response('Invalid webhook signature', {
       status: 400,
     })
   }
@@ -36,7 +36,7 @@ export async function POST(req: Request) {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     console.error(`❌ Webhook handler failed: ${errorMessage}`)
-    return new Response(`Webhook handler error: ${errorMessage}`, {
+    return new Response('Webhook handler failed', {
       status: 500,
     })
   }
@@ -56,15 +56,24 @@ async function handleAccountUpdated(account: Stripe.Account) {
       return
     }
 
+    const disabledReason = account.requirements?.disabled_reason
+    const stripeAccountStatus =
+      account.charges_enabled && account.payouts_enabled
+        ? 'active'
+        : disabledReason?.startsWith('rejected')
+          ? 'inactive'
+          : account.details_submitted
+            ? 'restricted'
+            : 'pending'
+
     await upsertStripeAccount({
       userId,
       stripeAccountId: account.id,
-      stripeAccountStatus:
-        account.charges_enabled && account.payouts_enabled ? 'active' : 'pending',
+      stripeAccountStatus,
       chargesEnabled: account.charges_enabled,
       payoutsEnabled: account.payouts_enabled,
       detailsSubmitted: account.details_submitted,
-      requirements: account.requirements as unknown as Record<string, unknown>,
+      requirements: account.requirements,
     })
 
     console.log(`✅ Successfully handled account update for Stripe account: ${account.id}`)

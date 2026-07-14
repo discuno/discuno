@@ -34,18 +34,20 @@ export default async function MentorProfilePage({
     : null
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="bg-background min-h-screen">
       {/* Hero Header */}
-      <div className="relative overflow-hidden bg-muted/20 pb-20 pt-24 lg:pb-32 lg:pt-32">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5" />
-        <div className="container relative z-10 mx-auto px-4">
+      <div className="bg-muted/20 relative overflow-hidden pt-24 pb-20 lg:pt-32 lg:pb-32">
+        <div className="from-primary/5 to-primary/5 absolute inset-0 bg-gradient-to-br via-transparent" />
+        <div className="relative z-10 container mx-auto px-4">
           <div className="flex flex-col items-center text-center">
             {/* Avatar with Glow */}
             <div className="relative mb-8">
-              <div className="absolute -inset-4 rounded-full bg-primary/20 blur-2xl" />
-              <Avatar className="relative z-10 h-40 w-40 border-8 border-background shadow-2xl">
+              <div className="bg-primary/20 absolute -inset-4 rounded-full blur-2xl" />
+              <Avatar className="border-background relative z-10 h-40 w-40 border-8 shadow-2xl">
                 <AvatarImage src={profile.image ?? ''} alt={profile.name ?? ''} />
-                <AvatarFallback className="text-4xl">{profile.name?.charAt(0) ?? 'M'}</AvatarFallback>
+                <AvatarFallback className="text-4xl">
+                  {profile.name?.charAt(0) ?? 'M'}
+                </AvatarFallback>
               </Avatar>
             </div>
 
@@ -57,13 +59,16 @@ export default async function MentorProfilePage({
               <Badge variant="secondary" className="px-4 py-1.5 text-base">
                 {profile.school}
               </Badge>
-              <Badge variant="outline" className="border-primary/20 bg-primary/5 px-4 py-1.5 text-base">
+              <Badge
+                variant="outline"
+                className="border-primary/20 bg-primary/5 px-4 py-1.5 text-base"
+              >
                 {profile.major}
               </Badge>
             </div>
 
             {hasBooking && bookingData && (
-              <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 fill-mode-forwards">
+              <div className="animate-in fade-in slide-in-from-bottom-4 fill-mode-forwards duration-700">
                 <BookingModal bookingData={bookingData}>
                   <div className="flex items-center gap-2 text-lg font-semibold">
                     <Calendar className="h-5 w-5" />
@@ -78,15 +83,15 @@ export default async function MentorProfilePage({
         {/* Decorative curve or divider could go here */}
       </div>
 
-      <div className="container mx-auto -mt-12 max-w-5xl px-4 pb-20 relative z-20">
+      <div className="relative z-20 container mx-auto -mt-12 max-w-5xl px-4 pb-20">
         <div className="grid gap-8 md:grid-cols-3">
           {/* Main Info */}
-          <div className="md:col-span-2 space-y-8">
+          <div className="space-y-8 md:col-span-2">
             {profile.bio && (
-              <div className="rounded-2xl border bg-card p-8 shadow-sm">
+              <div className="bg-card rounded-2xl border p-8 shadow-sm">
                 <h2 className="mb-6 text-2xl font-bold">About Me</h2>
                 <div className="prose prose-gray dark:prose-invert max-w-none">
-                  <p className="whitespace-pre-wrap leading-relaxed text-muted-foreground text-lg">
+                  <p className="text-muted-foreground text-lg leading-relaxed whitespace-pre-wrap">
                     {profile.bio}
                   </p>
                 </div>
@@ -96,11 +101,11 @@ export default async function MentorProfilePage({
 
           {/* Sidebar Stats */}
           <div className="space-y-6">
-            <div className="rounded-2xl border bg-card p-6 shadow-sm">
-              <h3 className="mb-4 font-semibold text-foreground">Education</h3>
+            <div className="bg-card rounded-2xl border p-6 shadow-sm">
+              <h3 className="text-foreground mb-4 font-semibold">Education</h3>
               <div className="space-y-4">
                 <div className="flex items-start gap-4">
-                  <div className="rounded-lg bg-primary/10 p-2 text-primary">
+                  <div className="bg-primary/10 text-primary rounded-lg p-2">
                     <School className="h-5 w-5" />
                   </div>
                   <div>
@@ -109,7 +114,7 @@ export default async function MentorProfilePage({
                   </div>
                 </div>
                 <div className="flex items-start gap-4">
-                  <div className="rounded-lg bg-primary/10 p-2 text-primary">
+                  <div className="bg-primary/10 text-primary rounded-lg p-2">
                     <GraduationCap className="h-5 w-5" />
                   </div>
                   <div>
@@ -118,7 +123,7 @@ export default async function MentorProfilePage({
                   </div>
                 </div>
                 <div className="flex items-start gap-4">
-                  <div className="rounded-lg bg-primary/10 p-2 text-primary">
+                  <div className="bg-primary/10 text-primary rounded-lg p-2">
                     <Calendar className="h-5 w-5" />
                   </div>
                   <div>

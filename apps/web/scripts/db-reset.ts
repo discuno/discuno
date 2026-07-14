@@ -71,117 +71,59 @@ const dropAllTables = async (environment: Environment) => {
   const { client, db } = createResetConnection(environment)
 
   try {
-    if (environment !== 'test') {
-      // Step 0: Clean up Cal.com team memberships for existing local tokens
-      console.log('🌐 Cleaning up Cal.com team memberships...')
+    if (environment === 'test') {
+      const guardRows = await db.execute(sql`
+        SELECT marker
+        FROM _discuno_test_environment_guard
+        LIMIT 1
+      `)
+      const marker = Array.from(guardRows)[0]?.marker
+      if (marker !== 'discuno-test-environment-v1') {
+        throw new Error(
+          'Refusing to reset database: the dedicated Discuno test-environment guard is missing.'
+        )
+      }
+    }
+
+    if (environment !== 'test' && process.env.ALLOW_EXTERNAL_ACCOUNT_CLEANUP === 'true') {
+      // External cleanup is deliberately opt-in and only targets account IDs stored
+      // in the database being reset. It never enumerates and deletes an entire team.
+      console.log('🌐 Cleaning up external seed accounts recorded in this database...')
       const calcomApiBase = process.env.NEXT_PUBLIC_CALCOM_API_URL
       const calcomClientId = process.env.NEXT_PUBLIC_X_CAL_ID
       const calcomSecretKey = process.env.X_CAL_SECRET_KEY
       const calcomOrgId = process.env.CALCOM_ORG_ID
-      const collegeMentorTeamId = process.env.COLLEGE_MENTOR_TEAM_ID
-      if (!calcomClientId || !calcomSecretKey || !calcomOrgId || !collegeMentorTeamId) {
+      if (!calcomApiBase || !calcomClientId || !calcomSecretKey || !calcomOrgId) {
         console.warn('⚠️ Missing Cal.com credentials. Skipping Cal.com cleanup.')
       } else {
         try {
-          // Step 0a: Fetch all team memberships to get membership IDs
-          console.log('📋 Fetching team memberships...')
-          const membershipsResponse = await fetch(
-            `${calcomApiBase}/organizations/${calcomOrgId}/teams/${collegeMentorTeamId}/memberships`,
-            {
-              method: 'GET',
-              headers: {
-                'x-cal-secret-key': calcomSecretKey,
-                'x-cal-client-id': calcomClientId,
-              },
-            }
-          )
-
-          if (!membershipsResponse.ok) {
-            const errorText = await membershipsResponse.text()
-            console.error(
-              `Failed to fetch team memberships: ${membershipsResponse.status} ${errorText}`
-            )
-          } else {
-            const membershipsData = await membershipsResponse.json()
-
-            if (membershipsData.status === 'success' && Array.isArray(membershipsData.data)) {
-              const memberships = membershipsData.data
-              console.log(`Found ${memberships.length} team memberships to clean up`)
-
-              // Step 0b: Delete each membership (except OWNER role to avoid breaking the team)
-              for (const membership of memberships) {
-                try {
-                  // Skip OWNER memberships to avoid breaking the team
-                  if (membership.role === 'OWNER') {
-                    console.log(`Skipping OWNER membership for user ${membership.user.email}`)
-                    continue
-                  }
-
-                  console.log(
-                    `Removing membership ${membership.id} for user ${membership.user.email}`
-                  )
-
-                  const deleteMembershipResponse = await fetch(
-                    `${calcomApiBase}/organizations/${calcomOrgId}/teams/${collegeMentorTeamId}/memberships/${membership.id}`,
-                    {
-                      method: 'DELETE',
-                      headers: {
-                        'x-cal-secret-key': calcomSecretKey,
-                        'x-cal-client-id': calcomClientId,
-                      },
-                    }
-                  )
-
-                  if (!deleteMembershipResponse.ok) {
-                    const deleteErrorText = await deleteMembershipResponse.text()
-                    console.error(
-                      `Failed to delete membership ${membership.id}: ${deleteMembershipResponse.status} ${deleteErrorText}`
-                    )
-                  } else {
-                    console.log(`Successfully deleted membership ${membership.id}`)
-                  }
-
-                  // Step 0c: Also delete the Cal.com user if possible
-                  try {
-                    const userResponse = await fetch(
-                      `${calcomApiBase}/oauth-clients/${calcomClientId}/users/${membership.userId}`,
-                      {
-                        method: 'DELETE',
-                        headers: {
-                          'x-cal-secret-key': calcomSecretKey,
-                        },
-                      }
-                    )
-
-                    if (!userResponse.ok) {
-                      const userErrorText = await userResponse.text()
-                      console.error(
-                        `Failed to delete Cal.com user ${membership.userId}: ${userResponse.status} ${userErrorText}`
-                      )
-                    } else {
-                      console.log(`Successfully deleted Cal.com user ${membership.userId}`)
-                    }
-                  } catch (userError) {
-                    console.error(`Error deleting Cal.com user ${membership.userId}:`, userError)
-                  }
-                } catch (membershipError) {
-                  console.error(`Error processing membership ${membership.id}:`, membershipError)
-                }
+          const users = await db.execute(sql`SELECT calcom_user_id FROM discuno_calcom_token`)
+          for (const row of users) {
+            const calcomUserId = Number(row.calcom_user_id)
+            const response = await fetch(
+              `${calcomApiBase}/organizations/${calcomOrgId}/users/${calcomUserId}`,
+              {
+                method: 'DELETE',
+                headers: {
+                  'x-cal-secret-key': calcomSecretKey,
+                  'x-cal-client-id': calcomClientId,
+                },
               }
-            } else {
-              console.warn('Unexpected memberships response format:', membershipsData)
+            )
+            if (!response.ok && response.status !== 404) {
+              console.error(`Failed to delete Cal.com user ${calcomUserId}: ${response.status}`)
             }
           }
         } catch (error) {
           console.error('Error during Cal.com cleanup:', error)
         }
       }
-      // Step 0a: Cleanup Stripe Connect test accounts
+
       const stripeSecretKey = process.env.STRIPE_SECRET_KEY
-      if (!stripeSecretKey) {
-        throw new Error('STRIPE_SECRET_KEY environment variable is not set')
+      if (!stripeSecretKey?.startsWith('sk_test_')) {
+        throw new Error('External reset cleanup requires a Stripe test-mode secret key.')
       }
-      const stripe = new Stripe(stripeSecretKey)
+      const stripe = new Stripe(stripeSecretKey, { apiVersion: '2026-06-24.dahlia' })
       console.log('💳 Cleaning up Stripe Connect test accounts...')
       try {
         // Fetch Stripe account IDs from DB
@@ -400,11 +342,11 @@ const main = async () => {
 
     console.log('─'.repeat(60))
     console.log(`🎉 Database reset completed successfully for ${environment}`)
-    console.log('📊 Your database has been reset and seeded with fresh sample data')
-    console.log('   - 30 mentor users added to college-mentors team')
-    console.log('   - Posts, reviews, and complete relationship mappings')
-    console.log('   - Schools, majors, and waitlist entries')
-    console.log('   - Event types managed at team level (not per-user)')
+    if (environment === 'test') {
+      console.log('📊 The dedicated test database has a fresh, empty schema')
+    } else {
+      console.log('📊 The database has been reset and seeded with fresh sample data')
+    }
   } catch (error) {
     console.log('─'.repeat(60))
     console.error(`💥 Database reset failed for ${environment}:`, error)

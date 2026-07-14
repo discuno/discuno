@@ -17,11 +17,11 @@ export const insertCalcomTokenSchema = createInsertSchema(calcomToken, {
   ...insertExcludedFields,
   accessTokenExpiresAt: z.preprocess(
     arg => (typeof arg === 'number' ? new Date(arg) : arg),
-    z.date()
+    z.date().nullable()
   ),
   refreshTokenExpiresAt: z.preprocess(
     arg => (typeof arg === 'number' ? new Date(arg) : arg),
-    z.date()
+    z.date().nullable()
   ),
 })
 export const updateCalcomTokenSchema = createUpdateSchema(calcomToken, updateExcludedFields)

@@ -1,16 +1,14 @@
 import { createEnv } from '@t3-oss/env-nextjs'
 import { z } from 'zod'
 
-const isProd = process.env.NODE_ENV === 'production'
-
 export const env = createEnv({
   /**
    * Specify your server-side environment variables schema here. This way you can ensure the app
    * isn't built with invalid env vars.
    */
   server: {
-    AUTH_DISCORD_ID: z.string(),
-    AUTH_DISCORD_SECRET: z.string(),
+    AUTH_DISCORD_ID: z.string().optional(),
+    AUTH_DISCORD_SECRET: z.string().optional(),
     AUTH_GOOGLE_ID: z.string(),
     AUTH_GOOGLE_SECRET: z.string(),
     AUTH_EMAIL_FROM: z.string(),
@@ -21,19 +19,19 @@ export const env = createEnv({
     STRIPE_CONNECT_WEBHOOK_SECRET: z.string(),
     CRON_SECRET: z.string(),
     SENTRY_AUTH_TOKEN: z.string(),
-    AUTH_EMAIL_SERVER: z.string(),
+    AUTH_EMAIL_SERVER: z.string().optional(),
     X_CAL_SECRET_KEY: z.string(),
-    SENTRY_DSN: z.string(),
-    SENTRY_ENVIRONMENT: z.string(),
-    AUTH_MICROSOFT_ENTRA_ID_ISSUER: z.string(),
+    SENTRY_DSN: z.string().optional(),
+    SENTRY_ENVIRONMENT: z.string().optional(),
+    AUTH_MICROSOFT_ENTRA_ID_ISSUER: z.string().optional(),
     AUTH_MICROSOFT_ENTRA_ID_ID: z.string(),
     AUTH_MICROSOFT_ENTRA_ID_SECRET: z.string(),
     BLOB_READ_WRITE_TOKEN: z.string(),
     COLLEGE_MENTOR_TEAM_ID: z.string(),
     CALCOM_ORG_ID: z.string(),
     CALCOM_WEBHOOK_SECRET: z.string(),
-    CALCOM_COLLEGE_MENTORS_TEAM_SLUG: z.string(),
-    CALCOM_ORG_SLUG: z.string(),
+    CALCOM_COLLEGE_MENTORS_TEAM_SLUG: z.string().optional(),
+    CALCOM_ORG_SLUG: z.string().optional(),
     UPSTASH_REDIS_REST_URL: z.string().url(),
     UPSTASH_REDIS_REST_TOKEN: z.string(),
     RESEND_API_KEY: z.string(),
@@ -49,9 +47,10 @@ export const env = createEnv({
    * `NEXT_PUBLIC_`.
    */
   client: {
-    NEXT_PUBLIC_BASE_URL: z.string(),
+    NEXT_PUBLIC_BASE_URL: z.url(),
+    NEXT_PUBLIC_APP_URL: z.url().optional(),
     NEXT_PUBLIC_X_CAL_ID: z.string(),
-    NEXT_PUBLIC_CALCOM_API_URL: z.string(),
+    NEXT_PUBLIC_CALCOM_API_URL: z.url(),
     NEXT_PUBLIC_STRIPE_PUBLIC_KEY: z.string(),
     NEXT_PUBLIC_POSTHOG_KEY: z.string(),
     NEXT_PUBLIC_POSTHOG_HOST: z.string(),
@@ -72,6 +71,7 @@ export const env = createEnv({
     NODE_ENV: process.env.NODE_ENV,
     AUTH_EMAIL_FROM: process.env.AUTH_EMAIL_FROM,
     NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL,
+    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
     STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
     CRON_SECRET: process.env.CRON_SECRET,
     STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,

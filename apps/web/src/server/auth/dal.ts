@@ -27,7 +27,7 @@ export const hasCalcomIntegration = cache(async (userId: string): Promise<boolea
 })
 
 /**
- * Create Cal.com managed user for a newly authenticated user
+ * Create a Cal.com organization user for a newly authenticated user
  * This function MUST succeed for authentication to complete
  * Throws an error if Cal.com integration fails
  */
@@ -41,22 +41,21 @@ export const createCalcomUserForNewUser = async ({
   email: string
   name: string | null
   image: string | null
-}): Promise<{ calcomUserId: number; username: string; accessToken: string }> => {
+}): Promise<{ calcomUserId: number; username: string }> => {
   // Check if user already has Cal.com integration
   const hasIntegration = await hasCalcomIntegration(userId)
   if (hasIntegration) {
     console.log(`User ${userId} already has Cal.com integration, skipping creation`)
     // Get existing Cal.com user info
-    const token = await db.query.calcomToken.findFirst({
+    const connection = await db.query.calcomToken.findFirst({
       where: eq(calcomToken.userId, userId),
     })
-    if (!token) {
-      throw new Error('Cal.com integration check failed: token not found')
+    if (!connection) {
+      throw new Error('Cal.com integration check failed: connection not found')
     }
     return {
-      calcomUserId: token.calcomUserId,
-      username: token.calcomUsername,
-      accessToken: token.accessToken,
+      calcomUserId: connection.calcomUserId,
+      username: connection.calcomUsername,
     }
   }
 
@@ -97,9 +96,7 @@ export const createCalcomUserForNewUser = async ({
  * This function attempts to create Cal.com integration and logs results
  * Note: When called from events.signIn, this cannot prevent authentication
  */
-type EnforceCalcomResult =
-  | { success: true; accessToken: string }
-  | { success: false; error: string }
+type EnforceCalcomResult = { success: true } | { success: false; error: string }
 
 export const enforceCalcomIntegration = async (userData: {
   userId: string
@@ -108,9 +105,9 @@ export const enforceCalcomIntegration = async (userData: {
   image: string | null
 }): Promise<EnforceCalcomResult> => {
   try {
-    const { accessToken } = await createCalcomUserForNewUser(userData)
+    await createCalcomUserForNewUser(userData)
     console.log(`Cal.com integration enforced successfully for ${userData.email}`)
-    return { accessToken, success: true }
+    return { success: true }
   } catch (error) {
     console.error(`Cal.com integration enforcement failed for ${userData.email}:`, error)
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
@@ -171,8 +168,7 @@ export function computeEventTypeSyncPlan(
  * Intended to be called on first login after Cal.com integration is created
  */
 export const syncMentorEventTypesForUser = async (
-  userId: string,
-  accessToken: string
+  userId: string
 ): Promise<
   | { success: true; created: number; updated: number; deleted: number }
   | { success: false; error: string }
@@ -183,7 +179,7 @@ export const syncMentorEventTypesForUser = async (
       return { success: false, error: 'CALCOM_USERNAME_NOT_FOUND' }
     }
 
-    const remote = await fetchCalcomEventTypesByUsername(calUser.calcomUsername, accessToken)
+    const remote = await fetchCalcomEventTypesByUsername(calUser.calcomUsername)
 
     const now = new Date()
 

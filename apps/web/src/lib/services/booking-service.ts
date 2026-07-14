@@ -1,5 +1,6 @@
 import type { NewBooking, NewBookingAttendee, NewBookingOrganizer } from '~/lib/schemas/db'
 import {
+  completeAcceptedBooking,
   createBooking,
   cancelBooking as cancelBookingDal,
   updateBookingStatus,
@@ -30,6 +31,13 @@ export const createLocalBooking = async (input: CreateLocalBooking) => {
  */
 export const cancelLocalBooking = async (calcomBookingUid: string) => {
   return cancelBookingDal(calcomBookingUid)
+}
+
+/**
+ * Complete an accepted booking once without overwriting no-show/cancelled state.
+ */
+export const completeLocalBooking = async (calcomBookingUid: string) => {
+  return completeAcceptedBooking(calcomBookingUid)
 }
 
 /**

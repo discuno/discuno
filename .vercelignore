@@ -1,0 +1,3 @@
+# Local environment snapshots contain secrets and must never be uploaded by the CLI.
+**/.env
+**/.env.*

@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { desc, eq } from 'drizzle-orm'
+import { and, desc, eq, ne, or } from 'drizzle-orm'
 import { NotFoundError } from '~/lib/errors'
 import type { NewBooking, NewBookingAttendee, NewBookingOrganizer } from '~/lib/schemas/db'
 import { db } from '~/server/db'
@@ -75,15 +75,32 @@ export const createBooking = async (input: CreateBookingInput) => {
         status: 'ACCEPTED',
         mentorEventTypeId: mentorEventType.id,
         paymentId: input.paymentId,
-        webhookPayload: {},
+        webhookPayload: input.webhookPayload,
         meetingUrl: input.meetingUrl,
       })
+      .onConflictDoNothing()
       .returning()
 
     if (!booking) {
-      throw new Error(
-        `Failed to create booking record for calcomBookingId: ${input.calcomBookingId}, calcomUid: ${input.calcomUid}, title: ${input.title}`
-      )
+      const existingBooking = await tx.query.booking.findFirst({
+        where: or(
+          eq(schema.booking.calcomBookingId, input.calcomBookingId),
+          eq(schema.booking.calcomUid, input.calcomUid)
+        ),
+      })
+
+      if (!existingBooking) {
+        throw new Error(`Failed to create or find Cal.com booking ${input.calcomUid}`)
+      }
+
+      if (
+        existingBooking.calcomBookingId !== input.calcomBookingId ||
+        existingBooking.calcomUid !== input.calcomUid
+      ) {
+        throw new Error(`Conflicting Cal.com identifiers for booking ${input.calcomUid}`)
+      }
+
+      return { booking: existingBooking, created: false as const }
     }
 
     // Create the organizer record
@@ -98,25 +115,62 @@ export const createBooking = async (input: CreateBookingInput) => {
       bookingId: booking.id,
     })
 
-    return booking
+    return { booking, created: true as const }
   })
+}
+
+const getExistingBooking = async (calcomBookingUid: string) => {
+  const existing = await db.query.booking.findFirst({
+    where: eq(schema.booking.calcomUid, calcomBookingUid),
+    columns: { id: true, status: true },
+  })
+
+  if (!existing) {
+    throw new NotFoundError(`Booking with Cal.com UID ${calcomBookingUid} not found`)
+  }
+
+  return existing
+}
+
+/**
+ * Move a booking to a terminal state once. The result lets webhook callers
+ * avoid duplicating side effects when Cal.com retries delivery.
+ */
+const transitionBookingOnce = async (
+  calcomBookingUid: string,
+  status: 'CANCELLED' | 'COMPLETED',
+  fromStatus?: 'ACCEPTED'
+) => {
+  const statusCondition = fromStatus
+    ? eq(schema.booking.status, fromStatus)
+    : ne(schema.booking.status, status)
+  const [result] = await db
+    .update(schema.booking)
+    .set({ status })
+    .where(and(eq(schema.booking.calcomUid, calcomBookingUid), statusCondition))
+    .returning({ id: schema.booking.id })
+
+  if (result) {
+    return { ...result, transitioned: true as const }
+  }
+
+  const existing = await getExistingBooking(calcomBookingUid)
+  return { id: existing.id, transitioned: false as const }
+}
+
+/**
+ * Complete an accepted booking exactly once. A no-show or cancelled booking is
+ * not overwritten merely because Cal.com's scheduled end-time webhook fired.
+ */
+export const completeAcceptedBooking = async (calcomBookingUid: string) => {
+  return transitionBookingOnce(calcomBookingUid, 'COMPLETED', 'ACCEPTED')
 }
 
 /**
  * Cancel a booking by Cal.com UID
  */
 export const cancelBooking = async (calcomBookingUid: string) => {
-  const [result] = await db
-    .update(schema.booking)
-    .set({ status: 'CANCELLED' })
-    .where(eq(schema.booking.calcomUid, calcomBookingUid))
-    .returning({ id: schema.booking.id })
-
-  if (!result) {
-    throw new NotFoundError(`Booking with Cal.com UID ${calcomBookingUid} not found`)
-  }
-
-  return result
+  return transitionBookingOnce(calcomBookingUid, 'CANCELLED')
 }
 
 /**

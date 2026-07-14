@@ -1,44 +1,55 @@
 import { z } from 'zod'
 
-import { type CalcomToken as DbCalcomToken } from '~/lib/schemas/db'
+const CalcomOrganizationProfileSchema = z.object({
+  id: z.number().int(),
+  organizationId: z.number().int(),
+  userId: z.number().int(),
+  username: z.string().nullable().optional(),
+})
 
-export const CalcomUserSchema = z.strictObject({
+export const CalcomOrganizationUserSchema = z.object({
   id: z.number().int(),
   email: z.email(),
-  username: z.string(),
-  name: z.string(),
-  bio: z.string().nullable(),
-  timeZone: z.string(),
-  weekStart: z.string(),
-  createdDate: z.iso.datetime(),
-  timeFormat: z.number(),
-  defaultScheduleId: z.number().int().nullable(),
-  locale: z.string().nullable(),
-  avatarUrl: z.url().nullable(),
+  username: z.string().nullable().optional(),
+  name: z.string().nullable().optional(),
+  profile: CalcomOrganizationProfileSchema,
 })
 
-export const CreateCalcomUserResponseDataSchema = z.strictObject({
-  accessToken: z.string(),
-  refreshToken: z.string(),
-  user: CalcomUserSchema,
-  accessTokenExpiresAt: z.number(),
-  refreshTokenExpiresAt: z.number(),
-})
-
-export const CreateCalcomUserResponseSchema = z.strictObject({
+export const CreateCalcomUserResponseSchema = z.object({
   status: z.literal('success'),
-  data: CreateCalcomUserResponseDataSchema,
+  data: CalcomOrganizationUserSchema,
 })
 
-export type CreateCalcomUserResponse = z.infer<typeof CreateCalcomUserResponseSchema>
+export const CalcomScheduleSchema = z.object({
+  id: z.number().int(),
+  ownerId: z.number().int(),
+  name: z.string(),
+  timeZone: z.string(),
+  availability: z.array(
+    z.object({
+      days: z.array(
+        z.enum(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'])
+      ),
+      startTime: z.string(),
+      endTime: z.string(),
+    })
+  ),
+  isDefault: z.boolean(),
+  overrides: z.array(
+    z.object({
+      date: z.string(),
+      startTime: z.string(),
+      endTime: z.string(),
+    })
+  ),
+})
 
-export type CalcomToken = DbCalcomToken
+export const GetCalcomSchedulesResponseSchema = z.object({
+  status: z.literal('success'),
+  data: z.array(CalcomScheduleSchema),
+})
 
-export interface CalcomTokenWithId extends CalcomToken {
-  userId: string
-  calcomUserId: number
-  calcomUsername: string
-}
+export type CalcomSchedule = z.infer<typeof CalcomScheduleSchema>
 
 export type CalcomLocale =
   | 'ar'
@@ -85,13 +96,7 @@ export type CalcomLocale =
   | 'zh-TW'
 
 export type DayOfWeek =
-  | 'Monday'
-  | 'Tuesday'
-  | 'Wednesday'
-  | 'Thursday'
-  | 'Friday'
-  | 'Saturday'
-  | 'Sunday'
+  'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday'
 
 export interface CreateCalcomUserInput {
   userId: string

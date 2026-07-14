@@ -1,10 +1,10 @@
-import { render } from '@react-email/render'
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { APIError, createAuthMiddleware } from 'better-auth/api'
 import { nextCookies } from 'better-auth/next-js'
 import { admin, anonymous, emailOTP, oAuthProxy, oneTap, username } from 'better-auth/plugins'
 import { eq } from 'drizzle-orm'
+import { render } from 'react-email'
 import { env } from '~/env'
 import { ac, admin as adminRole, mentor, user as userRole } from '~/lib/auth/permissions'
 import { downloadAndUploadProfileImage } from '~/lib/blob'
@@ -83,7 +83,7 @@ export const auth = betterAuth({
   logger: {
     disabled: false,
     disableColors: false,
-    level: 'debug',
+    level: env.NODE_ENV === 'production' ? 'warn' : 'debug',
   },
   appName: 'Discuno',
   advanced: {
@@ -118,8 +118,9 @@ export const auth = betterAuth({
           // Assign role based on email domain FIRST (for all users)
           // .edu emails get 'mentor' role, others get 'user' role, anonymous users get no role
           const isAnonymous = user.email.includes('@discuno.com')
+          const isMentor = user.email.endsWith('.edu')
           if (!isAnonymous) {
-            const role = user.email.endsWith('.edu') ? 'mentor' : 'user'
+            const role = isMentor ? 'mentor' : 'user'
             console.log(`[DatabaseHook] Assigning role '${role}' to user: ${user.email}`)
 
             // Update role directly in database
@@ -153,46 +154,48 @@ export const auth = betterAuth({
             }
           }
 
-          // Setup Cal.com integration
-          try {
-            console.log(`[DatabaseHook] Creating Cal.com integration for: ${user.email}`)
-            const result = await enforceCalcomIntegration({
-              userId: user.id,
-              email: user.email,
-              name: user.name,
-              image: user.image ?? null,
-            })
+          // Only mentors host sessions, so only mentors need a managed Cal.com user.
+          if (isMentor) {
+            try {
+              console.log(`[DatabaseHook] Creating Cal.com integration for: ${user.email}`)
+              const result = await enforceCalcomIntegration({
+                userId: user.id,
+                email: user.email,
+                name: user.name,
+                image: user.image ?? null,
+              })
 
-            if (result.success) {
-              console.log(
-                `[DatabaseHook] Cal.com integration created successfully for: ${user.email}`
-              )
+              if (result.success) {
+                console.log(
+                  `[DatabaseHook] Cal.com integration created successfully for: ${user.email}`
+                )
 
-              try {
-                const syncResult = await syncMentorEventTypesForUser(user.id, result.accessToken)
-                if (syncResult.success) {
-                  console.log(
-                    `[DatabaseHook] Synced Cal.com event types for ${user.email}: ` +
-                      `created=${syncResult.created}, updated=${syncResult.updated}, deleted=${syncResult.deleted}`
-                  )
-                } else {
-                  console.error(
-                    `[DatabaseHook] Failed to sync event types for ${user.email}: ${syncResult.error}`
-                  )
+                try {
+                  const syncResult = await syncMentorEventTypesForUser(user.id)
+                  if (syncResult.success) {
+                    console.log(
+                      `[DatabaseHook] Synced Cal.com event types for ${user.email}: ` +
+                        `created=${syncResult.created}, updated=${syncResult.updated}, deleted=${syncResult.deleted}`
+                    )
+                  } else {
+                    console.error(
+                      `[DatabaseHook] Failed to sync event types for ${user.email}: ${syncResult.error}`
+                    )
+                  }
+                } catch (err) {
+                  console.error('[DatabaseHook] Unexpected error syncing mentor event types:', err)
                 }
-              } catch (err) {
-                console.error('[DatabaseHook] Unexpected error syncing mentor event types:', err)
+              } else {
+                console.error(
+                  `[DatabaseHook] Cal.com integration failed for: ${user.email} - ${result.error}`
+                )
               }
-            } else {
+            } catch (error) {
               console.error(
-                `[DatabaseHook] Cal.com integration failed for: ${user.email} - ${result.error}`
+                `[DatabaseHook] Error setting up Cal.com integration for ${user.email}:`,
+                error
               )
             }
-          } catch (error) {
-            console.error(
-              `[DatabaseHook] Error setting up Cal.com integration for ${user.email}:`,
-              error
-            )
           }
 
           // Assign user to school based on email domain
@@ -365,11 +368,11 @@ export const auth = betterAuth({
     username({
       minUsernameLength: 3,
       maxUsernameLength: 30,
-      usernameValidator: (uname) => {
+      usernameValidator: uname => {
         // Allow alphanumeric, underscores, hyphens
         return /^[a-z0-9_-]+$/.test(uname)
       },
-      usernameNormalization: (uname) => {
+      usernameNormalization: uname => {
         // Lowercase and replace special chars
         return uname.toLowerCase().replace(/[^a-z0-9_-]/g, '-')
       },

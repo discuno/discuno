@@ -8,12 +8,12 @@ import { EmailSignInForm } from '~/app/(auth)/auth/EmailSignInForm'
 import { ThemeAwareIconLogo } from '~/components/shared/ThemeAwareIconLogo'
 import { Button } from '~/components/ui/button'
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
 } from '~/components/ui/dialog'
 import { Spinner } from '~/components/ui/spinner'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs'

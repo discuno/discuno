@@ -9,7 +9,7 @@ A professional monorepo built with Next.js, pnpm workspaces, and Cal.com integra
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
 [![CI](https://github.com/discuno/discuno/actions/workflows/ci.yml/badge.svg)](https://github.com/discuno/discuno/actions/workflows/ci.yml)
 [![TypeScript](https://img.shields.io/badge/%3C%2F%3E-TypeScript-%230074c1.svg)](http://www.typescriptlang.org/)
-[![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)](https://nextjs.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19-blue?logo=react)](https://reactjs.org/)
 [![pnpm](https://img.shields.io/badge/pnpm-workspace-orange?logo=pnpm)](https://pnpm.io/)
 [![Turborepo](https://img.shields.io/badge/Turborepo-enabled-red?logo=turborepo)](https://turbo.build/)
@@ -26,8 +26,9 @@ A professional monorepo built with Next.js, pnpm workspaces, and Cal.com integra
 - 👥 **Mentorship Platform** - Connect mentors and mentees with advanced matching
 - 🔐 **Secure Authentication** - better-auth with email OTP + Google & Microsoft OAuth
 - 📱 **Mobile-First Design** - Responsive UI built with Tailwind CSS & Radix UI
-- 🧪 **Full Test Coverage** - Comprehensive testing with Vitest & Testing Library
-- 🚀 **Performance Optimized** - Turbo builds, server components, and edge functions
+- 💳 **Mentor Payments** - Stripe Checkout and Connect-powered mentor payouts
+- 🧪 **Guarded Testing** - Fast unit tests plus isolated Railway database integration tests
+- 🚀 **Performance Optimized** - Turbopack builds, Server Components, and Cache Components
 - 🎨 **Modern UI** - Beautiful and responsive interface with Tailwind CSS & Radix UI
 - 📊 **Database Integration** - Type-safe queries with Drizzle ORM
 
@@ -57,8 +58,8 @@ discuno/
 
 ### Prerequisites
 
-- **Node.js** 20+ (LTS recommended)
-- **pnpm** 8+ (package manager)
+- **Node.js** 24
+- **pnpm** 11+
 - **Git** for version control
 
 ### Installation
@@ -84,12 +85,12 @@ pnpm build
 # Run quality checks
 pnpm lint         # ESLint check
 pnpm typecheck    # TypeScript validation
-pnpm test         # Run test suites
+pnpm test:run     # Run unit tests once
 pnpm format       # Format code with Prettier
+pnpm integrations:check:local # Read-only service connectivity check
 
 # Database operations
-pnpm db:generate  # Generate Drizzle schema for the default environment
-pnpm db:push      # Push schema changes to the active database
+pnpm db:push:local # Review and push schema changes to the local database
 pnpm db:studio    # Open Drizzle Studio (use db:studio:<env> for scoped access)
 ```
 
@@ -112,7 +113,7 @@ pnpm db:studio    # Open Drizzle Studio (use db:studio:<env> for scoped access)
 <summary><strong>Core Technologies</strong></summary>
 
 - **Monorepo**: pnpm workspaces + Turborepo
-- **Frontend**: Next.js 15 (App Router), React 19
+- **Frontend**: Next.js 16 (App Router + Turbopack), React 19
 - **Language**: TypeScript (strict mode)
 - **Styling**: Tailwind CSS 4, Radix UI primitives
 - **Database**: Drizzle ORM, PostgreSQL (Railway)
@@ -124,11 +125,11 @@ pnpm db:studio    # Open Drizzle Studio (use db:studio:<env> for scoped access)
 <details>
 <summary><strong>Development Tools</strong></summary>
 
-- **Testing**: Vitest, Testing Library, Playwright (E2E)
+- **Testing**: Vitest, Testing Library, guarded PostgreSQL integration tests
 - **Linting**: ESLint, TypeScript ESLint
 - **Formatting**: Prettier, Tailwind Prettier plugin
 - **Git Hooks**: Husky, lint-staged, Commitlint
-- **CI/CD**: GitHub Actions, Dependabot
+- **CI/CD**: GitHub Actions
 - **Package Management**: pnpm (fast, efficient)
 
 </details>
@@ -140,7 +141,7 @@ pnpm db:studio    # Open Drizzle Studio (use db:studio:<env> for scoped access)
 - **Database**: Railway (PostgreSQL), Redis (caching)
 - **CDN**: Vercel Edge Network
 - **Monitoring**: Sentry error tracking
-- **Analytics**: Vercel Analytics
+- **Analytics**: PostHog
 - **Email**: Resend transactional delivery
 
 </details>
@@ -162,7 +163,7 @@ We welcome contributions from the community! Please see our [Contributing Guide]
 - [ ] Create a feature branch (`git checkout -b feature/amazing-feature`)
 - [ ] Make your changes
 - [ ] Add tests for new functionality
-- [ ] Ensure all checks pass (`pnpm lint && pnpm typecheck && pnpm test`)
+- [ ] Ensure all checks pass (`pnpm lint && pnpm typecheck && pnpm test:run`)
 - [ ] Commit with conventional format (`feat: add amazing feature`)
 - [ ] Push and create a Pull Request
 

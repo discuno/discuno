@@ -1,14 +1,18 @@
 import crypto from 'crypto'
 import { env } from '~/env'
-import { markAsNoShow } from '~/lib/calcom'
 import { trackServerEvent } from '~/lib/posthog-server'
 import {
+  CalcomBookingCancelledPayloadSchema,
   CalcomBookingPayloadSchema,
+  CalcomBookingRescheduledPayloadSchema,
+  CalcomNoShowPayloadSchema,
+  CalcomNoShowUpdatedPayloadSchema,
+  CalcomWebhookEnvelopeSchema,
   type CalcomBookingPayload,
-  type CalcomWebhookEvent,
 } from '~/lib/schemas/calcom'
 import {
   cancelLocalBooking,
+  completeLocalBooking,
   createLocalBooking,
   updateLocalBookingStatus,
 } from '~/lib/services/booking-service'
@@ -16,6 +20,7 @@ import { getUserIdByCalcomUserId } from '~/lib/services/calcom-tokens-service'
 import { createAnalyticsEvent } from '~/server/dal/analytics'
 
 type MentorMetadataPayload = Partial<CalcomBookingPayload> & {
+  uid: string
   metadata: { mentorUserId: string; actorUserId?: string }
 }
 
@@ -24,7 +29,10 @@ const hasMentorMetadata = (data: unknown): data is MentorMetadataPayload => {
   if (!('metadata' in data)) return false
   const metadata = (data as { metadata?: unknown }).metadata
   if (!metadata || typeof metadata !== 'object') return false
-  return typeof (metadata as { mentorUserId?: unknown }).mentorUserId === 'string'
+  return (
+    typeof (data as { uid?: unknown }).uid === 'string' &&
+    typeof (metadata as { mentorUserId?: unknown }).mentorUserId === 'string'
+  )
 }
 
 export async function POST(req: Request) {
@@ -37,37 +45,48 @@ export async function POST(req: Request) {
     .update(bodyText)
     .digest('hex')
 
+  const expectedBuffer = Buffer.from(expectedSignature, 'utf8')
+  const signatureBuffer = Buffer.from(signature, 'utf8')
   if (
-    !crypto.timingSafeEqual(Buffer.from(expectedSignature, 'utf8'), Buffer.from(signature, 'utf8'))
+    expectedBuffer.length !== signatureBuffer.length ||
+    !crypto.timingSafeEqual(expectedBuffer, signatureBuffer)
   ) {
     console.error('❌ Webhook signature verification failed for Cal.com payload')
     return Response.json({ error: 'Invalid signature' }, { status: 400 })
   }
 
-  let event: CalcomWebhookEvent
+  let rawEvent: unknown
   try {
-    event = JSON.parse(bodyText)
+    rawEvent = JSON.parse(bodyText)
   } catch (err) {
     console.error('❌ Failed to parse Cal.com webhook payload:', err)
     return Response.json({ error: 'Invalid payload' }, { status: 400 })
   }
 
-  console.log('Received Cal.com webhook event:', {
-    triggerEvent: event.triggerEvent,
-    payload: event.payload,
-  })
+  const parsedEnvelope = CalcomWebhookEnvelopeSchema.safeParse(rawEvent)
+  if (!parsedEnvelope.success) {
+    console.error('Invalid Cal.com webhook envelope')
+    return Response.json({ error: 'Invalid payload' }, { status: 400 })
+  }
 
-  const { triggerEvent, payload } = event
-  console.log(`✅ Received Cal.com webhook event: ${triggerEvent}`)
+  const { triggerEvent } = parsedEnvelope.data
+  const payload = parsedEnvelope.data.payload ?? rawEvent
+  console.log('Received Cal.com webhook event', { triggerEvent })
 
   try {
     switch (triggerEvent) {
       case 'BOOKING_CREATED':
         return await storeBooking(payload)
+      case 'BOOKING_RESCHEDULED': {
+        const rescheduledBooking = CalcomBookingRescheduledPayloadSchema.parse(payload)
+        await cancelLocalBooking(rescheduledBooking.rescheduleUid)
+        return await storeBooking(rescheduledBooking)
+      }
       // Guest didn't show up
       case 'AFTER_GUESTS_CAL_VIDEO_NO_SHOW':
         {
-          const { bookingUid } = event.payload
+          const noShow = CalcomNoShowPayloadSchema.parse(payload)
+          const { bookingUid } = noShow
           // Only update local database - guest no-show
           await updateLocalBookingStatus(bookingUid, 'NO_SHOW', {
             hostNoShow: false,
@@ -79,45 +98,32 @@ export async function POST(req: Request) {
       // Host didn't show up - attempt to mark and potentially refund
       case 'AFTER_HOSTS_CAL_VIDEO_NO_SHOW':
         {
-          const { bookingUid, attendees } = event.payload
+          const noShow = CalcomNoShowPayloadSchema.parse(payload)
+          const { bookingUid } = noShow
 
           // Update local database first
           await updateLocalBookingStatus(bookingUid, 'NO_SHOW', {
             hostNoShow: true,
             attendeeNoShow: false,
           })
-
-          // Try to mark as no-show in Cal.com, but don't fail if it errors
-          try {
-            await markAsNoShow(
-              bookingUid,
-              attendees.map(attendee => ({
-                email: attendee.email,
-                absent: true,
-              })),
-              true // Mark the host as absent
-            )
-            console.log(`✅ Marked host as no-show in Cal.com for booking ${bookingUid}`)
-          } catch (calcomError) {
-            // Log the error but continue - we've already updated our local database
-            console.warn(
-              `⚠️ Failed to mark no-show in Cal.com (booking ${bookingUid}):`,
-              calcomError
-            )
-          }
         }
         break
+      case 'BOOKING_NO_SHOW_UPDATED': {
+        const noShow = CalcomNoShowUpdatedPayloadSchema.parse(payload)
+        const attendeeNoShow = noShow.attendees.some(attendee => attendee.noShow)
+        await updateLocalBookingStatus(noShow.bookingUid, attendeeNoShow ? 'NO_SHOW' : 'ACCEPTED', {
+          hostNoShow: false,
+          attendeeNoShow,
+        })
+        break
+      }
       case 'RECORDING_TRANSCRIPTION_GENERATED':
-        console.log(`✅ Transcription generated for event: ${triggerEvent}`)
-        console.log(`✅ Transcription text: ${JSON.stringify(payload)}`)
+        console.log('Cal.com transcription generated')
         break
       case 'RECORDING_READY':
-        console.log(`✅ Recording is ready for event: ${triggerEvent}`)
-        console.log(`✅ Recording details: ${JSON.stringify(payload)}`)
+        console.log('Cal.com recording ready')
         break
       case 'MEETING_STARTED': {
-        console.log(`✅ Meeting started for event: ${triggerEvent}`)
-        console.log(`✅ Meeting details: ${JSON.stringify(payload)}`)
         if (!hasMentorMetadata(payload)) {
           console.warn(`⚠️ MEETING_STARTED event missing payload metadata`)
           break
@@ -135,13 +141,17 @@ export async function POST(req: Request) {
         break
       }
       case 'MEETING_ENDED': {
-        console.log(`✅ Meeting ended for event: ${triggerEvent}`)
-        console.log(`✅ Meeting details: ${JSON.stringify(payload)}`)
         if (!hasMentorMetadata(payload)) {
           console.warn(`⚠️ MEETING_ENDED event missing payload metadata`)
           break
         }
         const mentorUserId = payload.metadata.mentorUserId
+        const completion = await completeLocalBooking(payload.uid)
+        if (!completion.transitioned) {
+          console.log(`Cal.com meeting end already handled for booking ${payload.uid}`)
+          break
+        }
+
         await createAnalyticsEvent({
           eventType: 'COMPLETED_BOOKING',
           targetUserId: mentorUserId,
@@ -163,9 +173,13 @@ export async function POST(req: Request) {
       }
       case 'BOOKING_CANCELLED':
         {
-          console.log(`✅ Booking canceled for event: ${triggerEvent}`)
-          await cancelLocalBooking(event.payload.uid)
-          const mentorUserId = await getUserIdByCalcomUserId(event.payload.organizer.id)
+          const cancelledBooking = CalcomBookingCancelledPayloadSchema.parse(payload)
+          const cancellation = await cancelLocalBooking(cancelledBooking.uid)
+          if (!cancellation.transitioned) {
+            console.log(`Cal.com cancellation already handled for booking ${cancelledBooking.uid}`)
+            break
+          }
+          const mentorUserId = await getUserIdByCalcomUserId(cancelledBooking.organizer.id)
           if (mentorUserId) {
             await createAnalyticsEvent({
               eventType: 'CANCELLED_BOOKING',
@@ -176,9 +190,8 @@ export async function POST(req: Request) {
             // Track booking cancellation in PostHog
             try {
               await trackServerEvent(mentorUserId, 'booking_cancelled', {
-                calcomUid: event.payload.uid,
-                calcomBookingId: event.payload.bookingId,
-                organizerEmail: event.payload.organizer.email,
+                calcomUid: cancelledBooking.uid,
+                calcomBookingId: cancelledBooking.bookingId,
               })
             } catch (error) {
               console.error(`❌ Failed to track booking cancellation event:`, error)
@@ -199,7 +212,7 @@ export async function POST(req: Request) {
   return Response.json({ received: true })
 }
 
-async function storeBooking(event: CalcomBookingPayload) {
+async function storeBooking(event: unknown) {
   console.log('Processing Cal.com BOOKING_CREATED event...')
   try {
     const validation = CalcomBookingPayloadSchema.safeParse(event)
@@ -229,7 +242,7 @@ async function storeBooking(event: CalcomBookingPayload) {
 
     const start = new Date(startTime)
 
-    const booking = await createLocalBooking({
+    const { booking, created } = await createLocalBooking({
       calcomBookingId: bookingId,
       calcomUid: uid,
       title,
@@ -252,8 +265,13 @@ async function storeBooking(event: CalcomBookingPayload) {
         phoneNumber: attendee.phoneNumber,
         timeZone: attendee.timeZone,
       },
-      webhookPayload: event,
+      webhookPayload: validation.data,
     })
+
+    if (!created) {
+      console.log(`Cal.com booking ${uid} was already stored`)
+      return Response.json(booking)
+    }
 
     console.log(`✅ Successfully stored booking ${booking.id} for Cal.com event ${uid}`)
 
@@ -290,7 +308,6 @@ async function storeBooking(event: CalcomBookingPayload) {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     console.error(`❌ Failed to store booking for Cal.com event:`, errorMessage)
-    console.error('Raw payload:', JSON.stringify(event, null, 2))
     return Response.json({ error: 'Failed to process booking' }, { status: 500 })
   }
 }

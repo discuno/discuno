@@ -19,11 +19,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Migrated to monorepo architecture for better code organization
 - Improved development workflow with Turbo build system
+- Modernized the application to Node.js 24, pnpm 11, Next.js 16, and React 19
+- Updated Cal.com to its organization-user APIs and current versioned booking, event type,
+  schedule, slot, and webhook contracts
+- Updated Stripe Checkout and Connect handling for the current API, retry-safe fulfillment, and
+  asynchronous payment success events
+- Added environment-aware integration checks and guarded database workflows for local, preview,
+  test, and production environments
 
 ### Dependencies
 
 - React 19.x
-- Next.js 15.x
+- Next.js 16.x
 - TypeScript 5.x
 - Tailwind CSS 4.x
 

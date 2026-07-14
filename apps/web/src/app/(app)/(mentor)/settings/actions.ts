@@ -2,300 +2,21 @@
 import 'server-only'
 
 import { revalidatePath } from 'next/cache'
-import Stripe from 'stripe'
 import type { Availability, DateOverride, WeeklySchedule } from '~/app/types/availability'
 import { availabilitySchema, dateOverrideSchema } from '~/app/types/availability'
 import { env } from '~/env'
-import { ExternalApiError } from '~/lib/auth/auth-utils'
-import {
-  createCalcomUser as createCalcomUserCore,
-  updateCalcomUser as updateCalcomUserCore,
-} from '~/lib/calcom'
-import type { CreateCalcomUserInput, UpdateCalcomUserInput } from '~/lib/calcom/schemas'
+import { cancelCalcomBooking, getCalcomSchedules, updateCalcomSchedule } from '~/lib/calcom'
+import type { DayOfWeek } from '~/lib/calcom/schemas'
 import { MINIMUM_PAID_BOOKING_PRICE } from '~/lib/constants'
-import { type UpdateCalcomToken, type UpdateMentorEventType } from '~/lib/schemas/db'
+import { type UpdateMentorEventType } from '~/lib/schemas/db'
 import { updateMentorEventType } from '~/lib/services/calcom-service'
-import { updateCalcomTokensByUserId } from '~/lib/services/calcom-tokens-service'
 import { upsertMentorStripeAccount } from '~/lib/services/stripe-service'
+import { stripe } from '~/lib/stripe'
 import { getMentorBookings } from '~/server/queries/bookings'
-import { getMentorCalcomTokens } from '~/server/queries/calcom'
+import { getMentorCalcomConnection } from '~/server/queries/calcom'
 import { getMentorEventTypes } from '~/server/queries/event-types'
 import { getFullProfile } from '~/server/queries/profiles'
 import { getMentorStripeAccount } from '~/server/queries/stripe'
-
-/**
- * Get user's current Cal.com access token
- */
-const getCalcomAccessToken = async (): Promise<{
-  success: boolean
-  accessToken?: string
-  refreshToken?: string
-  username?: string
-  error?: string
-}> => {
-  try {
-    console.log('getCalcomAccessToken')
-    const tokens = await getMentorCalcomTokens()
-    console.log('tokens', tokens)
-
-    if (!tokens) {
-      return {
-        success: false,
-        error: 'No Cal.com tokens found',
-      }
-    }
-
-    console.log('tokens.accessToken', tokens.accessToken)
-
-    return {
-      success: true,
-      accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken,
-      username: tokens.calcomUsername,
-    }
-  } catch (error) {
-    console.error('Get Cal.com token error:', error)
-    return {
-      success: false,
-      error: 'Failed to get token',
-    }
-  }
-}
-
-/**
- * Refresh Cal.com access token
- */
-const refreshCalcomToken = async (): Promise<{
-  success: boolean
-  accessToken?: string
-  error?: string
-}> => {
-  try {
-    const tokenRecord = await getMentorCalcomTokens()
-    if (!tokenRecord) {
-      return { success: false, error: 'Token not found' }
-    }
-
-    const now = new Date()
-    if (tokenRecord.refreshTokenExpiresAt < now) {
-      return forceRefreshCalcomToken(tokenRecord.calcomUserId, tokenRecord.userId)
-    }
-
-    const refreshResponse = await fetch(
-      `${env.NEXT_PUBLIC_CALCOM_API_URL}/oauth/${env.NEXT_PUBLIC_X_CAL_ID}/refresh`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-cal-secret-key': env.X_CAL_SECRET_KEY,
-        },
-        body: JSON.stringify({ refreshToken: tokenRecord.refreshToken }),
-      }
-    )
-
-    if (!refreshResponse.ok) {
-      const errorText = await refreshResponse.text()
-      console.warn(
-        'Normal refresh failed, attempting force refresh:',
-        refreshResponse.status,
-        errorText
-      )
-      return forceRefreshCalcomToken(tokenRecord.calcomUserId, tokenRecord.userId)
-    }
-
-    const refreshData = await refreshResponse.json()
-
-    if (refreshData.status !== 'success') {
-      console.warn('Refresh response error, attempting force refresh:', refreshData)
-      return forceRefreshCalcomToken(tokenRecord.calcomUserId, tokenRecord.userId)
-    }
-
-    const token: UpdateCalcomToken = {
-      accessToken: refreshData.data.accessToken as string,
-      refreshToken: refreshData.data.refreshToken as string,
-      accessTokenExpiresAt: new Date(refreshData.data.accessTokenExpiresAt),
-      refreshTokenExpiresAt: new Date(refreshData.data.refreshTokenExpiresAt),
-    }
-
-    await updateCalcomTokensByUserId(tokenRecord.userId, token)
-
-    console.log('Token refresh successful')
-    return { success: true, accessToken: token.accessToken }
-  } catch (error) {
-    console.error('Cal.com refresh token error:', error)
-    return { success: false, error: 'Token refresh failed' }
-  }
-}
-
-/**
- * Force refresh Cal.com tokens when refresh token is expired
- */
-const forceRefreshCalcomToken = async (
-  calcomUserId: number,
-  userId: string
-): Promise<{
-  success: boolean
-  accessToken?: string
-  error?: string
-}> => {
-  try {
-    console.log('Attempting force refresh for user:', userId, 'calcom user:', calcomUserId)
-
-    // Correct endpoint from Cal.com API v2 docs
-    const forceRefreshResponse = await fetch(
-      `${env.NEXT_PUBLIC_CALCOM_API_URL}/oauth-clients/${env.NEXT_PUBLIC_X_CAL_ID}/users/${calcomUserId}/force-refresh`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-cal-secret-key': env.X_CAL_SECRET_KEY,
-        },
-        body: JSON.stringify({}),
-      }
-    )
-
-    if (!forceRefreshResponse.ok) {
-      const errorText = await forceRefreshResponse.text()
-      console.error('Force refresh failed:', forceRefreshResponse.status, errorText)
-      return {
-        success: false,
-        error: `Force refresh failed: ${forceRefreshResponse.status} - ${errorText}`,
-      }
-    }
-
-    const forceRefreshData = await forceRefreshResponse.json()
-
-    if (forceRefreshData.status !== 'success') {
-      console.error('Force refresh response error:', forceRefreshData)
-      return {
-        success: false,
-        error: `Force refresh API error: ${JSON.stringify(forceRefreshData)}`,
-      }
-    }
-
-    // Use the expiration times from the API response
-    const newAccessTokenExpiresAt = new Date(forceRefreshData.data.accessTokenExpiresAt)
-    const newRefreshTokenExpiresAt = new Date(forceRefreshData.data.refreshTokenExpiresAt)
-
-    const token: UpdateCalcomToken = {
-      accessToken: forceRefreshData.data.accessToken,
-      refreshToken: forceRefreshData.data.refreshToken,
-      accessTokenExpiresAt: newAccessTokenExpiresAt,
-      refreshTokenExpiresAt: newRefreshTokenExpiresAt,
-    }
-
-    await updateCalcomTokensByUserId(userId, token)
-
-    console.log('Force refresh successful for user:', userId)
-
-    return {
-      success: true,
-      accessToken: forceRefreshData.data.accessToken,
-    }
-  } catch (error) {
-    console.error('Cal.com force refresh error:', error)
-    return {
-      success: false,
-      accessToken: '',
-      error: 'Token refresh failed',
-    }
-  }
-}
-
-/**
- * Check if user has Cal.com integration set up
- */
-const hasCalcomIntegration = async () => {
-  try {
-    const tokens = await getMentorCalcomTokens()
-    return !!tokens
-  } catch (error) {
-    console.error('Check Cal.com integration error:', error)
-    return false
-  }
-}
-
-/**
- * Get user's Cal.com token
- */
-const getUserCalcomToken = async (): Promise<{
-  success: boolean
-  accessToken?: string
-  refreshToken?: string
-  error?: string
-}> => {
-  try {
-    return await getCalcomAccessToken()
-  } catch (error) {
-    console.error('Get user Cal.com token error:', error)
-    return {
-      success: false,
-      error: 'Failed to get token',
-    }
-  }
-}
-
-/**
- * Create Cal.com user (server action wrapper)
- */
-const createCalcomUser = async (
-  data: CreateCalcomUserInput
-): Promise<{
-  success: boolean
-  calcomUserId?: number
-  username?: string
-  error?: string
-}> => {
-  try {
-    const result = await createCalcomUserCore(data)
-    return {
-      success: true,
-      calcomUserId: result.calcomUserId,
-      username: result.username,
-    }
-  } catch (error) {
-    console.error('Cal.com user creation error:', error)
-    if (error instanceof ExternalApiError) {
-      return {
-        success: false,
-        error: error.message,
-      }
-    }
-    return {
-      success: false,
-      error: `Failed to create Cal.com user: ${error}`,
-    }
-  }
-}
-
-/**
- * Update Cal.com user (server action wrapper)
- */
-const updateCalcomUser = async (
-  data: UpdateCalcomUserInput
-): Promise<{
-  success: boolean
-  error?: string
-}> => {
-  try {
-    await updateCalcomUserCore(data)
-    return {
-      success: true,
-    }
-  } catch (error) {
-    console.error('Cal.com user update error:', error)
-    if (error instanceof ExternalApiError) {
-      return {
-        success: false,
-        error: error.message,
-      }
-    }
-    return {
-      success: false,
-      error: `Failed to update Cal.com user: ${error}`,
-    }
-  }
-}
 
 /**
  * Fetches the user's availability schedule from Cal.com.
@@ -306,46 +27,15 @@ export async function getSchedule(): Promise<{
   data?: Availability
   error?: string
 }> {
-  // Permission check removed - protected by query layer (getMentorCalcomTokens)
   try {
-    const tokenResult = await getValidCalcomToken()
+    const connection = await getMentorCalcomConnection()
+    const schedules = await getCalcomSchedules(connection.calcomUserId)
+    const schedule = schedules.find(candidate => candidate.isDefault) ?? schedules[0]
 
-    if (!tokenResult.success || !tokenResult.accessToken) {
-      return {
-        success: false,
-        error: 'Failed to get valid Cal.com token',
-      }
+    if (!schedule) {
+      return { success: true, data: undefined }
     }
 
-    const response = await fetch(`${env.NEXT_PUBLIC_CALCOM_API_URL}/schedules/default`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${tokenResult.accessToken}`,
-      },
-    })
-
-    if (!response.ok) {
-      const errorBody = await response.text()
-      return {
-        success: false,
-        error: `Failed to fetch schedule: ${errorBody}`,
-      }
-    }
-
-    const data = await response.json()
-
-    if (!data.data) {
-      return {
-        success: true,
-        data: undefined,
-      }
-    }
-
-    // The /schedules/default endpoint returns a single schedule object
-    const calcomSchedule = data.data
-
-    // Map Cal.com v2 availability (array of per-day interval arrays) into our WeeklySchedule format
     const weeklySchedule: WeeklySchedule = {
       sunday: [],
       monday: [],
@@ -355,56 +45,32 @@ export async function getSchedule(): Promise<{
       friday: [],
       saturday: [],
     }
-    const dayNames: (keyof WeeklySchedule)[] = [
-      'sunday',
-      'monday',
-      'tuesday',
-      'wednesday',
-      'thursday',
-      'friday',
-      'saturday',
-    ]
-    dayNames.forEach((dayKey, idx) => {
-      const dayIntervals = calcomSchedule.availability?.[idx]
-      if (Array.isArray(dayIntervals)) {
-        for (const interval of dayIntervals) {
-          const list = weeklySchedule[dayKey]
-          // Convert ISO datetime to HH:mm for time inputs
-          const startRaw: string = interval.start
-          const endRaw: string = interval.end
-          const start = startRaw.length >= 16 ? startRaw.substring(11, 16) : startRaw
-          const end = endRaw.length >= 16 ? endRaw.substring(11, 16) : endRaw
-          list.push({ start, end })
-        }
-      }
-    })
 
-    // Map Cal.com v2 overrides into our DateOverride[]
+    for (const availability of schedule.availability) {
+      for (const day of availability.days) {
+        const dayKey = day.toLowerCase() as keyof WeeklySchedule
+        weeklySchedule[dayKey].push({
+          start: availability.startTime,
+          end: availability.endTime,
+        })
+      }
+    }
+
     const dateOverrides: DateOverride[] = []
-    for (const ov of calcomSchedule.dateOverrides ?? []) {
-      // Each override can include multiple ranges per date
-      for (const range of ov.ranges ?? []) {
-        // Derive date: use ov.date or fallback to range start date (YYYY-MM-DD)
-        const date = ov.date ?? (range.start.split('T')[0] as string)
-        const startRaw: string = range.start
-        const endRaw: string = range.end
-        const start = startRaw.length >= 16 ? startRaw.substring(11, 16) : startRaw
-        const end = endRaw.length >= 16 ? endRaw.substring(11, 16) : endRaw
-        const interval = { start, end }
-        // Group by date
-        const existing = dateOverrides.find(d => d.date === date)
-        if (existing) {
-          existing.intervals.push(interval)
-        } else {
-          dateOverrides.push({ date, intervals: [interval] })
-        }
+    for (const override of schedule.overrides) {
+      const existing = dateOverrides.find(candidate => candidate.date === override.date)
+      const interval = { start: override.startTime, end: override.endTime }
+      if (existing) {
+        existing.intervals.push(interval)
+      } else {
+        dateOverrides.push({ date: override.date, intervals: [interval] })
       }
     }
 
     return {
       success: true,
       data: {
-        id: calcomSchedule.id.toString(),
+        id: schedule.id.toString(),
         weeklySchedule,
         dateOverrides,
       },
@@ -427,10 +93,7 @@ export async function updateSchedule(schedule: Availability): Promise<{
   data?: Availability
   error?: string
 }> {
-  // Permission check removed - protected by query layer (getMentorCalcomTokens)
-  console.log('updateSchedule called with:', schedule)
   try {
-    // Validate input using canonical schema with safeParse
     const validationResult = availabilitySchema.safeParse(schedule)
     if (!validationResult.success) {
       return {
@@ -439,59 +102,26 @@ export async function updateSchedule(schedule: Availability): Promise<{
       }
     }
 
-    const tokenResult = await getValidCalcomToken()
-
-    if (!tokenResult.success || !tokenResult.accessToken) {
-      return {
-        success: false,
-        error: 'Failed to get valid Cal.com token',
-      }
-    }
-
-    const payload = {
-      // Cal.com v2 expects an array of slots with days array
+    const connection = await getMentorCalcomConnection()
+    await updateCalcomSchedule(connection.calcomUserId, Number(schedule.id), {
       availability: Object.entries(schedule.weeklySchedule).flatMap(([day, intervals]) =>
         intervals.map(interval => ({
-          days: [day.charAt(0).toUpperCase() + day.slice(1)],
+          days: [(day.charAt(0).toUpperCase() + day.slice(1)) as DayOfWeek],
           startTime: interval.start,
           endTime: interval.end,
         }))
       ),
-      overrides: schedule.dateOverrides.flatMap(o =>
-        o.intervals.map(i => ({
-          date: o.date,
-          startTime: i.start,
-          endTime: i.end,
+      overrides: schedule.dateOverrides.flatMap(override =>
+        override.intervals.map(interval => ({
+          date: override.date,
+          startTime: interval.start,
+          endTime: interval.end,
         }))
       ),
-    }
-
-    const response = await fetch(`${env.NEXT_PUBLIC_CALCOM_API_URL}/schedules/${schedule.id}`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${tokenResult.accessToken}`,
-        'cal-api-version': '2024-06-14',
-      },
-      body: JSON.stringify(payload),
     })
 
-    console.log('updateSchedule response status:', response.status)
-
-    if (!response.ok) {
-      const errorBody = await response.text()
-      return {
-        success: false,
-        error: `Failed to update schedule: ${errorBody}`,
-      }
-    }
-
     revalidatePath('/scheduling')
-
-    return {
-      success: true,
-      data: schedule,
-    }
+    return { success: true, data: schedule }
   } catch (error) {
     console.error('Error updating schedule:', error)
     return {
@@ -775,8 +405,6 @@ export const createStripeConnectAccount = async (): Promise<{
     // Check if user already has a Stripe account
     const existingAccount = await getMentorStripeAccount()
 
-    const stripe = new Stripe(env.STRIPE_SECRET_KEY)
-
     if (existingAccount) {
       // If account exists but is not active, return account ID for embedded onboarding
       if (existingAccount.stripeAccountStatus !== 'active') {
@@ -794,7 +422,12 @@ export const createStripeConnectAccount = async (): Promise<{
 
     // Create new Stripe Connect account
     const account = await stripe.accounts.create({
-      type: 'express',
+      controller: {
+        fees: { payer: 'application' },
+        losses: { payments: 'application' },
+        requirement_collection: 'stripe',
+        stripe_dashboard: { type: 'express' },
+      },
       email: profile.email,
       country: 'US',
       business_type: 'individual',
@@ -883,59 +516,6 @@ export const getMentorStripeStatus = async (): Promise<{
 }
 
 /**
- * Get a valid Cal.com access token
- * Automatically refreshes if expired
- */
-export const getValidCalcomToken = async (): Promise<{
-  success: boolean
-  accessToken?: string
-  error?: string
-}> => {
-  try {
-    // First, get current tokens from database
-    const tokens = await getMentorCalcomTokens()
-    if (!tokens) {
-      return {
-        success: false,
-        error: 'No Cal.com tokens found',
-      }
-    }
-
-    // Check if access token is expired
-    const now = new Date()
-    if (tokens.accessTokenExpiresAt > now) {
-      // Token is still valid
-      return {
-        success: true,
-        accessToken: tokens.accessToken,
-      }
-    }
-
-    // Token is expired, refresh it
-    console.log('🔄 Access token expired, refreshing...')
-    const refreshResult = await refreshCalcomToken()
-
-    if (refreshResult.success) {
-      return {
-        success: true,
-        accessToken: refreshResult.accessToken,
-      }
-    }
-
-    return {
-      success: false,
-      error: refreshResult.error,
-    }
-  } catch (error) {
-    console.error('Get valid Cal.com token error:', error)
-    return {
-      success: false,
-      error: 'Failed to get valid token',
-    }
-  }
-}
-
-/**
  * Create Stripe Account Link for hosted onboarding
  * Redirects to Stripe-hosted onboarding flow
  */
@@ -953,7 +533,6 @@ export const createStripeAccountLink = async ({
   error?: string
 }> => {
   try {
-    const stripe = new Stripe(env.STRIPE_SECRET_KEY)
     const baseUrl = env.BETTER_AUTH_URL ?? 'http://localhost:3000'
 
     const accountLink = await stripe.accountLinks.create({
@@ -991,8 +570,6 @@ export const createStripeLoginLink = async (
   error?: string
 }> => {
   try {
-    const stripe = new Stripe(env.STRIPE_SECRET_KEY)
-
     const loginLink = await stripe.accounts.createLoginLink(accountId)
 
     return {
@@ -1053,35 +630,7 @@ export const cancelBooking = async ({
   error?: string
 }> => {
   try {
-    const tokenResult = await getValidCalcomToken()
-
-    if (!tokenResult.success || !tokenResult.accessToken) {
-      return {
-        success: false,
-        error: 'Failed to get valid Cal.com token',
-      }
-    }
-
-    const response = await fetch(
-      `${env.NEXT_PUBLIC_CALCOM_API_URL}/bookings/${bookingUid}/cancel`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${tokenResult.accessToken}`,
-          'cal-api-version': '2024-08-13',
-        },
-        body: JSON.stringify({ cancellationReason }),
-      }
-    )
-
-    if (!response.ok) {
-      const errorBody = await response.text()
-      return {
-        success: false,
-        error: `Failed to cancel booking: ${errorBody}`,
-      }
-    }
+    await cancelCalcomBooking(bookingUid, cancellationReason)
 
     revalidatePath('/settings/bookings')
 
@@ -1253,14 +802,4 @@ export const getMentorOnboardingStatus = async (): Promise<{
     totalSteps,
     steps,
   }
-}
-
-export {
-  createCalcomUser,
-  forceRefreshCalcomToken,
-  getCalcomAccessToken,
-  getUserCalcomToken,
-  hasCalcomIntegration,
-  refreshCalcomToken,
-  updateCalcomUser,
 }

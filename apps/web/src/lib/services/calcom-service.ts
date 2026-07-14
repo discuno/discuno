@@ -69,8 +69,7 @@ function computeEventTypeSyncPlan(
  * Sync mentor's Cal.com event types with local database
  */
 export const syncMentorEventTypesForUser = async (
-  userId: string,
-  accessToken: string
+  userId: string
 ): Promise<
   | { success: true; created: number; updated: number; deleted: number }
   | { success: false; error: string }
@@ -82,7 +81,7 @@ export const syncMentorEventTypesForUser = async (
     }
 
     // Fetch event types from Cal.com API
-    const remote = await fetchCalcomEventTypesByUsername(calUser.calcomUsername, accessToken)
+    const remote = await fetchCalcomEventTypesByUsername(calUser.calcomUsername)
 
     const now = new Date()
 

@@ -41,10 +41,13 @@ jobs:
       - name: Lint
         run: pnpm lint
 
-      - name: Test
+      - name: Unit tests
+        run: pnpm test:run
+
+      - name: Database integration tests
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: pnpm test
+        run: pnpm test:integration
 
       - name: Create Release
         env:
