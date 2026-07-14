@@ -468,7 +468,8 @@ Database utility scripts are in `apps/web/scripts/`:
 
 GitHub Actions workflows in `.github/workflows/`:
 
-- **CI**: Runs on all PRs (lint, typecheck, test, build)
+- **CI**: GitHub Actions run lint/format, type checking, unit and guarded database tests, dependency review, audit, and CodeQL on PRs
+- **Build**: Vercel's required preview check performs the production build for each PR
 - Husky pre-commit hooks run lint-staged
 - Commitlint validates commit messages
 

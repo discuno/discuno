@@ -440,7 +440,7 @@ Database scripts reside in `apps/web/scripts/`:
 
 ## CI/CD
 
-GitHub Actions in `.github/workflows/` handle CI (lint, typecheck, test, build). Husky runs lint-staged on commit, and Commitlint enforces Conventional Commits.
+GitHub Actions in `.github/workflows/` run lint/format, type checking, unit and guarded database tests, dependency review, audit, and CodeQL. Vercel's required preview check performs the production build for each PR. Husky runs lint-staged on commit, and Commitlint enforces Conventional Commits.
 
 ## Deployment
 

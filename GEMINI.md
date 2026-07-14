@@ -424,7 +424,7 @@ Key scripts in `apps/web/scripts/`:
 
 ## CI/CD
 
-GitHub Actions manage lint, typecheck, test, and build. Husky + lint-staged run pre-commit, and Commitlint enforces Conventional Commits.
+GitHub Actions run lint/format, type checking, unit and guarded database tests, dependency review, audit, and CodeQL. Vercel's required preview check performs the production build for each PR. Husky + lint-staged run pre-commit, and Commitlint enforces Conventional Commits.
 
 ## Deployment
 
