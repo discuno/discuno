@@ -6,7 +6,7 @@ This document describes the payment and booking architecture implemented in the 
 
 Current branch verification on July 14, 2026:
 
-- Type checking, linting, formatting, all 76 unit tests, and the Next.js production build pass. The build emits 41 application routes.
+- Type checking, linting, formatting, all 78 unit tests, and the Next.js production build pass. The build emits 41 application routes.
 - The guarded Railway test database suite passes, the preview schema is applied, and a second preview schema push reports no changes.
 - All eight preview integration configuration checks pass. Signed Stripe platform, Stripe Connect, and Cal.com preview webhook smokes return success on both the immutable deployment URL and `preview.discuno.com`.
 - The deployed Inngest route exposes three product functions and five Cloud-visible configurations after the two generated failure handlers. Its local signed readiness response passes, but Inngest Cloud rejects the stored signing key as stale and the app is not registered. Installing the official Inngest Vercel integration, issuing fresh keys, and verifying Cloud invocation remains a production blocker.
@@ -121,7 +121,7 @@ Before production rollout:
 
 ## Production rollout and recovery runbook
 
-`PAYMENTS_ENABLED` is the server-side launch and incident switch for new paid Checkout sessions. It defaults to `false`; webhook processing deliberately remains active so already-paid sessions, refunds, disputes, and reversals can still settle safely.
+`PAYMENTS_ENABLED` is the server-side launch and incident switch for creating new paid Checkout sessions. It defaults to `false`; webhook processing deliberately remains active so already-paid sessions, refunds, disputes, and reversals can still settle safely. An already-created Stripe Checkout URL remains payable until it expires or is explicitly expired in Stripe, so the application switch alone is not a hard provider-side charge freeze.
 
 Roll out in this order:
 
@@ -133,10 +133,10 @@ Roll out in this order:
 
 If an incident occurs:
 
-1. Set `PAYMENTS_ENABLED=false` and redeploy immediately to stop new charges. Keep webhook endpoints enabled so in-flight financial events are acknowledged and reconciled.
+1. Set `PAYMENTS_ENABLED=false` and redeploy immediately to stop creating new Checkout Sessions. For a hard charge freeze, also list and explicitly expire every relevant open Checkout Session in Stripe, then verify that none remain. Keep webhook endpoints enabled so in-flight financial events are acknowledged and reconciled.
 2. Pause the affected Inngest payout function if transfers are unsafe; mark affected payments for manual review and reconcile Stripe objects against the local ledgers.
-3. Before any new-schema payment has been written, the prior Vercel deployment may be promoted. Leave the additive database schema in place because the prior application ignores it.
-4. After any payment has been written, do not drop ledger tables or restore an older database snapshot over live financial records. Fix forward, refund/reverse through the payment service where required, and restore processing only after Stripe, Cal.com, and the database agree.
+3. Keep the switch-aware deployment in place and fix forward. Do not promote a deployment that predates `PAYMENTS_ENABLED`, because it can reopen Checkout creation. If an older deployment is ever required, first enforce an independent provider-side block and verify it before promotion.
+4. Do not drop ledger tables or restore an older database snapshot over live financial records. Refund/reverse through the payment service where required, and restore processing only after Stripe, Cal.com, and the database agree.
 
 Useful commands:
 
