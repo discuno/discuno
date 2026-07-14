@@ -22,6 +22,8 @@ export const user = pgTable(
     id: uuid().defaultRandom().primaryKey(),
     name: varchar({ length: 255 }),
     email: varchar({ length: 255 }).unique(),
+    // Stripe Customers are bound to Discuno user IDs, never looked up by email.
+    stripeCustomerId: varchar('stripe_customer_id', { length: 255 }).unique(),
     // Username plugin fields
     username: varchar({ length: 30 }).unique(),
     displayUsername: varchar('display_username', { length: 30 }),

@@ -1,21 +1,21 @@
+import { TZDate } from '@date-fns/tz'
 import type { UseMutationResult } from '@tanstack/react-query'
 import { format } from 'date-fns'
-import { Check, Mail, Phone as PhoneIcon, User } from 'lucide-react'
-import { useState } from 'react'
-import PhoneInput from 'react-phone-number-input'
-import 'react-phone-number-input/style.css'
+import { ArrowLeft, ArrowRight, CalendarDays, Clock, LockKeyhole } from 'lucide-react'
+import { useState, type FormEvent } from 'react'
 import type { EventType } from '~/app/(app)/(public)/mentor/[username]/book/actions'
 import type { BookingFormData } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingEmbed'
 import { Button } from '~/components/ui/button'
-import { Card, CardContent } from '~/components/ui/card'
-import { InputGroup, InputGroupAddon, InputGroupInput } from '~/components/ui/input-group'
+import { Input } from '~/components/ui/input'
+import { Label } from '~/components/ui/label'
 import { Spinner } from '~/components/ui/spinner'
+import { formatCurrencyFromCents } from '~/lib/format-currency'
 import { validateEmail } from '~/lib/utils/validation'
 
 interface AttendeeDetailsStepProps {
   selectedEventType: EventType | null
-  selectedDate?: Date
   selectedTimeSlot: string | null
+  timeZone: string
   formData: BookingFormData
   setFormData: (formData: BookingFormData) => void
   setCurrentStep: (step: 'calendar' | 'booking') => void
@@ -24,170 +24,166 @@ interface AttendeeDetailsStepProps {
 
 export const AttendeeDetailsStep = ({
   selectedEventType,
-  selectedDate,
   selectedTimeSlot,
+  timeZone,
   formData,
   setFormData,
   setCurrentStep,
   createBookingMutation,
 }: AttendeeDetailsStepProps) => {
-  const [emailError, setEmailError] = useState<string>('')
-  const [nameError, setNameError] = useState<string>('')
+  const [touched, setTouched] = useState({ name: false, email: false })
+  const [attemptedSubmit, setAttemptedSubmit] = useState(false)
 
-  const handleEmailChange = (email: string) => {
-    setFormData({ ...formData, email })
-    if (email && !validateEmail(email)) {
-      setEmailError('Please enter a valid email address')
-    } else {
-      setEmailError('')
-    }
+  const hasValidName = formData.name.trim().length >= 2
+  const hasValidEmail = validateEmail(formData.email)
+  const showNameError = (touched.name || attemptedSubmit) && !hasValidName
+  const showEmailError = (touched.email || attemptedSubmit) && !hasValidEmail
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setAttemptedSubmit(true)
+
+    if (!hasValidName || !hasValidEmail || createBookingMutation.isPending) return
+    createBookingMutation.mutate()
   }
 
-  const handleNameChange = (name: string) => {
-    setFormData({ ...formData, name })
-    if (name && name.trim().length < 2) {
-      setNameError('Name must be at least 2 characters')
-    } else {
-      setNameError('')
-    }
-  }
-
-  const isFormValid = formData.name.trim().length >= 2 && validateEmail(formData.email)
+  const formattedPrice =
+    selectedEventType && (selectedEventType.price ?? 0) > 0
+      ? formatCurrencyFromCents(selectedEventType.price ?? 0, selectedEventType.currency ?? 'USD')
+      : 'Free'
 
   return (
-    <div className="slide-in-up h-full overflow-y-auto p-3">
-      <div className="mb-2">
-        <h2 className="text-base font-semibold">Your Details</h2>
-        <p className="text-muted-foreground text-xs">
-          Please provide your contact information for the booking
-        </p>
-      </div>
+    <div className="h-full overflow-y-auto px-5 py-6 sm:px-8 sm:py-8">
+      <form onSubmit={handleSubmit} noValidate className="mx-auto w-full max-w-xl">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="text-muted-foreground mb-5 -ml-3"
+          onClick={() => setCurrentStep('calendar')}
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Change time
+        </Button>
 
-      <div className="max-w-sm space-y-4">
-        <div className="space-y-3">
-          <InputGroup>
-            <InputGroupAddon>
-              <User className="h-4 w-4" />
-            </InputGroupAddon>
-            <InputGroupInput
-              id="name"
-              type="text"
-              value={formData.name}
-              onChange={e => handleNameChange(e.target.value)}
-              placeholder="Your full name"
-              aria-invalid={!!nameError}
-              required
-              minLength={2}
-            />
-            {!nameError && formData.name.trim().length >= 2 && (
-              <InputGroupAddon align="inline-end">
-                <Check className="h-4 w-4 text-green-500" />
-              </InputGroupAddon>
-            )}
-          </InputGroup>
-          {nameError && <p className="text-destructive text-xs">{nameError}</p>}
-
-          <InputGroup>
-            <InputGroupAddon>
-              <Mail className="h-4 w-4" />
-            </InputGroupAddon>
-            <InputGroupInput
-              id="email"
-              type="email"
-              value={formData.email}
-              onChange={e => handleEmailChange(e.target.value)}
-              placeholder="your.email@example.com"
-              aria-invalid={!!emailError}
-              required
-            />
-            {!emailError && formData.email && validateEmail(formData.email) && (
-              <InputGroupAddon align="inline-end">
-                <Check className="h-4 w-4 text-green-500" />
-              </InputGroupAddon>
-            )}
-          </InputGroup>
-          {emailError && <p className="text-destructive text-xs">{emailError}</p>}
-
-          <div>
-            <InputGroup>
-              <InputGroupAddon>
-                <PhoneIcon className="h-4 w-4" />
-              </InputGroupAddon>
-              <PhoneInput
-                id="phone"
-                international
-                defaultCountry="US"
-                value={formData.phone}
-                onChange={value => setFormData({ ...formData, phone: value })}
-                placeholder="Phone number (optional)"
-                className="flex-1 rounded-none border-0 bg-transparent shadow-none focus-visible:ring-0 dark:bg-transparent"
-                data-slot="input-group-control"
-              />
-            </InputGroup>
-            <p className="text-muted-foreground mt-1 text-xs">Optional - for SMS reminders</p>
-          </div>
+        <div className="mb-7">
+          <p className="text-primary mb-2 text-xs font-semibold tracking-[0.14em] uppercase">
+            Final step
+          </p>
+          <h2 className="text-foreground text-2xl font-semibold tracking-tight">Your details</h2>
+          <p className="text-muted-foreground mt-2 text-sm leading-6">
+            No account required. We’ll email your confirmation and meeting details.
+          </p>
         </div>
 
-        {/* Booking Summary */}
         {selectedEventType && selectedTimeSlot && (
-          <Card className="mt-3">
-            <CardContent className="p-2.5">
-              <h3 className="mb-1 text-sm font-medium">Booking Summary</h3>
-              <div className="space-y-0 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Session:</span>
-                  <span className="font-medium">{selectedEventType.title}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Date:</span>
-                  <span className="font-medium">{selectedDate?.toDateString()}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Time:</span>
-                  <span className="font-medium">{format(new Date(selectedTimeSlot), 'p')}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Duration:</span>
-                  <span className="font-medium">{selectedEventType.length} minutes</span>
-                </div>
-                <div className="mt-1 flex justify-between border-t pt-1">
-                  <span className="font-medium">Price:</span>
-                  <span className="font-semibold">
-                    {selectedEventType.price && selectedEventType.price > 0
-                      ? `$${(selectedEventType.price / 100).toFixed(2)} ${selectedEventType.currency}`
-                      : 'Free'}
+          <div className="bg-muted/40 mb-7 rounded-xl border px-4 py-3.5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-foreground text-sm font-medium">{selectedEventType.title}</p>
+                <div className="text-muted-foreground mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+                  <span className="flex items-center gap-1.5">
+                    <CalendarDays className="h-3.5 w-3.5" />
+                    {format(new TZDate(selectedTimeSlot, timeZone), 'EEE, MMM d')}
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <Clock className="h-3.5 w-3.5" />
+                    {format(new TZDate(selectedTimeSlot, timeZone), 'h:mm a')} ·{' '}
+                    {selectedEventType.length} min
                   </span>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+              <span className="text-foreground text-sm font-semibold">{formattedPrice}</span>
+            </div>
+            {(selectedEventType.price ?? 0) > 0 && (
+              <p className="text-muted-foreground mt-2 text-xs">
+                You pay the listed price plus applicable taxes. Discuno adds no service fee.
+              </p>
+            )}
+          </div>
         )}
 
-        <div className="mt-3 flex gap-2">
-          <Button variant="outline" onClick={() => setCurrentStep('calendar')} size="sm">
-            Back
-          </Button>
-          <Button
-            onClick={() => {
-              createBookingMutation.mutate()
-            }}
-            disabled={!isFormValid || createBookingMutation.isPending}
-            className="flex-1"
-            size="sm"
-          >
-            {createBookingMutation.isPending ? (
-              <>
-                <Spinner className="mr-2" />
-                Creating...
-              </>
-            ) : selectedEventType?.price && selectedEventType.price > 0 ? (
-              'Continue to Payment'
-            ) : (
-              'Confirm Booking'
+        <div className="space-y-5">
+          <div className="space-y-2">
+            <Label htmlFor="booking-name">Full name</Label>
+            <Input
+              id="booking-name"
+              name="name"
+              type="text"
+              autoComplete="name"
+              value={formData.name}
+              onChange={event => setFormData({ ...formData, name: event.target.value })}
+              onBlur={() => setTouched(current => ({ ...current, name: true }))}
+              placeholder="Your full name"
+              aria-invalid={showNameError}
+              aria-describedby={showNameError ? 'booking-name-error' : undefined}
+              className="h-11"
+              required
+            />
+            {showNameError && (
+              <p id="booking-name-error" className="text-destructive text-xs" role="alert">
+                Enter your full name.
+              </p>
             )}
-          </Button>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="booking-email">Email address</Label>
+            <Input
+              id="booking-email"
+              name="email"
+              type="email"
+              inputMode="email"
+              autoComplete="email"
+              value={formData.email}
+              onChange={event => setFormData({ ...formData, email: event.target.value })}
+              onBlur={() => setTouched(current => ({ ...current, email: true }))}
+              placeholder="you@example.com"
+              aria-invalid={showEmailError}
+              aria-describedby={showEmailError ? 'booking-email-error' : 'booking-email-help'}
+              className="h-11"
+              required
+            />
+            {showEmailError ? (
+              <p id="booking-email-error" className="text-destructive text-xs" role="alert">
+                Enter a valid email address.
+              </p>
+            ) : (
+              <p id="booking-email-help" className="text-muted-foreground text-xs">
+                Your receipt and calendar invitation will be sent here.
+              </p>
+            )}
+          </div>
         </div>
-      </div>
+
+        <Button
+          type="submit"
+          size="lg"
+          className="mt-7 w-full"
+          disabled={createBookingMutation.isPending}
+        >
+          {createBookingMutation.isPending ? (
+            <>
+              <Spinner />
+              {(selectedEventType?.price ?? 0) > 0
+                ? 'Opening secure checkout…'
+                : 'Confirming your session…'}
+            </>
+          ) : (
+            <>
+              {(selectedEventType?.price ?? 0) > 0
+                ? 'Continue to secure checkout'
+                : 'Confirm session'}
+              <ArrowRight className="h-4 w-4" />
+            </>
+          )}
+        </Button>
+
+        <p className="text-muted-foreground mt-4 flex items-center justify-center gap-1.5 text-center text-xs">
+          <LockKeyhole className="h-3.5 w-3.5" />
+          Secure booking. Your details are used to coordinate this session.
+        </p>
+      </form>
     </div>
   )
 }

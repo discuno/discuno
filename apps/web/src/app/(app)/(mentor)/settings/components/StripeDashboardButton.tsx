@@ -1,6 +1,6 @@
 'use client'
 
-import { ExternalLink } from 'lucide-react'
+import { CreditCard, ExternalLink, Loader2 } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import {
@@ -12,35 +12,30 @@ import { Button } from '~/components/ui/button'
 
 interface StripeDashboardButtonProps {
   hasStripeAccount: boolean
-  stripeAccountId?: string
   chargesEnabled: boolean
 }
 
 export const StripeDashboardButton = ({
   hasStripeAccount,
-  stripeAccountId,
   chargesEnabled,
 }: StripeDashboardButtonProps) => {
   const [isLoading, setIsLoading] = useState(false)
 
   const handleOpenDashboard = async () => {
-    if (!stripeAccountId) return
-
     setIsLoading(true)
     try {
-      const result = await createStripeLoginLink(stripeAccountId)
+      const result = await createStripeLoginLink()
 
       if (result.success && result.url) {
-        // Open in new tab
         window.open(result.url, '_blank', 'noopener,noreferrer')
       } else {
-        toast.error('Failed to open Stripe Dashboard', {
+        toast.error("Couldn't open the payout dashboard", {
           description: result.error ?? 'Please try again later',
         })
       }
     } catch {
-      toast.error('Failed to open Stripe Dashboard', {
-        description: 'An unexpected error occurred',
+      toast.error("Couldn't open the payout dashboard", {
+        description: 'Please try again later',
       })
     } finally {
       setIsLoading(false)
@@ -52,63 +47,69 @@ export const StripeDashboardButton = ({
     try {
       const result = await createStripeConnectAccount()
 
-      if (result.success && result.accountId) {
-        // Create account link and redirect to Stripe-hosted onboarding
+      if (result.success) {
         const linkResult = await createStripeAccountLink({
-          accountId: result.accountId,
           type: 'account_onboarding',
           collectionOptions: 'eventually_due',
         })
 
         if (linkResult.success && linkResult.url) {
-          toast.success('Redirecting to Stripe setup...')
-          // Redirect to Stripe onboarding
+          toast.success('Opening secure payout setup…')
           window.location.href = linkResult.url
         } else {
-          toast.error('Failed to create onboarding link', {
+          toast.error("Couldn't open payout setup", {
             description: linkResult.error ?? 'Please try again later',
           })
         }
       } else {
-        toast.error('Failed to create Stripe account', {
+        toast.error("Couldn't start payout setup", {
           description: result.error ?? 'Please try again later',
         })
       }
     } catch {
-      toast.error('Failed to create Stripe account', {
-        description: 'An unexpected error occurred',
+      toast.error("Couldn't start payout setup", {
+        description: 'Please try again later',
       })
     } finally {
       setIsLoading(false)
     }
   }
 
-  // Show "Connect Stripe" if no account OR charges not enabled
   if (!hasStripeAccount || !chargesEnabled) {
+    const label = hasStripeAccount ? 'Finish payout setup' : 'Set up payouts'
+
     return (
       <Button
-        variant="default"
+        variant="outline"
         size="sm"
         disabled={isLoading}
         onClick={handleConnectStripe}
-        className="bg-purple-600 text-white hover:bg-purple-700"
+        aria-label={isLoading ? 'Opening payout setup' : label}
       >
-        <ExternalLink className="mr-2 h-4 w-4" />
-        {isLoading ? 'Connecting...' : 'Connect Stripe'}
+        {isLoading ? (
+          <Loader2 aria-hidden="true" className="animate-spin" />
+        ) : (
+          <CreditCard aria-hidden="true" />
+        )}
+        <span className="hidden sm:inline">{isLoading ? 'Opening…' : label}</span>
       </Button>
     )
   }
 
   return (
     <Button
-      variant="default"
+      variant="outline"
       size="sm"
       disabled={isLoading}
       onClick={handleOpenDashboard}
-      className="bg-purple-600 text-white hover:bg-purple-700"
+      aria-label={isLoading ? 'Opening payout dashboard' : 'Open payout dashboard'}
     >
-      <ExternalLink className="mr-2 h-4 w-4" />
-      {isLoading ? 'Opening...' : 'Stripe Dashboard'}
+      {isLoading ? (
+        <Loader2 aria-hidden="true" className="animate-spin" />
+      ) : (
+        <ExternalLink aria-hidden="true" />
+      )}
+      <span className="hidden sm:inline">{isLoading ? 'Opening…' : 'Payout dashboard'}</span>
     </Button>
   )
 }

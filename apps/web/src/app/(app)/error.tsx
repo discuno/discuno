@@ -1,231 +1,194 @@
 'use client'
 
-import { AlertCircle, Home, RefreshCw } from 'lucide-react'
+import { AlertCircle, ArrowLeft, RefreshCw } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import type { ReactNode } from 'react'
+import { Brand } from '~/components/shared/Brand'
 import { Button } from '~/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
 
 interface ErrorProps {
   error: Error & { digest?: string; statusCode?: number; code?: string }
   reset: () => void
 }
 
+interface ErrorStateProps {
+  eyebrow: string
+  title: string
+  description: ReactNode
+  primaryLabel: string
+  onPrimary: () => void
+  primaryIcon?: ReactNode
+  onHome: () => void
+}
+
+const ErrorState = ({
+  eyebrow,
+  title,
+  description,
+  primaryLabel,
+  onPrimary,
+  primaryIcon,
+  onHome,
+}: ErrorStateProps) => {
+  return (
+    <div className="bg-background flex min-h-screen flex-col">
+      <header className="border-border/80 border-b">
+        <div className="page-container flex h-16 items-center">
+          <Brand />
+        </div>
+      </header>
+
+      <main className="page-container flex flex-1 items-center py-16 sm:py-24">
+        <section className="mx-auto w-full max-w-2xl" aria-labelledby="error-title">
+          <div className="border-primary/15 bg-primary/8 text-primary flex size-11 items-center justify-center rounded-lg border">
+            <AlertCircle className="size-5" aria-hidden="true" />
+          </div>
+          <p className="eyebrow mt-6">{eyebrow}</p>
+          <h1
+            id="error-title"
+            className="mt-3 text-3xl font-bold tracking-[-0.035em] text-balance sm:text-4xl"
+          >
+            {title}
+          </h1>
+          <div className="text-muted-foreground mt-4 max-w-xl text-base leading-7">
+            {description}
+          </div>
+
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <Button size="lg" onClick={onPrimary}>
+              {primaryIcon}
+              {primaryLabel}
+            </Button>
+            <Button size="lg" variant="outline" onClick={onHome}>
+              <ArrowLeft aria-hidden="true" />
+              Return home
+            </Button>
+          </div>
+        </section>
+      </main>
+    </div>
+  )
+}
+
+const retryIcon = <RefreshCw aria-hidden="true" />
+
 export default function DefaultError({ error, reset }: ErrorProps) {
   const router = useRouter()
+  const goHome = () => router.push('/')
 
-  // Handle authentication errors
   if (error.name === 'UnauthenticatedError') {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-orange-100">
-              <AlertCircle className="h-6 w-6 text-orange-600" />
-            </div>
-            <CardTitle>Authentication Required</CardTitle>
-            <CardDescription>You need to be signed in to access this page.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Button className="w-full" onClick={() => router.push('/auth')}>
-              Sign In
-            </Button>
-            <Button variant="outline" className="w-full" onClick={() => router.push('/')}>
-              <Home className="mr-2 h-4 w-4" />
-              Go Home
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+      <ErrorState
+        eyebrow="Sign-in required"
+        title="Sign in to continue"
+        description="This page is linked to your Discuno account. Sign in to access it securely."
+        primaryLabel="Sign in"
+        onPrimary={() => router.push('/auth')}
+        onHome={goHome}
+      />
     )
   }
 
-  // Handle not found errors
   if (error.name === 'NotFoundError') {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
-              <AlertCircle className="h-6 w-6 text-red-600" />
-            </div>
-            <CardTitle>Not Found</CardTitle>
-            <CardDescription>
-              The resource you&apos;re looking for doesn&apos;t exist.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Button className="w-full" onClick={reset}>
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Try Again
-            </Button>
-            <Button variant="outline" className="w-full" onClick={() => router.push('/')}>
-              <Home className="mr-2 h-4 w-4" />
-              Go Home
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+      <ErrorState
+        eyebrow="Not found"
+        title="We couldn’t find that resource"
+        description="It may have moved or may no longer be available. Try loading it once more, or return to Discuno."
+        primaryLabel="Try again"
+        onPrimary={reset}
+        primaryIcon={retryIcon}
+        onHome={goHome}
+      />
     )
   }
 
-  // Handle authorization errors
   if (error.name === 'UnauthorizedError') {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
-              <AlertCircle className="h-6 w-6 text-red-600" />
-            </div>
-            <CardTitle>Access Denied</CardTitle>
-            <CardDescription>
-              You don&apos;t have permission to access this resource.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Button className="w-full" onClick={reset}>
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Try Again
-            </Button>
-            <Button variant="outline" className="w-full" onClick={() => router.push('/')}>
-              <Home className="mr-2 h-4 w-4" />
-              Go Home
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+      <ErrorState
+        eyebrow="Access restricted"
+        title="You don’t have access to this page"
+        description="Your account does not have permission to view this resource. If your access recently changed, try again."
+        primaryLabel="Try again"
+        onPrimary={reset}
+        primaryIcon={retryIcon}
+        onHome={goHome}
+      />
     )
   }
 
-  // Handle validation errors
   if (error.name === 'BadRequestError') {
     return (
-      <div className="bg-background flex min-h-screen items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-yellow-100">
-              <AlertCircle className="h-6 w-6 text-yellow-600" />
-            </div>
-            <CardTitle>Invalid Request</CardTitle>
-            <CardDescription>{error.message}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Button className="w-full" onClick={reset}>
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Try Again
-            </Button>
-            <Button variant="outline" className="w-full" onClick={() => router.push('/')}>
-              <Home className="mr-2 h-4 w-4" />
-              Go Home
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+      <ErrorState
+        eyebrow="Invalid request"
+        title="We couldn’t complete that request"
+        description={error.message}
+        primaryLabel="Try again"
+        onPrimary={reset}
+        primaryIcon={retryIcon}
+        onHome={goHome}
+      />
     )
   }
 
-  // Handle external API errors
   if (error.name === 'ExternalApiError') {
     return (
-      <div className="bg-background flex min-h-screen items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
-              <AlertCircle className="h-6 w-6 text-blue-600" />
-            </div>
-            <CardTitle>Service Unavailable</CardTitle>
-            <CardDescription>
-              An external service is temporarily unavailable. Please try again later.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Button className="w-full" onClick={reset}>
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Try Again
-            </Button>
-            <Button variant="outline" className="w-full" onClick={() => router.push('/')}>
-              <Home className="mr-2 h-4 w-4" />
-              Go Home
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+      <ErrorState
+        eyebrow="Service unavailable"
+        title="A connected service is temporarily unavailable"
+        description="Your information is safe. Please wait a moment and try the request again."
+        primaryLabel="Try again"
+        onPrimary={reset}
+        primaryIcon={retryIcon}
+        onHome={goHome}
+      />
     )
   }
 
-  // Handle generic app errors
   if (error.name.endsWith('Error') && error.statusCode) {
     const getErrorTitle = (statusCode: number) => {
       switch (statusCode) {
         case 400:
-          return 'Bad Request'
+          return 'We couldn’t complete that request'
         case 401:
-          return 'Authentication Required'
+          return 'Sign in to continue'
         case 403:
-          return 'Access Denied'
+          return 'You don’t have access to this page'
         case 404:
-          return 'Not Found'
+          return 'We couldn’t find that resource'
         case 409:
-          return 'Conflict'
+          return 'That change conflicts with existing information'
         case 500:
-          return 'Server Error'
+          return 'Discuno encountered a server error'
         case 502:
-          return 'Service Unavailable'
+          return 'A connected service is temporarily unavailable'
         default:
-          return 'Error'
+          return 'We couldn’t complete that request'
       }
     }
 
     return (
-      <div className="bg-background flex min-h-screen items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
-              <AlertCircle className="h-6 w-6 text-red-600" />
-            </div>
-            <CardTitle>{getErrorTitle(error.statusCode)}</CardTitle>
-            <CardDescription>{error.message}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Button className="w-full" onClick={reset}>
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Try Again
-            </Button>
-            <Button variant="outline" className="w-full" onClick={() => router.push('/')}>
-              <Home className="mr-2 h-4 w-4" />
-              Go Home
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+      <ErrorState
+        eyebrow={`Error ${error.statusCode}`}
+        title={getErrorTitle(error.statusCode)}
+        description={error.message}
+        primaryLabel="Try again"
+        onPrimary={reset}
+        primaryIcon={retryIcon}
+        onHome={goHome}
+      />
     )
   }
 
-  // Handle generic errors
   return (
-    <div className="bg-background flex min-h-screen items-center justify-center">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
-            <AlertCircle className="h-6 w-6 text-red-600" />
-          </div>
-          <CardTitle>Something went wrong</CardTitle>
-          <CardDescription>
-            An unexpected error occurred. Please try again or contact support if the problem
-            persists.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Button className="w-full" onClick={reset}>
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Try Again
-          </Button>
-          <Button variant="outline" className="w-full" onClick={() => router.push('/')}>
-            <Home className="mr-2 h-4 w-4" />
-            Go Home
-          </Button>
-        </CardContent>
-      </Card>
-    </div>
+    <ErrorState
+      eyebrow="Unexpected error"
+      title="Something went wrong"
+      description="We couldn’t finish loading this page. Try again, or return home if the problem continues."
+      primaryLabel="Try again"
+      onPrimary={reset}
+      primaryIcon={retryIcon}
+      onHome={goHome}
+    />
   )
 }

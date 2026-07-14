@@ -3,14 +3,15 @@ import { FeedShell } from '~/app/(app)/(public)/(feed)/components/FeedShell'
 import { createMetadata } from '~/lib/metadata'
 
 export const metadata: Metadata = createMetadata({
-  title: 'Home',
+  title: 'Student Mentors for Honest College Advice',
   description:
-    'Discover student mentors, explore mentorship opportunities, and connect with peers at top universities. Browse posts, find mentors, and book sessions.',
+    'Find school-email-verified student mentors for firsthand advice on courses, campus life, internships, and career decisions. Browse and book without an account.',
   openGraph: {
-    title: 'Discuno - Connect with Student Mentors',
+    title: 'Get honest college advice from a student mentor | Discuno',
     description:
-      'Discover student mentors, explore mentorship opportunities, and connect with peers at top universities.',
+      'Compare student mentors by school, major, and graduation year, then choose a session and time that fits.',
   },
+  alternates: { canonical: '/' },
 })
 
 const HomePage = async ({

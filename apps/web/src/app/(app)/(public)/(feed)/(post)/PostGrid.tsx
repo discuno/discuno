@@ -1,118 +1,113 @@
 'use client'
 
 import { useInfiniteQuery } from '@tanstack/react-query'
-import { useEffect, useMemo } from 'react'
-import { useInView } from 'react-intersection-observer'
+import { RefreshCw, SearchX } from 'lucide-react'
+import Link from 'next/link'
+import { useMemo } from 'react'
 import { PostCard } from '~/app/(app)/(public)/(feed)/(post)/PostCard'
 import {
   fetchPostsAction,
   fetchPostsByFilterAction,
 } from '~/app/(app)/(public)/(feed)/(post)/actions'
 import type { Card } from '~/app/types'
-import { AspectRatio } from '~/components/ui/aspect-ratio'
-import { Skeleton } from '~/components/ui/skeleton'
+import { Button } from '~/components/ui/button'
 import { Spinner } from '~/components/ui/spinner'
 
-// Define the PostGridProps interface
+const MENTOR_PAGE_SIZE = 6
+
+export interface PostsPage {
+  posts: Card[]
+  nextCursor?: string
+  hasMore: boolean
+}
+
 interface PostGridProps {
   schoolId: number | null
   majorId: number | null
   graduationYear: number | null
+  initialPage: PostsPage
 }
 
-const PostGridSkeleton = () => {
-  return (
-    <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      {Array.from({ length: 12 }, (_, i) => (
-        <div key={i} className="flex flex-col space-y-3">
-          <AspectRatio ratio={16 / 9}>
-            <Skeleton className="h-full w-full rounded-lg" />
-          </AspectRatio>
-          <div className="space-y-2">
-            <Skeleton className="h-4 w-3/4" />
-            <Skeleton className="h-4 w-1/2" />
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-const PostsDisplay = ({ posts }: { posts: Card[] }) => {
-  return (
-    <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      {posts.map((card, index) => (
-        <PostCard key={`${card.id}-${index}`} card={card} />
-      ))}
-    </div>
-  )
-}
-
-// PostGrid component
-export const PostGrid = ({ schoolId, majorId, graduationYear }: PostGridProps) => {
-  const { ref, inView } = useInView()
-
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isError } =
+export const PostGrid = ({ schoolId, majorId, graduationYear, initialPage }: PostGridProps) => {
+  const hasFilters = schoolId !== null || majorId !== null || graduationYear !== null
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isError, refetch } =
     useInfiniteQuery({
       queryKey: ['posts', { schoolId, majorId, graduationYear }],
       queryFn: async ({ pageParam }: { pageParam?: string }) => {
-        const limit = 12
-        if (schoolId || majorId || graduationYear) {
+        const limit = MENTOR_PAGE_SIZE
+        if (hasFilters) {
           return fetchPostsByFilterAction(schoolId, majorId, graduationYear, limit, pageParam)
         }
         return fetchPostsAction(limit, pageParam)
       },
       initialPageParam: undefined,
+      initialData: {
+        pages: [initialPage],
+        pageParams: [undefined],
+      },
       getNextPageParam: lastPage => lastPage.nextCursor,
     })
 
-  useEffect(() => {
-    if (inView && hasNextPage && !isFetchingNextPage) {
-      void fetchNextPage()
-    }
-  }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage])
-
-  // Deduplicate posts across pages to prevent duplicates from cursor pagination overlaps
   const allPosts = useMemo(() => {
-    if (!data?.pages) return []
-
-    const uniquePostsMap = new Map<number, Card>()
+    const uniquePosts = new Map<number, Card>()
     for (const page of data.pages) {
-      for (const post of page.posts) {
-        uniquePostsMap.set(post.id, post)
-      }
+      for (const post of page.posts) uniquePosts.set(post.id, post)
     }
-    return Array.from(uniquePostsMap.values())
+    return Array.from(uniquePosts.values())
   }, [data])
 
-  if (isLoading) {
+  if (isError) {
     return (
-      <div className="container mx-auto min-h-[calc(100vh-4rem)] px-4 py-8">
-        <PostGridSkeleton />
+      <div className="bg-card flex flex-col items-center rounded-xl border border-dashed px-6 py-14 text-center">
+        <RefreshCw className="text-muted-foreground h-7 w-7" />
+        <h3 className="mt-4 text-lg font-semibold">We could not load mentors</h3>
+        <p className="text-muted-foreground mt-1 max-w-sm text-sm">
+          Check your connection and try once more.
+        </p>
+        <Button variant="outline" className="mt-5" onClick={() => void refetch()}>
+          Try again
+        </Button>
       </div>
     )
   }
 
-  if (isError) {
+  if (allPosts.length === 0) {
     return (
-      <div className="container mx-auto min-h-[calc(100vh-4rem)] px-4 py-8 text-center text-red-500">
-        Error loading posts. Please try again later.
+      <div className="bg-card flex flex-col items-center rounded-xl border border-dashed px-6 py-14 text-center">
+        <SearchX className="text-muted-foreground h-8 w-8" />
+        <h3 className="mt-4 text-lg font-semibold">No exact matches yet</h3>
+        <p className="text-muted-foreground mt-1 max-w-md text-sm leading-6">
+          Try removing one filter. A mentor from a related major or school may still have the
+          perspective you need.
+        </p>
+        <Button asChild variant="outline" className="mt-5">
+          <Link href="/#mentors">Clear all filters</Link>
+        </Button>
       </div>
     )
   }
 
   return (
-    <div className="container mx-auto min-h-[calc(100vh-4rem)] px-4 py-8">
-      <PostsDisplay posts={allPosts} />
-      <div ref={ref} />
-      {isFetchingNextPage && (
-        <div className="flex justify-center">
-          <span className="flex items-center">
-            <Spinner className="mr-2" />
-            Loading...
-          </span>
+    <>
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {allPosts.map(card => (
+          <PostCard key={card.id} card={card} />
+        ))}
+      </div>
+
+      {hasNextPage && (
+        <div className="mt-10 flex justify-center">
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={() => void fetchNextPage()}
+            disabled={isFetchingNextPage}
+          >
+            {isFetchingNextPage ? <Spinner /> : null}
+            {isFetchingNextPage ? 'Loading mentors…' : 'Show more mentors'}
+          </Button>
         </div>
       )}
-    </div>
+    </>
   )
 }

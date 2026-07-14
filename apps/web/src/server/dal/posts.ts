@@ -39,6 +39,8 @@ export const buildPostsQuery = () => {
         name: user.name,
         username: user.username,
         image: user.image,
+        email: user.email,
+        emailVerified: user.emailVerified,
         calcomUsername: calcomToken.calcomUsername,
       },
       profile: {
@@ -113,8 +115,14 @@ export const buildPostsQuery = () => {
  */
 export const getActivePostConditions = () => {
   return [
-    isNotNull(userProfile.id), // Ensure the user has a profile
-    isNull(post.deletedAt), // Exclude deleted posts
+    eq(user.role, 'mentor'),
+    eq(user.emailVerified, true),
+    or(isNull(user.banned), eq(user.banned, false)),
+    isNull(user.deletedAt),
+    isNotNull(userProfile.id),
+    isNull(userProfile.deletedAt),
+    isNull(post.deletedAt),
+    isNotNull(calcomToken.id),
     // Ensure the mentor has at least one bookable event type (matching active status)
     exists(
       db
@@ -125,12 +133,18 @@ export const getActivePostConditions = () => {
           and(
             eq(mentorEventType.mentorUserId, user.id),
             eq(mentorEventType.isEnabled, true),
+            isNull(mentorEventType.deletedAt),
             or(
               // Free event types (price is 0 or null)
               eq(mentorEventType.customPrice, 0),
               isNull(mentorEventType.customPrice),
-              // Paid event types with Stripe charges enabled
-              and(gt(mentorEventType.customPrice, 0), eq(mentorStripeAccount.chargesEnabled, true))
+              // Paid event types with a fully active Stripe destination
+              and(
+                gt(mentorEventType.customPrice, 0),
+                eq(mentorStripeAccount.stripeAccountStatus, 'active'),
+                eq(mentorStripeAccount.chargesEnabled, true),
+                eq(mentorStripeAccount.payoutsEnabled, true)
+              )
             )
           )
         )
@@ -187,14 +201,33 @@ export const getPostsWithFilters = async ({
   schoolId,
   majorId,
   graduationYear,
+  rankingScore,
+  randomSortKey,
+  postId,
   limit,
 }: {
   schoolId?: number | null
   majorId?: number | null
   graduationYear?: number | null
+  rankingScore?: number
+  randomSortKey?: number
+  postId?: number
   limit: number
 }) => {
   const conditions = [...getActivePostConditions()]
+
+  if (rankingScore !== undefined && randomSortKey !== undefined && postId !== undefined) {
+    const cursorCondition = or(
+      lt(userProfile.rankingScore, rankingScore),
+      and(eq(userProfile.rankingScore, rankingScore), lt(post.random_sort_key, randomSortKey)),
+      and(
+        eq(userProfile.rankingScore, rankingScore),
+        eq(post.random_sort_key, randomSortKey),
+        lt(post.id, postId)
+      )
+    )
+    if (cursorCondition) conditions.push(cursorCondition)
+  }
 
   if (schoolId !== null && schoolId !== undefined && schoolId !== -1) {
     conditions.push(eq(school.id, schoolId))

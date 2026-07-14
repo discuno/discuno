@@ -82,15 +82,17 @@ export const CalcomBookingPayloadSchema = z
       .positive('Length must be a positive integer')
       .max(24 * 60, 'Length cannot exceed 24 hours'),
     bookingId: z.number(),
+    cancelledByEmail: z.email().nullish(),
     metadata: z
       .object({
         videoCallUrl: z
           .url()
           .nullish()
           .transform(value => value ?? undefined),
-        paymentId: z.string().optional(),
+        paymentId: z.string().regex(/^\d+$/).optional(),
         mentorUserId: z.uuid({ error: 'Mentor user ID must be a valid UUID' }),
         actorUserId: z.uuid({ error: 'Actor user ID must be a valid UUID' }).optional(),
+        bookingAttemptId: z.string().length(64).optional(),
       })
       .passthrough(),
     status: z.enum(['ACCEPTED', 'PENDING', 'CANCELLED', 'REJECTED']),
@@ -149,7 +151,7 @@ export const CalcomNoShowUpdatedPayloadSchema = z.object({
 
 export const CalcomWebhookEnvelopeSchema = z.object({
   triggerEvent: z.string(),
-  createdAt: z.string().optional(),
+  createdAt: z.iso.datetime().optional(),
   payload: z.unknown().optional(),
 })
 

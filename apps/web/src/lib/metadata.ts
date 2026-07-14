@@ -1,11 +1,10 @@
 import { type Metadata } from 'next'
-import { env } from '~/env'
 
 export const siteConfig = {
   name: 'Discuno',
-  tagline: 'Get insider college advice from verified students.',
+  tagline: "College advice from students who've been there.",
   description:
-    'Connect with verified student mentors for personalized guidance on courses, internships, and career planning. Book sessions with peers who understand your journey.',
+    'Find student mentors for practical, one-to-one guidance on college, courses, internships, and early career decisions.',
   url: 'https://discuno.com',
   ogImage: '/og-image.png',
   links: {
@@ -15,41 +14,46 @@ export const siteConfig = {
     github: 'https://github.com/discuno/discuno',
   },
   keywords: [
-    'college mentorship',
-    'student mentors',
-    'peer mentoring',
-    'college success',
-    'academic guidance',
-    'career planning',
-    'course selection',
-    'internship prep',
-    'university advice',
-    'student networking',
-    '.edu verification',
-    'college students',
+    'college mentor',
+    'student mentor',
+    'college mentorship platform',
+    'peer mentorship for college students',
+    'college course advice',
+    'internship mentorship',
+    'college career guidance',
   ],
-  creator: 'Brad',
-  authors: [{ name: 'Brad', url: 'https://discuno.com/about' }],
+  creator: 'Discuno',
+  authors: [{ name: 'Discuno Team', url: 'https://discuno.com/about' }],
 }
 
+export const absoluteUrl = (path = '/') => new URL(path, `${siteConfig.url}/`).toString()
+
 export const defaultMetadata: Metadata = {
-  metadataBase: new URL(env.NEXT_PUBLIC_APP_URL ?? siteConfig.url),
+  // Search and social URLs should always consolidate on the production domain,
+  // including when a preview deployment renders the metadata.
+  metadataBase: new URL(siteConfig.url),
   title: {
-    default: `${siteConfig.name} - ${siteConfig.tagline}`,
+    default: `${siteConfig.name} — ${siteConfig.tagline}`,
     template: `%s | ${siteConfig.name}`,
   },
   description: siteConfig.description,
   applicationName: siteConfig.name,
-  generator: 'Next.js',
   keywords: siteConfig.keywords,
   authors: siteConfig.authors,
   creator: siteConfig.creator,
+  publisher: siteConfig.name,
+  referrer: 'origin-when-cross-origin',
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: siteConfig.url,
+    url: '/',
     siteName: siteConfig.name,
-    title: `${siteConfig.name} - ${siteConfig.tagline}`,
+    title: `${siteConfig.name} — ${siteConfig.tagline}`,
     description: siteConfig.description,
     images: [
       {
@@ -62,10 +66,9 @@ export const defaultMetadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: `${siteConfig.name} - ${siteConfig.tagline}`,
+    title: `${siteConfig.name} — ${siteConfig.tagline}`,
     description: siteConfig.description,
     images: [siteConfig.ogImage],
-    creator: '@discuno',
     site: '@discuno',
   },
   icons: {
@@ -89,22 +92,49 @@ export const defaultMetadata: Metadata = {
     },
   },
   alternates: {
-    canonical: siteConfig.url,
+    canonical: '/',
+    types: {
+      'application/rss+xml': '/api/feed/rss.xml',
+      'application/atom+xml': '/api/feed/atom.xml',
+      'application/feed+json': '/api/feed/feed.json',
+    },
   },
-  category: 'education mentorship',
+  category: 'education',
 }
 
 export const createMetadata = (override: Metadata): Metadata => {
+  const canonical = override.alternates?.canonical
+  const canonicalUrl =
+    typeof canonical === 'string' || canonical instanceof URL ? canonical : undefined
+
   return {
     ...defaultMetadata,
     ...override,
     openGraph: {
       ...defaultMetadata.openGraph,
       ...override.openGraph,
+      // Preserve the default share image when a page does not provide one.
+      images: override.openGraph?.images ?? defaultMetadata.openGraph?.images,
+      // A page canonical is also the most reliable default for its OG URL.
+      // Do not fall back to the homepage URL for nested pages; an omitted URL is
+      // preferable to telling crawlers that every page represents the homepage.
+      url: override.openGraph?.url ?? canonicalUrl,
     },
     twitter: {
       ...defaultMetadata.twitter,
       ...override.twitter,
+      images: override.twitter?.images ?? defaultMetadata.twitter?.images,
+    },
+    alternates: {
+      ...defaultMetadata.alternates,
+      ...override.alternates,
+      // Explicitly clear the root canonical when a nested page has not declared
+      // its own. This prevents support/legal pages from canonicalizing to `/`.
+      canonical: override.alternates?.canonical,
+      types: {
+        ...defaultMetadata.alternates?.types,
+        ...override.alternates?.types,
+      },
     },
   }
 }

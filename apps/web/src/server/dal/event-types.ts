@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { and, eq, inArray, isNotNull, sql } from 'drizzle-orm'
+import { and, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm'
 import { NotFoundError } from '~/lib/errors'
 import type { UpdateMentorEventType } from '~/lib/schemas/db'
 import { updateMentorEventTypeSchema } from '~/lib/schemas/db'
@@ -43,6 +43,8 @@ export const getEnabledEventTypesWithStripeStatus = async (userId: string) => {
       customPrice: mentorEventType.customPrice,
       currency: mentorEventType.currency,
       chargesEnabled: mentorStripeAccount.chargesEnabled,
+      payoutsEnabled: mentorStripeAccount.payoutsEnabled,
+      stripeAccountStatus: mentorStripeAccount.stripeAccountStatus,
     })
     .from(mentorEventType)
     .leftJoin(mentorStripeAccount, eq(mentorEventType.mentorUserId, mentorStripeAccount.userId))
@@ -50,6 +52,7 @@ export const getEnabledEventTypesWithStripeStatus = async (userId: string) => {
       and(
         eq(mentorEventType.mentorUserId, userId),
         eq(mentorEventType.isEnabled, true),
+        isNull(mentorEventType.deletedAt),
         isNotNull(mentorEventType.calcomEventTypeId)
       )
     )
@@ -60,6 +63,7 @@ export const getEnabledEventTypesWithStripeStatus = async (userId: string) => {
  */
 export const updateEventType = async (
   calcomEventTypeId: number,
+  mentorUserId: string,
   data: UpdateMentorEventType
 ): Promise<void> => {
   const validData = updateMentorEventTypeSchema.parse(data)
@@ -67,7 +71,12 @@ export const updateEventType = async (
   const res = await db
     .update(mentorEventType)
     .set(validData)
-    .where(eq(mentorEventType.calcomEventTypeId, calcomEventTypeId))
+    .where(
+      and(
+        eq(mentorEventType.calcomEventTypeId, calcomEventTypeId),
+        eq(mentorEventType.mentorUserId, mentorUserId)
+      )
+    )
     .returning({ id: mentorEventType.id })
 
   if (res.length === 0) {

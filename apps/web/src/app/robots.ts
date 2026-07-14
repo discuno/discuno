@@ -2,43 +2,26 @@ import type { MetadataRoute } from 'next'
 import { siteConfig } from '~/lib/metadata'
 
 /**
- * Generate dynamic robots.txt
- * Next.js will automatically serve this at /robots.txt
+ * Keep discovery pages crawlable while excluding account, checkout, and API
+ * surfaces that are not useful search results.
  */
 const robots = (): MetadataRoute.Robots => {
   return {
-    rules: [
-      {
-        userAgent: '*',
-        allow: '/',
-        disallow: ['/api/', '/auth/', '/settings/'],
-      },
-      {
-        userAgent: 'GPTBot',
-        allow: ['/blog/', '/about'],
-      },
-      {
-        userAgent: 'ChatGPT-User',
-        allow: ['/blog/', '/about'],
-      },
-      {
-        userAgent: 'anthropic-ai',
-        allow: ['/blog/', '/about'],
-      },
-      {
-        userAgent: 'Claude-Web',
-        allow: ['/blog/', '/about'],
-      },
-      {
-        userAgent: 'Google-Extended',
-        allow: ['/blog/', '/about'],
-      },
-      {
-        userAgent: 'CCBot',
-        allow: ['/blog/', '/about'],
-      },
-    ],
+    rules: {
+      userAgent: '*',
+      allow: ['/', '/api/feed/'],
+      disallow: [
+        '/api/',
+        '/auth',
+        '/oauth',
+        '/settings',
+        '/dashboard',
+        '/booking',
+        '/mentor/*/book',
+      ],
+    },
     sitemap: `${siteConfig.url}/sitemap.xml`,
+    host: siteConfig.url,
   }
 }
 

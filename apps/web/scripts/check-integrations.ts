@@ -89,15 +89,6 @@ const checks: Array<{ name: string; run: () => Promise<void> }> = [
     },
   },
   {
-    name: 'Sentry',
-    run: async () => {
-      const response = await fetch('https://sentry.io/api/0/organizations/', {
-        headers: { Authorization: `Bearer ${required('SENTRY_AUTH_TOKEN')}` },
-      })
-      if (!response.ok) throw new Error(`HTTP ${response.status}`)
-    },
-  },
-  {
     name: 'PostHog configuration',
     run: async () => {
       new URL(required('NEXT_PUBLIC_POSTHOG_HOST'))

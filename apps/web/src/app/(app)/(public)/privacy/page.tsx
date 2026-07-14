@@ -8,6 +8,7 @@ export const metadata: Metadata = createMetadata({
   title: 'Privacy Policy',
   description:
     'Learn how Discuno protects your privacy and data. Read our privacy policy covering data collection, usage, security, and your rights.',
+  alternates: { canonical: '/privacy' },
   openGraph: {
     title: 'Privacy Policy - Discuno',
     description: 'How we protect your privacy and secure your data on our mentorship platform.',
@@ -26,7 +27,7 @@ export default function PrivacyPage() {
             </div>
             <h1 className="mt-6 text-4xl font-bold tracking-tight sm:text-5xl">Privacy Policy</h1>
             <p className="text-muted-foreground mx-auto mt-4 max-w-2xl text-lg">
-              Effective Date: January 15, 2025
+              Effective Date: July 14, 2026
             </p>
           </div>
         </div>
@@ -75,20 +76,24 @@ export default function PrivacyPage() {
                   profile photo, university affiliation, graduation year, major
                 </li>
                 <li>
-                  <strong>Profile Information:</strong> Bio, areas of expertise, experience,
-                  availability, pricing (for mentors)
+                  <strong>Guest Booking Information:</strong> Name, email address, and time zone
+                  submitted when booking without a permanent account
+                </li>
+                <li>
+                  <strong>Profile Information:</strong> Bio, academic background, session details,
+                  availability, and pricing (for mentors)
                 </li>
                 <li>
                   <strong>Payment Information:</strong> Stripe account details (stored by Stripe,
                   not by us), billing address, transaction history
                 </li>
                 <li>
-                  <strong>Communications:</strong> Messages sent through our platform, support
-                  inquiries, feedback, reviews
+                  <strong>Communications:</strong> Support inquiries, feedback, and transactional
+                  emails related to your account or bookings
                 </li>
                 <li>
-                  <strong>User Content:</strong> Posts, comments, reviews, and other content you
-                  create on the platform
+                  <strong>User Content:</strong> Profile biographies, session descriptions, and
+                  other information you choose to publish through your mentor profile
                 </li>
               </ul>
 
@@ -111,6 +116,11 @@ export default function PrivacyPage() {
                 <li>
                   <strong>Cookies and Similar Technologies:</strong> Session cookies, authentication
                   tokens, preference settings
+                </li>
+                <li>
+                  <strong>Anonymous Sessions:</strong> We create a temporary account identifier and
+                  session for visitors so we can protect booking actions from abuse, preserve a
+                  checkout attempt, and connect activity if the visitor later chooses to sign in
                 </li>
               </ul>
 
@@ -185,10 +195,10 @@ export default function PrivacyPage() {
               </p>
               <ul className="ml-6 list-disc space-y-2">
                 <li>
-                  Mentor profiles (name, photo, bio, university, major, expertise, reviews) are
-                  publicly visible
+                  Published mentor profiles—including name, photo, bio, university, major, and
+                  session options—are publicly visible
                 </li>
-                <li>Posts and comments you make on the platform are visible to other users</li>
+                <li>Session duration and listed prices are visible before a student books</li>
               </ul>
 
               <p className="mt-4">
@@ -217,10 +227,17 @@ export default function PrivacyPage() {
                   possible)
                 </li>
                 <li>
+                  <strong>Resend:</strong> Transactional and authentication email delivery
+                </li>
+                <li>
+                  <strong>Inngest:</strong> Durable processing of booking, refund, and payout jobs
+                </li>
+                <li>
                   <strong>Railway:</strong> Database hosting and infrastructure
                 </li>
                 <li>
-                  <strong>Vercel:</strong> Application hosting and deployment
+                  <strong>Vercel:</strong> Application hosting, deployment, and user-uploaded file
+                  storage through Vercel Blob
                 </li>
                 <li>
                   <strong>Upstash:</strong> Redis caching and rate limiting
@@ -269,11 +286,16 @@ export default function PrivacyPage() {
                 <li>Maintain business records and analytics</li>
               </ul>
               <p className="mt-4">
+                <strong>Anonymous Visitor Records:</strong> Anonymous users with no remaining
+                session are ordinarily removed after 90 days. We may retain transaction, fraud,
+                dispute, tax, and booking records for longer where needed for legal obligations or
+                legitimate business records.
+              </p>
+              <p className="mt-4">
                 <strong>Account Deletion:</strong> When you delete your account, your personal
-                information and public profile will be deleted or anonymized within 30 days. Content
-                that others have interacted with (such as reviews, posts, or public comments) may
-                remain visible in anonymized form to preserve the integrity of community
-                interactions.
+                information and public profile will be deleted or anonymized within 30 days.
+                Booking, payment, fraud-prevention, dispute, tax, and accounting records may be
+                retained where required for legal obligations or legitimate business records.
               </p>
               <p>
                 Transaction records and payment history may be retained for up to 7 years to comply

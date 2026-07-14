@@ -335,6 +335,37 @@ export const auth = betterAuth({
           }
         }
 
+        // Preserve the Stripe Customer created during guest checkout when the
+        // anonymous identity is linked to a permanent account.
+        try {
+          await db.transaction(async tx => {
+            const anonymousRecord = await tx.query.user.findFirst({
+              where: eq(schema.user.id, anonUser.id),
+              columns: { stripeCustomerId: true },
+            })
+            const linkedRecord = await tx.query.user.findFirst({
+              where: eq(schema.user.id, linkedUser.id),
+              columns: { stripeCustomerId: true },
+            })
+
+            if (anonymousRecord?.stripeCustomerId && !linkedRecord?.stripeCustomerId) {
+              await tx
+                .update(schema.user)
+                .set({ stripeCustomerId: null, updatedAt: new Date() })
+                .where(eq(schema.user.id, anonUser.id))
+              await tx
+                .update(schema.user)
+                .set({
+                  stripeCustomerId: anonymousRecord.stripeCustomerId,
+                  updatedAt: new Date(),
+                })
+                .where(eq(schema.user.id, linkedUser.id))
+            }
+          })
+        } catch (error) {
+          console.error('[Anonymous] Failed to migrate Stripe Customer:', error)
+        }
+
         // Migrate analytics events from anonymous user to linked user
         try {
           const events = await db

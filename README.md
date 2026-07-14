@@ -4,7 +4,7 @@
 
 ### 🚀 Modern Scheduling & Mentorship Platform
 
-A professional monorepo built with Next.js, pnpm workspaces, and Cal.com integration
+A professional monorepo built with Next.js, Cal.com scheduling, and Stripe Connect
 
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
 [![CI](https://github.com/discuno/discuno/actions/workflows/ci.yml/badge.svg)](https://github.com/discuno/discuno/actions/workflows/ci.yml)
@@ -26,7 +26,7 @@ A professional monorepo built with Next.js, pnpm workspaces, and Cal.com integra
 - 👥 **Mentorship Platform** - Connect mentors and mentees with advanced matching
 - 🔐 **Secure Authentication** - better-auth with email OTP + Google & Microsoft OAuth
 - 📱 **Mobile-First Design** - Responsive UI built with Tailwind CSS & Radix UI
-- 💳 **Mentor Payments** - Stripe Checkout and Connect-powered mentor payouts
+- 💳 **Mentor Payments** - Server-authoritative Stripe Checkout with delayed Connect payouts
 - 🧪 **Guarded Testing** - Fast unit tests plus isolated Railway database integration tests
 - 🚀 **Performance Optimized** - Turbopack builds, Server Components, and Cache Components
 - 🎨 **Modern UI** - Beautiful and responsive interface with Tailwind CSS & Radix UI
@@ -103,9 +103,21 @@ pnpm db:studio    # Open Drizzle Studio (use db:studio:<env> for scoped access)
 - 🔐 better-auth session management (email OTP + Google/Microsoft OAuth)
 - 📊 Drizzle ORM + PostgreSQL/Railway
 - 📅 Cal.com scheduling integration
+- 💳 Stripe Checkout and Connect marketplace payments
+- ⚙️ Inngest durable booking fulfillment and payout recovery
 - 🎨 Tailwind CSS + Radix UI
 - 📱 Responsive design system
 - 🔍 Advanced search & filtering
+
+### Marketplace payment model
+
+- The mentee pays the mentor's listed session price plus applicable tax; Discuno adds no buyer service fee.
+- Discuno retains a 15% mentor-side commission and the mentor share is 85%.
+- Checkout creates a platform charge. The mentor transfer is separate and becomes eligible after the scheduled session end plus 72 hours.
+- Mentor cancellations, mentor no-shows, and mentee cancellations at least 24 hours before the session start receive a full refund. Refundable cancellations set mentor payout eligibility false.
+- A mentee cancellation less than 24 hours before the start is non-refundable and remains eligible for the mentor's 85% share after the scheduled session end plus 72 hours. The Cal cancellation event's `createdAt` timestamp determines the boundary.
+- Paid booking fulfillment is retried through Inngest, and Cal.com retries reconcile the Discuno payment ID before creating another booking.
+- Stripe transfers, refunds, and disputes are recorded in durable ledgers and reconciled before retrying a financial mutation. A `requires_action` refund hard-holds payout, reverses transferred mentor funds, and requires manual review.
 
 ## 🛠️ Tech Stack
 
@@ -138,9 +150,11 @@ pnpm db:studio    # Open Drizzle Studio (use db:studio:<env> for scoped access)
 <summary><strong>Infrastructure & Deployment</strong></summary>
 
 - **Platform**: Vercel (optimized for Next.js)
-- **Database**: Railway (PostgreSQL), Redis (caching)
+- **Database**: Railway (PostgreSQL), Upstash Redis (rate limiting)
+- **Payments**: Stripe Checkout + Connect (separate charges and transfers)
+- **Scheduling**: Cal.com organization and team APIs
+- **Durable Workflows**: Inngest
 - **CDN**: Vercel Edge Network
-- **Monitoring**: Sentry error tracking
 - **Analytics**: PostHog
 - **Email**: Resend transactional delivery
 

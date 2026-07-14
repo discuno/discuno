@@ -1,5 +1,6 @@
 import crypto from 'crypto'
 import { env } from '~/env'
+import { getCalcomBooking } from '~/lib/calcom'
 import { trackServerEvent } from '~/lib/posthog-server'
 import {
   CalcomBookingCancelledPayloadSchema,
@@ -14,9 +15,17 @@ import {
   cancelLocalBooking,
   completeLocalBooking,
   createLocalBooking,
+  setLocalBookingMentorPayoutEligibility,
   updateLocalBookingStatus,
 } from '~/lib/services/booking-service'
 import { getUserIdByCalcomUserId } from '~/lib/services/calcom-tokens-service'
+import {
+  refundBookingPayment,
+  scheduleBookingMentorPayout,
+  scheduleMentorPayout,
+  updatePaymentPayoutEligibility,
+} from '~/lib/services/payment-service'
+import { shouldAutomaticallyRefundCancellation } from '~/lib/stripe/marketplace'
 import { createAnalyticsEvent } from '~/server/dal/analytics'
 
 type MentorMetadataPayload = Partial<CalcomBookingPayload> & {
@@ -69,7 +78,7 @@ export async function POST(req: Request) {
     return Response.json({ error: 'Invalid payload' }, { status: 400 })
   }
 
-  const { triggerEvent } = parsedEnvelope.data
+  const { triggerEvent, createdAt } = parsedEnvelope.data
   const payload = parsedEnvelope.data.payload ?? rawEvent
   console.log('Received Cal.com webhook event', { triggerEvent })
 
@@ -79,7 +88,14 @@ export async function POST(req: Request) {
         return await storeBooking(payload)
       case 'BOOKING_RESCHEDULED': {
         const rescheduledBooking = CalcomBookingRescheduledPayloadSchema.parse(payload)
-        await cancelLocalBooking(rescheduledBooking.rescheduleUid)
+        const previousBooking = await cancelLocalBooking(rescheduledBooking.rescheduleUid)
+        if (previousBooking.missing) {
+          console.warn(
+            `Original rescheduled booking was not stored: ${rescheduledBooking.rescheduleUid}`
+          )
+        } else {
+          await setLocalBookingMentorPayoutEligibility(rescheduledBooking.rescheduleUid, false)
+        }
         return await storeBooking(rescheduledBooking)
       }
       // Guest didn't show up
@@ -92,6 +108,7 @@ export async function POST(req: Request) {
             hostNoShow: false,
             attendeeNoShow: true,
           })
+          await scheduleBookingMentorPayout(bookingUid, 'attendee-no-show')
           console.log(`✅ Marked guest as no-show for booking ${bookingUid}`)
         }
         break
@@ -106,6 +123,8 @@ export async function POST(req: Request) {
             hostNoShow: true,
             attendeeNoShow: false,
           })
+          const refund = await refundBookingPayment(bookingUid, 'mentor_no_show')
+          if (!refund.success) throw new Error(refund.error ?? 'Host no-show refund failed')
         }
         break
       case 'BOOKING_NO_SHOW_UPDATED': {
@@ -115,6 +134,9 @@ export async function POST(req: Request) {
           hostNoShow: false,
           attendeeNoShow,
         })
+        if (attendeeNoShow) {
+          await scheduleBookingMentorPayout(noShow.bookingUid, 'attendee-no-show-updated')
+        }
         break
       }
       case 'RECORDING_TRANSCRIPTION_GENERATED':
@@ -147,10 +169,16 @@ export async function POST(req: Request) {
         }
         const mentorUserId = payload.metadata.mentorUserId
         const completion = await completeLocalBooking(payload.uid)
+        if (completion.missing) {
+          console.warn(`MEETING_ENDED arrived for an unknown booking ${payload.uid}`)
+          break
+        }
         if (!completion.transitioned) {
           console.log(`Cal.com meeting end already handled for booking ${payload.uid}`)
           break
         }
+
+        await scheduleBookingMentorPayout(payload.uid, 'meeting-completed')
 
         await createAnalyticsEvent({
           eventType: 'COMPLETED_BOOKING',
@@ -173,18 +201,70 @@ export async function POST(req: Request) {
       }
       case 'BOOKING_CANCELLED':
         {
+          if (!createdAt) {
+            throw new Error('BOOKING_CANCELLED is missing its event timestamp')
+          }
           const cancelledBooking = CalcomBookingCancelledPayloadSchema.parse(payload)
           const cancellation = await cancelLocalBooking(cancelledBooking.uid)
-          if (!cancellation.transitioned) {
-            console.log(`Cal.com cancellation already handled for booking ${cancelledBooking.uid}`)
+          if (cancellation.missing) {
+            console.warn(`BOOKING_CANCELLED arrived for an unknown booking ${cancelledBooking.uid}`)
             break
           }
+          if (!cancellation.transitioned) {
+            console.log(`Cal.com cancellation already handled for booking ${cancelledBooking.uid}`)
+          }
+
+          let cancelledByEmail = cancelledBooking.cancelledByEmail ?? null
+          if (!cancelledByEmail) {
+            try {
+              cancelledByEmail =
+                (await getCalcomBooking(cancelledBooking.uid)).cancelledByEmail ?? null
+            } catch (error) {
+              console.error(`Could not resolve cancellation actor for ${cancelledBooking.uid}`, {
+                error: error instanceof Error ? error.message : 'Unknown Cal.com error',
+              })
+              throw error
+            }
+          }
+          if (!cancelledByEmail) {
+            throw new Error(`Could not resolve cancellation actor for ${cancelledBooking.uid}`)
+          }
+          const cancelledByOrganizer =
+            cancelledByEmail.trim().toLowerCase() ===
+            cancelledBooking.organizer.email.trim().toLowerCase()
+
+          const shouldRefund = shouldAutomaticallyRefundCancellation({
+            cancelledByEmail,
+            organizerEmail: cancelledBooking.organizer.email,
+            startTime: cancelledBooking.startTime,
+            now: new Date(createdAt),
+          })
+          await setLocalBookingMentorPayoutEligibility(cancelledBooking.uid, !shouldRefund)
+          if (shouldRefund) {
+            const refund = await refundBookingPayment(
+              cancelledBooking.uid,
+              cancelledByOrganizer ? 'mentor_cancelled' : 'early_cancellation'
+            )
+            if (!refund.success) throw new Error(refund.error ?? 'Cancellation refund failed')
+          } else {
+            const payout = await scheduleBookingMentorPayout(
+              cancelledBooking.uid,
+              'late-mentee-cancellation'
+            )
+            if (!payout.success) {
+              throw new Error(payout.error ?? 'Late-cancellation mentor payout scheduling failed')
+            }
+          }
+
           const mentorUserId = await getUserIdByCalcomUserId(cancelledBooking.organizer.id)
-          if (mentorUserId) {
+          if (mentorUserId && cancellation.transitioned) {
+            const actorUserId = cancelledByOrganizer
+              ? mentorUserId
+              : (cancelledBooking.metadata.actorUserId ?? null)
             await createAnalyticsEvent({
               eventType: 'CANCELLED_BOOKING',
               targetUserId: mentorUserId,
-              actorUserId: mentorUserId,
+              actorUserId,
             })
 
             // Track booking cancellation in PostHog
@@ -241,6 +321,13 @@ async function storeBooking(event: unknown) {
     }
 
     const start = new Date(startTime)
+    const organizerUserId = await getUserIdByCalcomUserId(organizer.id)
+    if (!organizerUserId || organizerUserId !== metadata.mentorUserId) {
+      return Response.json(
+        { error: 'Booking organizer does not match Discuno mentor' },
+        { status: 400 }
+      )
+    }
 
     const { booking, created } = await createLocalBooking({
       calcomBookingId: bookingId,
@@ -254,7 +341,7 @@ async function storeBooking(event: unknown) {
       calcomEventTypeId: eventTypeId,
       paymentId: metadata.paymentId ? Number(metadata.paymentId) : undefined,
       organizer: {
-        userId: metadata.mentorUserId,
+        userId: organizerUserId,
         email: organizer.email,
         username: organizer.username,
         name: organizer.name,
@@ -268,43 +355,53 @@ async function storeBooking(event: unknown) {
       webhookPayload: validation.data,
     })
 
-    if (!created) {
-      console.log(`Cal.com booking ${uid} was already stored`)
-      return Response.json(booking)
-    }
+    if (!created) console.log(`Cal.com booking ${uid} was already stored`)
+    else console.log(`✅ Successfully stored booking ${booking.id} for Cal.com event ${uid}`)
 
-    console.log(`✅ Successfully stored booking ${booking.id} for Cal.com event ${uid}`)
+    if (booking.paymentId) {
+      const payoutEligibleAt = await updatePaymentPayoutEligibility(
+        booking.paymentId,
+        start,
+        length
+      )
+      await scheduleMentorPayout({
+        paymentId: booking.paymentId,
+        calcomBookingUid: uid,
+        payoutEligibleAt,
+        reason: 'cal-booking-stored',
+      })
+    }
 
     // Track booking creation in PostHog
-    try {
-      if (metadata.mentorUserId) {
-        await trackServerEvent(metadata.mentorUserId, 'booking_created', {
-          bookingId: booking.id,
-          calcomBookingId: bookingId,
-          calcomUid: uid,
-          eventTypeId,
-          duration: length,
-          startTime: start.toISOString(),
-          attendeeEmail: attendee.email,
-        })
+    if (created)
+      try {
+        if (metadata.mentorUserId) {
+          await trackServerEvent(metadata.mentorUserId, 'booking_created', {
+            bookingId: booking.id,
+            calcomBookingId: bookingId,
+            calcomUid: uid,
+            eventTypeId,
+            duration: length,
+            startTime: start.toISOString(),
+          })
+        }
+        // Also track for the attendee if we have their user ID
+        if (metadata.actorUserId) {
+          await trackServerEvent(metadata.actorUserId, 'booking_created', {
+            bookingId: booking.id,
+            calcomBookingId: bookingId,
+            calcomUid: uid,
+            eventTypeId,
+            duration: length,
+            startTime: start.toISOString(),
+            mentorUserId: metadata.mentorUserId,
+          })
+        }
+      } catch (error) {
+        console.error(`❌ Failed to track booking creation event:`, error)
       }
-      // Also track for the attendee if we have their user ID
-      if (metadata.actorUserId) {
-        await trackServerEvent(metadata.actorUserId, 'booking_created', {
-          bookingId: booking.id,
-          calcomBookingId: bookingId,
-          calcomUid: uid,
-          eventTypeId,
-          duration: length,
-          startTime: start.toISOString(),
-          mentorUserId: metadata.mentorUserId,
-        })
-      }
-    } catch (error) {
-      console.error(`❌ Failed to track booking creation event:`, error)
-    }
 
-    return Response.json(booking, { status: 201 })
+    return Response.json(booking, { status: created ? 201 : 200 })
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     console.error(`❌ Failed to store booking for Cal.com event:`, errorMessage)

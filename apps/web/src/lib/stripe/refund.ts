@@ -1,21 +1,48 @@
 import { stripe } from '~/lib/stripe'
+import { normalizeStripeRefundStatus, type StripeRefundStatus } from '~/lib/stripe/marketplace'
 
 /**
  * Refund a Stripe payment intent
  */
 export const refundStripePaymentIntent = async (
-  paymentIntentId: string
-): Promise<{ success: boolean; error?: string }> => {
+  paymentIntentId: string,
+  options: {
+    purpose?: string
+    idempotencyKey?: string
+  } = {}
+): Promise<{
+  success: boolean
+  refundId?: string
+  status?: StripeRefundStatus
+  amount?: number
+  error?: string
+}> => {
   try {
-    const refund = await stripe.refunds.create({
-      payment_intent: paymentIntentId,
-      // refund full amount
-      refund_application_fee: true,
-      reverse_transfer: true,
-    })
+    const purpose = options.purpose ?? 'booking_refund'
+    const refund = await stripe.refunds.create(
+      {
+        payment_intent: paymentIntentId,
+        reason: 'requested_by_customer',
+        metadata: { discunoPurpose: purpose },
+      },
+      {
+        idempotencyKey: options.idempotencyKey ?? `discuno:refund:v1:${purpose}:${paymentIntentId}`,
+      }
+    )
 
-    console.log(`Successfully created refund ${refund.id} for payment intent ${paymentIntentId}`)
-    return { success: true }
+    const status = normalizeStripeRefundStatus(refund.status)
+    const success = status !== 'failed' && status !== 'canceled'
+
+    console.log(`Created refund ${refund.id} for payment intent ${paymentIntentId}`, {
+      status,
+    })
+    return {
+      success,
+      refundId: refund.id,
+      status,
+      amount: refund.amount,
+      ...(!success && { error: `Stripe refund ${status}` }),
+    }
   } catch (error) {
     console.error(`Failed to refund payment intent ${paymentIntentId}:`, error)
     return {

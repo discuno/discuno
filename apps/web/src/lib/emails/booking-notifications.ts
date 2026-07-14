@@ -106,8 +106,10 @@ export const sendRefundNotificationEmail = async ({
         reason,
       }),
     })
+    return true
   } catch (error) {
     console.error('Failed to send refund notification email:', error)
+    return false
   }
 }
 
@@ -128,7 +130,7 @@ export const alertAdminForManualRefund = async (
 
     await resend.emails.send({
       from: env.AUTH_EMAIL_FROM,
-      to: env.AUTH_EMAIL_FROM, // Send to same email as from for now
+      to: env.ADMIN_ALERT_EMAIL,
       subject: 'URGENT: Manual Refund Required',
       react: AdminManualRefundAlertEmail({
         sessionId,
@@ -202,7 +204,7 @@ export const sendAdminAlert = async ({
 
     await resend.emails.send({
       from: env.AUTH_EMAIL_FROM,
-      to: env.AUTH_EMAIL_FROM, // Send to same email as from for now TODO
+      to: env.ADMIN_ALERT_EMAIL,
       subject: `ALERT: ${type} - Payment ${paymentId}`,
       react: AdminAlertEmail({
         type,
@@ -224,11 +226,13 @@ export const sendBookingFailureEmail = async ({
   attendeeName,
   mentorName,
   reason,
+  refundSucceeded,
 }: {
   attendeeEmail: string
   attendeeName: string
   mentorName: string
   reason: string
+  refundSucceeded: boolean
 }) => {
   try {
     console.log('Sending booking failure email:', {
@@ -246,6 +250,7 @@ export const sendBookingFailureEmail = async ({
         attendeeName,
         mentorName,
         reason,
+        refundSucceeded,
       }),
     })
     if (error) {

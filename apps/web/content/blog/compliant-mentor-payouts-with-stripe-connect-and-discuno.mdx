@@ -1,13 +1,13 @@
 ---
-title: 'Compliant Mentor Payouts with Stripe Connect and Discuno'
-description: 'Understand how Discuno automates compliant mentor payouts, handles refunds, and streamlines financial operations with Stripe Connect.'
+title: 'Safer Mentor Payouts with Stripe Connect and Discuno'
+description: 'See how Discuno coordinates mentor transfers, refunds, and payment reviews with Stripe Connect.'
 date: '2025-06-19'
 author: 'Discuno Team'
 tags: ['payments', 'stripe', 'compliance', 'operations', 'mentorship']
-published: true
+published: false
 ---
 
-Paying mentors sounds simple—until you factor in tax forms, dispute windows, refunds, and reporting. Discuno relies on Stripe Connect to deliver compliant payouts without drowning your operations team in manual work. This guide explains the financial workflow and the safeguards that keep regulators, accountants, and mentors happy.
+Paying mentors sounds simple—until you factor in identity checks, cancellation windows, refunds, and disputes. Discuno uses Stripe Connect for connected-account onboarding and keeps payment state tied to each booking. This guide explains the current workflow; it is not legal, tax, or accounting advice.
 
 ## Why Payments Are Tricky for Mentorship Programs
 
@@ -21,41 +21,39 @@ Discuno abstracts this complexity so you can focus on delivering outcomes, not s
 ## Discuno + Stripe Connect Workflow
 
 1. **Mentor onboarding:** Mentors complete Stripe Connect onboarding directly from the Discuno dashboard. Stripe handles identity verification, bank account linking, and tax form collection.
-2. **Checkout and authorization:** Mentees (or administrators) pay through Stripe Checkout. Funds are captured but held until the session completes.
+2. **Checkout:** Mentees pay the listed session price plus applicable tax through Stripe Checkout. Discuno adds no buyer service fee and retains a 15% mentor-side commission.
 3. **Ledger reconciliation:** Discuno’s Drizzle ORM schema stores payment, mentor, and booking metadata in normalized tables (`discuno_payment`, `discuno_booking`, `discuno_mentor_stripe_account`).
-4. **Dispute guardrails:** A configurable holding period keeps funds in reserve to cover cancellations or disputes.
-5. **Automated transfers:** Cron jobs trigger Stripe transfers to mentors, applying platform fees and surfacing payout statuses in dashboards.
-6. **Reporting:** Finance teams export CSVs or connect business intelligence tools to audit payouts, reconcile deposits, and close the books.
+4. **Support window:** The mentor’s 85% share remains on the platform until 72 hours after the scheduled session ends.
+5. **Policy-gated transfer:** Inngest releases that share only when the booking was delivered, the mentee did not attend, or a late mentee cancellation remains payout-eligible—and only when the payment is not refunded, disputed, or manually held.
+6. **Reconciliation:** Stripe IDs and lifecycle statuses are stored with the booking so operators can reconcile activity in Stripe and Inngest.
 
 ## Handling Refunds and Adjustments
 
-- **Program-controlled policies:** Define refund windows by event type—full refunds for cancellations 24 hours in advance, partial refunds for last-minute changes.
-- **Instant updates:** When a refund is issued, Discuno updates booking status, triggers mentor notifications, and removes the session from payout queues.
-- **Granular metadata:** Each refund includes booking IDs, mentor IDs, and cohort tags to keep your analytics clean.
+- **Clear launch policy:** Mentor cancellations, mentor no-shows, and mentee cancellations at least 24 hours ahead receive a full refund. A mentee cancellation less than 24 hours ahead is non-refundable, and the mentor's 85% share remains eligible after the scheduled session end plus 72 hours.
+- **Idempotent operations:** Repeated webhook delivery cannot create duplicate refunds or mentor transfers.
+- **Reconciliation:** Refund IDs, status, amount, and transfer reversals are retained with the payment record.
 
 ## Compliance and Risk Mitigation
 
-- **KYC and AML:** Stripe Connect verifies mentor identities and monitors suspicious transactions so you stay compliant without building your own compliance team.
-- **Tax reporting:** 1099s (US) and relevant international forms are auto-generated. Discuno displays status updates so mentors know when forms are filed.
-- **Audit trails:** Every payout, refund, and manual adjustment is logged with timestamps and admin IDs for traceability.
-- **Access controls:** Finance staff access payout dashboards via better-auth roles, preventing unauthorized edits.
+- **Connected-account onboarding:** Stripe collects the identity and bank details required for each connected account’s enabled capabilities.
+- **Platform controls:** Discuno checks booking ownership and Better Auth permissions before mentor-side cancellation actions.
+- **Webhook integrity:** Stripe and Cal.com signatures are verified before local payment or booking state changes.
+- **Professional advice still matters:** Marketplace, tax, and reporting obligations depend on your business and operating regions.
 
 ## Operational Best Practices
 
-- **Reconcile weekly:** Use Discuno’s payout dashboard to compare expected transfers vs. Stripe balances and catch anomalies early.
+- **Reconcile weekly:** Compare Discuno payment records with Stripe charges, refunds, disputes, and transfers.
 - **Communicate timelines:** Publish payout schedules and dispute policies to mentors, so expectations stay clear.
-- **Segment programs:** Tag bookings by cohort or funding source to manage grant reporting and budget tracking.
-- **Automate alerts:** Configure notifications for payout failures, pending tax forms, or unusually large transactions.
+- **Review alerts:** Investigate failed refunds, transfer reversals, and Stripe disputes promptly.
 
 ## Frequently Asked Questions
 
-**Can Discuno support stipends or milestone-based payouts?**  
-Yes. You can queue payouts until after a series of sessions or trigger transfers based on milestone completion status.
+**When is a mentor transfer released?**
 
-**What about international mentors?**  
-Stripe Connect supports payouts in 35+ countries. Discuno reads the account capabilities API to surface any required documentation.
+The mentor’s 85% share becomes eligible 72 hours after the scheduled session ends, subject to booking delivery and payment review.
 
-**How do we manage chargebacks?**  
-Discuno flags disputed payments, pauses future bookings for the affected mentee or mentor, and guides administrators through Stripe’s evidence submission flow.
+**How do we manage chargebacks?**
 
-Take the guesswork out of mentor payments. [Connect with our team](https://discuno.com/contact) to see how Discuno keeps payouts compliant and effortless.
+Discuno blocks an unreleased mentor transfer, records the dispute state, and alerts operators. Evidence and case responses are managed in Stripe.
+
+Take the guesswork out of mentor payments. [Connect with our team](https://discuno.com/contact) to see the workflow.

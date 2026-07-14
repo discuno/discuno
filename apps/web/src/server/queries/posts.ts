@@ -10,6 +10,7 @@ import {
   getPostsWithCursor,
   getPostsWithFilters,
 } from '~/server/dal/posts'
+import { hasVerifiedSchoolEmail } from '~/server/queries/school-email-verification'
 
 /**
  * Query Layer for posts
@@ -43,6 +44,11 @@ const transformPostResult = (result: PostQueryResult[]): Card[] => {
         name: creator.name ?? 'Mentor',
         username: creator.username ?? null,
         calcomUsername: creator.calcomUsername ?? null,
+        verifiedSchoolEmail: hasVerifiedSchoolEmail({
+          email: creator.email,
+          emailVerified: creator.emailVerified,
+          schoolDomainPrefix: school?.domainPrefix ?? null,
+        }),
         userImage: creator.image ?? null,
         description: profile?.bio !== undefined ? profile.bio : null,
         graduationYear: profile?.graduationYear ?? null,
@@ -161,10 +167,33 @@ export const getPostsByFilters = async (
     return getInfiniteScrollPosts(validLimit, cursor)
   }
 
+  let rankingScore: number | undefined
+  let randomSortKey: number | undefined
+  let postId: number | undefined
+  if (cursor) {
+    try {
+      const decodedCursor = JSON.parse(Buffer.from(cursor, 'base64').toString('ascii'))
+      if (
+        typeof decodedCursor.ranking_score === 'number' &&
+        typeof decodedCursor.random_sort_key === 'number' &&
+        typeof decodedCursor.post_id === 'number'
+      ) {
+        rankingScore = decodedCursor.ranking_score
+        randomSortKey = decodedCursor.random_sort_key
+        postId = decodedCursor.post_id
+      }
+    } catch (error) {
+      console.error('Failed to decode filtered-post cursor:', error)
+    }
+  }
+
   const result = await getPostsWithFilters({
     schoolId: validSchoolId,
     majorId: validMajorId,
     graduationYear: validGraduationYear,
+    rankingScore,
+    randomSortKey,
+    postId,
     limit: validLimit,
   })
 
@@ -176,6 +205,7 @@ export const getPostsByFilters = async (
           JSON.stringify({
             ranking_score: postsData[postsData.length - 1]?.profile?.rankingScore,
             random_sort_key: postsData[postsData.length - 1]?.post.random_sort_key,
+            post_id: postsData[postsData.length - 1]?.post.id,
           })
         ).toString('base64')
       : undefined

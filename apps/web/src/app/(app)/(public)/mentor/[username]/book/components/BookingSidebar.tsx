@@ -2,12 +2,13 @@
 
 import { TZDate } from '@date-fns/tz'
 import { format } from 'date-fns'
-import { Calendar, Check, Clock, CreditCard, User, Video } from 'lucide-react'
+import { Calendar, Check, Clock, Video } from 'lucide-react'
 import Image from 'next/image'
 import type { EventType } from '~/app/(app)/(public)/mentor/[username]/book/actions'
 import type { BookingData } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingModal'
 import { Avatar, AvatarFallback } from '~/components/ui/avatar'
 import { Badge } from '~/components/ui/badge'
+import { formatCurrencyFromCents } from '~/lib/format-currency'
 import { cn } from '~/lib/utils'
 
 interface BookingSidebarProps {
@@ -15,7 +16,7 @@ interface BookingSidebarProps {
   selectedEventType: EventType | null
   selectedDate?: Date
   selectedTimeSlot: string | null
-  currentStep: 'calendar' | 'auth' | 'booking' | 'payment' | 'confirmation'
+  currentStep: 'calendar' | 'booking' | 'confirmation'
   timeZone: string
 }
 
@@ -30,26 +31,16 @@ export const BookingSidebar = ({
   const steps = [
     {
       id: 'calendar',
-      label: 'Date & Time',
-      icon: Calendar,
+      label: 'Date & time',
       isActive: currentStep === 'calendar',
       isCompleted:
         currentStep !== 'calendar' && !!selectedEventType && !!selectedDate && !!selectedTimeSlot,
     },
     {
       id: 'userDetails',
-      label: 'Your Details',
-      icon: User,
-      isActive: currentStep === 'auth' || currentStep === 'booking',
-      isCompleted: currentStep === 'payment' || currentStep === 'confirmation',
-    },
-    {
-      id: 'payment',
-      label: 'Payment',
-      icon: CreditCard,
-      isActive: currentStep === 'payment',
+      label: (selectedEventType?.price ?? 0) > 0 ? 'Details & checkout' : 'Your details',
+      isActive: currentStep === 'booking',
       isCompleted: currentStep === 'confirmation',
-      hidden: (selectedEventType?.price ?? 0) === 0,
     },
   ]
 
@@ -100,10 +91,10 @@ export const BookingSidebar = ({
             <h3 className="text-primary font-semibold">{selectedEventType.title}</h3>
             {selectedEventType.price && selectedEventType.price > 0 ? (
               <Badge variant="default">
-                {(selectedEventType.price / 100).toLocaleString('en-US', {
-                  style: 'currency',
-                  currency: selectedEventType.currency ?? 'USD',
-                })}
+                {formatCurrencyFromCents(
+                  selectedEventType.price,
+                  selectedEventType.currency ?? 'USD'
+                )}
               </Badge>
             ) : (
               <Badge variant="secondary">Free</Badge>
@@ -137,37 +128,35 @@ export const BookingSidebar = ({
 
       {/* Progress Steps */}
       <div className="mt-auto space-y-4">
-        {steps
-          .filter(step => !step.hidden)
-          .map((step, index) => (
+        {steps.map((step, index) => (
+          <div
+            key={step.id}
+            className={cn(
+              'flex items-center gap-3 transition-colors duration-200',
+              step.isActive
+                ? 'text-primary'
+                : step.isCompleted
+                  ? 'text-primary/70'
+                  : 'text-muted-foreground'
+            )}
+          >
             <div
-              key={step.id}
               className={cn(
-                'flex items-center gap-3 transition-colors duration-200',
+                'flex h-8 w-8 items-center justify-center rounded-full border text-xs font-semibold transition-all',
                 step.isActive
-                  ? 'text-primary'
+                  ? 'border-primary bg-primary text-primary-foreground ring-primary/10 ring-4'
                   : step.isCompleted
-                    ? 'text-primary/70'
-                    : 'text-muted-foreground'
+                    ? 'border-primary bg-primary text-primary-foreground'
+                    : 'border-muted-foreground/30 bg-background'
               )}
             >
-              <div
-                className={cn(
-                  'flex h-8 w-8 items-center justify-center rounded-full border text-xs font-semibold transition-all',
-                  step.isActive
-                    ? 'border-primary bg-primary text-primary-foreground ring-primary/10 ring-4'
-                    : step.isCompleted
-                      ? 'border-primary bg-primary text-primary-foreground'
-                      : 'border-muted-foreground/30 bg-background'
-                )}
-              >
-                {step.isCompleted ? <Check className="h-4 w-4" /> : index + 1}
-              </div>
-              <span className={cn('text-sm font-medium', step.isActive && 'font-bold')}>
-                {step.label}
-              </span>
+              {step.isCompleted ? <Check className="h-4 w-4" /> : index + 1}
             </div>
-          ))}
+            <span className={cn('text-sm font-medium', step.isActive && 'font-bold')}>
+              {step.label}
+            </span>
+          </div>
+        ))}
       </div>
     </div>
   )

@@ -29,7 +29,6 @@ interface StripeStatus {
   onboardingCompleted: boolean
   payoutsEnabled: boolean
   chargesEnabled: boolean
-  accountId?: string
 }
 
 interface EventTypeSettingsContentProps {
@@ -244,6 +243,7 @@ export const EventTypeSettingsContent = ({
                   id="price"
                   type="number"
                   min="0"
+                  max="10000"
                   step="1"
                   placeholder="0.00"
                   value={tempPrice}
@@ -252,7 +252,9 @@ export const EventTypeSettingsContent = ({
                 />
               </InputGroup>
               <FieldDescription>
-                Leave empty or set to 0 for free sessions. Minimum paid price is $5.00.
+                Leave empty or set to 0 for free sessions. Minimum paid price is $5.00. For paid
+                sessions, Discuno retains 15% and you receive 85%; Discuno covers standard Stripe
+                processing costs.
               </FieldDescription>
               <FieldError>{priceError}</FieldError>
             </Field>

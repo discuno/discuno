@@ -1,6 +1,12 @@
 import { serve } from 'inngest/next'
 import { inngest } from '~/inngest/client'
-import { processCheckoutSideEffects } from '~/inngest/functions'
+import {
+  processCheckoutSideEffects,
+  processMentorPayout,
+  reconcileEligibleMentorPayouts,
+} from '~/inngest/functions'
+
+export const maxDuration = 60
 
 /**
  * Inngest API endpoint
@@ -10,6 +16,7 @@ export const { GET, POST, PUT } = serve({
   client: inngest,
   functions: [
     processCheckoutSideEffects, // Checkout session side effects (Cal.com booking, PostHog, refunds, emails)
-    // Add more functions here as you create them
+    processMentorPayout, // Delayed, policy-gated Stripe transfer to the mentor
+    reconcileEligibleMentorPayouts, // Hourly recovery for due transfers missed by event delivery
   ],
 })

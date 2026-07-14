@@ -4,6 +4,7 @@ import { type ComponentPropsWithoutRef, type ComponentRef, forwardRef } from 're
 import type { EventType } from '~/app/(app)/(public)/mentor/[username]/book/actions'
 import { Badge } from '~/components/ui/badge'
 import { Select, SelectContent, SelectTrigger, SelectValue } from '~/components/ui/select'
+import { formatCurrencyFromCents } from '~/lib/format-currency'
 import { cn } from '~/lib/utils'
 
 const SelectItem = forwardRef<
@@ -67,7 +68,10 @@ export const EventTypeSelector = ({
         <div className="pr-2">
           {selectedEventType?.price && selectedEventType.price > 0 ? (
             <Badge variant="secondary" className="badge-success-muted">
-              ${(selectedEventType.price / 100).toFixed(2)} {selectedEventType.currency}
+              {formatCurrencyFromCents(
+                selectedEventType.price,
+                selectedEventType.currency ?? 'USD'
+              )}
             </Badge>
           ) : (
             <Badge variant="outline">{selectedEventType ? 'Free' : ''}</Badge>
@@ -86,7 +90,7 @@ export const EventTypeSelector = ({
             <div className="flex-grow" />
             {eventType.price && eventType.price > 0 ? (
               <Badge variant="secondary" className="badge-success-muted">
-                ${(eventType.price / 100).toFixed(2)} {eventType.currency}
+                {formatCurrencyFromCents(eventType.price, eventType.currency ?? 'USD')}
               </Badge>
             ) : (
               <Badge variant="outline">Free</Badge>

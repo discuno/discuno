@@ -9,7 +9,7 @@ Discuno connects students with verified college mentors for paid or free advice 
 - Stripe Checkout plus Connect accounts for booking payments and mentor payouts
 - Durable booking fulfillment and retries through Inngest
 - PostgreSQL on Railway with Drizzle ORM
-- PostHog analytics, Sentry monitoring, Resend email, Upstash rate limiting, and Vercel Blob storage
+- PostHog analytics, Resend email, Upstash rate limiting, and Vercel Blob storage
 
 ## Stack
 
@@ -87,7 +87,23 @@ Normal seeding is database-only. Creating or deleting external Cal.com and Strip
 
 - The server API version is pinned in `src/lib/stripe/index.ts`.
 - New connected accounts use controller properties equivalent to the Express configuration.
-- `/api/webhooks/stripe` handles both immediate and delayed Checkout success events.
+- Paid sessions use a platform charge with no buyer service fee. Discuno retains a 15% mentor-side commission, and the separate 85% mentor transfer becomes eligible 72 hours after the scheduled session ends.
+- Mentor cancellations, mentor no-shows, and mentee cancellations at least 24 hours before the session start receive a full refund and set `mentor_payout_eligible` false.
+- A mentee cancellation less than 24 hours before the start is non-refundable and sets `mentor_payout_eligible` true, keeping the 85% mentor transfer eligible after the scheduled end plus 72 hours. The `BOOKING_CANCELLED` envelope's `createdAt` timestamp controls the boundary.
+- A Stripe refund in `requires_action` hard-holds payout, reverses any existing mentor transfer, and requires manual review until safely resolved.
+- `/api/webhooks/stripe` handles Checkout, refund, dispute, and later payment-failure state. Its platform webhook subscription must include all of the following events:
+  - `checkout.session.completed`
+  - `checkout.session.async_payment_succeeded`
+  - `checkout.session.async_payment_failed`
+  - `refund.created`
+  - `refund.updated`
+  - `refund.failed`
+  - `charge.dispute.created`
+  - `charge.dispute.updated`
+  - `charge.dispute.closed`
+  - `payment_intent.payment_failed`
+  - `payment_intent.canceled`
+  - `charge.failed`
 - `/api/webhooks/stripe-connect` tracks connected-account capability and restriction changes.
 
 ### Deployment

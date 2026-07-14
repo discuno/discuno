@@ -108,7 +108,60 @@ export const deleteCalcomUser = async (calcomUserId: number): Promise<void> => {
   CreateCalcomUserResponseSchema.parse(response)
 }
 
-/** Create a booking with platform credentials. */
+const CalcomBookingLookupSchema = z.object({
+  status: z.literal('success'),
+  data: z.array(
+    z.object({
+      id: z.number().int(),
+      uid: z.string(),
+      metadata: z.record(z.string(), z.unknown()).default({}),
+    })
+  ),
+})
+
+/** Reconcile an ambiguous create response using unique Discuno metadata. */
+const findCalcomBookingByMetadata = async ({
+  metadataKey,
+  metadataValue,
+  attendeeEmail,
+  eventTypeId,
+}: {
+  metadataKey: 'paymentId' | 'bookingAttemptId'
+  metadataValue: string
+  attendeeEmail: string
+  eventTypeId: number
+}): Promise<{ id: number; uid: string } | null> => {
+  const query = new URLSearchParams({
+    attendeeEmail,
+    eventTypeId: eventTypeId.toString(),
+    afterCreatedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+    limit: '100',
+  })
+  const response = await calcomRequest<unknown>(`/bookings?${query}`, {
+    apiVersion: CALCOM_API_VERSIONS.bookingList,
+  })
+  const parsed = CalcomBookingLookupSchema.parse(response)
+  const match = parsed.data.find(item => item.metadata[metadataKey] === metadataValue)
+  return match ? { id: match.id, uid: match.uid } : null
+}
+
+export const findCalcomBookingByPaymentId = async ({
+  paymentId,
+  attendeeEmail,
+  eventTypeId,
+}: {
+  paymentId: number
+  attendeeEmail: string
+  eventTypeId: number
+}) =>
+  findCalcomBookingByMetadata({
+    metadataKey: 'paymentId',
+    metadataValue: paymentId.toString(),
+    attendeeEmail,
+    eventTypeId,
+  })
+
+/** Create a booking with platform credentials. Paid retries first reconcile by payment ID. */
 export const createCalcomBooking = async (input: {
   calcomEventTypeId: number
   start: string
@@ -118,7 +171,23 @@ export const createCalcomBooking = async (input: {
   timeZone: string
   paymentId?: number
   mentorUserId: string
+  actorUserId?: string
+  bookingAttemptId?: string
 }): Promise<{ id: number; uid: string }> => {
+  const reconciliationKey = input.paymentId
+    ? { metadataKey: 'paymentId' as const, metadataValue: input.paymentId.toString() }
+    : input.bookingAttemptId
+      ? { metadataKey: 'bookingAttemptId' as const, metadataValue: input.bookingAttemptId }
+      : null
+  if (reconciliationKey) {
+    const existing = await findCalcomBookingByMetadata({
+      ...reconciliationKey,
+      attendeeEmail: input.attendeeEmail,
+      eventTypeId: input.calcomEventTypeId,
+    })
+    if (existing) return existing
+  }
+
   const response = await calcomRequest<unknown>('/bookings', {
     method: 'POST',
     apiVersion: CALCOM_API_VERSIONS.bookings,
@@ -135,6 +204,8 @@ export const createCalcomBooking = async (input: {
       metadata: {
         paymentId: input.paymentId?.toString() ?? '',
         mentorUserId: input.mentorUserId,
+        actorUserId: input.actorUserId,
+        bookingAttemptId: input.bookingAttemptId,
       },
     }),
   })
@@ -209,4 +280,34 @@ export const cancelCalcomBooking = async (
     body: JSON.stringify({ cancellationReason }),
   })
   SuccessResponseSchema.parse(response)
+}
+
+const CalcomBookingDetailsSchema = z.object({
+  uid: z.string(),
+  status: z.string(),
+  start: z.iso.datetime(),
+  end: z.iso.datetime(),
+  duration: z.number().int().positive(),
+  cancelledByEmail: z.email().nullish(),
+  hosts: z.array(z.object({ email: z.email() })).default([]),
+  attendees: z.array(z.object({ email: z.email() })).default([]),
+  metadata: z.record(z.string(), z.unknown()).default({}),
+})
+
+/** Fetch the current Cal.com booking state, including cancellation attribution. */
+export const getCalcomBooking = async (bookingUid: string) => {
+  const response = await calcomRequest<unknown>(`/bookings/${bookingUid}`, {
+    apiVersion: CALCOM_API_VERSIONS.bookings,
+  })
+  const parsed = z
+    .object({
+      status: z.literal('success'),
+      data: z.union([CalcomBookingDetailsSchema, z.array(CalcomBookingDetailsSchema)]),
+    })
+    .parse(response)
+  const booking = Array.isArray(parsed.data)
+    ? parsed.data.find(item => item.uid === bookingUid)
+    : parsed.data
+  if (!booking) throw new ExternalApiError('Cal.com booking was not found')
+  return booking
 }

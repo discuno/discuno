@@ -99,15 +99,12 @@ export const requireNonAnonymousAuth = async (): Promise<{
  * @throws UnauthorizedError if missing required permissions
  *
  * @example
- * // Require ability to read availability
- * await requirePermission({ availability: ['read'] })
+ * // Require access to mentor dashboard data
+ * await requirePermission({ mentor: ['manage'] })
  *
  * @example
- * // Require multiple permissions
- * await requirePermission({
- *   availability: ['read', 'update'],
- *   eventType: ['read']
- * })
+ * // Require permission to update user-authored content
+ * await requirePermission({ content: ['update'] })
  */
 export const requirePermission = async (
   permissions: Record<string, string[]>
@@ -157,8 +154,6 @@ export const hasPermission = async (permissions: Record<string, string[]>): Prom
   try {
     const session = await getAuthSession()
     if (!session) return false
-
-    console.log('permissions', permissions)
 
     const { success } = await auth.api.userHasPermission({
       body: {

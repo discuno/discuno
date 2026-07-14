@@ -83,7 +83,11 @@ export const removeUserImage = async (userId: string): Promise<void> => {
  * Get user by username
  */
 export const getUserByUsername = async (username: string) => {
-  return await db.query.user.findFirst({
-    where: eq(user.username, username),
-  })
+  const [record] = await db
+    .select({ id: user.id })
+    .from(user)
+    .where(eq(user.username, username))
+    .limit(1)
+
+  return record ?? null
 }

@@ -50,6 +50,9 @@ export const booking = pgTable(
     meetingUrl: varchar({ length: 255 }),
     hostNoShow: boolean().default(false),
     attendeeNoShow: boolean().default(false),
+    // A late mentee cancellation is terminal but still earns the mentor's 85% share.
+    // Keeping this explicit prevents cancelled bookings from being paid accidentally.
+    mentorPayoutEligible: boolean('mentor_payout_eligible').notNull().default(false),
 
     // Event type reference
     mentorEventTypeId: integer(),

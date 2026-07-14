@@ -5,6 +5,7 @@ import { ExternalApiError } from '~/lib/errors'
 
 export const CALCOM_API_VERSIONS = {
   bookings: '2026-02-25',
+  bookingList: '2026-05-01',
   eventTypes: '2024-06-14',
   schedules: '2024-06-11',
   slots: '2024-09-04',

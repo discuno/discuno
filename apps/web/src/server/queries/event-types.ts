@@ -60,8 +60,8 @@ export const updateMentorEventType = async (
   eventTypeId: number,
   data: UpdateMentorEventType
 ): Promise<void> => {
-  await requirePermission({ mentor: ['manage'] })
-  return updateEventType(eventTypeId, data)
+  const { user } = await requirePermission({ mentor: ['manage'] })
+  return updateEventType(eventTypeId, user.id, data)
 }
 
 /**
@@ -86,7 +86,11 @@ export const getMentorEnabledEventTypesWithStripeStatus = cache(
     return result
       .filter(item => {
         if (item.customPrice && item.customPrice > 0) {
-          return item.chargesEnabled === true
+          return (
+            item.chargesEnabled === true &&
+            item.payoutsEnabled === true &&
+            item.stripeAccountStatus === 'active'
+          )
         }
         return true
       })

@@ -8,21 +8,17 @@ interface FeedShellProps {
 
 export const FeedShell = ({ searchParams }: FeedShellProps) => {
   return (
-    <main className="text-foreground min-h-screen">
-      {/* Static layout that renders immediately */}
-      <div className="relative">
-        {/* Suspense boundary for dynamic content */}
-        <Suspense
-          fallback={
-            <div className="flex items-center justify-center gap-2">
-              <Spinner />
-              <span className="text-muted-foreground">Loading...</span>
-            </div>
-          }
-        >
-          <FeedContent searchParams={searchParams} />
-        </Suspense>
-      </div>
-    </main>
+    <div className="text-foreground min-h-screen">
+      <Suspense
+        fallback={
+          <div className="flex min-h-[70vh] items-center justify-center gap-3">
+            <Spinner />
+            <span className="text-muted-foreground text-sm">Finding available mentors…</span>
+          </div>
+        }
+      >
+        <FeedContent searchParams={searchParams} />
+      </Suspense>
+    </div>
   )
 }

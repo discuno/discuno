@@ -4,7 +4,7 @@ description: 'Engineering teams can use Discuno as a reference architecture for 
 date: '2025-03-26'
 author: 'Discuno Team'
 tags: ['engineering', 'cal.com', 'stripe', 'marketplaces', 'api']
-published: true
+published: false
 ---
 
 Mentorship marketplaces require flawless coordination between scheduling and payments. Cal.com creates deep availability controls, while Stripe Connect manages payouts and compliance. Discuno stitches both systems together with opinionated defaults that you can adapt to your own stack. This guide explains the reference architecture and shares implementation tips.
@@ -50,7 +50,7 @@ await db.insert(discuno_booking).values({
 
 1. **Session pricing:** Discuno stores prices on mentorship event types and builds Stripe Checkout line items server-side.
 2. **Checkout session:** The mentee is routed through Stripe Checkout using signed URLs generated server-side with Zod validation.
-3. **Destination charge:** Checkout creates a destination charge for the mentor’s Express account while Discuno retains its configured platform share.
+3. **Platform charge:** Checkout charges on Discuno’s platform account. The mentor transfer is deliberately separate so cancellations, refunds, and disputes can be resolved before funds move.
 4. **Durable fulfillment:** Signed Checkout webhooks persist the payment once, then enqueue retry-safe Cal.com booking work through Inngest. Both immediate and asynchronous payment success events use the same fulfillment path.
 5. **Failure recovery:** If Cal.com booking creation ultimately fails, Discuno refunds the PaymentIntent and alerts support if the refund needs manual intervention.
 
@@ -61,11 +61,16 @@ await stripe.checkout.sessions.create({
   mode: 'payment',
   line_items: [{ price_data: sessionPrice, quantity: 1 }],
   payment_intent_data: {
-    transfer_data: {
-      destination: mentor.stripeAccountId,
-      amount: mentorAmountInCents,
-    },
+    transfer_group: bookingTransferGroup,
   },
+})
+
+// After the session and support window:
+await stripe.transfers.create({
+  amount: mentorAmountInCents,
+  currency: 'usd',
+  destination: mentor.stripeAccountId,
+  source_transaction: stripeChargeId,
 })
 ```
 
@@ -80,15 +85,15 @@ await stripe.checkout.sessions.create({
 ## Monitoring and Observability
 
 - **PostHog dashboards** track conversion rates from session selection to completed payment.
-- **Sentry alerts** flag integration errors, webhook failures, or API rate-limit issues to engineering teams.
+- **Administrative alerts** notify the configured support address when a failed refund, reversal, or payout requires manual review.
 - **Inngest runs** let support teams trace payment fulfillment, Cal.com booking retries, refunds, and alerts.
 
 ## Implementation Checklist
 
-- [x] Configure Cal.com webhooks with secret verification
+- [ ] Configure Cal.com production webhooks with secret verification
 - [x] Store Stripe secrets in environment variables validated by `apps/web/src/env.js`
 - [x] Seed mentors with Stripe onboarding URLs before launch
-- [ ] Confirm payout timing, platform-fee, refund, and cancellation policies before production rollout
+- [x] Confirm the 15% mentor commission, 85% mentor share, 72-hour transfer delay, and refund/cancellation policy before production rollout
 - [x] Add PostHog event tracking for `checkout_started` and `session_completed`
 
 ## When to Use Discuno as Your Baseline

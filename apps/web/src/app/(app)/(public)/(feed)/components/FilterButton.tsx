@@ -1,7 +1,7 @@
 'use client'
 
 import { Check, ChevronsUpDown, X } from 'lucide-react'
-import { useState } from 'react'
+import { startTransition, useOptimistic, useState } from 'react'
 
 import { useRouter } from 'next/navigation'
 import { Button } from '~/components/ui/button'
@@ -41,7 +41,7 @@ export const FilterButton = ({
   const foundItem = filterItems.find(item => item.value === decodedStartValue)
 
   const [open, setOpen] = useState(false)
-  const [value, setValue] = useState(foundItem?.value ?? '')
+  const [value, setOptimisticValue] = useOptimistic(foundItem?.value ?? '')
   const router = useRouter()
 
   const handleFilterChange = (itemId: number) => {
@@ -49,15 +49,19 @@ export const FilterButton = ({
     const selectedValue = selectedItem?.value ?? ''
     const url = new URL(window.location.href)
 
-    if (selectedValue === value) {
-      url.searchParams.delete(queryName)
-      setValue('')
+    const nextValue = selectedValue === value ? '' : selectedValue
+
+    if (nextValue) {
+      url.searchParams.set(queryName, nextValue)
     } else {
-      setValue(selectedValue)
-      url.searchParams.set(queryName, selectedItem?.value ?? '')
+      url.searchParams.delete(queryName)
     }
 
-    router.push(url.pathname + url.search)
+    url.hash = 'mentors'
+    startTransition(() => {
+      setOptimisticValue(nextValue)
+      router.push(url.pathname + url.search + url.hash)
+    })
     setOpen(false)
   }
 
@@ -65,21 +69,28 @@ export const FilterButton = ({
     e.stopPropagation()
     const url = new URL(window.location.href)
     url.searchParams.delete(queryName)
-    setValue('')
-    router.push(url.pathname + url.search)
+    url.hash = 'mentors'
+    startTransition(() => {
+      setOptimisticValue('')
+      router.push(url.pathname + url.search + url.hash)
+    })
   }
 
   return (
-    <div className={cn('flex items-center gap-1', className)}>
+    <div className={cn('flex min-w-0 items-center gap-1', className)}>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            className="focus:ring-primary w-full justify-between focus:ring-2 dark:bg-gray-700 dark:text-gray-200"
+            aria-label={label ?? `Select ${queryName}`}
+            className={cn(
+              'bg-card h-11 min-w-0 flex-1 justify-between px-3.5 font-medium',
+              value && 'border-primary/30 text-foreground'
+            )}
           >
-            <span className="truncate">
+            <span className={cn('truncate', !value && 'text-muted-foreground')}>
               {value
                 ? filterItems.find(item => item.value === value)?.label
                 : (label ?? `Select ${queryName}...`)}
@@ -87,9 +98,13 @@ export const FilterButton = ({
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="border/40 bg-background/60 w-[225px] p-0 backdrop-blur-md">
+        <PopoverContent
+          className="w-[var(--radix-popover-trigger-width)] min-w-[260px] p-0"
+          align="start"
+          sideOffset={6}
+        >
           <Command>
-            <CommandInput placeholder={`Search ${queryName}...`} className="bg-transparent" />
+            <CommandInput placeholder={`Search ${label?.toLowerCase() ?? queryName}…`} />
             <CommandList>
               <CommandEmpty>No {queryName} found.</CommandEmpty>
               <CommandGroup>
@@ -101,7 +116,7 @@ export const FilterButton = ({
                     onSelect={() => {
                       handleFilterChange(item.id)
                     }}
-                    className="text-foreground hover:bg-muted"
+                    className="text-foreground"
                   >
                     <Check
                       className={cn(
@@ -122,7 +137,7 @@ export const FilterButton = ({
           variant="ghost"
           size="icon"
           onClick={handleClearFilter}
-          className="text-muted-foreground hover:text-foreground h-9 w-9 shrink-0"
+          className="text-muted-foreground hover:text-foreground h-10 w-10 shrink-0"
           aria-label={`Clear ${queryName} filter`}
         >
           <X className="h-4 w-4" />

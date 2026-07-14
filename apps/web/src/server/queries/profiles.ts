@@ -1,15 +1,17 @@
 import 'server-only'
 
-import { eq } from 'drizzle-orm'
+import { and, eq, isNull, sql } from 'drizzle-orm'
 import { cache } from 'react'
 import type { FullUserProfile } from '~/app/types'
 import { getAuthSession, requirePermission } from '~/lib/auth/auth-utils'
 import { NotFoundError } from '~/lib/errors'
 import type { UserProfile } from '~/lib/schemas/db'
+import { getActivePostConditions } from '~/server/dal/posts'
 import { getProfileByUserId } from '~/server/dal/profiles'
-import { getUserById, getUserByUsername, getUserImageById } from '~/server/dal/users'
+import { getUserById, getUserImageById } from '~/server/dal/users'
 import { db } from '~/server/db'
 import * as schema from '~/server/db/schema/index'
+import { hasVerifiedSchoolEmail } from '~/server/queries/school-email-verification'
 
 /**
  * Query Layer for profiles
@@ -176,10 +178,81 @@ export const getUserId = async (): Promise<string> => {
  * Get public profile by username (no auth required)
  * Used for public mentor profile pages
  */
+export interface PublicMentorProfile extends FullUserProfile {
+  schoolEmailVerified: boolean
+}
+
 export const getPublicProfileByUsername = cache(
-  async (username: string): Promise<FullUserProfile | null> => {
-    const userRecord = await getUserByUsername(username)
-    if (!userRecord) return null
-    return getFullProfileById(userRecord.id)
+  async (username: string): Promise<PublicMentorProfile | null> => {
+    const [userData] = await db
+      .selectDistinct({
+        id: schema.user.id,
+        name: schema.user.name,
+        email: schema.user.email,
+        emailVerified: schema.user.emailVerified,
+        image: schema.user.image,
+        userProfileId: schema.userProfile.id,
+        bio: schema.userProfile.bio,
+        schoolYear: schema.userProfile.schoolYear,
+        graduationYear: schema.userProfile.graduationYear,
+        schoolName: schema.school.name,
+        schoolDomainPrefix: schema.school.domainPrefix,
+        majorName: schema.major.name,
+        calcomUserId: schema.calcomToken.calcomUserId,
+        calcomUsername: schema.calcomToken.calcomUsername,
+      })
+      .from(schema.user)
+      .innerJoin(schema.userProfile, eq(schema.user.id, schema.userProfile.userId))
+      .innerJoin(schema.post, eq(schema.user.id, schema.post.createdById))
+      .leftJoin(
+        schema.userSchool,
+        and(
+          eq(schema.user.id, schema.userSchool.userId),
+          isNull(schema.userSchool.deletedAt),
+          eq(
+            schema.userSchool.id,
+            sql`(SELECT id FROM ${schema.userSchool} WHERE user_id = ${schema.user.id} AND deleted_at IS NULL ORDER BY id LIMIT 1)`
+          )
+        )
+      )
+      .leftJoin(schema.school, eq(schema.userSchool.schoolId, schema.school.id))
+      .leftJoin(
+        schema.userMajor,
+        and(
+          eq(schema.user.id, schema.userMajor.userId),
+          isNull(schema.userMajor.deletedAt),
+          eq(
+            schema.userMajor.id,
+            sql`(SELECT id FROM ${schema.userMajor} WHERE user_id = ${schema.user.id} AND deleted_at IS NULL ORDER BY id LIMIT 1)`
+          )
+        )
+      )
+      .leftJoin(schema.major, eq(schema.userMajor.majorId, schema.major.id))
+      .leftJoin(schema.calcomToken, eq(schema.user.id, schema.calcomToken.userId))
+      .where(and(eq(schema.user.username, username), ...getActivePostConditions()))
+      .limit(1)
+
+    if (!userData) return null
+
+    return {
+      userId: userData.id,
+      userProfileId: userData.userProfileId,
+      email: null,
+      emailVerified: userData.emailVerified ?? false,
+      schoolEmailVerified: hasVerifiedSchoolEmail({
+        email: userData.email,
+        emailVerified: userData.emailVerified,
+        schoolDomainPrefix: userData.schoolDomainPrefix,
+      }),
+      bio: userData.bio,
+      schoolYear: userData.schoolYear,
+      graduationYear: userData.graduationYear,
+      image: userData.image,
+      name: userData.name,
+      school: userData.schoolName,
+      major: userData.majorName,
+      calcomUserId: userData.calcomUserId,
+      calcomUsername: userData.calcomUsername,
+    }
   }
 )

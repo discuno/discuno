@@ -2,24 +2,24 @@
   "name": "Discuno",
   "short_name": "Discuno",
   "lang": "en",
-  "description": "Get insider college advice from verified students. Connect with real mentors for guidance on courses, internships, and careers.",
+  "description": "Find student mentors for practical one-to-one guidance on college, courses, internships, and early career decisions.",
   "start_url": "/",
   "scope": "/",
   "id": "/",
   "display": "standalone",
   "display_override": ["standalone", "fullscreen"],
   "background_color": "#ffffff",
-  "theme_color": "#7c3aed",
+  "theme_color": "#1c4c92",
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/icon-192.png",
+      "src": "/logos/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icon-512.png",
+      "src": "/logos/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

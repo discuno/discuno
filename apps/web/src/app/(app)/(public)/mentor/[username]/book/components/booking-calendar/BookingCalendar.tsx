@@ -28,23 +28,6 @@ interface BookingCalendarProps {
   timeZone: string
 }
 
-interface BookingCalendarProps {
-  selectedEventType: EventType | null
-  eventTypes: EventType[]
-  selectedDate?: Date
-  today: Date
-  bookingData: BookingData
-  startMonth: Date
-  endMonth: Date
-  monthlyAvailability: Record<string, TimeSlot[]>
-  isFetchingSlots: boolean
-  onSelectEventType: (eventType: EventType | null) => void
-  onChangeMonth: (month: Date) => void
-  onSelectDate: (date?: Date) => void
-  onSelectTimeSlot: (timeSlot: string | null) => void
-  timeZone: string
-}
-
 export const BookingCalendar = ({
   selectedEventType,
   eventTypes,
@@ -139,7 +122,7 @@ export const BookingCalendar = ({
             {/* Session Type Select (Desktop) */}
             <div className="hidden md:block">
               <Label className="text-foreground/80 mb-3 block text-sm font-medium">
-                Session Type
+                Session type
               </Label>
               <EventTypeSelector
                 selectedEventType={selectedEventType}
@@ -152,7 +135,7 @@ export const BookingCalendar = ({
             {selectedEventType && (
               <div className="animate-in fade-in slide-in-from-left-4 duration-500">
                 <Label className="text-foreground/80 mb-4 block text-sm font-medium">
-                  Select Date
+                  Choose a date
                 </Label>
                 {/* Clean, borderless calendar */}
                 <div className="flex justify-center md:block">
@@ -171,7 +154,7 @@ export const BookingCalendar = ({
                 {/* Mobile: Native Time Select */}
                 <div className="mt-6 md:hidden">
                   <Label className="text-foreground/80 mb-3 block text-sm font-medium">
-                    Select Time
+                    Choose a time
                   </Label>
                   <NativeSelect
                     disabled={!selectedDate || isFetchingSlots}
@@ -183,12 +166,12 @@ export const BookingCalendar = ({
                   >
                     <NativeSelectOption value="" disabled>
                       {!selectedDate
-                        ? 'Choose a date first...'
+                        ? 'Choose a date first'
                         : isFetchingSlots
-                          ? 'Loading times...'
+                          ? 'Loading times…'
                           : slotsForSelectedDate.length === 0
                             ? 'No times available'
-                            : 'Select a time...'}
+                            : 'Choose a time'}
                     </NativeSelectOption>
                     {slotsForSelectedDate.map(slot => (
                       <NativeSelectOption key={slot.time} value={slot.time}>
@@ -205,7 +188,7 @@ export const BookingCalendar = ({
                         size="lg"
                         onClick={() => onSelectTimeSlot(mobileSelectedTimeSlot)}
                       >
-                        Confirm & Continue
+                        Continue
                       </Button>
                     </div>
                   )}
@@ -223,7 +206,7 @@ export const BookingCalendar = ({
         {selectedEventType && (
           <div className="bg-muted/10 hidden flex-1 p-6 md:block md:min-w-[300px]">
             <div className="flex h-full flex-col">
-              <Label className="mb-4 block text-base font-medium">Available Times</Label>
+              <Label className="mb-4 block text-base font-medium">Choose a time</Label>
               <p className="text-muted-foreground mb-4 text-xs font-medium">
                 {selectedDate
                   ? format(selectedDate, 'EEEE, MMMM do')

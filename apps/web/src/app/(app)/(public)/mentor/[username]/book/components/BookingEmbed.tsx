@@ -2,8 +2,7 @@
 
 import { TZDate } from '@date-fns/tz'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { addDays, endOfMonth, endOfWeek, format, startOfMonth, startOfWeek } from 'date-fns'
-import { CalendarIcon } from 'lucide-react'
+import { addDays, endOfMonth, format, startOfMonth } from 'date-fns'
 import { useCallback, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { BookingSidebar } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingSidebar'
@@ -12,15 +11,12 @@ import type { BookingFormInput } from '~/app/(app)/(public)/mentor/[username]/bo
 import {
   createBooking as createBookingAction,
   createStripeCheckoutSession,
-  fetchEventTypes as fetchEventTypesAction,
   fetchAvailableSlots as fetchSlotsAction,
   type EventType,
 } from '~/app/(app)/(public)/mentor/[username]/book/actions'
 import { AttendeeDetailsStep } from '~/app/(app)/(public)/mentor/[username]/book/components/AttendeeDetailsStep'
-import { AuthStep } from '~/app/(app)/(public)/mentor/[username]/book/components/AuthStep'
 import { BookingCalendar } from '~/app/(app)/(public)/mentor/[username]/book/components/booking-calendar/BookingCalendar'
 import { BookingConfirmationStep } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingConfirmationStep'
-import { BookingEmbedSkeleton } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingEmbedSkeleton'
 import type { BookingData } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingModal'
 
 import { useSession } from '~/lib/auth-client'
@@ -29,10 +25,9 @@ import { BadRequestError, ExternalApiError } from '~/lib/errors'
 export interface BookingFormData {
   name: string
   email: string
-  phone?: string
 }
 
-type BookingStep = 'calendar' | 'auth' | 'booking' | 'confirmation'
+type BookingStep = 'calendar' | 'booking' | 'confirmation'
 
 export const BookingEmbed = ({
   bookingData,
@@ -41,21 +36,19 @@ export const BookingEmbed = ({
   bookingData: BookingData
   isFullPage?: boolean
 }) => {
-  const { calcomUsername } = bookingData
   const timeZone = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC', [])
   const today = useMemo(() => new TZDate(new Date(), timeZone), [timeZone])
   const { data: session } = useSession()
 
   // State management
   const [selectedEventTypeOverride, setSelectedEventTypeOverride] = useState<EventType | null>(null)
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(() => today)
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>()
   const [currentMonth, setCurrentMonth] = useState(today)
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string | null>(null)
   const [currentStep, setCurrentStep] = useState<BookingStep>('calendar')
   const [formData, setFormData] = useState<BookingFormData>({
     name: '',
     email: '',
-    phone: '',
   })
 
   // Date range for calendar
@@ -68,20 +61,10 @@ export const BookingEmbed = ({
   )
 
   // Queries
-  const {
-    data: eventTypes = [],
-    isPending: eventTypesLoading,
-    error: eventTypesError,
-  } = useQuery({
-    queryKey: ['event-types', calcomUsername],
-    queryFn: () => fetchEventTypesAction(calcomUsername),
-    staleTime: 1000 * 60 * 5, // 5 minutes
-  })
+  const { eventTypes } = bookingData
 
   // Default to the first event type while preserving an explicit user selection.
   const selectedEventType = selectedEventTypeOverride ?? eventTypes[0] ?? null
-  const displayedStep: BookingStep =
-    currentStep === 'auth' && session && !session.user.isAnonymous ? 'booking' : currentStep
   const displayedFormData = useMemo<BookingFormData>(
     () => ({
       ...formData,
@@ -100,10 +83,8 @@ export const BookingEmbed = ({
     queryKey: ['available-slots', currentEventId, format(currentMonth, 'yyyy-MM')],
     queryFn: () => {
       if (!currentEventId) throw new BadRequestError('No event type selected')
-      const monthStart = startOfMonth(currentMonth)
-      const monthEnd = endOfMonth(currentMonth)
-      const startDate = startOfWeek(monthStart)
-      const endDate = endOfWeek(monthEnd)
+      const startDate = startOfMonth(currentMonth)
+      const endDate = endOfMonth(currentMonth)
 
       console.log('Client TimeZone:', timeZone)
       console.log('Fetching slots from (client):', startDate.toISOString())
@@ -112,29 +93,20 @@ export const BookingEmbed = ({
       return fetchSlotsAction(currentEventId, startDate, endDate, timeZone)
     },
     staleTime: 1000 * 60, // 1 minute
-    enabled: displayedStep === 'calendar' && !!currentEventId,
+    enabled: currentStep === 'calendar' && !!currentEventId,
   })
 
   // Event handlers
   const handleEventTypeSelect = useCallback((eventType: EventType | null) => {
     setSelectedEventTypeOverride(eventType)
+    setSelectedDate(undefined)
     setSelectedTimeSlot(null)
   }, [])
 
-  const handleTimeSlotSelect = useCallback(
-    (timeSlot: string | null) => {
-      setSelectedTimeSlot(timeSlot)
-      if (timeSlot) {
-        // Check if user is anonymous - if so, show auth step
-        if (session?.user.isAnonymous) {
-          setCurrentStep('auth')
-        } else {
-          setCurrentStep('booking')
-        }
-      }
-    },
-    [session]
-  )
+  const handleTimeSlotSelect = useCallback((timeSlot: string | null) => {
+    setSelectedTimeSlot(timeSlot)
+    if (timeSlot) setCurrentStep('booking')
+  }, [])
 
   // Mutations
   const createBookingMutation = useMutation({
@@ -148,18 +120,12 @@ export const BookingEmbed = ({
 
       // For paid sessions, redirect to Stripe Hosted Checkout
       if ((selectedEventType.price ?? 0) > 0) {
-        toast.loading('Redirecting to secure checkout...')
-
         const bookingPayload: BookingFormInput = {
           eventTypeId: selectedEventType.id,
           startTimeIso: startTime.toISOString(),
           attendeeName: displayedFormData.name,
           attendeeEmail: displayedFormData.email,
-          attendeePhone: displayedFormData.phone,
           mentorUsername: bookingData.username,
-          mentorUserId: bookingData.userId,
-          price: selectedEventType.price ?? 0,
-          currency: selectedEventType.currency ?? 'USD',
           timeZone: timeZone,
         }
 
@@ -175,7 +141,7 @@ export const BookingEmbed = ({
 
       // For free bookings, create the booking directly
       await createBookingAction({
-        username: calcomUsername,
+        username: bookingData.username,
         eventTypeId: selectedEventType.id,
         startTime: startTime.toISOString(),
         attendee: {
@@ -183,12 +149,10 @@ export const BookingEmbed = ({
           email: displayedFormData.email,
           timeZone,
         },
-        mentorUserId: bookingData.userId,
       })
     },
     onSuccess: () => {
       if ((selectedEventType?.price ?? 0) === 0) {
-        toast.success('Booking successful! You will receive a confirmation email shortly.')
         setCurrentStep('confirmation')
       }
     },
@@ -202,28 +166,9 @@ export const BookingEmbed = ({
     throw new ExternalApiError(error.message)
   }
 
-  // Loading states
-  if (eventTypesLoading) {
-    return <BookingEmbedSkeleton />
-  }
-
-  if (eventTypesError) {
-    return (
-      <div className="flex min-h-[600px] items-center justify-center">
-        <div className="text-center">
-          <CalendarIcon className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
-          <h3 className="mb-2 text-lg font-semibold">Booking Unavailable</h3>
-          <p className="text-muted-foreground">
-            Failed to load booking calendar. Please try again later.
-          </p>
-        </div>
-      </div>
-    )
-  }
-
   const renderContent = () => (
     <div className="bg-background flex min-h-full w-full flex-col">
-      {displayedStep === 'calendar' ? (
+      {currentStep === 'calendar' ? (
         <BookingCalendar
           selectedEventType={selectedEventType}
           eventTypes={eventTypes}
@@ -240,24 +185,11 @@ export const BookingEmbed = ({
           onSelectTimeSlot={handleTimeSlotSelect}
           timeZone={timeZone}
         />
-      ) : displayedStep === 'auth' && selectedEventType && selectedTimeSlot && selectedDate ? (
-        <AuthStep
-          selectedEventType={selectedEventType}
-          selectedTimeSlot={selectedTimeSlot}
-          selectedDate={selectedDate}
-          mentorUsername={bookingData.username}
-          formData={displayedFormData}
-          onBack={() => setCurrentStep('calendar')}
-          onSuccess={() => {
-            console.log('[BookingEmbed] AuthStep reported success')
-            setCurrentStep('booking')
-          }}
-        />
-      ) : displayedStep === 'booking' ? (
+      ) : currentStep === 'booking' ? (
         <AttendeeDetailsStep
           selectedEventType={selectedEventType}
-          selectedDate={selectedDate}
           selectedTimeSlot={selectedTimeSlot}
+          timeZone={timeZone}
           formData={displayedFormData}
           setFormData={setFormData}
           setCurrentStep={setCurrentStep}
@@ -270,21 +202,15 @@ export const BookingEmbed = ({
   )
 
   if (isFullPage) {
-    // Import dynamically or assume it's available (since I can't strict mode imports in this tool easily without top-level)
-    // Actually I need to add import at top. I'll rely on the previous content helper to be just a function.
-    // I can't easily add top-level imports with replace_file_content if I only replace specific specific section.
-    // I'm replacing lines 43-end, so the top level imports (1-42) are untouched.
-    // I need to add BookingSidebar import.
-    // I'll do a MultiReplace to add import and change body.
     return (
-      <div className="flex h-[800px] w-full flex-col overflow-hidden rounded-2xl border shadow-xl lg:flex-row">
+      <div className="bg-card flex h-[800px] w-full flex-col overflow-hidden rounded-2xl border shadow-sm lg:flex-row">
         <div className="bg-muted/30 hidden w-full shrink-0 border-r lg:block lg:w-[320px] xl:w-[380px]">
           <BookingSidebar
             bookingData={bookingData}
             selectedEventType={selectedEventType}
             selectedDate={selectedDate}
             selectedTimeSlot={selectedTimeSlot}
-            currentStep={displayedStep}
+            currentStep={currentStep}
             timeZone={timeZone}
           />
         </div>

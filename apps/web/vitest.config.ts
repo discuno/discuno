@@ -29,7 +29,6 @@ export default defineConfig({
         '**/*.d.ts',
         '**/*.config.*',
         '**/instrumentation*.ts',
-        'sentry*.config.ts',
         'src/env.js',
         'drizzle/',
         '**/*.test.*',

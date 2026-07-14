@@ -20,47 +20,43 @@ import { Skeleton } from '~/components/ui/skeleton'
 // Static navigation items that don't depend on user data
 const staticNavItems: NavMainProps['items'] = [
   {
-    title: 'Home',
+    title: 'Back to Discuno',
     url: '/',
     icon: 'ArrowLeft',
   },
   {
-    title: 'Meeting Configuration',
+    title: 'Mentoring',
     url: '#',
     icon: 'Settings2',
-    sectionLabel: 'Meeting Setup',
+    sectionLabel: 'Mentoring',
     items: [
-      {
-        title: 'Availability',
-        url: '/settings/availability',
-        icon: 'Calendar',
-        description: "Set when you're free",
-      },
-      {
-        title: 'Event Types',
-        url: '/settings/event-types',
-        icon: 'BookOpen',
-        description: 'Configure session types',
-      },
-    ],
-  },
-  {
-    title: 'Manage',
-    url: '#',
-    icon: 'Settings2',
-    sectionLabel: 'Manage',
-    items: [
-      {
-        title: 'Profile',
-        url: '/settings/profile/edit',
-        icon: 'User',
-        description: 'Edit your profile',
-      },
       {
         title: 'Bookings',
         url: '/settings/bookings',
         icon: 'CalendarCheck',
-        description: 'View your sessions',
+      },
+      {
+        title: 'Availability',
+        url: '/settings/availability',
+        icon: 'Calendar',
+      },
+      {
+        title: 'Session types',
+        url: '/settings/event-types',
+        icon: 'BookOpen',
+      },
+    ],
+  },
+  {
+    title: 'Profile',
+    url: '#',
+    icon: 'User',
+    sectionLabel: 'Profile',
+    items: [
+      {
+        title: 'Public profile',
+        url: '/settings/profile/edit',
+        icon: 'User',
       },
     ],
   },
@@ -75,14 +71,17 @@ const DynamicSidebarContent = async () => {
 
   const homeItem = staticNavItems[0]
   const navMain: NavMainProps['items'] = [
-    ...(homeItem ? [homeItem] : []),
     {
-      title: onboardingStatus.isComplete ? 'Profile Settings' : 'Activate Profile',
+      title: onboardingStatus.isComplete ? 'Overview' : 'Setup checklist',
       url: '/settings',
       icon: 'Rocket',
-      statusDot: onboardingStatus.isComplete ? 'active' : 'inactive',
+      badge: onboardingStatus.isComplete
+        ? undefined
+        : `${onboardingStatus.completedSteps}/${onboardingStatus.totalSteps}`,
+      badgeVariant: 'secondary',
       isOnboarding: !onboardingStatus.isComplete,
     },
+    ...(homeItem ? [homeItem] : []),
     ...staticNavItems.slice(1), // Rest of the static items
   ]
 

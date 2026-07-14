@@ -21,7 +21,7 @@ export const AppSidebarHeader = () => {
         </div>
         <div className="grid flex-1 text-left text-sm leading-tight">
           <span className="truncate font-semibold">Discuno</span>
-          <span className="truncate text-xs">Mentor Dashboard</span>
+          <span className="truncate text-xs">Mentor workspace</span>
         </div>
       </Link>
     </SidebarMenuButton>

@@ -8,8 +8,8 @@ import rehypeHighlight from 'rehype-highlight'
 import rehypeSlug from 'rehype-slug'
 import rehypeAutolinkHeadings from 'rehype-autolink-headings'
 import remarkGfm from 'remark-gfm'
-import { getAllPostSlugs, getPostBySlug, formatDate } from '~/lib/blog'
-import { createMetadata, siteConfig } from '~/lib/metadata'
+import { formatDate, getAllPosts, getPostBySlug } from '~/lib/blog'
+import { absoluteUrl, createMetadata, siteConfig } from '~/lib/metadata'
 import { mdxComponents } from '~/components/shared/mdx-components'
 
 import 'highlight.js/styles/github-dark.css'
@@ -19,9 +19,9 @@ type Props = {
 }
 
 export const generateStaticParams = async () => {
-  const slugs = getAllPostSlugs()
-  return slugs.map(slug => ({
-    slug,
+  const posts = getAllPosts()
+  return posts.map(post => ({
+    slug: post.slug,
   }))
 }
 
@@ -29,16 +29,23 @@ export const generateMetadata = async ({ params }: Props): Promise<Metadata> => 
   const { slug } = await params
   const post = getPostBySlug(slug)
 
-  if (!post) {
-    return {}
+  if (!post || !post.published) {
+    return {
+      title: 'Article not found',
+      robots: {
+        index: false,
+        follow: false,
+      },
+    }
   }
 
   const publishedTime = new Date(post.date).toISOString()
-  const url = `${siteConfig.url}/blog/${slug}`
+  const url = `/blog/${slug}`
 
   return createMetadata({
     title: post.title,
     description: post.description,
+    authors: [{ name: post.author }],
     openGraph: {
       title: post.title,
       description: post.description,
@@ -81,13 +88,15 @@ const BlogPostPage = async ({ params }: Props) => {
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'BlogPosting',
+    '@id': absoluteUrl(`/blog/${slug}#article`),
+    url: absoluteUrl(`/blog/${slug}`),
     headline: post.title,
     description: post.description,
-    image: post.image ? `${siteConfig.url}${post.image}` : siteConfig.ogImage,
+    image: absoluteUrl(post.image ?? siteConfig.ogImage),
     datePublished: post.date,
-    dateModified: post.date,
+    dateModified: post.lastModified.toISOString(),
     author: {
-      '@type': 'Person',
+      '@type': post.author === 'Discuno Team' ? 'Organization' : 'Person',
       name: post.author,
     },
     publisher: {
@@ -95,14 +104,16 @@ const BlogPostPage = async ({ params }: Props) => {
       name: siteConfig.name,
       logo: {
         '@type': 'ImageObject',
-        url: `${siteConfig.url}/logos/black-icon-logo.svg`,
+        url: absoluteUrl('/logos/black-icon-logo.png'),
       },
     },
     mainEntityOfPage: {
       '@type': 'WebPage',
-      '@id': `${siteConfig.url}/blog/${slug}`,
+      '@id': absoluteUrl(`/blog/${slug}`),
     },
     keywords: post.tags.join(', '),
+    isAccessibleForFree: true,
+    inLanguage: 'en-US',
   }
 
   return (

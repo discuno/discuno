@@ -5,10 +5,11 @@ import { revalidatePath } from 'next/cache'
 import type { Availability, DateOverride, WeeklySchedule } from '~/app/types/availability'
 import { availabilitySchema, dateOverrideSchema } from '~/app/types/availability'
 import { env } from '~/env'
-import { cancelCalcomBooking, getCalcomSchedules, updateCalcomSchedule } from '~/lib/calcom'
+import { getCalcomSchedules, updateCalcomSchedule } from '~/lib/calcom'
 import type { DayOfWeek } from '~/lib/calcom/schemas'
-import { MINIMUM_PAID_BOOKING_PRICE } from '~/lib/constants'
+import { MAXIMUM_PAID_BOOKING_PRICE, MINIMUM_PAID_BOOKING_PRICE } from '~/lib/constants'
 import { type UpdateMentorEventType } from '~/lib/schemas/db'
+import { cancelOwnedMentorBooking } from '~/lib/services/booking-service'
 import { updateMentorEventType } from '~/lib/services/calcom-service'
 import { upsertMentorStripeAccount } from '~/lib/services/stripe-service'
 import { stripe } from '~/lib/stripe'
@@ -359,6 +360,12 @@ export const updateMentorEventTypePreferences = async (
         error: 'The minimum price for a paid booking is $5.00.',
       }
     }
+    if (data.customPrice && data.customPrice > MAXIMUM_PAID_BOOKING_PRICE) {
+      return {
+        success: false,
+        error: 'The maximum session price is $10,000.00.',
+      }
+    }
     await updateMentorEventType(eventTypeId, {
       ...data,
     })
@@ -380,8 +387,6 @@ export const updateMentorEventTypePreferences = async (
  */
 export const createStripeConnectAccount = async (): Promise<{
   success: boolean
-  accountId?: string
-  onboardingUrl?: string
   error?: string
 }> => {
   // Permission check removed - protected by query layer (getFullProfile)
@@ -406,11 +411,11 @@ export const createStripeConnectAccount = async (): Promise<{
     const existingAccount = await getMentorStripeAccount()
 
     if (existingAccount) {
-      // If account exists but is not active, return account ID for embedded onboarding
+      // If account exists but is not active, let the caller request a fresh
+      // server-authorized onboarding link for the stored account.
       if (existingAccount.stripeAccountStatus !== 'active') {
         return {
           success: true,
-          accountId: existingAccount.stripeAccountId,
         }
       } else {
         return {
@@ -456,7 +461,6 @@ export const createStripeConnectAccount = async (): Promise<{
 
     return {
       success: true,
-      accountId: account.id,
     }
   } catch (error) {
     console.error('Error creating Stripe Connect account:', error)
@@ -477,7 +481,7 @@ export const getMentorStripeStatus = async (): Promise<{
     onboardingCompleted: boolean
     payoutsEnabled: boolean
     chargesEnabled: boolean
-    accountId?: string
+    stripeAccountStatus: 'pending' | 'active' | 'restricted' | 'inactive' | null
   }
   error?: string
 }> => {
@@ -492,6 +496,7 @@ export const getMentorStripeStatus = async (): Promise<{
           onboardingCompleted: false,
           payoutsEnabled: false,
           chargesEnabled: false,
+          stripeAccountStatus: null,
         },
       }
     }
@@ -500,10 +505,13 @@ export const getMentorStripeStatus = async (): Promise<{
       success: true,
       data: {
         hasAccount: true,
-        onboardingCompleted: stripeAccount.chargesEnabled,
+        onboardingCompleted:
+          stripeAccount.stripeAccountStatus === 'active' &&
+          stripeAccount.chargesEnabled &&
+          stripeAccount.payoutsEnabled,
         payoutsEnabled: stripeAccount.payoutsEnabled,
         chargesEnabled: stripeAccount.chargesEnabled,
-        accountId: stripeAccount.stripeAccountId,
+        stripeAccountStatus: stripeAccount.stripeAccountStatus,
       },
     }
   } catch (error) {
@@ -520,23 +528,31 @@ export const getMentorStripeStatus = async (): Promise<{
  * Redirects to Stripe-hosted onboarding flow
  */
 export const createStripeAccountLink = async ({
-  accountId,
   type = 'account_onboarding',
   collectionOptions = 'eventually_due',
 }: {
-  accountId: string
   type?: 'account_onboarding' | 'account_update'
   collectionOptions?: 'currently_due' | 'eventually_due'
-}): Promise<{
+} = {}): Promise<{
   success: boolean
   url?: string
   error?: string
 }> => {
   try {
+    // SECURITY: Resolve the account through the protected query. Never trust
+    // an account ID supplied by a client invoking this Server Action.
+    const stripeAccount = await getMentorStripeAccount()
+    if (!stripeAccount) {
+      return {
+        success: false,
+        error: 'Stripe account not found',
+      }
+    }
+
     const baseUrl = env.BETTER_AUTH_URL ?? 'http://localhost:3000'
 
     const accountLink = await stripe.accountLinks.create({
-      account: accountId,
+      account: stripeAccount.stripeAccountId,
       refresh_url: `${baseUrl}/settings/event-types?stripe_refresh=true`,
       return_url: `${baseUrl}/settings/event-types?stripe_setup=success`,
       type,
@@ -562,15 +578,23 @@ export const createStripeAccountLink = async ({
  * Create Stripe Login Link for Express Dashboard
  * Redirects to Stripe-hosted Express Dashboard
  */
-export const createStripeLoginLink = async (
-  accountId: string
-): Promise<{
+export const createStripeLoginLink = async (): Promise<{
   success: boolean
   url?: string
   error?: string
 }> => {
   try {
-    const loginLink = await stripe.accounts.createLoginLink(accountId)
+    // SECURITY: Resolve the account through the protected query. Positional
+    // arguments sent by a forged client request are intentionally ignored.
+    const stripeAccount = await getMentorStripeAccount()
+    if (!stripeAccount) {
+      return {
+        success: false,
+        error: 'Stripe account not found',
+      }
+    }
+
+    const loginLink = await stripe.accounts.createLoginLink(stripeAccount.stripeAccountId)
 
     return {
       success: true,
@@ -630,7 +654,7 @@ export const cancelBooking = async ({
   error?: string
 }> => {
   try {
-    await cancelCalcomBooking(bookingUid, cancellationReason)
+    await cancelOwnedMentorBooking(bookingUid, cancellationReason)
 
     revalidatePath('/settings/bookings')
 
@@ -700,14 +724,6 @@ export const getMentorOnboardingStatus = async (): Promise<{
     !!eventTypesResult.data &&
     eventTypesResult.data.some(et => et.isEnabled && et.customPrice !== null)
 
-  // Check if mentor has any free event types enabled
-  const hasFreeEventTypes =
-    eventTypesResult.success &&
-    !!eventTypesResult.data &&
-    eventTypesResult.data.some(
-      et => et.isEnabled && (et.customPrice === null || et.customPrice === 0)
-    )
-
   // Check if mentor has any paid event types enabled
   const hasPaidEventTypes =
     eventTypesResult.success &&
@@ -716,11 +732,14 @@ export const getMentorOnboardingStatus = async (): Promise<{
 
   // Check Stripe setup
   const stripeStatus = await getMentorStripeStatus()
-  const hasStripe = stripeStatus.success && !!stripeStatus.data?.chargesEnabled
+  const hasStripe =
+    stripeStatus.success &&
+    stripeStatus.data?.stripeAccountStatus === 'active' &&
+    !!stripeStatus.data.chargesEnabled &&
+    !!stripeStatus.data.payoutsEnabled
 
-  // Stripe is only required if mentor has ONLY paid event types (no free ones)
-  // If they have at least one free event type, they can be active without Stripe
-  const stripeRequired = hasPaidEventTypes && !hasFreeEventTypes
+  // Every enabled paid event type must have a fully active destination account.
+  const stripeRequired = hasPaidEventTypes
 
   const steps = [
     {

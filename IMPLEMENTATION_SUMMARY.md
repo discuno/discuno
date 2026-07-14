@@ -1,265 +1,152 @@
-# Implementation Summary: PostHog Events + Inngest Integration
+# 2026 Payments and Booking Implementation Snapshot
 
-## ✅ What Was Implemented
+**Snapshot date:** July 14, 2026
 
-### 1. PostHog Event Tracking
+This document describes the payment and booking architecture implemented in the current branch. It is not a production-readiness certificate: database schema changes, external webhook configuration, Inngest registration, and end-to-end preview validation must be completed before the flow is promoted to production.
 
-Added server-side PostHog event tracking for key user actions:
+Current branch verification on July 14, 2026:
 
-**Events Tracked:**
+- Type checking, linting, formatting, all 76 unit tests, and the Next.js production build pass. The build emits 41 application routes.
+- The guarded Railway test database suite passes, the preview schema is applied, and a second preview schema push reports no changes.
+- All eight preview integration configuration checks pass. Signed Stripe platform, Stripe Connect, and Cal.com preview webhook smokes return success on both the immutable deployment URL and `preview.discuno.com`.
+- The deployed Inngest route exposes three product functions and five Cloud-visible configurations after the two generated failure handlers. Its local signed readiness response passes, but Inngest Cloud rejects the stored signing key as stale and the app is not registered. Installing the official Inngest Vercel integration, issuing fresh keys, and verifying Cloud invocation remains a production blocker.
+- A real Stripe test-mode paid booking has not yet completed the full Checkout → webhook → Inngest → Cal.com → refund/payout matrix. Production promotion remains gated on that exercise.
 
-- `user_signed_up` - When user completes registration (`apps/web/src/lib/auth.ts:204`)
-- `booking_created` - When Cal.com booking is created (`apps/web/src/app/api/webhooks/cal/route.ts:211`)
-- `booking_cancelled` - When booking is cancelled (`apps/web/src/app/api/webhooks/cal/route.ts:137`)
-- `meeting_started` - When meeting begins (`apps/web/src/app/api/webhooks/cal/route.ts:111`)
-- `meeting_ended` - When meeting completes (`apps/web/src/app/api/webhooks/cal/route.ts:133`)
-- `payment_succeeded` - When Stripe payment completes (via Inngest)
+## Business policy encoded in the application
 
-**Created:**
+- The mentee pays the mentor's listed session price plus applicable tax. Discuno adds no buyer service fee.
+- Discuno retains a 15% mentor-side commission; the mentor share is 85% of the listed price.
+- Stripe Checkout creates a platform charge. It does not create an immediate destination transfer.
+- The mentor transfer becomes eligible after the scheduled session end plus 72 hours for a completed session, an attendee no-show, an otherwise accepted booking that reached its end, or a late mentee cancellation explicitly marked payout-eligible.
+- Mentor cancellations and mentor no-shows receive a full refund. Mentee cancellations at least 24 hours before the start receive a full refund and set payout eligibility false.
+- A mentee cancellation less than 24 hours before the start is non-refundable and sets payout eligibility true, preserving the mentor's 85% transfer after the normal scheduled-end-plus-72-hour window. The Cal cancellation event envelope's `createdAt` determines this inclusive 24-hour boundary.
+- Refunds, disputes, administrative holds, and manual-review state block automatic mentor transfers. A Stripe refund in `requires_action` is a hard hold that reverses any existing transfer and requires manual review.
 
-- `apps/web/src/lib/posthog-server.ts` - Server-side PostHog client with `trackServerEvent()` and `identifyUser()`
+The reusable policy calculations live in `apps/web/src/lib/stripe/marketplace.ts`.
 
-### 2. Stripe Webhook Best Practices
+## Paid Checkout
 
-Refactored checkout webhook handler to follow production best practices:
+The booking action at `apps/web/src/app/(app)/(public)/mentor/[username]/book/actions.ts` treats the server as the source of truth:
 
-**✅ Transactional Core (Fast):**
+1. It validates the requested mentor username, event type, start time, and attendee details.
+2. It resolves the mentor, Cal.com event type, listed price, currency, duration, and Stripe connected account from stored data.
+3. It verifies the mentor's Stripe account is active and supports both charges and payouts.
+4. It calculates the 15% commission and 85% mentor share on the server.
+5. It creates a Stripe Checkout Session for a platform charge, using a deterministic booking-attempt idempotency key and transfer group.
 
-- Validates checkout session metadata
-- Persists payment to database with **idempotency** (`onConflictDoNothing`)
-- Returns 200 OK to Stripe immediately (~100ms response time)
+The client does not author price, currency, fee, payout amount, or connected-account values. Checkout metadata is schema-validated again during fulfillment, including arithmetic checks against the session amount.
 
-**✅ Deferred Side Effects (Inngest):**
+Each authenticated or anonymous Discuno user can have a `stripe_customer_id` on `discuno_user`. `apps/web/src/lib/stripe/customer.ts` creates or reuses that user-bound customer and does not search for an existing Stripe Customer by email. Anonymous-to-permanent account linking migrates the binding when appropriate.
 
-- Triggers Inngest function for all side effects
-- No blocking operations in webhook handler
+## Durable fulfillment and Cal.com booking reconciliation
 
-**✅ Code Quality:**
+The Stripe webhook at `apps/web/src/app/api/webhooks/stripe/route.ts` accepts paid Checkout completion, including delayed-payment success, and persists the canonical payment before queuing `stripe/checkout.completed`.
 
-- Structured JSON logs (easily ingested by Datadog/Logtail)
-- Consistent log namespacing (`[CheckoutWebhook]`, `[SideEffects]`)
-- Isolated try/catch blocks for better error tracking
-- Proper HTTP Response objects
+`process-checkout-side-effects` in `apps/web/src/inngest/functions.ts` performs the Cal.com booking work as retryable steps. Paid Cal.com creates include the Discuno payment ID in booking metadata. Before a retry sends another create request, `findCalcomBookingByPaymentId` queries recent bookings by attendee and event type and returns an existing metadata match. This is the recovery mechanism for an ambiguous Cal.com create response.
 
-**Files Updated:**
+If checkout fulfillment exhausts its retries, the failure handler waits briefly and checks the payment and local booking state written by the Cal.com webhook or prior steps. Each attempted create already reconciled Cal.com before sending another request. The failure handler preserves a booking it can identify; otherwise it requests a payment refund and sends the failure notification. An unsuccessful refund is alerted for operational attention and returned as unsuccessful.
 
-- `apps/web/src/app/(app)/(public)/mentor/[username]/book/actions.ts`
-- `apps/web/src/app/api/webhooks/stripe/route.ts`
-- `apps/web/src/lib/stripe/refund.ts` (extracted refund logic)
+Cal.com webhooks validate organizer, mentor, attendee, event-type, and payment relationships before binding paid booking state locally. For `BOOKING_CANCELLED`, the handler uses the signed event envelope's `createdAt` rather than webhook delivery time, stores the resulting `mentor_payout_eligible` decision, and then either refunds or schedules the normal delayed payout.
 
-### 3. Inngest Integration
+Free bookings do not enter the Stripe flow. Their public booking action is protected by separate actor and IP rate limits, and a deterministic attempt ID is reconciled against Cal.com metadata before a retry creates another booking.
 
-Replaced fire-and-forget async calls with proper queue system:
+## Payment state and ledgers
 
-**Created:**
+`apps/web/src/server/db/schema/payment.ts` defines one current payment snapshot plus normalized Stripe object history:
 
-- `apps/web/src/inngest/client.ts` - Inngest client configuration
-- `apps/web/src/inngest/functions.ts` - `processCheckoutSideEffects` function
-- `apps/web/src/app/api/inngest/route.ts` - Inngest API endpoint
+- `discuno_payment` stores the canonical Checkout/PaymentIntent/charge references, mentor and amount snapshot, Cal.com booking UID, latest transfer and refund state, eligibility date, and manual-review flags.
+- `discuno_booking.mentor_payout_eligible` is false by default and is set true only when a late mentee cancellation remains payable; refundable cancellations explicitly keep it false.
+- `discuno_payment_transfer` stores each Stripe transfer generation and any reversal.
+- `discuno_payment_refund` stores every Stripe refund, including partial or repeated refunds.
+- `discuno_payment_dispute` stores every Stripe dispute and its reconciled active, lost, or released state.
 
-**Function Features:**
+The ledger tables are required for auditability and for handling multiple Stripe objects against one charge. Do not replace them with only the latest IDs on `discuno_payment`.
 
-- ✅ Automatic retries (3 attempts with exponential backoff)
-- ✅ Step-by-step execution with durability
-- ✅ Built-in observability (Inngest dashboard)
-- ✅ Event cancellation support
-- ✅ Isolated error handling per step
+## Transfers, refunds, and disputes
 
-**Steps:**
+`apps/web/src/lib/services/payment-service.ts` is the financial mutation boundary.
 
-1. Track payment in PostHog
-2. Create Cal.com booking
-3. Refund if booking fails
-4. Alert admin if refund fails
-5. Update payment status
-6. Send failure email to customer
+- A PostgreSQL advisory transaction lock serializes operations for one payment.
+- Before creating a transfer, the service reconciles Stripe transfers using the transfer group, payment metadata, destination account, source charge, amount, and currency. This remains effective after Stripe's idempotency-key retention window.
+- A mentor transfer uses the platform charge as its source transaction and sends the stored 85% mentor amount. Transfer generations permit a valid payout to be recreated after a prior transfer was reversed.
+- Refund processing reconciles Stripe's charge/refund state and records each refund in the refund ledger.
+- Pending and `requires_action` refunds prevent payout and reverse any existing mentor transfer. `requires_action` additionally marks the payment for manual review until the refund is safely resolved.
+- An active or lost dispute holds the payment and reverses any remaining mentor transfer. When every dispute is released, an otherwise eligible payout can be queued again.
+- Failed reversals, ambiguous partial-refund situations, or other unsafe states mark the payment for manual review and prevent automatic transfer.
 
-**Environment Variables Added:**
+Call this payment service from booking, webhook, or administrative flows. Bypassing it would also bypass locking, Stripe reconciliation, ledgers, and common idempotency behavior.
 
-- `INNGEST_SIGNING_KEY` (added to `apps/web/src/env.js`)
-- `INNGEST_EVENT_KEY` (added to `apps/web/src/env.js`)
+## Payout recovery
 
-### 4. Test Suite
+There are two payout paths in `apps/web/src/inngest/functions.ts`:
 
-Created modern, concise test suite covering the high-level flow:
+- `process-mentor-payout` handles event-driven payout scheduling and retries.
+- `reconcile-eligible-mentor-payouts` runs hourly at minute 15 and queues up to 100 due payments that meet all transfer conditions.
 
-**Tests Created:**
+The hourly function is the safety net for a missed Cal.com webhook, missed Inngest event, delayed eligibility, or a payout released after dispute resolution. It is not a substitute for the payment service's Stripe-side reconciliation.
 
-- `apps/web/src/__tests__/checkout-webhook.test.ts` (4 tests)
-  - Happy path: payment record + Inngest event
-  - Idempotency: duplicate webhook handling
-  - Validation: metadata and payment intent checks
+## Stripe webhook events required
 
-- `apps/web/src/__tests__/checkout-inngest.test.ts` (7 tests)
-  - Happy path: all steps succeed
-  - PostHog failure: non-critical, continues
-  - Booking failure → refund flow
-  - Refund failure → admin alert
-  - Resilience: email failures, DB errors
-  - Step execution order
+The platform Stripe webhook must subscribe to:
 
-**Test Results:**
+- `checkout.session.completed`
+- `checkout.session.async_payment_succeeded`
+- `checkout.session.async_payment_failed`
+- `refund.created`
+- `refund.updated`
+- `refund.failed`
+- `charge.dispute.created`
+- `charge.dispute.updated`
+- `charge.dispute.closed`
+- `payment_intent.payment_failed`
+- `payment_intent.canceled`
+- `charge.failed`
+
+The Stripe Connect webhook remains separately configured for connected-account lifecycle events used by mentor onboarding.
+
+## Verification status and remaining release work
+
+Targeted unit coverage exists for the real Checkout webhook handler, marketplace calculations, Cal cancellation timestamp and payout decisions, Stripe refund creation/status policy, Cal.com schemas, and mentor cancellation authorization. The former `checkout-inngest.test.ts` was removed because it exercised standalone mocks rather than production code; direct Inngest execution still requires preview verification.
+
+Before production rollout:
+
+1. Run lint, type checking, unit tests, the production build, and the guarded database integration suite.
+2. Review and apply the new nullable payment columns, `stripe_customer_id`, `mentor_payout_eligible`, and the three ledger tables to the preview database first. Confirm a second schema diff is empty.
+3. Confirm the preview Stripe webhook has every event above and that signature verification succeeds.
+4. Confirm the Cal.com webhook triggers and signing secret match the current versioned payloads.
+5. Install the official Inngest Vercel integration with Deployment Protection support, rotate the stale preview keys, and confirm the three product functions (five Cloud-visible configurations including failure handlers) are registered, callable, and observable.
+6. Run preview end-to-end cases for a paid booking, delayed payment success, Cal.com retry reconciliation, early and late cancellation, mentor no-show, refund, transfer, transfer reversal, and dispute release.
+7. Verify manual-review messages reach the configured `ADMIN_ALERT_EMAIL`; there is not yet a dedicated manual-review administration UI.
+8. Back up production, inspect the production schema diff, apply the schema, deploy with `PAYMENTS_ENABLED=false`, and repeat the signed webhook and read-only smoke checks before enabling paid traffic.
+
+## Production rollout and recovery runbook
+
+`PAYMENTS_ENABLED` is the server-side launch and incident switch for new paid Checkout sessions. It defaults to `false`; webhook processing deliberately remains active so already-paid sessions, refunds, disputes, and reversals can still settle safely.
+
+Roll out in this order:
+
+1. Complete every preview gate above and freeze unrelated production changes.
+2. Take a Railway production backup and record table counts for users, bookings, payments, transfers, refunds, and disputes.
+3. Keep `PAYMENTS_ENABLED=false`. Inspect the interactive production Drizzle diff, apply only the reviewed additive columns/tables and constraint changes, then rerun the push and require an empty diff.
+4. Deploy the new Vercel application while new paid Checkout creation remains disabled. Verify public/auth routes, database connectivity, signed Stripe/Connect/Cal webhooks, Inngest registration and invocation, email delivery, and operational alerts.
+5. Set `PAYMENTS_ENABLED=true`, redeploy during a monitored low-traffic window, and run one controlled paid booking. Verify the local ledgers, Cal.com booking, notifications, refund path, payout hold, and reconciliation before opening broader marketing traffic.
+
+If an incident occurs:
+
+1. Set `PAYMENTS_ENABLED=false` and redeploy immediately to stop new charges. Keep webhook endpoints enabled so in-flight financial events are acknowledged and reconciled.
+2. Pause the affected Inngest payout function if transfers are unsafe; mark affected payments for manual review and reconcile Stripe objects against the local ledgers.
+3. Before any new-schema payment has been written, the prior Vercel deployment may be promoted. Leave the additive database schema in place because the prior application ignores it.
+4. After any payment has been written, do not drop ledger tables or restore an older database snapshot over live financial records. Fix forward, refund/reverse through the payment service where required, and restore processing only after Stripe, Cal.com, and the database agree.
+
+Useful commands:
 
 ```bash
-✅ 11 tests passed (2 test files)
-✅ All type checks pass
-✅ Fast execution (~8 seconds)
+pnpm lint
+pnpm typecheck
+pnpm test:run
+pnpm build
+pnpm integrations:check:preview
+pnpm db:push:preview
 ```
 
-**Documentation:**
-
-- `apps/web/src/__tests__/CHECKOUT_TESTS.md` - Comprehensive test documentation
-
-## 🚀 How to Use
-
-### Local Development
-
-1. **Start Inngest Dev Server:**
-
-```bash
-npx inngest-cli@latest dev
-```
-
-2. **Start Next.js:**
-
-```bash
-pnpm dev
-```
-
-3. **View Inngest Dashboard:**
-   Open `http://127.0.0.1:8288` to see function executions
-
-### Running Tests
-
-```bash
-# Run all checkout tests
-pnpm --filter @discuno/web test src/__tests__/
-
-# Run with coverage
-pnpm --filter @discuno/web test:coverage
-
-# Watch mode (development)
-pnpm --filter @discuno/web vitest watch src/__tests__/
-```
-
-### Deployment
-
-1. **Add Environment Variables to Vercel:**
-   - `INNGEST_SIGNING_KEY` - From Vercel Inngest integration
-   - `INNGEST_EVENT_KEY` - From Vercel Inngest integration
-
-2. **Push to Production:**
-   - Inngest integration automatically syncs on deploy
-   - View production runs at: `https://app.inngest.com`
-
-## 📊 Benefits
-
-### Before (Fire-and-Forget)
-
-- ❌ No retry mechanism
-- ❌ Silent failures
-- ❌ Difficult debugging
-- ❌ No observability
-- ❌ Lost on server crash
-
-### After (Inngest)
-
-- ✅ Automatic retries (3x exponential backoff)
-- ✅ Full dashboard with step details
-- ✅ Step-by-step replay for debugging
-- ✅ Built-in monitoring and alerts
-- ✅ Durable execution with state persistence
-- ✅ Event cancellation support
-- ✅ Production-ready observability
-
-## 📝 Key Files
-
-### Core Implementation
-
-- `apps/web/src/lib/posthog-server.ts` - PostHog server client
-- `apps/web/src/inngest/client.ts` - Inngest client
-- `apps/web/src/inngest/functions.ts` - Inngest side effects function
-- `apps/web/src/app/api/inngest/route.ts` - Inngest API endpoint
-- `apps/web/src/lib/stripe/refund.ts` - Refund utility
-
-### Updated Files
-
-- `apps/web/src/lib/auth.ts` - User signup tracking
-- `apps/web/src/app/api/webhooks/cal/route.ts` - Cal.com webhook tracking
-- `apps/web/src/app/(app)/(public)/mentor/[username]/book/actions.ts` - Checkout webhook
-- `apps/web/src/app/api/webhooks/stripe/route.ts` - Stripe webhook handler
-- `apps/web/src/env.js` - Environment variable validation
-- `apps/web/src/server/__tests__/setup.ts` - Test setup (server-only mock)
-
-### Tests
-
-- `apps/web/src/__tests__/checkout-webhook.test.ts`
-- `apps/web/src/__tests__/checkout-inngest.test.ts`
-- `apps/web/src/__tests__/CHECKOUT_TESTS.md`
-
-## 🎯 Next Steps
-
-### Recommended Improvements
-
-1. **Add More Inngest Functions:**
-   - Email notification jobs
-   - Scheduled payment transfers
-   - Analytics aggregation jobs
-
-2. **Set Up Monitoring:**
-   - Configure Inngest alerts for failed functions
-   - Set up PostHog dashboards for event tracking
-   - Add Datadog/Logtail for log aggregation
-
-3. **Add More Events:**
-   - `profile_updated`
-   - `mentor_review_submitted`
-   - `payout_completed`
-   - `booking_rescheduled`
-
-4. **Improve Tests:**
-   - Add integration tests with real Stripe webhooks (test mode)
-   - Add E2E tests for full checkout flow
-   - Add performance tests for webhook response time
-
-## 🔍 Monitoring & Debugging
-
-### View Inngest Function Runs
-
-- **Local:** `http://127.0.0.1:8288`
-- **Production:** `https://app.inngest.com/env/production/functions/process-checkout-side-effects`
-
-### Query Structured Logs
-
-```bash
-# Find all webhook events
-grep '"tag":"CheckoutWebhook"' logs
-
-# Find failed refunds
-grep '"event":"refund_failed"' logs
-
-# Find critical issues
-grep '"level":"critical"' logs
-```
-
-### PostHog Dashboard
-
-View events at: `https://app.posthog.com`
-
-## ✅ Verification
-
-All systems verified working:
-
-- ✅ PostHog events tracked successfully
-- ✅ Stripe webhook returns 200 OK immediately
-- ✅ Inngest function processes side effects
-- ✅ Tests pass (11/11)
-- ✅ TypeScript compiles without errors
-- ✅ Idempotency prevents duplicate payments
-- ✅ Structured logging for production debugging
-
----
-
-**Implementation Date:** November 7, 2025
-**Status:** ✅ Production Ready
-**Test Coverage:** 11 tests, 100% passing
+Use the Railway-guarded command in `AGENTS.md` for database integration tests. Never point the reset-based integration suite at a database without the expected test-environment guard marker.

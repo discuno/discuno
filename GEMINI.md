@@ -212,13 +212,15 @@ Schemas live in domain-specific files (`user.ts`, `mentor.ts`, `booking.ts`, `pa
 
 - `discuno_calcom_token` (organization-user identity; nullable token columns are legacy only)
 - `discuno_mentor_event_type`
-- `discuno_booking`
+- `discuno_booking` - Includes `mentor_payout_eligible` to distinguish a payable late mentee cancellation from refundable cancellations
 - `discuno_booking_attendee`, `discuno_booking_organizer`
 
 **Stripe Integration**:
 
-- `discuno_mentor_stripe_account`
-- `discuno_payment`
+- `discuno_user.stripe_customer_id` - Stripe Customer bound to a Discuno user; never reuse a customer by matching email
+- `discuno_mentor_stripe_account` - Connected account information
+- `discuno_payment` - Canonical payment, booking, refund, transfer, and manual-review snapshot
+- `discuno_payment_transfer`, `discuno_payment_refund`, `discuno_payment_dispute` - Durable per-object ledgers for Stripe reconciliation and audit history
 
 **Patterns**:
 
@@ -240,6 +242,7 @@ better-auth lives in `apps/web/src/lib/auth.ts` with helpers in `apps/web/src/li
 - Server components call `requireAuth`/`getAuthSession` (wraps `auth.api.getSession`)
 - Client surfaces import `signIn`, `signOut`, and `useSession` from `authClient`
 - Database hooks handle Cal.com onboarding, initial post seeding, and school assignment during first login
+- Database hooks assign `user`/`mentor` roles with direct Drizzle updates; the BetterAuth admin plugin remains enabled for ACL permission checks, not user management
 
 ## Access Control (ACL)
 
@@ -247,15 +250,18 @@ Uses BetterAuth's ACL for permission-based access control. **Use `requirePermiss
 
 ### Key Points
 
-- Check permissions (`requirePermission({ resource: ['action'] })`), not roles (`user.role === 'mentor'`)
-- Resources: availability, eventType, booking, stripeAccount, payment, profile, post, analytics
-- Roles: user (basic), mentor (.edu, +scheduling/payments), admin (all)
+- Check permissions (`requirePermission({ mentor: ['manage'] })`), not roles (`user.role === 'mentor'`)
+- Resources: `mentor:manage` for all mentor dashboard data and `content:create|read|update|delete` for user-authored content; BetterAuth also supplies its admin resources
+- Roles: user (content create/read), mentor (.edu, full content + mentor management), admin (mentor/content + BetterAuth administration)
 
 ### Server Functions
 
+Use these in protected query modules. Layout checks are optional UX redirects; server actions and
+services delegate to protected queries instead of becoming separate authorization boundaries.
+
 ```typescript
-await requirePermission({ availability: ['read'] }) // Throws
-await hasPermission({ eventType: ['update'] }) // Boolean
+await requirePermission({ mentor: ['manage'] }) // Throws
+await hasPermission({ content: ['update'] }) // Boolean
 ```
 
 ### Client Functions
@@ -282,8 +288,7 @@ See `apps/web/src/lib/auth/permissions.ts` for full model.
 ```typescript
 // apps/web/src/server/queries/calcom.ts
 export const getMentorCalcomConnection = cache(async () => {
-  await requirePermission({ availability: ['read'] }) // ← SECURITY HERE
-  const { user } = await requireAuth()
+  const { user } = await requirePermission({ mentor: ['manage'] }) // ← SECURITY HERE
   return getCalcomConnectionByUserId(user.id)
 })
 
@@ -294,7 +299,7 @@ export async function getSchedule() {
 }
 ```
 
-The system is now production-ready with proper data-layer security.
+Keep this query-layer boundary intact; layout redirects are only a UX optimization and are not the authorization control.
 
 ## API Integration Patterns
 
@@ -304,18 +309,27 @@ The system is now production-ready with proper data-layer security.
 - Version-pinned schedules, event types, slots, bookings, and cancellation endpoints
 - Webhook handlers at `apps/web/src/app/api/webhooks/cal/`
 - Local persistence of booking snapshots tied to Cal.com IDs
+- For `BOOKING_CANCELLED`, use the Cal event envelope's `createdAt` timestamp—not webhook receipt time—to apply the inclusive 24-hour refund boundary
+- Paid booking creation carries the Discuno payment ID in Cal.com metadata; retries reconcile that metadata before issuing another create request
 
 ### Stripe (`apps/web/src/lib/stripe/`)
 
 - Stripe Connect for mentor payouts
 - Controller-property accounts preserve the Express Dashboard experience
+- Paid Checkout is server-authoritative: the server resolves the mentor, event type, listed price, currency, duration, and connected account
+- Stripe Customers are bound by Discuno user ID rather than email matching
+- Mentees pay the listed session price plus applicable tax with no Discuno buyer service fee; Discuno retains a 15% mentor-side commission
+- The platform uses separate charges and transfers: the platform charge settles first, then the mentor's 85% share becomes eligible after the scheduled session end plus 72 hours
 - Checkout fulfills paid sessions (including delayed methods) through idempotent Inngest events
 - Webhook handlers at `apps/web/src/app/api/webhooks/stripe/`
-- Payment lifecycle includes dispute window before transfers
+- Durable, idempotent fulfillment and payout work is queued through Inngest; an hourly reconciliation function recovers missed or delayed payout events
+- Per-payment database locks, Stripe-side object reconciliation, and transfer/refund/dispute ledgers protect retries and out-of-order webhooks
+- Pending and `requires_action` refunds, successful refunds, and active disputes hold or reverse mentor transfers; `requires_action` also forces manual review until resolved
+- Payments marked for manual review are excluded from automatic transfers
 
 ### PostHog
 
-- Client analytics via `posthog-js` (`PostHogProvider`)
+- Client analytics initialize in `apps/web/src/instrumentation-client.ts` via the `posthog-js` singleton
 - Data feeds the ranking algorithms
 
 ## Environment Variables
@@ -324,14 +338,14 @@ Environment validation relies on `@t3-oss/env-nextjs` (`apps/web/src/env.js`).
 
 See `apps/web/.env.example` for the canonical list and optional values. Core runtime groups are:
 
-- Auth & email: `BETTER_AUTH_SECRET`, optional `BETTER_AUTH_URL`, `AUTH_EMAIL_FROM`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `AUTH_MICROSOFT_ENTRA_ID_ID`, `AUTH_MICROSOFT_ENTRA_ID_SECRET`, `RESEND_API_KEY`
+- Auth & email: `BETTER_AUTH_SECRET`, optional `BETTER_AUTH_URL`, `AUTH_EMAIL_FROM`, optional `ADMIN_ALERT_EMAIL` (defaults to support), `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `AUTH_MICROSOFT_ENTRA_ID_ID`, `AUTH_MICROSOFT_ENTRA_ID_SECRET`, `RESEND_API_KEY`
 - Platform URLs: `NEXT_PUBLIC_BASE_URL`, optional `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_CALCOM_API_URL`
 - Database: `DATABASE_URL`
 - Cal.com: `CALCOM_ORG_ID`, `COLLEGE_MENTOR_TEAM_ID`, `CALCOM_WEBHOOK_SECRET`, `X_CAL_SECRET_KEY`, `NEXT_PUBLIC_X_CAL_ID`
-- Stripe: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_CONNECT_WEBHOOK_SECRET`, `NEXT_PUBLIC_STRIPE_PUBLIC_KEY`
+- Stripe: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_CONNECT_WEBHOOK_SECRET`, `NEXT_PUBLIC_STRIPE_PUBLIC_KEY`, `PAYMENTS_ENABLED` (server-side launch/incident switch; defaults false)
 - PostHog: `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST`, `NEXT_PUBLIC_POSTHOG_UI_HOST`
 - Redis: `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`
-- Misc: `CRON_SECRET`, `BLOB_READ_WRITE_TOKEN`, `INNGEST_EVENT_KEY`, `INNGEST_SIGNING_KEY`, `SENTRY_AUTH_TOKEN`
+- Misc: `CRON_SECRET`, `BLOB_READ_WRITE_TOKEN`, `INNGEST_EVENT_KEY`, `INNGEST_SIGNING_KEY`
 
 Use `SKIP_ENV_VALIDATION=1` only when intentionally bypassing validation locally.
 
@@ -387,10 +401,16 @@ Review `.cursor/rules/mentor-dashboard.md` for UX, analytics, and payment expect
 
 ### Payments
 
-- Platform fees computed during payment creation
-- Payments use the configured 72-hour dispute hold before transfer eligibility
-- Cron jobs push transfers after the dispute window
-- Support refunds for cancellations
+- Never accept price, currency, mentor payout, or connected-account values from the client; resolve them from the stored mentor and event type during Checkout creation
+- Current marketplace economics are: no buyer service fee (applicable tax may still be added), 15% Discuno commission, and 85% mentor share of the listed price
+- Use separate charges and transfers. Do not add `transfer_data` to Checkout; transfer the mentor share from the platform charge only after the scheduled end plus 72 hours
+- Issue a full refund for mentor cancellations, mentor no-shows, and mentee cancellations at least 24 hours before the scheduled start; refundable cancellations set `mentor_payout_eligible` false
+- A mentee cancellation less than 24 hours before the scheduled start is non-refundable and sets `mentor_payout_eligible` true, preserving the mentor's 85% payout after the normal scheduled-end-plus-72-hour window; use the Cal cancellation event's `createdAt` for this boundary
+- Transfer only completed sessions, attendee no-shows, accepted sessions past their end, or cancelled bookings with `mentor_payout_eligible = true`; never transfer when refunded, disputed, under a refund hold, or marked for manual review
+- Treat a Stripe refund in `requires_action` as a hard payout hold: reverse any existing mentor transfer, require manual review, and do not release mentor funds until the refund state is safely resolved
+- Use the payment service for refunds, disputes, reversals, and transfers so its per-payment lock, Stripe reconciliation, ledgers, and idempotency keys remain in effect
+- Inngest handles durable fulfillment and event-driven payout work; `reconcileEligibleMentorPayouts` is the hourly recovery path for missed events
+- Paid Cal.com booking retries must reconcile the payment ID in booking metadata before attempting another create
 
 ## Useful Scripts
 

@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive GitHub Actions CI/CD pipeline
 - Code of Conduct and Contributing guidelines
 - Security policy and issue templates
+- Durable Stripe transfer, refund, and dispute ledgers with manual-review state
+- Hourly Inngest payout reconciliation for missed, delayed, or manually released payout events
+- Discuno-user-bound Stripe Customer IDs to prevent unsafe email-based customer reuse
+- Explicit booking-level `mentor_payout_eligible` state for payable late mentee cancellations
 
 ### Changed
 
@@ -24,6 +28,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   schedule, slot, and webhook contracts
 - Updated Stripe Checkout and Connect handling for the current API, retry-safe fulfillment, and
   asynchronous payment success events
+- Made paid Checkout server-authoritative for mentor, event type, price, currency, duration, and
+  connected-account resolution
+- Adopted separate charges and transfers with no buyer service fee, a 15% Discuno mentor-side
+  commission, and an 85% mentor transfer eligible after the scheduled end plus 72 hours when a
+  session is completed, an attendee no-show, or otherwise accepted past its scheduled end
+- Added per-payment locking and Stripe-side reconciliation for retry-safe transfers, refunds, and
+  disputes, including transfer reversal and payout requeue after a released dispute
+- Made paid Cal.com booking creation reconcile Discuno payment metadata before a retry creates a
+  second booking
+- Made the Cal cancellation event's `createdAt` timestamp authoritative for the inclusive 24-hour
+  refund boundary; late mentee cancellations retain the normal delayed 85% mentor payout
+- Made Stripe refunds in `requires_action` hard-hold payouts, reverse existing mentor transfers,
+  and require manual review
 - Added environment-aware integration checks and guarded database workflows for local, preview,
   test, and production environments
 

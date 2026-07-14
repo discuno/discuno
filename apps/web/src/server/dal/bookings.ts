@@ -39,6 +39,34 @@ export const getBookingsByMentorId = async (mentorId: string) => {
 }
 
 /**
+ * Find a booking only when the supplied mentor is its organizer.
+ *
+ * Returning `null` for both missing and differently-owned bookings keeps the
+ * authorization layer from revealing whether another mentor's booking exists.
+ */
+export const getBookingByCalcomUidAndMentorId = async (
+  calcomBookingUid: string,
+  mentorId: string
+) => {
+  const [booking] = await db
+    .select({
+      id: schema.booking.id,
+      calcomUid: schema.booking.calcomUid,
+    })
+    .from(schema.booking)
+    .innerJoin(schema.bookingOrganizer, eq(schema.booking.id, schema.bookingOrganizer.bookingId))
+    .where(
+      and(
+        eq(schema.booking.calcomUid, calcomBookingUid),
+        eq(schema.bookingOrganizer.userId, mentorId)
+      )
+    )
+    .limit(1)
+
+  return booking ?? null
+}
+
+/**
  * Create a booking with organizer and attendee
  */
 type CreateBookingInput = NewBooking & {
@@ -60,6 +88,48 @@ export const createBooking = async (input: CreateBookingInput) => {
       throw new NotFoundError(
         `Mentor event type with Cal.com ID ${input.calcomEventTypeId} not found`
       )
+    }
+
+    if (mentorEventType.mentorUserId !== input.organizer.userId) {
+      throw new Error('Cal.com organizer does not own the requested mentor event type')
+    }
+
+    if (input.paymentId) {
+      const paymentRecord = await tx.query.payment.findFirst({
+        where: eq(schema.payment.id, input.paymentId),
+      })
+      if (!paymentRecord || paymentRecord.platformStatus !== 'SUCCEEDED') {
+        throw new Error('Paid booking does not reference a succeeded Discuno payment')
+      }
+      if (paymentRecord.mentorUserId !== input.organizer.userId) {
+        throw new Error('Paid booking organizer does not match the payment mentor')
+      }
+      if (paymentRecord.customerEmail.toLowerCase() !== input.attendee.email.toLowerCase()) {
+        throw new Error('Paid booking attendee does not match the payment customer')
+      }
+
+      const metadata = paymentRecord.metadata
+      const checkoutMetadata =
+        metadata && typeof metadata === 'object' && 'checkoutSessionMetadata' in metadata
+          ? (metadata.checkoutSessionMetadata as Record<string, unknown>)
+          : null
+      if (
+        checkoutMetadata?.eventTypeId &&
+        checkoutMetadata.eventTypeId !== input.calcomEventTypeId.toString()
+      ) {
+        throw new Error('Paid booking event type does not match the checkout session')
+      }
+
+      const linkedBooking = await tx.query.booking.findFirst({
+        where: and(
+          eq(schema.booking.paymentId, input.paymentId),
+          or(ne(schema.booking.status, 'CANCELLED'), eq(schema.booking.mentorPayoutEligible, true))
+        ),
+        columns: { calcomUid: true },
+      })
+      if (linkedBooking && linkedBooking.calcomUid !== input.calcomUid) {
+        throw new Error('Payment is already linked to another active booking')
+      }
     }
 
     // Create the booking record
@@ -100,6 +170,13 @@ export const createBooking = async (input: CreateBookingInput) => {
         throw new Error(`Conflicting Cal.com identifiers for booking ${input.calcomUid}`)
       }
 
+      if (input.paymentId) {
+        await tx
+          .update(schema.payment)
+          .set({ calcomBookingUid: existingBooking.calcomUid, updatedAt: new Date() })
+          .where(eq(schema.payment.id, input.paymentId))
+      }
+
       return { booking: existingBooking, created: false as const }
     }
 
@@ -115,6 +192,13 @@ export const createBooking = async (input: CreateBookingInput) => {
       bookingId: booking.id,
     })
 
+    if (input.paymentId) {
+      await tx
+        .update(schema.payment)
+        .set({ calcomBookingUid: booking.calcomUid, updatedAt: new Date() })
+        .where(eq(schema.payment.id, input.paymentId))
+    }
+
     return { booking, created: true as const }
   })
 }
@@ -125,11 +209,7 @@ const getExistingBooking = async (calcomBookingUid: string) => {
     columns: { id: true, status: true },
   })
 
-  if (!existing) {
-    throw new NotFoundError(`Booking with Cal.com UID ${calcomBookingUid} not found`)
-  }
-
-  return existing
+  return existing ?? null
 }
 
 /**
@@ -151,11 +231,14 @@ const transitionBookingOnce = async (
     .returning({ id: schema.booking.id })
 
   if (result) {
-    return { ...result, transitioned: true as const }
+    return { ...result, transitioned: true as const, missing: false as const }
   }
 
   const existing = await getExistingBooking(calcomBookingUid)
-  return { id: existing.id, transitioned: false as const }
+  if (!existing) {
+    return { id: null, transitioned: false as const, missing: true as const }
+  }
+  return { id: existing.id, transitioned: false as const, missing: false as const }
 }
 
 /**
@@ -171,6 +254,24 @@ export const completeAcceptedBooking = async (calcomBookingUid: string) => {
  */
 export const cancelBooking = async (calcomBookingUid: string) => {
   return transitionBookingOnce(calcomBookingUid, 'CANCELLED')
+}
+
+/** Record the reviewed financial disposition for a cancelled booking. */
+export const setBookingMentorPayoutEligibility = async (
+  calcomBookingUid: string,
+  mentorPayoutEligible: boolean
+) => {
+  const [result] = await db
+    .update(schema.booking)
+    .set({ mentorPayoutEligible })
+    .where(eq(schema.booking.calcomUid, calcomBookingUid))
+    .returning({ id: schema.booking.id })
+
+  if (!result) {
+    throw new NotFoundError(`Booking with Cal.com UID ${calcomBookingUid} not found`)
+  }
+
+  return result
 }
 
 /**

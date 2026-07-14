@@ -3,25 +3,61 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { IconCalendar, IconClock, IconTag } from '@tabler/icons-react'
 import { getAllPosts, formatDate } from '~/lib/blog'
-import { createMetadata } from '~/lib/metadata'
+import { absoluteUrl, createMetadata } from '~/lib/metadata'
 
 export const metadata: Metadata = createMetadata({
-  title: 'Blog - Discuno',
+  title: 'College Mentorship Resources',
   description:
-    'Insights on college success, mentorship, career planning, and student life. Learn from verified student mentors and the Discuno community.',
+    'Practical guides for choosing a college mentor, preparing for one-to-one sessions, navigating college, and making early-career decisions.',
+  alternates: {
+    canonical: '/blog',
+  },
   openGraph: {
-    title: 'Blog - Discuno',
+    title: 'College Mentorship Resources from Discuno',
     description:
-      'Insights on college success, mentorship, career planning, and student life. Learn from verified student mentors and the Discuno community.',
+      'Practical guides for getting more from college mentorship, campus decisions, internships, and early-career planning.',
     url: '/blog',
   },
 })
 
 const BlogPage = () => {
   const posts = getAllPosts()
+  const blogJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Blog',
+    '@id': absoluteUrl('/blog#blog'),
+    url: absoluteUrl('/blog'),
+    name: 'Discuno College Mentorship Resources',
+    description:
+      'Practical guides for college mentorship, campus decisions, internships, and early-career planning.',
+    inLanguage: 'en-US',
+    publisher: {
+      '@type': 'Organization',
+      '@id': absoluteUrl('/#organization'),
+      name: 'Discuno',
+      url: absoluteUrl('/'),
+    },
+    blogPost: posts.map(post => ({
+      '@type': 'BlogPosting',
+      '@id': absoluteUrl(`/blog/${post.slug}#article`),
+      url: absoluteUrl(`/blog/${post.slug}`),
+      headline: post.title,
+      description: post.description,
+      datePublished: post.date,
+      dateModified: post.lastModified.toISOString(),
+      author: {
+        '@type': post.author === 'Discuno Team' ? 'Organization' : 'Person',
+        name: post.author,
+      },
+    })),
+  }
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(blogJsonLd) }}
+      />
       {/* Header */}
       <div className="mb-12 space-y-4">
         <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">Blog</h1>

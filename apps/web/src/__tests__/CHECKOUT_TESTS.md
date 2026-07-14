@@ -1,192 +1,75 @@
-# Checkout Flow Test Suite
+# Checkout and Payment Test Coverage
 
-Modern, concise test suite for the Stripe checkout → Inngest → Cal.com booking flow.
+This document describes tests that exist in the repository. It intentionally separates tested application behavior from checks that still require an integration environment.
 
-## Test Coverage
+## Automated unit coverage
 
-### 1. Webhook Handler Tests (`actions.test.ts`)
+### `checkout-webhook.test.ts`
 
-Tests the `handleCheckoutSessionWebhook` function:
+Calls the real `handleCheckoutSessionWebhook` implementation while replacing its database and Inngest boundaries with deterministic fakes. It verifies that the handler:
 
-#### ✅ Happy Path
+- waits for Stripe to report a paid checkout before fulfillment;
+- rejects missing or malformed metadata;
+- rejects buyer fees, an incorrect 15%/85% split, inconsistent totals, and an invalid payout date;
+- persists the validated payment ledger fields and queues a deterministic Inngest event;
+- does not queue a second event after an already-queued webhook retry; and
+- returns a retriable `500` when Inngest cannot accept the durable job.
 
-- Creates payment record in database
-- Triggers Inngest event with correct data
-- Returns 200 OK to Stripe immediately
+The same file covers the small Stripe Checkout ID/status helpers.
 
-#### ✅ Idempotency
+### `../lib/stripe/marketplace.test.ts`
 
-- Handles duplicate webhook calls gracefully
-- Uses `onConflictDoNothing` for duplicate payment intents
-- Returns 200 OK without triggering duplicate side effects
+Exercises the pure marketplace policy at boundary values:
 
-#### ✅ Validation
+- no buyer fee and a rounded 15% mentor-side commission;
+- cent-level rounding and invalid price inputs;
+- payout eligibility at session end plus 72 hours;
+- the inclusive 24-hour cancellation-refund boundary;
+- late-cancellation payout eligibility through `mentor_payout_eligible`;
+- mentor cancellation, invalid-time, refund-status, `requires_action` reversal, and dispute-status behavior; and
+- expanded and unexpanded Stripe resource IDs.
 
-- Rejects sessions without metadata (400)
-- Rejects sessions with incomplete metadata (400)
-- Rejects sessions without payment intent (400)
+### `stripe-refund.test.ts`
 
-#### ✅ Resilience
+Calls the real Stripe refund helper with the Stripe client boundary replaced. It verifies platform-charge refund parameters, idempotency, and failure reporting. Separate-charge refunds must not set destination-charge flags.
 
-- Continues if Inngest send fails (logs error, returns 200)
-- Payment record is always saved first
+### `mentor-booking-cancellation.test.ts`
 
-### 2. Inngest Function Tests (`functions.test.ts`)
+Calls the real mentor cancellation service with its authorization, Cal.com, and refund boundaries replaced. It verifies ownership is established before Cal.com is called and that an owned cancellation triggers a refund.
 
-Tests the `processCheckoutSideEffects` Inngest function:
+### `calcom-webhook-schema.test.ts`
 
-#### ✅ Happy Path
+Verifies compatibility with the Cal.com booking and no-show payload shapes used by the webhook route, including nullable fields and forward-compatible unknown fields.
 
-- Tracks PostHog event
-- Creates Cal.com booking
-- Returns success result
+### `calcom-cancellation-webhook.test.ts`
 
-#### ✅ PostHog Failure Handling
+Calls the real Cal.com webhook handler with provider and persistence boundaries replaced. It verifies that the signed event envelope's `createdAt` controls the inclusive 24-hour boundary, early cancellations disable payout and refund, and late mentee cancellations enable the normal delayed 85% mentor payout.
 
-- Continues if PostHog tracking fails (non-critical)
-- Still creates Cal.com booking
+## Run the focused suite
 
-#### ✅ Cal.com Failure → Refund Flow
-
-- Automatically refunds payment if booking fails
-- Updates payment status to FAILED
-- Sends failure email to customer
-- Does NOT alert admin if refund succeeds
-
-#### ✅ Refund Failure → Admin Alert
-
-- Alerts admin when automatic refund fails
-- Sends failure email with "contact support" message
-- Logs all errors for debugging
-
-#### ✅ Resilience
-
-- Logs but doesn't fail if customer email fails
-- Logs but doesn't fail if admin alert fails
-- Throws retriable error if DB update fails (Inngest will retry)
-
-## Running Tests
-
-### Run all checkout tests
+From the repository root:
 
 ```bash
-pnpm --filter @discuno/web test actions.test.ts functions.test.ts
+corepack pnpm --filter @discuno/web exec vitest run \
+  src/__tests__/checkout-webhook.test.ts \
+  src/lib/stripe/marketplace.test.ts \
+  src/__tests__/stripe-refund.test.ts \
+  src/__tests__/mentor-booking-cancellation.test.ts \
+  src/__tests__/calcom-webhook-schema.test.ts \
+  src/__tests__/calcom-cancellation-webhook.test.ts
 ```
 
-### Run with coverage
+Run all unit tests with `corepack pnpm test:run`. Database integration tests use the guarded Railway test environment documented in the repository's agent instructions.
 
-```bash
-pnpm --filter @discuno/web test:coverage actions.test.ts functions.test.ts
-```
+## Not covered by these unit tests
 
-### Run in watch mode (development)
+The suite does not claim to emulate Stripe, Cal.com, Inngest, or PostgreSQL. Before production payment traffic, verify these paths in the preview environment:
 
-```bash
-pnpm --filter @discuno/web vitest watch actions.test.ts functions.test.ts
-```
+1. A Stripe test checkout delivers the signed webhook and creates one local payment.
+2. Inngest creates or reconciles exactly one Cal.com booking after retries.
+3. Cal.com signed completion, cancellation, and no-show events update the expected booking state.
+4. A due mentor payout creates one 85% transfer; a retry reconciles the existing Stripe transfer.
+5. Refund and dispute events reverse or hold transfers and update the normalized ledgers.
+6. The hourly payout reconciler recovers a deliberately missed payout event.
 
-### Run specific test file
-
-```bash
-pnpm --filter @discuno/web vitest run src/app/(app)/(public)/mentor/[username]/book/actions.test.ts
-```
-
-## Test Architecture
-
-### Mock Strategy
-
-- **External APIs**: Mocked (Stripe, Cal.com, PostHog)
-- **Database**: Mocked with vitest mock functions
-- **Inngest**: Mocked client and step/logger objects
-
-### Test Data Factories
-
-Located in `src/__tests__/helpers/test-factories.ts`:
-
-- `createMockCheckoutSession()` - Stripe checkout session
-- `createMockPaymentRecord()` - Payment DB record
-- `createMockInngestEvent()` - Inngest event data
-
-### Benefits of This Approach
-
-1. **Fast**: No real API calls or DB connections
-2. **Reliable**: No flaky tests from external services
-3. **Isolated**: Tests one concern at a time
-4. **Maintainable**: Clear mocking patterns
-
-## What's NOT Tested (and Why)
-
-### Integration Tests
-
-These are **unit tests** focused on business logic. For end-to-end testing:
-
-- Use Stripe's webhook testing tools
-- Use Inngest Dev Server for local testing
-- Manual QA in staging environment
-
-### Database Schema
-
-Database schema is tested via:
-
-- Type safety (TypeScript + Drizzle)
-- Migration validation (separate process)
-
-### Inngest Retry Logic
-
-Inngest's retry mechanism is handled by the platform:
-
-- Test configuration (retries: 3)
-- Use Inngest dashboard to verify retry behavior
-
-## Debugging Failed Tests
-
-### Check mock setup
-
-```typescript
-// Verify mocks are reset between tests
-beforeEach(() => {
-  vi.clearAllMocks()
-})
-```
-
-### Inspect test output
-
-```bash
-# Run with verbose output
-pnpm --filter @discuno/web vitest run --reporter=verbose
-```
-
-### Check for race conditions
-
-```typescript
-// Ensure async operations complete
-await expect(promise).resolves.toBeTruthy()
-```
-
-## Adding New Tests
-
-### For new webhook events
-
-1. Add factory to `test-factories.ts`
-2. Add test cases to `actions.test.ts`
-3. Mock new dependencies in `beforeEach`
-
-### For new Inngest steps
-
-1. Update mock step object
-2. Add test case in relevant describe block
-3. Verify error handling paths
-
-## CI/CD Integration
-
-Tests run automatically on:
-
-- ✅ Pull request creation
-- ✅ Push to main branch
-- ✅ Pre-commit hook (via Husky)
-
-Fails if:
-
-- ❌ Any test fails
-- ❌ Coverage below threshold (80%)
-- ❌ Type errors detected
+Direct Inngest function execution is not currently unit-tested. The previous `checkout-inngest.test.ts` only called standalone mocks and never imported the production function, so it was removed instead of being counted as coverage. Add a real executor-based test when the project adopts Inngest's test harness.

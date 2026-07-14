@@ -47,7 +47,7 @@ export const TimeSlotsList = ({
   return (
     <div className="slide-in-up text-muted-foreground rounded-md border border-dashed p-6 text-center">
       <CalendarIcon className="mx-auto mb-2 h-8 w-8" />
-      <p className="text-sm">Please select an available date</p>
+      <p className="text-sm">Choose an available date to see times</p>
     </div>
   )
 }

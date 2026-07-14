@@ -16,10 +16,12 @@ export const metadata: Metadata = createMetadata({
   },
 })
 
-export default async function AuthPage() {
-  return (
-    <main>
-      <LoginPage />
-    </main>
-  )
+export default async function AuthPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ intent?: string }>
+}) {
+  const { intent } = await searchParams
+
+  return <LoginPage initialUserType={intent === 'student' ? 'student' : 'mentor'} />
 }
