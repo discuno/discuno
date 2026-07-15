@@ -1,5 +1,10 @@
 import { z } from 'zod'
 
+const CalcomOptionalEmailSchema = z.preprocess(
+  value => (typeof value === 'string' ? value.trim() || undefined : value),
+  z.email().nullish()
+)
+
 export const CalcomBookingPayloadSchema = z
   .object({
     type: z.string(),
@@ -82,7 +87,9 @@ export const CalcomBookingPayloadSchema = z
       .positive('Length must be a positive integer')
       .max(24 * 60, 'Length cannot exceed 24 hours'),
     bookingId: z.number(),
-    cancelledByEmail: z.email().nullish(),
+    // Cal.com returns an empty string when a booking is cancelled through its API.
+    // Treat that as missing attribution instead of rejecting the signed webhook.
+    cancelledByEmail: CalcomOptionalEmailSchema,
     metadata: z
       .object({
         videoCallUrl: z

@@ -15,6 +15,11 @@ import { storeCalcomConnectionForUser } from '~/lib/services/calcom-tokens-servi
 
 const SuccessResponseSchema = z.object({ status: z.literal('success') })
 
+const CalcomOptionalEmailSchema = z.preprocess(
+  value => (typeof value === 'string' ? value.trim() || undefined : value),
+  z.email().nullish()
+)
+
 /** Create a user in the Discuno Cal.com organization and mentor team. */
 export const createCalcomUser = async (
   data: CreateCalcomUserInput
@@ -119,6 +124,54 @@ const CalcomBookingLookupSchema = z.object({
   ),
 })
 
+const CalcomEventTypeBookingCompatibilitySchema = z.object({
+  status: z.literal('success'),
+  data: z.object({
+    requiresBookerEmailVerification: z.boolean().default(false),
+    bookingRequiresAuthentication: z.boolean().default(false),
+    recurrence: z.unknown().nullable().optional(),
+    bookingFields: z
+      .array(
+        z.object({
+          slug: z.string(),
+          required: z.boolean().default(false),
+          isDefault: z.boolean().default(false),
+        })
+      )
+      .default([]),
+  }),
+})
+
+export type CalcomBookingCompatibilityReason =
+  | 'email_verification_required'
+  | 'cal_authentication_required'
+  | 'recurring_event_type'
+  | 'required_custom_booking_fields'
+
+/**
+ * Discuno's custom checkout currently supplies Cal.com's standard attendee fields.
+ * Reject incompatible event types before a booking attempt (and, critically, before
+ * creating a paid Checkout Session) instead of charging for an unfulfillable booking.
+ */
+export const getCalcomBookingCompatibility = async (
+  eventTypeId: number
+): Promise<{ compatible: boolean; reasons: CalcomBookingCompatibilityReason[] }> => {
+  const response = await calcomRequest<unknown>(`/event-types/${eventTypeId}`, {
+    apiVersion: CALCOM_API_VERSIONS.eventTypes,
+  })
+  const { data } = CalcomEventTypeBookingCompatibilitySchema.parse(response)
+  const reasons: CalcomBookingCompatibilityReason[] = []
+
+  if (data.requiresBookerEmailVerification) reasons.push('email_verification_required')
+  if (data.bookingRequiresAuthentication) reasons.push('cal_authentication_required')
+  if (data.recurrence) reasons.push('recurring_event_type')
+  if (data.bookingFields.some(field => field.required && !field.isDefault)) {
+    reasons.push('required_custom_booking_fields')
+  }
+
+  return { compatible: reasons.length === 0, reasons }
+}
+
 /** Reconcile an ambiguous create response using unique Discuno metadata. */
 const findCalcomBookingByMetadata = async ({
   metadataKey,
@@ -174,6 +227,7 @@ export const createCalcomBooking = async (input: {
   actorUserId?: string
   bookingAttemptId?: string
 }): Promise<{ id: number; uid: string }> => {
+  const attendeePhone = input.attendeePhone?.trim()
   const reconciliationKey = input.paymentId
     ? { metadataKey: 'paymentId' as const, metadataValue: input.paymentId.toString() }
     : input.bookingAttemptId
@@ -196,16 +250,16 @@ export const createCalcomBooking = async (input: {
       attendee: {
         name: input.attendeeName,
         email: input.attendeeEmail,
-        phoneNumber: input.attendeePhone,
+        ...(attendeePhone ? { phoneNumber: attendeePhone } : {}),
         timeZone: input.timeZone,
         language: 'en',
       },
       eventTypeId: input.calcomEventTypeId,
       metadata: {
-        paymentId: input.paymentId?.toString() ?? '',
+        ...(input.paymentId !== undefined ? { paymentId: input.paymentId.toString() } : {}),
         mentorUserId: input.mentorUserId,
-        actorUserId: input.actorUserId,
-        bookingAttemptId: input.bookingAttemptId,
+        ...(input.actorUserId ? { actorUserId: input.actorUserId } : {}),
+        ...(input.bookingAttemptId ? { bookingAttemptId: input.bookingAttemptId } : {}),
       },
     }),
   })
@@ -288,7 +342,7 @@ const CalcomBookingDetailsSchema = z.object({
   start: z.iso.datetime(),
   end: z.iso.datetime(),
   duration: z.number().int().positive(),
-  cancelledByEmail: z.email().nullish(),
+  cancelledByEmail: CalcomOptionalEmailSchema,
   hosts: z.array(z.object({ email: z.email() })).default([]),
   attendees: z.array(z.object({ email: z.email() })).default([]),
   metadata: z.record(z.string(), z.unknown()).default({}),

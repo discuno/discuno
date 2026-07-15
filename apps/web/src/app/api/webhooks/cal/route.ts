@@ -226,19 +226,25 @@ export async function POST(req: Request) {
               throw error
             }
           }
-          if (!cancelledByEmail) {
-            throw new Error(`Could not resolve cancellation actor for ${cancelledBooking.uid}`)
-          }
-          const cancelledByOrganizer =
-            cancelledByEmail.trim().toLowerCase() ===
-            cancelledBooking.organizer.email.trim().toLowerCase()
-
           const shouldRefund = shouldAutomaticallyRefundCancellation({
             cancelledByEmail,
             organizerEmail: cancelledBooking.organizer.email,
             startTime: cancelledBooking.startTime,
             now: new Date(createdAt),
           })
+          // Both mentor and mentee cancellations are refundable at least 24 hours
+          // before the session, so missing Cal attribution is immaterial there.
+          // Within 24 hours attribution determines whether the mentor is paid;
+          // fail closed rather than guessing and releasing funds.
+          if (!cancelledByEmail && !shouldRefund) {
+            throw new Error(
+              `Late cancellation actor could not be resolved for ${cancelledBooking.uid}`
+            )
+          }
+          const cancelledByOrganizer =
+            cancelledByEmail?.trim().toLowerCase() ===
+            cancelledBooking.organizer.email.trim().toLowerCase()
+
           await setLocalBookingMentorPayoutEligibility(cancelledBooking.uid, !shouldRefund)
           if (shouldRefund) {
             const refund = await refundBookingPayment(

@@ -9,7 +9,7 @@ import { z } from 'zod'
 import { env } from '~/env'
 import { inngest } from '~/inngest/client'
 import { requireAuth } from '~/lib/auth/auth-utils'
-import { createCalcomBooking } from '~/lib/calcom'
+import { createCalcomBooking, getCalcomBookingCompatibility } from '~/lib/calcom'
 import { CALCOM_API_VERSIONS } from '~/lib/calcom/client'
 import { MAXIMUM_PAID_BOOKING_PRICE, MINIMUM_PAID_BOOKING_PRICE } from '~/lib/constants'
 import { AppError, BadRequestError, ExternalApiError, StripeError } from '~/lib/errors'
@@ -199,6 +199,17 @@ const resolveBookableEventType = async (username: string, eventTypeId: number) =
 
   if (mentorConnection.userId !== mentorProfile.userId) {
     throw new BadRequestError('Mentor scheduling configuration is inconsistent')
+  }
+
+  const compatibility = await getCalcomBookingCompatibility(eventTypeId)
+  if (!compatibility.compatible) {
+    console.warn('Cal.com event type is incompatible with Discuno checkout', {
+      eventTypeId,
+      reasons: compatibility.reasons,
+    })
+    throw new BadRequestError(
+      'This session is temporarily unavailable while the mentor updates scheduling settings'
+    )
   }
 
   return { mentorConnection, mentorProfile, eventType }

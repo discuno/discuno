@@ -22,7 +22,10 @@ vi.mock('~/inngest/client', () => ({
 }))
 
 vi.mock('~/lib/auth/auth-utils', () => ({ requireAuth: vi.fn() }))
-vi.mock('~/lib/calcom', () => ({ createCalcomBooking: vi.fn() }))
+vi.mock('~/lib/calcom', () => ({
+  createCalcomBooking: vi.fn(),
+  getCalcomBookingCompatibility: vi.fn(),
+}))
 vi.mock('~/lib/calcom/client', () => ({
   CALCOM_API_VERSIONS: { slots: '2024-09-04' },
 }))

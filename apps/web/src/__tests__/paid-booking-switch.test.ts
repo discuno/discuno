@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => {
       NEXT_PUBLIC_CALCOM_API_URL: 'https://api.cal.com/v2',
       PAYMENTS_ENABLED: false,
     },
+    getCalcomBookingCompatibility: vi.fn(),
     getCalcomConnectionByUsername: vi.fn(),
     getMentorEnabledEventTypes: vi.fn(),
     getOrCreateStripeCustomerId: vi.fn(),
@@ -28,7 +29,10 @@ const mocks = vi.hoisted(() => {
 vi.mock('~/env', () => ({ env: mocks.env }))
 vi.mock('~/inngest/client', () => ({ inngest: { send: vi.fn() } }))
 vi.mock('~/lib/auth/auth-utils', () => ({ requireAuth: mocks.requireAuth }))
-vi.mock('~/lib/calcom', () => ({ createCalcomBooking: vi.fn() }))
+vi.mock('~/lib/calcom', () => ({
+  createCalcomBooking: vi.fn(),
+  getCalcomBookingCompatibility: mocks.getCalcomBookingCompatibility,
+}))
 vi.mock('~/lib/rate-limiter', () => ({
   freeBookingActorRatelimit: { limit: vi.fn() },
   freeBookingIpRatelimit: { limit: vi.fn() },
@@ -83,6 +87,7 @@ describe('paid booking launch switch', () => {
       calcomUsername: 'test-mentor',
       name: 'Test Mentor',
     })
+    mocks.getCalcomBookingCompatibility.mockResolvedValue({ compatible: true, reasons: [] })
     mocks.getCalcomConnectionByUsername.mockResolvedValue({ userId: mentorUserId })
     mocks.getMentorEnabledEventTypes.mockResolvedValue([
       {
@@ -114,6 +119,7 @@ describe('paid booking launch switch', () => {
 
     vi.spyOn(console, 'log').mockImplementation(() => undefined)
     vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined)
   })
 
   afterEach(() => {
@@ -143,6 +149,26 @@ describe('paid booking launch switch', () => {
 
     expect(mocks.getOrCreateStripeCustomerId).toHaveBeenCalledOnce()
     expect(mocks.createCheckoutSession).toHaveBeenCalledOnce()
+  })
+
+  it('rejects an incompatible Cal.com event type before payment mutations', async () => {
+    mocks.env.PAYMENTS_ENABLED = true
+    mocks.getCalcomBookingCompatibility.mockResolvedValue({
+      compatible: false,
+      reasons: ['email_verification_required'],
+    })
+
+    await expect(createStripeCheckoutSession(input)).rejects.toMatchObject({
+      code: 'BAD_REQUEST',
+      message:
+        'This session is temporarily unavailable while the mentor updates scheduling settings',
+      statusCode: 400,
+    })
+
+    expect(mocks.getCalcomBookingCompatibility).toHaveBeenCalledWith(42)
+    expect(mocks.dbSelect).not.toHaveBeenCalled()
+    expect(mocks.getOrCreateStripeCustomerId).not.toHaveBeenCalled()
+    expect(mocks.createCheckoutSession).not.toHaveBeenCalled()
   })
 
   it('accepts an ISO time zone offset and canonicalizes the instant to UTC', async () => {

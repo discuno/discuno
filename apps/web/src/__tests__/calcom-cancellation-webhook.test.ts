@@ -44,7 +44,7 @@ const cancellationPayload = ({
   cancelledByEmail = 'mentee@example.com',
 }: {
   startTime: string
-  cancelledByEmail?: string
+  cancelledByEmail?: string | null
 }) => {
   const start = new Date(startTime)
   return {
@@ -80,14 +80,19 @@ const cancellationPayload = ({
 const sendCancellation = async ({
   createdAt,
   startTime,
+  cancelledByEmail,
 }: {
   createdAt?: string
   startTime: string
+  cancelledByEmail?: string | null
 }) => {
   const body = JSON.stringify({
     triggerEvent: 'BOOKING_CANCELLED',
     ...(createdAt ? { createdAt } : {}),
-    payload: cancellationPayload({ startTime }),
+    payload: cancellationPayload({
+      startTime,
+      ...(cancelledByEmail !== undefined ? { cancelledByEmail } : {}),
+    }),
   })
   const signature = crypto.createHmac('sha256', WEBHOOK_SECRET).update(body).digest('hex')
   return POST(
@@ -108,6 +113,7 @@ describe('Cal.com cancellation financial disposition', () => {
       transitioned: true,
     })
     mocks.getUserIdByCalcomUserId.mockResolvedValue(mentorUserId)
+    mocks.getCalcomBooking.mockResolvedValue({ cancelledByEmail: null })
     mocks.refundBookingPayment.mockResolvedValue({ success: true })
     mocks.scheduleBookingMentorPayout.mockResolvedValue({ success: true })
     mocks.setLocalBookingMentorPayoutEligibility.mockResolvedValue({ id: 7 })
@@ -149,6 +155,39 @@ describe('Cal.com cancellation financial disposition', () => {
       'booking-cancelled',
       'late-mentee-cancellation'
     )
+  })
+
+  it('refunds an early API cancellation when Cal.com omits actor attribution', async () => {
+    const response = await sendCancellation({
+      createdAt: '2026-01-01T12:00:00.000Z',
+      startTime: '2026-01-02T12:00:00.000Z',
+      cancelledByEmail: null,
+    })
+
+    expect(response.status).toBe(200)
+    expect(mocks.getCalcomBooking).toHaveBeenCalledWith('booking-cancelled')
+    expect(mocks.setLocalBookingMentorPayoutEligibility).toHaveBeenCalledWith(
+      'booking-cancelled',
+      false
+    )
+    expect(mocks.refundBookingPayment).toHaveBeenCalledWith(
+      'booking-cancelled',
+      'early_cancellation'
+    )
+    expect(mocks.scheduleBookingMentorPayout).not.toHaveBeenCalled()
+  })
+
+  it('holds a late cancellation when Cal.com omits actor attribution', async () => {
+    const response = await sendCancellation({
+      createdAt: '2026-01-02T11:00:00.000Z',
+      startTime: '2026-01-02T12:00:00.000Z',
+      cancelledByEmail: null,
+    })
+
+    expect(response.status).toBe(500)
+    expect(mocks.refundBookingPayment).not.toHaveBeenCalled()
+    expect(mocks.scheduleBookingMentorPayout).not.toHaveBeenCalled()
+    expect(mocks.setLocalBookingMentorPayoutEligibility).not.toHaveBeenCalled()
   })
 
   it('rejects a cancellation without an authoritative event timestamp for retry', async () => {
