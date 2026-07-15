@@ -215,14 +215,14 @@ const BlogPostPage = async ({ params }: Props) => {
         <footer className="mt-12 border-t pt-8">
           <div className="space-y-4">
             <p className="text-muted-foreground text-sm">
-              Want to learn more? Connect with verified student mentors on Discuno for personalized
-              guidance.
+              Reading can help you find the question. A student who has lived through it can help
+              you talk through what it means for your situation.
             </p>
             <Link
               href="/"
               className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors"
             >
-              Find a Mentor
+              Find someone who&apos;s been there
             </Link>
           </div>
         </footer>

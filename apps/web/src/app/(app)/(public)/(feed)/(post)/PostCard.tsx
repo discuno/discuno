@@ -135,7 +135,7 @@ export const PostCard = ({ card }: { card: Card }) => {
           {profileHref ? (
             <Button asChild className="w-full">
               <Link href={profileHref} onClick={handleProfileView}>
-                View profile and availability
+                See how they can help
                 <ArrowUpRight />
               </Link>
             </Button>

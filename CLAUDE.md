@@ -406,6 +406,17 @@ Follow [Conventional Commits](https://www.conventionalcommits.org/):
 - `test:` - Test additions/changes
 - `chore:` - Build/config changes
 
+## Public Copy & Positioning
+
+Use `docs/positioning.md` as the source of truth for public-facing copy.
+
+- Position Discuno as student-to-student guidance for a specific college decision, not as a generic mentorship platform.
+- Lead with the student's question and desired next move; mention mechanics only where they remove friction.
+- Use `conversation` in persuasion copy, `session` in transactional copy, and `student` instead of `mentee` outside legal/internal contexts.
+- Avoid `platform`, `feature`, `integration`, `powered by`, Cal.com, and Stripe in acquisition copy.
+- Describe the school-email check precisely. It supports institutional affiliation; it does not verify identity, background, expertise, or outcomes.
+- Never fabricate reviews or imply guaranteed admissions, jobs, grades, placements, or other results.
+
 ### Important Development Notes
 
 #### Cache Components

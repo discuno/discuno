@@ -3,13 +3,13 @@ import { createMetadata } from '~/lib/metadata'
 import { LoginPage } from './LoginPage'
 
 export const metadata: Metadata = createMetadata({
-  title: 'Become a Mentor',
+  title: 'Sign In or Start Mentoring',
   description:
-    'Join Discuno as a student mentor. Share your college experience, help fellow students succeed, and earn money while making a difference. Sign in with your .edu email to get started.',
+    'Sign in to keep your Discuno details handy, or use a supported school email to share your experience as a student mentor.',
   openGraph: {
-    title: 'Become a Mentor on Discuno',
+    title: 'Sign in to Discuno',
     description:
-      'Share your college experience and earn money by mentoring students. Join our verified community of student mentors.',
+      'Find guidance from someone who has been there, or share the college experience another student needs now.',
   },
   alternates: {
     canonical: 'https://discuno.com/auth',

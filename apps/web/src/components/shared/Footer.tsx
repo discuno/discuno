@@ -8,13 +8,13 @@ const footerGroups = [
     links: [
       { label: 'Find mentors', href: '/#mentors' },
       { label: 'How it works', href: '/#how-it-works' },
-      { label: 'Student resources', href: '/blog' },
+      { label: 'College guides', href: '/blog' },
     ],
   },
   {
     title: 'Mentors',
     links: [
-      { label: 'Why mentor', href: '/for-mentors' },
+      { label: 'Become a mentor', href: '/for-mentors' },
       { label: 'Mentor sign in', href: '/auth?intent=mentor' },
       { label: 'Mentor dashboard', href: '/settings' },
     ],
@@ -38,7 +38,7 @@ export const Footer = () => {
           <div className="max-w-sm">
             <Brand />
             <p className="text-muted-foreground mt-4 text-sm leading-6">
-              Practical college guidance from student mentors who know the path firsthand.
+              For the college questions a search result cannot answer for you.
             </p>
             <div className="mt-5 flex items-center gap-2">
               <a
@@ -94,7 +94,7 @@ export const Footer = () => {
 
         <div className="text-muted-foreground mt-12 flex flex-col gap-2 border-t pt-6 text-xs sm:flex-row sm:items-center sm:justify-between">
           <p>© Discuno. All rights reserved.</p>
-          <p>Built for clearer college decisions.</p>
+          <p>One useful conversation can change the next move.</p>
         </div>
       </div>
     </footer>

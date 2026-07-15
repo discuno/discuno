@@ -2,7 +2,7 @@
 
 import { TZDate } from '@date-fns/tz'
 import { format } from 'date-fns'
-import { Calendar, Check, Clock, Video } from 'lucide-react'
+import { Calendar, Check, Clock } from 'lucide-react'
 import Image from 'next/image'
 import type { EventType } from '~/app/(app)/(public)/mentor/[username]/book/actions'
 import type { BookingData } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingModal'
@@ -106,11 +106,6 @@ export const BookingSidebar = ({
               <Clock className="h-4 w-4" />
               <span>{selectedEventType.length} minutes</span>
             </div>
-            <div className="text-muted-foreground flex items-center gap-2">
-              <Video className="h-4 w-4" />
-              <span>Video Call</span>
-            </div>
-
             {dateDisplay && timeDisplay && (
               <div className="mt-3 border-t pt-3">
                 <div className="flex items-center gap-2 font-medium">

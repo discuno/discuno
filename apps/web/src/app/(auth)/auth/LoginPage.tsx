@@ -1,6 +1,14 @@
 'use client'
 
-import { ArrowLeft, BadgeCheck, CalendarClock, CreditCard, GraduationCap, Mail } from 'lucide-react'
+import {
+  ArrowLeft,
+  CalendarClock,
+  CircleDollarSign,
+  Compass,
+  GraduationCap,
+  Mail,
+  MessageSquareText,
+} from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
 import { toast } from 'sonner'
@@ -13,27 +21,46 @@ import { authClient } from '~/lib/auth-client'
 
 type UserType = 'student' | 'mentor'
 
-const mentorBenefits = [
+const mentorReasons = [
   {
-    icon: BadgeCheck,
-    title: 'A credible public profile',
-    description: 'Show students your school, major, experience, and available session options.',
+    icon: MessageSquareText,
+    title: 'Help with a real decision',
+    description: 'Share the context you wish someone had given you at the same moment.',
   },
   {
     icon: CalendarClock,
-    title: 'A schedule you control',
-    description: 'Set weekly availability and date overrides around your actual calendar.',
+    title: 'Mentor around your schedule',
+    description: 'Open only the times that work around classes, work, and life.',
   },
   {
-    icon: CreditCard,
-    title: 'Free or paid sessions',
-    description: 'Offer free conversations or connect Stripe when you are ready to charge.',
+    icon: CircleDollarSign,
+    title: 'Give back or set a price',
+    description: 'Offer free conversations, paid sessions, or a mix of both.',
+  },
+]
+
+const studentReasons = [
+  {
+    icon: Compass,
+    title: 'Start with the decision',
+    description: 'A course, a major, an internship, or whatever keeps circling in your head.',
+  },
+  {
+    icon: MessageSquareText,
+    title: "Talk to someone who's lived it",
+    description: 'Find relevant firsthand context instead of another generic playbook.',
+  },
+  {
+    icon: GraduationCap,
+    title: 'Choose your next move',
+    description: 'Use the conversation to ask better questions and decide what comes next.',
   },
 ]
 
 export function LoginPage({ initialUserType = 'mentor' }: { initialUserType?: UserType }) {
   const [userType, setUserType] = useState<UserType>(initialUserType)
   const [isLoading, setIsLoading] = useState<string | null>(null)
+  const reasons = userType === 'mentor' ? mentorReasons : studentReasons
 
   const handleOAuthSignIn = async (provider: 'google' | 'microsoft') => {
     try {
@@ -58,24 +85,28 @@ export function LoginPage({ initialUserType = 'mentor' }: { initialUserType?: Us
 
         <div className="my-auto max-w-xl py-14">
           <p className="text-sm font-semibold tracking-[0.14em] text-blue-200 uppercase">
-            Mentor on Discuno
+            {userType === 'mentor' ? 'Share your experience' : 'Find firsthand perspective'}
           </p>
           <h2 className="mt-5 text-4xl leading-[1.08] font-semibold tracking-[-0.045em] text-balance xl:text-5xl">
-            Your experience can make someone else&apos;s next decision easier.
+            {userType === 'mentor'
+              ? 'Be the student you wish you could have asked.'
+              : 'A clearer next move starts with the right conversation.'}
           </h2>
           <p className="mt-5 max-w-lg text-base leading-7 text-blue-100/80">
-            Give practical, firsthand guidance to students navigating the choices you already know.
+            {userType === 'mentor'
+              ? 'Give practical, firsthand context to someone navigating a choice you already know.'
+              : 'Talk through the question a search result cannot answer for your situation.'}
           </p>
 
           <div className="mt-10 space-y-6">
-            {mentorBenefits.map(benefit => (
-              <div key={benefit.title} className="flex gap-4">
+            {reasons.map(reason => (
+              <div key={reason.title} className="flex gap-4">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/10">
-                  <benefit.icon className="h-5 w-5 text-blue-100" />
+                  <reason.icon className="h-5 w-5 text-blue-100" />
                 </div>
                 <div>
-                  <h3 className="font-semibold">{benefit.title}</h3>
-                  <p className="mt-1 text-sm leading-6 text-blue-100/65">{benefit.description}</p>
+                  <h3 className="font-semibold">{reason.title}</h3>
+                  <p className="mt-1 text-sm leading-6 text-blue-100/65">{reason.description}</p>
                 </div>
               </div>
             ))}
@@ -83,8 +114,9 @@ export function LoginPage({ initialUserType = 'mentor' }: { initialUserType?: Us
         </div>
 
         <p className="text-xs leading-5 text-blue-100/60">
-          Mentor access requires a supported .edu address. Availability and payment setup can be
-          completed after sign-in.
+          {userType === 'mentor'
+            ? 'Mentor access requires a supported .edu address. Finish your profile only when you are ready.'
+            : 'You can browse and book without an account. Sign in only if you want your details remembered.'}
         </p>
       </section>
 
@@ -106,26 +138,26 @@ export function LoginPage({ initialUserType = 'mentor' }: { initialUserType?: Us
             className="w-full"
           >
             <TabsList className="grid h-11 w-full grid-cols-2 rounded-lg">
-              <TabsTrigger value="mentor">I&apos;m a mentor</TabsTrigger>
-              <TabsTrigger value="student">I&apos;m a mentee</TabsTrigger>
+              <TabsTrigger value="mentor">Share experience</TabsTrigger>
+              <TabsTrigger value="student">Find guidance</TabsTrigger>
             </TabsList>
 
             <div className="mt-8">
               <p className="eyebrow">
-                {userType === 'mentor' ? 'Mentor access' : 'Mentee account'}
+                {userType === 'mentor' ? 'Start mentoring' : 'Optional account'}
               </p>
               <h1 className="mt-3 text-3xl font-semibold tracking-[-0.04em]">
-                {userType === 'mentor' ? 'Create your mentor profile' : 'Sign in to Discuno'}
+                {userType === 'mentor' ? 'Share what you have learned' : 'Keep your details handy'}
               </h1>
               <p className="text-muted-foreground mt-3 leading-7">
                 {userType === 'mentor'
-                  ? 'New mentors and returning mentors use the same sign-in. Your school email determines mentor access.'
-                  : 'An account is optional for browsing and booking. Sign in if you want your details prefilled.'}
+                  ? 'New and returning mentors use the same sign-in. A supported school email opens mentor access.'
+                  : 'Browsing and booking are available without an account. Sign in only if you want your details prefilled.'}
               </p>
 
               {userType === 'mentor' && (
                 <div className="mt-5 grid gap-2.5 lg:hidden">
-                  {mentorBenefits.map(benefit => (
+                  {mentorReasons.map(benefit => (
                     <div
                       key={benefit.title}
                       className="text-foreground flex items-center gap-3 text-sm font-medium"
@@ -172,7 +204,8 @@ export function LoginPage({ initialUserType = 'mentor' }: { initialUserType?: Us
               <p className="text-muted-foreground flex items-start gap-2 text-xs leading-5">
                 <GraduationCap className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 Choose an account ending in .edu. Personal Google or Microsoft accounts receive
-                mentee access. If your school is not supported, contact support for review.
+                regular browsing access. If your school is not supported, contact support for
+                review.
               </p>
             </TabsContent>
 

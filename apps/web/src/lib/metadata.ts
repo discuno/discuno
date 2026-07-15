@@ -2,9 +2,9 @@ import { type Metadata } from 'next'
 
 export const siteConfig = {
   name: 'Discuno',
-  tagline: "College advice from students who've been there.",
+  tagline: "Talk it through with someone who's been there.",
   description:
-    'Find student mentors for practical, one-to-one guidance on college, courses, internships, and early career decisions.',
+    'Talk one-to-one with a student who has firsthand context on the course, major, internship, campus, or college decision in front of you.',
   url: 'https://discuno.com',
   ogImage: '/og-image.png',
   links: {

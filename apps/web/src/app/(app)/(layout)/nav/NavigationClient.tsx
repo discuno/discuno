@@ -1,6 +1,6 @@
 'use client'
 
-import { BookOpen, LayoutDashboard, LogIn, Menu, Search, UserRound, X } from 'lucide-react'
+import { BookOpen, Compass, LayoutDashboard, LogIn, Menu, Search, UserRound, X } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
@@ -42,10 +42,10 @@ interface NavBarBaseProps {
 type Audience = 'student' | 'mentor'
 
 const publicLinks = [
-  { href: '/#mentors', label: 'Find mentors' },
-  { href: '/#how-it-works', label: 'How it works' },
-  { href: '/for-mentors', label: 'For mentors' },
-  { href: '/blog', label: 'Resources' },
+  { href: '/#mentors', label: 'Find a mentor' },
+  { href: '/blog', label: 'College guides' },
+  { href: '/for-mentors', label: 'Become a mentor' },
+  { href: '/about', label: 'About' },
 ]
 
 export function NavBarBase({
@@ -171,21 +171,21 @@ function MobileMenu({
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link href="/#how-it-works" className="gap-3 py-2.5" onClick={() => setOpen(false)}>
+          <Link href="/blog" className="gap-3 py-2.5" onClick={() => setOpen(false)}>
             <BookOpen />
-            How it works
+            College guides
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
           <Link href="/for-mentors" className="gap-3 py-2.5" onClick={() => setOpen(false)}>
             <UserRound />
-            For mentors
+            Become a mentor
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link href="/blog" className="gap-3 py-2.5" onClick={() => setOpen(false)}>
-            <BookOpen />
-            Resources
+          <Link href="/about" className="gap-3 py-2.5" onClick={() => setOpen(false)}>
+            <Compass />
+            About
           </Link>
         </DropdownMenuItem>
 

@@ -9,6 +9,7 @@ Welcome to the Discuno documentation!
 - **[Code of Conduct](../CODE_OF_CONDUCT.md)** - Community guidelines
 - **[Security Policy](../SECURITY.md)** - Security reporting and guidelines
 - **[Web App README](../apps/web/README.md)** - Web application documentation
+- **[Positioning and Public Voice](positioning.md)** - Public messaging, proof boundaries, and CTA standards
 
 ## 🚀 Getting Started
 

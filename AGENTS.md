@@ -385,6 +385,17 @@ Use `SKIP_ENV_VALIDATION=1` only when local experimentation requires bypassing v
 - Utilities: kebab-case (`format-date.ts`)
 - API routes: kebab-case (`route.ts`)
 
+## Public Copy & Positioning
+
+Use `docs/positioning.md` as the source of truth for public-facing copy.
+
+- Position Discuno as student-to-student guidance for a specific college decision, not as a generic mentorship platform.
+- Lead with the student's question and desired next move; mention mechanics only where they remove friction.
+- Use `conversation` in persuasion copy, `session` in transactional copy, and `student` instead of `mentee` outside legal/internal contexts.
+- Avoid `platform`, `feature`, `integration`, `powered by`, Cal.com, and Stripe in acquisition copy.
+- Describe the school-email check precisely. It supports institutional affiliation; it does not verify identity, background, expertise, or outcomes.
+- Never fabricate reviews or imply guaranteed admissions, jobs, grades, placements, or other results.
+
 ## Development Notes
 
 ### Cache Components

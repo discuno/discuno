@@ -72,8 +72,8 @@ function LoginModalContent({
     mode === 'signin'
       ? 'Welcome back'
       : userType === 'mentor'
-        ? 'Start mentoring on Discuno'
-        : 'Create your Discuno account'
+        ? 'Share what you have learned'
+        : 'Keep your details handy'
 
   return (
     <DialogContent className="max-h-[calc(100vh-2rem)] overflow-y-auto sm:max-w-[440px]">
@@ -82,8 +82,8 @@ function LoginModalContent({
         <DialogTitle className="text-2xl tracking-[-0.025em]">{title}</DialogTitle>
         <DialogDescription className="max-w-sm leading-relaxed">
           {userType === 'mentor'
-            ? 'Use your school email to create your mentor profile and set up availability.'
-            : 'Sign in to prefill your details when you book. Browsing does not require an account.'}
+            ? 'Use a supported school email to start helping students with decisions you have already lived through.'
+            : 'Sign in only if you want your details prefilled. Browsing and booking do not require an account.'}
         </DialogDescription>
       </DialogHeader>
 
@@ -95,11 +95,11 @@ function LoginModalContent({
         <TabsList className="grid h-11 w-full grid-cols-2 rounded-lg">
           <TabsTrigger value="student" className="gap-2 rounded-md">
             <GraduationCap />
-            Mentee
+            Find guidance
           </TabsTrigger>
           <TabsTrigger value="mentor" className="gap-2 rounded-md">
             <BriefcaseBusiness />
-            Mentor
+            Start mentoring
           </TabsTrigger>
         </TabsList>
 
@@ -107,7 +107,7 @@ function LoginModalContent({
           <ProviderButtons isLoading={isLoading} onSignIn={handleOAuthSignIn} />
           <p className="text-muted-foreground flex items-start gap-2 pt-1 text-xs leading-relaxed">
             <LockKeyhole className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            You can choose a mentor and see availability before signing in.
+            You can find a mentor and book a session without signing in.
           </p>
         </TabsContent>
 
@@ -142,7 +142,7 @@ function LoginModalContent({
 
           <p className="text-muted-foreground text-xs leading-relaxed">
             Choose the Google or Microsoft account whose address ends in .edu. A personal account
-            signs you in as a mentee and will not open mentor settings.
+            can still be used to browse and book, but it will not open mentor settings.
           </p>
         </TabsContent>
       </Tabs>

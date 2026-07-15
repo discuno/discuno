@@ -1,4 +1,4 @@
-import { AlertCircle, ArrowLeft, Calendar, Globe, RefreshCw, Users } from 'lucide-react'
+import { AlertCircle, ArrowLeft, Calendar, RefreshCw, Users } from 'lucide-react'
 import Link from 'next/link'
 import { Suspense } from 'react'
 import { IconLogo } from '~/components/icons/IconLogo'
@@ -45,7 +45,7 @@ const ErrorContent = ({ searchParams }: { searchParams: { type?: string; error?:
             {isOAuthAccountNotLinked
               ? 'Account Linking Error'
               : isCalcomError
-                ? 'Scheduling Service Error'
+                ? 'Mentor Setup Paused'
                 : isVerificationError
                   ? 'Link Expired'
                   : 'Authentication Error'}
@@ -73,7 +73,7 @@ const ErrorContent = ({ searchParams }: { searchParams: { type?: string; error?:
                 {isOAuthAccountNotLinked
                   ? 'Account Already Exists'
                   : isCalcomError
-                    ? 'Scheduling Integration Required'
+                    ? "We Couldn't Finish Your Booking Setup"
                     : isVerificationError
                       ? 'Sign-In Link Expired'
                       : 'Something Went Wrong'}
@@ -84,7 +84,7 @@ const ErrorContent = ({ searchParams }: { searchParams: { type?: string; error?:
                 {isOAuthAccountNotLinked
                   ? 'An account with this email address already exists using a different sign-in method.'
                   : isCalcomError
-                    ? "We couldn't set up your scheduling integration, which is required for all mentors on Discuno. This allows students to book mentoring sessions with you directly."
+                    ? "Your mentor account is not ready to accept bookings yet. We couldn't prepare your availability, so your profile will stay unavailable until setup succeeds."
                     : isVerificationError
                       ? 'The sign-in link you clicked is no longer valid. Links expire after a short time for security reasons.'
                       : 'We encountered an issue while trying to sign you in. This could be due to a temporary service issue or a problem with your account.'}
@@ -148,23 +148,23 @@ const ErrorContent = ({ searchParams }: { searchParams: { type?: string; error?:
                 </div>
               ) : isCalcomError ? (
                 <div className="space-y-4">
-                  <h3 className="text-foreground font-semibold">This might be due to:</h3>
+                  <h3 className="text-foreground font-semibold">What to do next:</h3>
                   <div className="space-y-3 text-left">
                     <div className="flex items-start gap-3">
-                      <Globe className="text-primary mt-0.5 h-5 w-5 flex-shrink-0" />
+                      <RefreshCw className="text-primary mt-0.5 h-5 w-5 flex-shrink-0" />
                       <div>
-                        <p className="text-foreground font-medium">Temporary service issue</p>
+                        <p className="text-foreground font-medium">Try mentor setup again</p>
                         <p className="text-muted-foreground text-sm">
-                          Our scheduling service might be temporarily unavailable
+                          A temporary scheduling issue may clear on the next attempt.
                         </p>
                       </div>
                     </div>
                     <div className="flex items-start gap-3">
                       <Calendar className="text-primary mt-0.5 h-5 w-5 flex-shrink-0" />
                       <div>
-                        <p className="text-foreground font-medium">Account setup required</p>
+                        <p className="text-foreground font-medium">Your profile is protected</p>
                         <p className="text-muted-foreground text-sm">
-                          Your educational email might need additional verification
+                          Students cannot book you until availability setup is complete.
                         </p>
                       </div>
                     </div>
@@ -186,9 +186,9 @@ const ErrorContent = ({ searchParams }: { searchParams: { type?: string; error?:
                     <div className="flex items-start gap-3">
                       <AlertCircle className="text-primary mt-0.5 h-5 w-5 flex-shrink-0" />
                       <div>
-                        <p className="text-foreground font-medium">Check your email requirements</p>
+                        <p className="text-foreground font-medium">Return to sign-in</p>
                         <p className="text-muted-foreground text-sm">
-                          Make sure you&apos;re using a valid .edu email address
+                          Use the same Google, Microsoft, or email-link option you started with.
                         </p>
                       </div>
                     </div>
@@ -224,7 +224,7 @@ const ErrorContent = ({ searchParams }: { searchParams: { type?: string; error?:
                     : isVerificationError
                       ? 'Check your email for the newest sign-in link. Make sure to use it within a few minutes of receiving it.'
                       : isCalcomError
-                        ? 'Still having trouble? Our scheduling integration is essential for the mentor experience. Please try again in a few minutes or contact support.'
+                        ? 'If another attempt fails, contact support. Your account will remain safe and unavailable for bookings in the meantime.'
                         : 'Still having trouble? Contact our support team for assistance.'}
                 </p>
               </div>

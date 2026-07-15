@@ -6,16 +6,15 @@ import { getAllPosts, formatDate } from '~/lib/blog'
 import { absoluteUrl, createMetadata } from '~/lib/metadata'
 
 export const metadata: Metadata = createMetadata({
-  title: 'College Mentorship Resources',
+  title: 'Guides for College Decisions',
   description:
-    'Practical guides for choosing a college mentor, preparing for one-to-one sessions, navigating college, and making early-career decisions.',
+    'Questions, checklists, and firsthand prompts for choosing a major, navigating campus, preparing for recruiting, and making your next college decision.',
   alternates: {
     canonical: '/blog',
   },
   openGraph: {
-    title: 'College Mentorship Resources from Discuno',
-    description:
-      'Practical guides for getting more from college mentorship, campus decisions, internships, and early-career planning.',
+    title: 'College decisions, made clearer | Discuno',
+    description: 'Practical questions and guides for the college choices no one fully explains.',
     url: '/blog',
   },
 })
@@ -27,9 +26,9 @@ const BlogPage = () => {
     '@type': 'Blog',
     '@id': absoluteUrl('/blog#blog'),
     url: absoluteUrl('/blog'),
-    name: 'Discuno College Mentorship Resources',
+    name: 'Discuno College Guides',
     description:
-      'Practical guides for college mentorship, campus decisions, internships, and early-career planning.',
+      'Practical questions and guides for college, campus, internships, and early-career decisions.',
     inLanguage: 'en-US',
     publisher: {
       '@type': 'Organization',
@@ -60,10 +59,13 @@ const BlogPage = () => {
       />
       {/* Header */}
       <div className="mb-12 space-y-4">
-        <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">Blog</h1>
-        <p className="text-muted-foreground text-lg">
-          Insights on college success, mentorship, career planning, and student life from the
-          Discuno community.
+        <p className="eyebrow">College guides</p>
+        <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
+          Questions worth asking before you choose.
+        </h1>
+        <p className="text-muted-foreground max-w-2xl text-lg leading-8">
+          Practical prompts for the classes, majors, internships, campuses, and next moves that are
+          easier to navigate with real context.
         </p>
       </div>
 

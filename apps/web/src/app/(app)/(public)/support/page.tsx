@@ -197,11 +197,10 @@ export default function SupportPage() {
                     How are payments processed? Is it secure?
                   </AccordionTrigger>
                   <AccordionContent className="text-muted-foreground text-base leading-relaxed">
-                    All payments are processed through Stripe, an industry-leading payment platform
-                    trusted by millions of businesses worldwide. We never store your credit card
-                    information on our servers. You pay the displayed session price plus applicable
-                    taxes; Discuno does not add a buyer service fee. A mentor&apos;s share is
-                    released only after the session and support window.
+                    Stripe handles card payment for paid sessions; Discuno does not store full card
+                    details on its servers. You pay the displayed session price plus applicable
+                    taxes, with no additional Discuno buyer service fee. A mentor&apos;s share is
+                    not released until after the session and support window.
                   </AccordionContent>
                 </AccordionItem>
 
@@ -210,9 +209,9 @@ export default function SupportPage() {
                     What is your refund policy?
                   </AccordionTrigger>
                   <AccordionContent className="text-muted-foreground text-base leading-relaxed">
-                    Mentor cancellations and mentor no-shows receive a full refund. Mentee
+                    Mentor cancellations and mentor no-shows receive a full refund. Student
                     cancellations made at least 24 hours before the session also receive a full
-                    refund; later cancellations and mentee no-shows are normally non-refundable
+                    refund; later cancellations and student no-shows are normally non-refundable
                     unless Discuno approves an exception. For a material delivery or conduct issue,
                     contact support within 48 hours of the session. We review the circumstances and
                     determine any additional refund at our sole discretion under the{' '}
@@ -233,8 +232,8 @@ export default function SupportPage() {
                   <AccordionContent className="text-muted-foreground text-base leading-relaxed">
                     Mentors receive payment through Stripe Connect to their connected bank account.
                     Discuno retains a 15% service commission and schedules the remaining 85% for
-                    transfer 72 hours after the session ends. Delivered sessions, mentee no-shows,
-                    and late mentee cancellations that remain non-refundable can qualify, provided
+                    transfer 72 hours after the session ends. Delivered sessions, student no-shows,
+                    and late student cancellations that remain non-refundable can qualify, provided
                     the payment is not refunded, disputed, or under review. Bank arrival then
                     follows the mentor&apos;s Stripe payout schedule and account availability.
                   </AccordionContent>
@@ -324,11 +323,12 @@ export default function SupportPage() {
                     Can I cancel or reschedule a session?
                   </AccordionTrigger>
                   <AccordionContent className="text-muted-foreground text-base leading-relaxed">
-                    Life happens, and we understand. Please communicate with your mentor or student
-                    as early as possible if you need to cancel or reschedule. Our cancellation
-                    policy requires at least 24 hours notice for a full refund. Last-minute
-                    cancellations may not be eligible for refunds, as mentors have already reserved
-                    that time. Repeated cancellations may affect your account standing.
+                    Use the cancellation or rescheduling options in your booking message when they
+                    are available, or contact support with the booking email and session date.
+                    Mentor cancellations and mentor no-shows receive a full refund. Student
+                    cancellations made at least 24 hours before the scheduled start also receive a
+                    full refund; later student cancellations are normally non-refundable.
+                    Rescheduling depends on the mentor&apos;s current availability.
                   </AccordionContent>
                 </AccordionItem>
               </Accordion>

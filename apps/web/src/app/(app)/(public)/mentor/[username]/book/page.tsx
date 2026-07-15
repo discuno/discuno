@@ -54,13 +54,13 @@ const BookingPage = async ({ params }: BookingPageProps) => {
             Back to profile
           </Link>
         </Button>
-        <p className="eyebrow mt-5">Schedule a session</p>
+        <p className="eyebrow mt-5">Choose your conversation</p>
         <h1 className="mt-2 text-3xl font-semibold tracking-[-0.035em] sm:text-4xl">
-          Book with {profile.name ?? 'this mentor'}
+          Find a time to talk with {profile.name ?? 'this mentor'}
         </h1>
         <p className="text-muted-foreground mt-3 max-w-2xl leading-7">
-          Choose a session, date, and available time. You can enter your details and finish the
-          booking without creating an account.
+          Pick the session and time that fit your question. You will see the details before you
+          confirm.
         </p>
       </header>
       <BookingInterface bookingData={bookingData} variant="inline" />
@@ -77,7 +77,7 @@ export async function generateMetadata({ params }: BookingPageProps) {
 
   return createMetadata({
     title: `Book a session with ${mentorName}`,
-    description: `Choose a session and available time with ${mentorName}. Review the price and complete the booking as a guest.`,
+    description: `Choose a focused conversation and available time with ${mentorName}. Review the session details before you confirm.`,
     alternates: { canonical: `${siteConfig.url}/mentor/${username}` },
     robots: { index: false, follow: true },
   })

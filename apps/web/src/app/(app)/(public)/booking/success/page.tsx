@@ -11,17 +11,17 @@ const BookingSuccessPage = () => {
           <div className="bg-primary/10 mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full">
             <CheckCircle className="text-primary h-6 w-6" />
           </div>
-          <CardTitle>Booking Successful!</CardTitle>
+          <CardTitle>You&apos;re all set</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4 text-center">
           <p className="text-muted-foreground">
-            Thank you for your booking. A confirmation email with the details of your appointment
-            will be sent to you shortly.
+            We sent your calendar invitation and session details by email. Before you meet, write
+            down the one decision you want to leave clearer about.
           </p>
           <Button asChild>
             <Link href="/">
               <Home className="mr-2 h-4 w-4" />
-              Go Home
+              Find another mentor
             </Link>
           </Button>
         </CardContent>

@@ -8,11 +8,9 @@ import {
   CircleDollarSign,
   CircleAlert,
   Clock3,
-  CreditCard,
   GraduationCap,
   MessageSquareText,
   ShieldCheck,
-  SlidersHorizontal,
 } from 'lucide-react'
 import { Button } from '~/components/ui/button'
 import { absoluteUrl, createMetadata } from '~/lib/metadata'
@@ -27,7 +25,7 @@ const platformFeePercent = PLATFORM_COMMISSION_BASIS_POINTS / 100
 export const metadata: Metadata = createMetadata({
   title: 'Become a College Mentor',
   description:
-    'Create a student mentor profile, set your availability, offer free or paid one-to-one sessions, and let Discuno handle scheduling and payouts.',
+    'Be the student you wish you could have asked. Share firsthand college experience one-to-one, mentor on your schedule, and choose whether your time is free or paid.',
   keywords: [
     'become a college mentor',
     'student mentor jobs',
@@ -42,61 +40,60 @@ export const metadata: Metadata = createMetadata({
   openGraph: {
     title: 'Become a College Mentor on Discuno',
     description:
-      'Share practical college experience through one-to-one sessions. You choose your topics, availability, and whether sessions are free or paid.',
+      'Help another student make sense of a choice you have already lived through. Mentor on your schedule, for free or for a price you set.',
     url: '/for-mentors',
   },
 })
 
 const mentorBenefits = [
   {
-    icon: SlidersHorizontal,
-    title: 'Define your offer',
+    icon: MessageSquareText,
+    title: 'Be the person you needed',
     description:
-      'Choose the questions you can answer, create session types, set the duration, and decide whether each session is free or paid.',
+      'Share the context, tradeoffs, and lessons that would have helped when you faced the same decision.',
   },
   {
     icon: CalendarDays,
-    title: 'Protect your time',
-    description:
-      'Set weekly availability and date-specific overrides. Students can only choose from the times you make available.',
+    title: 'Help without overcommitting',
+    description: 'Open only the times that work around classes, work, and the rest of your life.',
   },
   {
     icon: CircleDollarSign,
-    title: 'Get paid without chasing invoices',
+    title: 'Give back or get paid',
     description:
-      'For paid sessions, Stripe Connect handles checkout and payouts while Discuno keeps the booking and payment state together.',
+      'Offer your time for free, set a price that respects your experience, or do a little of both.',
   },
 ]
 
-const useCases = [
-  'Choosing courses or a major',
-  'Preparing for internship recruiting',
-  'Understanding campus life',
-  'Building an early-career plan',
-  'Navigating student organizations',
-  'Preparing for graduate school',
+const studentQuestions = [
+  'Is this course worth the workload?',
+  'How did you land your first internship?',
+  'What do you wish you knew before choosing this major?',
+  'Should I switch paths or stick it out?',
+  'How do I actually get involved on campus?',
+  'What made you feel ready for graduate school?',
 ]
 
 const onboardingSteps = [
   {
-    title: 'Verify your school email',
+    title: 'Show where your perspective comes from',
     description:
-      'Sign up with a supported .edu address so students can understand your institutional affiliation.',
+      'Use a supported school email and share the school, field, and experiences behind your advice.',
   },
   {
-    title: 'Build a useful profile',
+    title: 'Tell students when you are the right person',
     description:
-      'Add your school, field of study, photo, and a specific description of the experience you can share.',
+      'Describe the choices you have navigated and the questions you can responsibly help someone think through.',
   },
   {
-    title: 'Create sessions and availability',
+    title: 'Choose how you want to help',
     description:
-      'Choose session durations, free or paid pricing, and the exact times students can book.',
+      'Offer a focused conversation, decide whether it is free or paid, and open only the times that work for you.',
   },
   {
-    title: 'Publish and start accepting bookings',
+    title: 'Open the door',
     description:
-      'Your profile can appear in mentor discovery and has a direct link you can share with students and communities.',
+      'Publish when you are ready, then share your profile or let students discover you through Discuno.',
   },
 ]
 
@@ -140,7 +137,7 @@ const mentorPageJsonLd = {
       url: absoluteUrl('/for-mentors'),
       name: 'Become a College Mentor on Discuno',
       description:
-        'Create a student mentor profile and offer free or paid one-to-one college mentorship sessions.',
+        'Share firsthand college experience through free or paid one-to-one conversations.',
       inLanguage: 'en-US',
       about: {
         '@type': 'Service',
@@ -201,8 +198,8 @@ const ForMentorsPage = async ({
               <div>
                 <p className="font-semibold">That account does not have mentor access</p>
                 <p className="text-muted-foreground mt-1 text-sm leading-6">
-                  You are signed in as a mentee. Mentor tools require a supported .edu address;
-                  continue with a school account, or keep this account to browse and book.
+                  You are signed in with a personal account. Mentor tools require a supported .edu
+                  address; continue with a school account, or keep this account to browse and book.
                 </p>
               </div>
             </div>
@@ -217,35 +214,36 @@ const ForMentorsPage = async ({
               For student mentors
             </div>
             <h1 className="mt-7 max-w-3xl text-4xl leading-[1.06] font-semibold tracking-[-0.04em] text-balance sm:text-6xl lg:text-7xl">
-              Turn what you have learned into someone else&apos;s head start.
+              Be the student you wish you could have asked.
             </h1>
             <p className="text-muted-foreground mt-7 max-w-2xl text-lg leading-8 sm:text-xl">
-              Create a focused mentor profile, offer one-to-one sessions, and choose exactly when
-              and how you help. Discuno handles discovery, scheduling, and paid-session payouts.
+              You have already worked through choices another student is facing now. Turn those
+              hard-won lessons into one-to-one conversations—on your schedule, for free or for a
+              price you set.
             </p>
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">
               <Button asChild size="lg" className="h-12 px-6 text-base">
                 <Link href="/auth?intent=mentor">
-                  Create your mentor profile
+                  Start mentoring
                   <ArrowRight className="size-4" aria-hidden="true" />
                 </Link>
               </Button>
               <Button asChild size="lg" variant="outline" className="h-12 px-6 text-base">
-                <Link href="#how-it-works">See how it works</Link>
+                <Link href="#student-questions">See what students ask</Link>
               </Button>
             </div>
             <div className="text-muted-foreground mt-7 flex flex-wrap gap-x-6 gap-y-3 text-sm">
               <span className="inline-flex items-center gap-2">
                 <Check className="text-primary size-4" aria-hidden="true" />
-                Free or paid sessions
+                Help one student at a time
               </span>
               <span className="inline-flex items-center gap-2">
                 <Check className="text-primary size-4" aria-hidden="true" />
-                No profile subscription
+                Choose the questions you take
               </span>
               <span className="inline-flex items-center gap-2">
                 <Check className="text-primary size-4" aria-hidden="true" />
-                You control availability
+                Give back or earn on your terms
               </span>
             </div>
           </div>
@@ -254,27 +252,28 @@ const ForMentorsPage = async ({
             <div className="border-border bg-card overflow-hidden rounded-3xl border shadow-xl shadow-black/5">
               <div className="border-border flex items-center justify-between border-b px-6 py-5">
                 <div>
-                  <p className="font-semibold">Mentor profile setup</p>
-                  <p className="text-muted-foreground mt-0.5 text-sm">Publish only when ready</p>
+                  <p className="font-semibold">Questions students are asking</p>
+                  <p className="text-muted-foreground mt-0.5 text-sm">
+                    You may already know what they need to hear
+                  </p>
                 </div>
                 <span className="bg-muted text-muted-foreground rounded-full px-3 py-1 text-xs font-medium">
-                  Preview
+                  Right now
                 </span>
               </div>
               <div className="space-y-3 p-5 sm:p-6">
                 {[
-                  ['Profile and expertise', 'Tell students what you can help with'],
-                  ['Session options', 'Choose duration and free or paid pricing'],
-                  ['Availability', 'Open only the times that work for you'],
-                  ['Payouts', 'Connect Stripe only for paid sessions'],
-                ].map(([title, description], index) => (
-                  <div key={title} className="border-border flex gap-4 rounded-2xl border p-4">
-                    <div className="bg-primary/10 text-primary flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold">
-                      {index + 1}
+                  'How did you know this major was right for you?',
+                  'What actually helped you land that internship?',
+                  'What would you do differently in your first year?',
+                  'How did you decide what came after graduation?',
+                ].map(question => (
+                  <div key={question} className="border-border flex gap-4 rounded-2xl border p-4">
+                    <div className="bg-primary/10 text-primary flex size-8 shrink-0 items-center justify-center rounded-full">
+                      <MessageSquareText className="size-4" aria-hidden="true" />
                     </div>
                     <div>
-                      <p className="text-sm font-semibold">{title}</p>
-                      <p className="text-muted-foreground mt-1 text-sm leading-5">{description}</p>
+                      <p className="text-sm leading-6 font-medium">“{question}”</p>
                     </div>
                   </div>
                 ))}
@@ -286,11 +285,13 @@ const ForMentorsPage = async ({
                       <BadgeCheck className="size-5" aria-hidden="true" />
                     </div>
                     <div>
-                      <p className="text-sm font-semibold">School affiliation</p>
-                      <p className="text-muted-foreground text-xs">Checked with a .edu email</p>
+                      <p className="text-sm font-semibold">You do not need every answer</p>
+                      <p className="text-muted-foreground text-xs">
+                        Just honest experience with this one
+                      </p>
                     </div>
                   </div>
-                  <span className="text-primary text-xs font-semibold">Required</span>
+                  <span className="text-primary text-xs font-semibold">That matters</span>
                 </div>
               </div>
             </div>
@@ -301,28 +302,28 @@ const ForMentorsPage = async ({
       <section className="border-border/70 border-b px-4 py-6 sm:px-6 lg:px-8">
         <div className="text-muted-foreground mx-auto grid max-w-6xl gap-5 text-sm sm:grid-cols-3">
           <div className="flex items-center gap-3 sm:justify-center">
-            <BadgeCheck className="text-foreground size-5" aria-hidden="true" />
-            School email affiliation check
+            <MessageSquareText className="text-foreground size-5" aria-hidden="true" />
+            Make one decision feel less lonely
           </div>
           <div className="flex items-center gap-3 sm:justify-center sm:border-x">
             <CalendarDays className="text-foreground size-5" aria-hidden="true" />
-            Scheduling powered by Cal.com
+            Set boundaries that work for you
           </div>
           <div className="flex items-center gap-3 sm:justify-center">
-            <CreditCard className="text-foreground size-5" aria-hidden="true" />
-            Paid-session payouts through Stripe
+            <BadgeCheck className="text-foreground size-5" aria-hidden="true" />
+            Share honestly, not perfectly
           </div>
         </div>
       </section>
 
-      <section className="px-4 py-20 sm:px-6 sm:py-24 lg:px-8">
+      <section id="student-questions" className="scroll-mt-24 px-4 py-20 sm:px-6 sm:py-24 lg:px-8">
         <div className="mx-auto max-w-6xl">
           <div className="max-w-3xl">
             <p className="text-primary text-sm font-semibold tracking-wide uppercase">
               Your experience is useful
             </p>
             <h2 className="mt-4 text-3xl font-semibold tracking-tight text-balance sm:text-5xl">
-              The advice you wish you had can make someone&apos;s next decision clearer.
+              What feels ordinary to you may be exactly what another student needs.
             </h2>
             <p className="text-muted-foreground mt-6 max-w-2xl text-lg leading-8">
               You do not need to know everything. A strong mentor profile is specific about the
@@ -331,13 +332,13 @@ const ForMentorsPage = async ({
           </div>
 
           <div className="mt-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {useCases.map(useCase => (
+            {studentQuestions.map(question => (
               <div
-                key={useCase}
+                key={question}
                 className="border-border bg-card flex items-center gap-3 rounded-xl border px-4 py-4 text-sm font-medium"
               >
-                <MessageSquareText className="text-primary size-4 shrink-0" aria-hidden="true" />
-                {useCase}
+                <MessageSquareText className="text-primary size-4 shrink-0" aria-hidden="true" />“
+                {question}”
               </div>
             ))}
           </div>
@@ -371,11 +372,11 @@ const ForMentorsPage = async ({
                 How it works
               </p>
               <h2 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">
-                From sign-up to bookable, one clear step at a time.
+                From “I could help with that” to your first conversation.
               </h2>
               <p className="text-muted-foreground mt-5 leading-7">
-                Your dashboard shows what is complete and what still needs attention before your
-                profile starts accepting bookings.
+                Tell students where you have been, choose how you want to help, and open only the
+                times that work for you.
               </p>
             </div>
 
@@ -401,14 +402,14 @@ const ForMentorsPage = async ({
           <div className="grid items-start gap-12 lg:grid-cols-2 lg:gap-20">
             <div>
               <p className="text-primary text-sm font-semibold tracking-wide uppercase">
-                Straightforward economics
+                Your time, your terms
               </p>
               <h2 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">
-                Start free. Charge only when it makes sense for you.
+                Give your time, earn from it, or do both.
               </h2>
               <p className="text-muted-foreground mt-5 max-w-xl text-lg leading-8">
-                Some mentors want to give back. Others want to build a flexible source of income.
-                Discuno supports both without a profile subscription.
+                Some conversations are your way of giving back. Others draw on experience that took
+                years to earn. You decide what each session is worth.
               </p>
             </div>
 
@@ -422,11 +423,11 @@ const ForMentorsPage = async ({
                 <ul className="text-muted-foreground mt-6 space-y-3 text-sm">
                   <li className="flex gap-2">
                     <Check className="text-primary mt-0.5 size-4 shrink-0" aria-hidden="true" />
-                    No Stripe payout setup required
+                    Offer a low-pressure first conversation
                   </li>
                   <li className="flex gap-2">
                     <Check className="text-primary mt-0.5 size-4 shrink-0" aria-hidden="true" />
-                    Use the same scheduling controls
+                    No payout account needed
                   </li>
                 </ul>
               </div>
@@ -444,7 +445,7 @@ const ForMentorsPage = async ({
                   </li>
                   <li className="flex gap-2">
                     <Check className="text-primary mt-0.5 size-4 shrink-0" aria-hidden="true" />
-                    Eligible after delivery and the 72-hour support window
+                    Set a price that respects your time
                   </li>
                 </ul>
               </div>
@@ -462,32 +463,30 @@ const ForMentorsPage = async ({
           <div>
             <ShieldCheck className="text-background/60 size-10" aria-hidden="true" />
             <h2 className="mt-6 text-3xl font-semibold tracking-tight sm:text-4xl">
-              Trust is a product feature, not a marketing claim.
+              The best mentors do not pretend to know everything.
             </h2>
             <p className="text-background/65 mt-5 leading-7">
-              Discuno makes the platform&apos;s role visible and leaves the important choices with
-              mentors and students.
+              Students come for lived experience. Be candid about what you know, curious about their
+              context, and careful about what only they can decide.
             </p>
           </div>
           <div className="divide-background/15 border-background/15 divide-y border-y">
             <div className="grid gap-2 py-6 sm:grid-cols-[10rem_1fr]">
-              <p className="font-semibold">Affiliation</p>
+              <p className="font-semibold">Share what happened</p>
               <p className="text-background/65 leading-7">
-                A .edu email check establishes institutional email access—not identity, expertise,
-                or guaranteed results.
+                Talk about the choices, tradeoffs, surprises, and mistakes that shaped your path.
               </p>
             </div>
             <div className="grid gap-2 py-6 sm:grid-cols-[10rem_1fr]">
-              <p className="font-semibold">Scheduling</p>
+              <p className="font-semibold">Listen before advising</p>
               <p className="text-background/65 leading-7">
-                You define recurring availability and exceptions; students only see bookable times.
+                Help someone untangle their situation instead of handing them a script for yours.
               </p>
             </div>
             <div className="grid gap-2 py-6 sm:grid-cols-[10rem_1fr]">
-              <p className="font-semibold">Payments</p>
+              <p className="font-semibold">Leave them with momentum</p>
               <p className="text-background/65 leading-7">
-                Paid-session checkout and connected-account onboarding run through Stripe. Discuno
-                tracks the booking and payout state without collecting card details itself.
+                End with better questions, a useful resource, or one next step they can own.
               </p>
             </div>
           </div>
@@ -526,16 +525,16 @@ const ForMentorsPage = async ({
         <div className="border-border bg-card mx-auto flex max-w-6xl flex-col items-start justify-between gap-8 rounded-3xl border p-8 sm:p-12 lg:flex-row lg:items-center lg:p-14">
           <div className="max-w-2xl">
             <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-              Share the context only experience can teach.
+              Someone is facing a decision you have already lived through.
             </h2>
             <p className="text-muted-foreground mt-4 text-lg leading-8">
-              Create your profile, choose your session terms, and publish when you are ready.
+              Be the conversation you wish you had.
             </p>
           </div>
           <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
             <Button asChild size="lg" className="h-12 px-6 text-base">
               <Link href="/auth?intent=mentor">
-                Start as a mentor
+                Start mentoring
                 <ArrowRight className="size-4" aria-hidden="true" />
               </Link>
             </Button>

@@ -7,7 +7,6 @@ import {
   LockKeyhole,
   School,
   ShieldCheck,
-  Video,
 } from 'lucide-react'
 import type { Metadata } from 'next'
 import Link from 'next/link'
@@ -169,13 +168,11 @@ export default async function MentorProfilePage({ params }: MentorProfilePagePro
                     id="session-options"
                     className="mt-3 text-2xl font-semibold tracking-[-0.03em]"
                   >
-                    Choose the conversation you need
+                    What you can talk through together
                   </h2>
                 </div>
                 {eventTypes.length > 0 && (
-                  <p className="text-muted-foreground text-sm">
-                    Price and duration shown before booking
-                  </p>
+                  <p className="text-muted-foreground text-sm">Start with the question you have</p>
                 )}
               </div>
 
@@ -201,10 +198,6 @@ export default async function MentorProfilePage({ params }: MentorProfilePagePro
                         <span className="flex items-center gap-1.5">
                           <Clock3 className="h-3.5 w-3.5" />
                           {eventType.duration} minutes
-                        </span>
-                        <span className="flex items-center gap-1.5">
-                          <Video className="h-3.5 w-3.5" />
-                          Video call
                         </span>
                       </div>
                     </div>
@@ -240,16 +233,16 @@ export default async function MentorProfilePage({ params }: MentorProfilePagePro
             <div className="bg-card rounded-xl border p-6 shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
               <p className="eyebrow">Book with {profile.name?.split(' ')[0] ?? 'this mentor'}</p>
               <h2 className="mt-3 text-2xl font-semibold tracking-[-0.03em]">
-                See available times
+                Ready to talk it through?
               </h2>
               <p className="text-muted-foreground mt-3 text-sm leading-6">
-                Choose a session, date, and time. You can complete the booking as a guest.
+                Choose the conversation that fits your question, then find a time that works.
               </p>
 
               {bookingData ? (
                 <BookingModal bookingData={bookingData} className="mt-6 w-full">
                   <CalendarDays />
-                  View availability
+                  See available times
                 </BookingModal>
               ) : (
                 <Button className="mt-6 w-full" disabled>
@@ -260,15 +253,15 @@ export default async function MentorProfilePage({ params }: MentorProfilePagePro
               <div className="text-muted-foreground mt-6 space-y-3 border-t pt-5 text-xs leading-5">
                 <p className="flex items-start gap-2">
                   <CalendarDays className="text-primary mt-0.5 h-3.5 w-3.5 shrink-0" />
-                  Availability comes directly from the mentor&apos;s calendar.
+                  See the session length, price, and available times before you confirm.
                 </p>
                 <p className="flex items-start gap-2">
                   <LockKeyhole className="text-primary mt-0.5 h-3.5 w-3.5 shrink-0" />
-                  You only provide the details needed to confirm the session.
+                  Bring one real question; you do not need a perfect agenda.
                 </p>
                 <p className="flex items-start gap-2">
                   <ShieldCheck className="text-primary mt-0.5 h-3.5 w-3.5 shrink-0" />
-                  Paid sessions are completed through Stripe checkout.
+                  For paid sessions, card details are handled securely at checkout.
                 </p>
               </div>
             </div>

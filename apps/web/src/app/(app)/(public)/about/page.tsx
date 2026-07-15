@@ -14,14 +14,14 @@ import { absoluteUrl, createMetadata, siteConfig } from '~/lib/metadata'
 export const metadata: Metadata = createMetadata({
   title: 'About Discuno',
   description:
-    'Discuno helps college students get practical, one-to-one guidance from student mentors who can share relevant firsthand context.',
+    'Discuno helps one student turn hard-won experience into a clearer next move for another.',
   alternates: {
     canonical: '/about',
   },
   openGraph: {
     title: 'About Discuno',
     description:
-      'Why Discuno is building a clearer, more trustworthy way for college students to learn from peers who have been there.',
+      'Why the college questions that matter most deserve a real conversation with someone who has been there.',
     url: '/about',
   },
 })
@@ -29,27 +29,27 @@ export const metadata: Metadata = createMetadata({
 const principles = [
   {
     icon: ShieldCheck,
-    title: 'Say exactly what is verified',
+    title: 'Real experience, clearly described',
     description:
-      'A school email confirms access to an institutional email address at sign-up. It is not a background check, professional credential, or promise of outcomes.',
+      'You should be able to see where a mentor’s perspective comes from and decide whether it fits your question.',
   },
   {
     icon: MessageCircleQuestion,
-    title: 'Make the choice understandable',
+    title: 'Advice without pretending',
     description:
-      'Mentor profiles, areas of context, session duration, price, and available times should be clear before a student decides to book.',
+      'A mentor can share what happened to them, ask better questions, and name tradeoffs without claiming to know your one right answer.',
   },
   {
     icon: LockKeyhole,
-    title: 'Use proven infrastructure',
+    title: 'A conversation shaped around you',
     description:
-      'Discuno uses Cal.com for scheduling and Stripe for paid-session checkout and mentor payouts instead of asking users to coordinate those details themselves.',
+      'The useful part is not a generic playbook. It is applying someone else’s experience to the situation you are actually in.',
   },
   {
     icon: GraduationCap,
-    title: 'Keep mentorship in scope',
+    title: 'A next step you still own',
     description:
-      'Peer mentorship can add firsthand context to a decision. It complements—not replaces—official academic, financial, legal, or medical advice.',
+      'Peer perspective can make a choice easier to understand. The decision—and the official guidance it may require—stays with you.',
   },
 ]
 
@@ -62,7 +62,7 @@ const aboutJsonLd = {
       url: absoluteUrl('/about'),
       name: 'About Discuno',
       description:
-        'Discuno helps college students get practical, one-to-one guidance from student mentors.',
+        'Discuno connects students for one-to-one conversations about real college decisions.',
       mainEntity: {
         '@id': absoluteUrl('/#organization'),
       },
@@ -94,12 +94,11 @@ const AboutPage = () => {
             About Discuno
           </div>
           <h1 className="max-w-4xl text-4xl leading-[1.08] font-semibold tracking-[-0.035em] text-balance sm:text-6xl lg:text-7xl">
-            College decisions are easier with context from someone who has been there.
+            No one should have to figure out college entirely from scratch.
           </h1>
           <p className="text-muted-foreground mt-8 max-w-2xl text-lg leading-8 sm:text-xl">
-            Discuno is building a direct way for students to ask specific questions, compare
-            perspectives, and book time with student mentors whose experience is relevant to the
-            decision in front of them.
+            Discuno exists so one student&apos;s hard-won experience can become another
+            student&apos;s clearer next move.
           </p>
         </div>
       </section>
@@ -111,20 +110,19 @@ const AboutPage = () => {
               Why we exist
             </p>
             <h2 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">
-              Guidance should feel personal, not generic.
+              The useful answer is often missing from the official one.
             </h2>
           </div>
           <div className="space-y-6 text-lg leading-8">
             <p>
-              Official resources are essential, but they are not designed to answer every personal
-              question. A course catalog can list requirements. A student who took the class can
-              explain the tradeoffs they experienced. A career page can list deadlines. A peer can
-              share how they prepared for the process.
+              A course catalog can list the requirements. It cannot tell you which tradeoff another
+              student regretted. A career page can list the deadline. It cannot tell you what the
+              interview felt like or what someone wishes they had done three months earlier.
             </p>
             <p className="text-muted-foreground">
-              Discuno closes that context gap. Students can find a mentor, understand what they can
-              help with, see the session terms, and choose an available time without a chain of
-              introductions or scheduling messages.
+              Those answers already live in student experience. Discuno makes it easier to find the
+              right person, ask one specific question, and turn someone else&apos;s hindsight into a
+              decision you can see more clearly.
             </p>
           </div>
         </div>
@@ -134,35 +132,36 @@ const AboutPage = () => {
         <div className="mx-auto max-w-6xl">
           <div className="max-w-2xl">
             <p className="text-muted-foreground text-sm font-semibold tracking-wide uppercase">
-              The product
+              A useful conversation
             </p>
             <h2 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">
-              A shorter path from question to conversation.
+              What the right conversation can change.
             </h2>
           </div>
 
           <div className="bg-border mt-12 grid gap-px overflow-hidden rounded-2xl border md:grid-cols-3">
             <div className="bg-card p-7 sm:p-8">
               <span className="text-primary text-sm font-semibold">01</span>
-              <h3 className="mt-8 text-xl font-semibold">Find relevant context</h3>
+              <h3 className="mt-8 text-xl font-semibold">Make the invisible visible</h3>
               <p className="text-muted-foreground mt-3 leading-7">
-                Browse public profiles by school and field of study, then read what each mentor can
-                speak to before reaching out.
+                Hear the workload, tradeoffs, false starts, and unwritten expectations that do not
+                fit neatly on an official page.
               </p>
             </div>
             <div className="bg-card p-7 sm:p-8">
               <span className="text-primary text-sm font-semibold">02</span>
-              <h3 className="mt-8 text-xl font-semibold">Choose with clarity</h3>
+              <h3 className="mt-8 text-xl font-semibold">Turn options into better questions</h3>
               <p className="text-muted-foreground mt-3 leading-7">
-                Review session options, duration, pricing, and live availability in one place.
+                Stop circling the same pros-and-cons list and find out what you still need to know
+                before you choose.
               </p>
             </div>
             <div className="bg-card p-7 sm:p-8">
               <span className="text-primary text-sm font-semibold">03</span>
-              <h3 className="mt-8 text-xl font-semibold">Book without back-and-forth</h3>
+              <h3 className="mt-8 text-xl font-semibold">Make the next step feel smaller</h3>
               <p className="text-muted-foreground mt-3 leading-7">
-                Pick a time that works. Discuno coordinates scheduling and, for paid sessions,
-                checkout and mentor payouts.
+                Leave with one action, one conversation to have, or one assumption worth testing
+                next.
               </p>
             </div>
           </div>
@@ -174,13 +173,14 @@ const AboutPage = () => {
           <div className="grid gap-12 lg:grid-cols-[0.75fr_1.25fr] lg:gap-20">
             <div>
               <p className="text-muted-foreground text-sm font-semibold tracking-wide uppercase">
-                Our standard
+                Our promise
               </p>
               <h2 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">
-                Trust starts with being precise.
+                Useful, honest, and still your decision.
               </h2>
               <p className="text-muted-foreground mt-5 leading-7">
-                We would rather explain a boundary clearly than dress it up as a guarantee.
+                The goal is not to hand you certainty. It is to give you context you did not have
+                before.
               </p>
             </div>
 
@@ -213,29 +213,19 @@ const AboutPage = () => {
                 Built from student experience
               </p>
               <h2 className="mt-4 max-w-2xl text-3xl font-semibold tracking-tight sm:text-4xl">
-                A practical product for a problem students feel every semester.
+                The answer may exist. Finding the right person should not depend on luck.
               </h2>
               <p className="text-background/70 mt-5 max-w-2xl leading-7">
                 Discuno was started by Brad, a computer science student at the University of
                 Michigan, to make useful peer guidance easier to find and simpler to act on. The
-                platform is developed in the open, so its implementation can be inspected as it
-                evolves.
+                idea is simple: students already carry lessons that could save someone else time,
+                uncertainty, and a few avoidable dead ends.
               </p>
-              <Link
-                href="https://github.com/discuno/discuno"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="decoration-background/30 hover:decoration-background mt-7 inline-flex items-center gap-2 text-sm font-semibold underline underline-offset-4 transition-colors"
-              >
-                View the open-source project
-                <ArrowRight className="size-4" aria-hidden="true" />
-              </Link>
             </div>
             <div className="border-background/15 flex items-center border-t p-8 sm:p-12 lg:border-t-0 lg:border-l lg:p-14">
               <CalendarCheck2 className="text-background/50 size-10" aria-hidden="true" />
               <p className="ml-5 text-lg leading-7 font-medium">
-                Less searching, fewer introductions, and no scheduling thread just to ask one good
-                question.
+                The context you need may already live in someone else&apos;s experience.
               </p>
             </div>
           </div>
@@ -246,21 +236,21 @@ const AboutPage = () => {
         <div className="mx-auto flex max-w-6xl flex-col justify-between gap-8 lg:flex-row lg:items-end">
           <div className="max-w-2xl">
             <p className="text-muted-foreground text-sm font-semibold tracking-wide uppercase">
-              Start a useful conversation
+              What are you trying to figure out?
             </p>
             <h2 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">
-              Find someone who understands the decision—or share what you have learned.
+              Find someone who has been there—or be that person for someone else.
             </h2>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row">
             <Button asChild size="lg" className="h-12 px-6">
               <Link href="/">
-                Find a mentor
+                Find someone to talk to
                 <ArrowRight className="size-4" aria-hidden="true" />
               </Link>
             </Button>
             <Button asChild size="lg" variant="outline" className="h-12 px-6">
-              <Link href="/for-mentors">Become a mentor</Link>
+              <Link href="/for-mentors">Share your experience</Link>
             </Button>
           </div>
         </div>
