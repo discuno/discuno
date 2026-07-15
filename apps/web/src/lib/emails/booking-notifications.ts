@@ -32,11 +32,8 @@ export const sendBookingConfirmationEmail = async ({
 }) => {
   try {
     console.log('Sending booking confirmation email:', {
-      attendeeEmail,
-      mentorEmail,
       booking: {
         id: booking.id,
-        title: booking.title,
         startTime: booking.startTime,
       },
     })
@@ -92,7 +89,6 @@ export const sendRefundNotificationEmail = async ({
 }) => {
   try {
     console.log('Sending refund notification email:', {
-      customerEmail,
       amount: (amount / 100).toFixed(2),
       reason,
     })
@@ -159,7 +155,6 @@ export const sendPayoutNotificationEmail = async ({
 }) => {
   try {
     console.log('Sending payout notification email:', {
-      mentorEmail,
       amount: (amount / 100).toFixed(2),
       currency,
       transferId,
@@ -236,9 +231,6 @@ export const sendBookingFailureEmail = async ({
 }) => {
   try {
     console.log('Sending booking failure email:', {
-      attendeeEmail,
-      attendeeName,
-      mentorName,
       reason,
     })
 
@@ -256,7 +248,7 @@ export const sendBookingFailureEmail = async ({
     if (error) {
       console.error('Failed to send booking failure email:', error)
     }
-    console.log('Successfully sent booking failure email:', data)
+    console.log('Successfully sent booking failure email', { emailId: data?.id })
   } catch (error) {
     console.error('Caught exception sending booking failure email:', error)
   }
