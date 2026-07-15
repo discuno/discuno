@@ -30,7 +30,11 @@ import { getPublicProfileByUsername } from '~/server/queries/profiles'
 
 const EventTypeIdSchema = z.number().int().positive('Event type ID must be a positive integer')
 const StartTimeSchema = z.iso
-  .datetime({ error: 'Start time must be a valid ISO date string' })
+  .datetime({
+    offset: true,
+    error: 'Start time must be a valid ISO date string with a UTC designator or time zone offset',
+  })
+  .transform(value => new Date(value).toISOString())
   .refine(value => Date.parse(value) > Date.now(), {
     message: 'Start time must be in the future',
   })

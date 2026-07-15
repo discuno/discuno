@@ -2,6 +2,8 @@ import { config } from 'dotenv'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 import Stripe from 'stripe'
+import { createSeedMentorUser } from '~/lib/db/seed-user'
+import { deriveStripeAccountStatus } from '~/lib/stripe/account-status'
 import * as schema from '~/server/db/schema/index'
 
 /**
@@ -313,16 +315,15 @@ const getRandomElements = <T>(array: readonly T[], count: number): T[] => {
 const generateUserData = (count: number) => {
   const users = []
   for (let i = 0; i < count; i++) {
-    const first = getRandomElement(firstName)
-    const last = getRandomElement(lastName)
-    const name = `${first} ${last}`
-    const email = `${first.toLowerCase()}.${last.toLowerCase()}${i + 1}@university.edu`
+    const first = firstName[i % firstName.length]
+    const last = lastName[i % lastName.length]
+    const image = userImages[i % userImages.length]
 
-    users.push({
-      name,
-      email,
-      image: getRandomElement(userImages),
-    })
+    if (!first || !last || !image) {
+      throw new Error('Seed mentor source data cannot be empty')
+    }
+
+    users.push(createSeedMentorUser({ firstName: first, lastName: last, index: i, image }))
   }
   return users
 }
@@ -744,12 +745,13 @@ export const seedDatabase = async (environment?: Environment) => {
             stripeAccountData.push({
               userId: user.id,
               stripeAccountId: acct.id,
-              stripeAccountStatus: 'active',
-              onboardingCompleted: acct.created ? new Date(acct.created * 1000) : undefined,
-              payoutsEnabled: true,
-              chargesEnabled: true,
-              detailsSubmitted: true,
-              requirements: {},
+              stripeAccountStatus: deriveStripeAccountStatus(acct),
+              onboardingCompleted:
+                acct.details_submitted && acct.created ? new Date(acct.created * 1000) : undefined,
+              payoutsEnabled: acct.payouts_enabled,
+              chargesEnabled: acct.charges_enabled,
+              detailsSubmitted: acct.details_submitted,
+              requirements: acct.requirements ?? {},
             })
           } catch (err) {
             console.error(`Failed to create Stripe account for user ${user.id}:`, err)

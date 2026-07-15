@@ -5,6 +5,7 @@ import {
   processMentorPayout,
   reconcileEligibleMentorPayouts,
 } from '~/inngest/functions'
+import { verifyInngestInvocation } from '~/inngest/operational-smoke'
 
 export const maxDuration = 60
 
@@ -18,5 +19,6 @@ export const { GET, POST, PUT } = serve({
     processCheckoutSideEffects, // Checkout session side effects (Cal.com booking, PostHog, refunds, emails)
     processMentorPayout, // Delayed, policy-gated Stripe transfer to the mentor
     reconcileEligibleMentorPayouts, // Hourly recovery for due transfers missed by event delivery
+    verifyInngestInvocation, // Side-effect-free Cloud-to-deployment operational probe
   ],
 })

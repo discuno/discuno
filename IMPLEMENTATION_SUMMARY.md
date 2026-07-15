@@ -6,10 +6,10 @@ This document describes the payment and booking architecture implemented in the 
 
 Current branch verification on July 14, 2026:
 
-- Type checking, linting, formatting, all 78 unit tests, and the Next.js production build pass. The build emits 41 application routes.
+- Type checking, linting, formatting, the full unit test suite, and the Next.js production build pass. The build emits 41 application routes.
 - The guarded Railway test database suite passes, the preview schema is applied, and a second preview schema push reports no changes.
 - All eight preview integration configuration checks pass. Signed Stripe platform, Stripe Connect, and Cal.com preview webhook smokes return success on both the immutable deployment URL and `preview.discuno.com`.
-- The official Inngest Vercel integration is connected to Preview with fresh managed keys. Authenticated introspection reports three product functions and five Cloud-visible configurations after the two generated failure handlers; Cloud registration succeeds and a branch-environment event-ingestion smoke is accepted. A real business-function invocation remains part of the paid-booking matrix below.
+- The official Inngest Vercel integration is connected to Preview with fresh managed keys. The current route exposes four product functions and six Cloud-visible configurations after the two generated failure handlers. `verify-inngest-invocation` handles only the dedicated `operations/inngest.smoke` event and returns non-sensitive deployment metadata without touching the database or an external provider. The preceding five-configuration deployment registered successfully and accepted branch event ingress; this six-configuration revision still needs to be deployed, registered, and invoked through Deployment Protection before charging a card. A real business-function invocation remains part of the paid-booking matrix below.
 - A real Stripe test-mode paid booking has not yet completed the full Checkout → webhook → Inngest → Cal.com → refund/payout matrix. Production promotion remains gated on that exercise.
 
 ## Business policy encoded in the application
@@ -106,7 +106,7 @@ The Stripe Connect webhook remains separately configured for connected-account l
 
 ## Verification status and remaining release work
 
-Targeted unit coverage exists for the real Checkout webhook handler, marketplace calculations, Cal cancellation timestamp and payout decisions, Stripe refund creation/status policy, Cal.com schemas, and mentor cancellation authorization. The former `checkout-inngest.test.ts` was removed because it exercised standalone mocks rather than production code. Preview now has authenticated Inngest registration and event ingress; the paid-booking matrix must still prove execution of the real business functions and their financial side effects.
+Targeted unit coverage exists for the real Checkout webhook handler, marketplace calculations, Cal cancellation timestamp and payout decisions, Stripe refund creation/status policy, Cal.com schemas, mentor cancellation authorization, and the side-effect-free Inngest operational probe configuration/acknowledgement. The former `checkout-inngest.test.ts` was removed because it exercised standalone mocks rather than production code. The paid-booking matrix must still prove execution of the real business functions and their financial side effects.
 
 Completed Preview gates:
 
@@ -114,13 +114,14 @@ Completed Preview gates:
 2. The new nullable payment columns, `stripe_customer_id`, `mentor_payout_eligible`, and the three ledger tables are applied to Preview; a second schema diff is empty.
 3. The Preview Stripe webhooks contain every required event above and their signed smokes succeed.
 4. The Cal.com webhook triggers and signing secret match the current versioned payloads, and the local Cal.com MCP connection passes an authenticated read.
-5. The official Inngest Vercel integration is connected to Preview, stale Preview keys are rotated, all five Cloud-visible configurations are registered, authenticated route inspection succeeds through Deployment Protection, and branch event ingestion is accepted.
+5. The official Inngest Vercel integration is connected to Preview, stale Preview keys are rotated, all five configurations from the preceding deployment are registered, authenticated route inspection succeeds through Deployment Protection, and branch event ingress is accepted.
 
 Remaining before production rollout:
 
-1. Run Preview end-to-end cases for a paid booking, delayed payment success, Cal.com retry reconciliation, early and late cancellation, mentor no-show, refund, transfer, transfer reversal, and dispute release. This must include an observable real Inngest business-function run through Deployment Protection.
-2. Verify manual-review messages reach the configured `ADMIN_ALERT_EMAIL`; there is not yet a dedicated manual-review administration UI.
-3. Back up production, inspect the production schema diff, apply the schema, deploy with `PAYMENTS_ENABLED=false`, and repeat the signed webhook and read-only smoke checks before enabling paid traffic.
+1. Deploy and register the current six-configuration Inngest route, send `operations/inngest.smoke` to the Preview branch environment, and confirm its successful run reports the expected Preview environment and commit SHA through Deployment Protection.
+2. Run Preview end-to-end cases for a paid booking, delayed payment success, Cal.com retry reconciliation, early and late cancellation, mentor no-show, refund, transfer, transfer reversal, and dispute release. This must include an observable real Inngest business-function run through Deployment Protection.
+3. Verify manual-review messages reach the configured `ADMIN_ALERT_EMAIL`; there is not yet a dedicated manual-review administration UI.
+4. Back up production, inspect the production schema diff, apply the schema, deploy with `PAYMENTS_ENABLED=false`, and repeat the signed webhook and read-only smoke checks before enabling paid traffic.
 
 ## Production rollout and recovery runbook
 

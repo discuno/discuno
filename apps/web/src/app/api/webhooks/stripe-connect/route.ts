@@ -2,6 +2,7 @@ import { headers } from 'next/headers'
 import { NextResponse } from 'next/server'
 import type { Stripe } from 'stripe'
 import { env } from '~/env'
+import { deriveStripeAccountStatus } from '~/lib/stripe/account-status'
 import { upsertStripeAccount } from '~/server/dal/stripe'
 import { stripe } from '~/lib/stripe'
 
@@ -56,20 +57,10 @@ async function handleAccountUpdated(account: Stripe.Account) {
       return
     }
 
-    const disabledReason = account.requirements?.disabled_reason
-    const stripeAccountStatus =
-      account.charges_enabled && account.payouts_enabled
-        ? 'active'
-        : disabledReason?.startsWith('rejected')
-          ? 'inactive'
-          : account.details_submitted
-            ? 'restricted'
-            : 'pending'
-
     await upsertStripeAccount({
       userId,
       stripeAccountId: account.id,
-      stripeAccountStatus,
+      stripeAccountStatus: deriveStripeAccountStatus(account),
       chargesEnabled: account.charges_enabled,
       payoutsEnabled: account.payouts_enabled,
       detailsSubmitted: account.details_submitted,

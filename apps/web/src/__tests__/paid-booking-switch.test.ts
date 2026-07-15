@@ -144,4 +144,37 @@ describe('paid booking launch switch', () => {
     expect(mocks.getOrCreateStripeCustomerId).toHaveBeenCalledOnce()
     expect(mocks.createCheckoutSession).toHaveBeenCalledOnce()
   })
+
+  it('accepts an ISO time zone offset and canonicalizes the instant to UTC', async () => {
+    mocks.env.PAYMENTS_ENABLED = true
+
+    await expect(
+      createStripeCheckoutSession({
+        ...input,
+        startTimeIso: '2099-01-02T10:00:00.000-05:00',
+      })
+    ).resolves.toMatchObject({ success: true })
+
+    expect(mocks.createCheckoutSession).toHaveBeenCalledWith(
+      expect.objectContaining({
+        line_items: [
+          expect.objectContaining({
+            price_data: expect.objectContaining({
+              product_data: expect.objectContaining({
+                metadata: expect.objectContaining({
+                  startTime: '2099-01-02T15:00:00.000Z',
+                }),
+              }),
+            }),
+          }),
+        ],
+        metadata: expect.objectContaining({
+          startTime: '2099-01-02T15:00:00.000Z',
+        }),
+      }),
+      expect.objectContaining({
+        idempotencyKey: expect.stringMatching(/^discuno:checkout:v2:/),
+      })
+    )
+  })
 })
