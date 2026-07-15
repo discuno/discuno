@@ -540,7 +540,8 @@ const refundPaymentUnlocked = async (
   const hasIndependentReview =
     record.requiresManualReview &&
     !record.reviewReason?.startsWith('Stripe refund') &&
-    !record.reviewReason?.startsWith('Transfer reversal failed')
+    !record.reviewReason?.startsWith('Transfer reversal failed') &&
+    !record.reviewReason?.startsWith('Cancellation actor unresolved:')
   const requiresRefundReview = result.status === 'requires_action'
   await db
     .update(payment)
@@ -610,6 +611,57 @@ export const refundBookingPayment = async (
 
   if (!record?.paymentId) return { success: true, skipped: true }
   return refundPayment(record.paymentId, purpose)
+}
+
+/**
+ * Durably block payout when a cancellation cannot be classified safely.
+ * The conditional update makes repeated webhook deliveries alert an operator once.
+ */
+export const holdBookingPaymentForManualReview = async (
+  calcomBookingUid: string,
+  reason: string
+): Promise<PaymentOperationResult> => {
+  const [record] = await db
+    .select({
+      paymentId: payment.id,
+      platformStatus: payment.platformStatus,
+    })
+    .from(booking)
+    .innerJoin(payment, eq(payment.id, booking.paymentId))
+    .where(eq(booking.calcomUid, calcomBookingUid))
+    .limit(1)
+
+  if (!record) return { success: true, skipped: true, reason: 'unpaid_booking' }
+  if (record.platformStatus === 'REFUNDED') {
+    return { success: true, skipped: true, reason: 'already_refunded' }
+  }
+
+  const reviewReason = `Cancellation actor unresolved: ${reason}`.slice(0, 500)
+  const [held] = await db
+    .update(payment)
+    .set({ requiresManualReview: true, reviewReason, updatedAt: new Date() })
+    .where(
+      and(
+        eq(payment.id, record.paymentId),
+        eq(payment.requiresManualReview, false),
+        ne(payment.platformStatus, 'REFUNDED')
+      )
+    )
+    .returning({ id: payment.id })
+
+  if (held) {
+    await sendAdminAlert({
+      type: 'CANCELLATION_ACTOR_REQUIRES_REVIEW',
+      paymentId: record.paymentId,
+      error: reviewReason,
+    })
+  }
+
+  return {
+    success: true,
+    skipped: !held,
+    reason: held ? 'manual_review' : 'manual_review_existing',
+  }
 }
 
 const transferMentorPaymentUnlocked = async ({
@@ -1341,7 +1393,8 @@ const syncStripeRefundUnlocked = async (refund: Stripe.Refund): Promise<boolean>
   const hasIndependentReview =
     record.requiresManualReview &&
     !record.reviewReason?.startsWith('Stripe refund') &&
-    !record.reviewReason?.startsWith('Transfer reversal failed')
+    !record.reviewReason?.startsWith('Transfer reversal failed') &&
+    !record.reviewReason?.startsWith('Cancellation actor unresolved:')
 
   await db
     .update(payment)

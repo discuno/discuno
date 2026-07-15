@@ -23,7 +23,7 @@ describe('Cal.com API error observability', () => {
     vi.unstubAllGlobals()
   })
 
-  it('logs only a sanitized structured provider error without query-string PII or details', async () => {
+  it('logs only allowlisted diagnostics without query-string PII, messages, or details', async () => {
     fetchMock.mockResolvedValueOnce(
       new Response(
         JSON.stringify({
@@ -50,16 +50,13 @@ describe('Cal.com API error observability', () => {
 
     await expect(
       calcomRequest('/bookings?attendeeEmail=delivered%40resend.dev', { method: 'POST' })
-    ).rejects.toThrow(
-      'Cal.com API request failed (400): BadRequestException: Attendee [redacted-email], phone [redacted-phone], URL [redacted-url]'
-    )
+    ).rejects.toThrow('Cal.com API request failed (400)')
 
     expect(console.error).toHaveBeenCalledWith('Cal.com API request failed', {
       method: 'POST',
       path: '/bookings',
       status: 400,
       code: 'BadRequestException',
-      message: 'Attendee [redacted-email], phone [redacted-phone], URL [redacted-url]',
       requestId: 'req_123__unsafe_',
     })
     const logged = JSON.stringify(vi.mocked(console.error).mock.calls)
@@ -68,7 +65,7 @@ describe('Cal.com API error observability', () => {
     expect(logged).not.toContain('private.example')
   })
 
-  it('bounds the provider message included in logs and the thrown error', async () => {
+  it('never includes an arbitrary provider message in logs or thrown errors', async () => {
     fetchMock.mockResolvedValueOnce(
       new Response(
         JSON.stringify({
@@ -82,15 +79,15 @@ describe('Cal.com API error observability', () => {
     )
 
     await expect(calcomRequest('/bookings', { method: 'POST' })).rejects.toThrow(
-      `Cal.com API request failed (400): BadRequestException: ${'x'.repeat(500)}`
+      'Cal.com API request failed (400)'
     )
     expect(console.error).toHaveBeenCalledWith('Cal.com API request failed', {
       method: 'POST',
       path: '/bookings',
       status: 400,
       code: 'BadRequestException',
-      message: 'x'.repeat(500),
     })
+    expect(JSON.stringify(vi.mocked(console.error).mock.calls)).not.toContain('x'.repeat(100))
   })
 
   it('falls back to status-only diagnostics for non-JSON provider responses', async () => {

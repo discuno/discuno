@@ -127,26 +127,28 @@ const CalcomBookingLookupSchema = z.object({
 const CalcomEventTypeBookingCompatibilitySchema = z.object({
   status: z.literal('success'),
   data: z.object({
-    requiresBookerEmailVerification: z.boolean().default(false),
-    bookingRequiresAuthentication: z.boolean().default(false),
-    recurrence: z.unknown().nullable().optional(),
-    bookingFields: z
-      .array(
-        z.object({
-          slug: z.string(),
-          required: z.boolean().default(false),
-          isDefault: z.boolean().default(false),
-        })
-      )
-      .default([]),
+    requiresBookerEmailVerification: z.boolean(),
+    bookingRequiresAuthentication: z.boolean(),
+    recurrence: z.union([z.null(), z.object({}).passthrough()]),
+    confirmationPolicy: z.record(z.string(), z.unknown()),
+    bookingFields: z.array(
+      z.object({
+        slug: z.string(),
+        required: z.boolean(),
+        isDefault: z.boolean(),
+      })
+    ),
   }),
 })
+
+const SUPPORTED_REQUIRED_CALCOM_BOOKING_FIELDS = new Set(['name', 'email', 'title'])
 
 export type CalcomBookingCompatibilityReason =
   | 'email_verification_required'
   | 'cal_authentication_required'
   | 'recurring_event_type'
-  | 'required_custom_booking_fields'
+  | 'requires_confirmation'
+  | 'unsupported_required_booking_fields'
 
 /**
  * Discuno's custom checkout currently supplies Cal.com's standard attendee fields.
@@ -165,8 +167,15 @@ export const getCalcomBookingCompatibility = async (
   if (data.requiresBookerEmailVerification) reasons.push('email_verification_required')
   if (data.bookingRequiresAuthentication) reasons.push('cal_authentication_required')
   if (data.recurrence) reasons.push('recurring_event_type')
-  if (data.bookingFields.some(field => field.required && !field.isDefault)) {
-    reasons.push('required_custom_booking_fields')
+  if (data.confirmationPolicy.disabled !== true) reasons.push('requires_confirmation')
+  if (
+    data.bookingFields.some(
+      field =>
+        field.required &&
+        !(field.isDefault && SUPPORTED_REQUIRED_CALCOM_BOOKING_FIELDS.has(field.slug))
+    )
+  ) {
+    reasons.push('unsupported_required_booking_fields')
   }
 
   return { compatible: reasons.length === 0, reasons }
@@ -240,6 +249,13 @@ export const createCalcomBooking = async (input: {
       eventTypeId: input.calcomEventTypeId,
     })
     if (existing) return existing
+  }
+
+  const compatibility = await getCalcomBookingCompatibility(input.calcomEventTypeId)
+  if (!compatibility.compatible) {
+    throw new ExternalApiError(
+      `Cal.com event type is incompatible with Discuno booking: ${compatibility.reasons.join(', ')}`
+    )
   }
 
   const response = await calcomRequest<unknown>('/bookings', {

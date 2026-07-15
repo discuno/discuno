@@ -38,6 +38,21 @@ const bookingInput = {
   mentorUserId: 'mentor-user-id',
 }
 
+const compatibleEventTypeResponse = {
+  status: 'success',
+  data: {
+    requiresBookerEmailVerification: false,
+    bookingRequiresAuthentication: false,
+    recurrence: null,
+    confirmationPolicy: { disabled: true },
+    bookingFields: [
+      { slug: 'name', required: true, isDefault: true },
+      { slug: 'email', required: true, isDefault: true },
+      { slug: 'title', required: true, isDefault: true },
+    ],
+  },
+}
+
 const getCreateBookingBody = () => {
   const createCall = mocks.calcomRequest.mock.calls.find(([path]) => path === '/bookings')
   expect(createCall).toBeDefined()
@@ -55,9 +70,12 @@ const getCreateBookingBody = () => {
 describe('Cal.com booking contract', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mocks.calcomRequest.mockResolvedValue({
-      status: 'success',
-      data: { id: 123, uid: 'booking-uid' },
+    mocks.calcomRequest.mockImplementation(path => {
+      if (path === '/event-types/42') return Promise.resolve(compatibleEventTypeResponse)
+      return Promise.resolve({
+        status: 'success',
+        data: { id: 123, uid: 'booking-uid' },
+      })
     })
   })
 
@@ -88,6 +106,24 @@ describe('Cal.com booking contract', () => {
       mentorUserId: 'mentor-user-id',
     })
   })
+
+  it('rechecks compatibility immediately before creating the booking', async () => {
+    mocks.calcomRequest.mockResolvedValue({
+      status: 'success',
+      data: {
+        ...compatibleEventTypeResponse.data,
+        requiresBookerEmailVerification: true,
+      },
+    })
+
+    await expect(createCalcomBooking(bookingInput)).rejects.toThrow(
+      'Cal.com event type is incompatible with Discuno booking'
+    )
+    expect(mocks.calcomRequest).not.toHaveBeenCalledWith(
+      '/bookings',
+      expect.objectContaining({ method: 'POST' })
+    )
+  })
 })
 
 describe('Cal.com event-type booking compatibility', () => {
@@ -102,9 +138,10 @@ describe('Cal.com event-type booking compatibility', () => {
         requiresBookerEmailVerification: true,
         bookingRequiresAuthentication: true,
         recurrence: { frequency: 'weekly' },
+        confirmationPolicy: { type: 'always' },
         bookingFields: [
           { slug: 'name', required: true, isDefault: true },
-          { slug: 'company', required: true, isDefault: false },
+          { slug: 'attendeePhoneNumber', required: true, isDefault: true },
         ],
       },
     })
@@ -115,7 +152,8 @@ describe('Cal.com event-type booking compatibility', () => {
         'email_verification_required',
         'cal_authentication_required',
         'recurring_event_type',
-        'required_custom_booking_fields',
+        'requires_confirmation',
+        'unsupported_required_booking_fields',
       ],
     })
     expect(mocks.calcomRequest).toHaveBeenCalledWith('/event-types/42', {
@@ -130,9 +168,11 @@ describe('Cal.com event-type booking compatibility', () => {
         requiresBookerEmailVerification: false,
         bookingRequiresAuthentication: false,
         recurrence: null,
+        confirmationPolicy: { disabled: true },
         bookingFields: [
           { slug: 'name', required: true, isDefault: true },
           { slug: 'email', required: true, isDefault: true },
+          { slug: 'title', required: true, isDefault: true },
           { slug: 'company', required: false, isDefault: false },
         ],
       },
@@ -142,6 +182,20 @@ describe('Cal.com event-type booking compatibility', () => {
       compatible: true,
       reasons: [],
     })
+  })
+
+  it('fails closed when Cal.com omits a critical compatibility field', async () => {
+    mocks.calcomRequest.mockResolvedValue({
+      status: 'success',
+      data: {
+        requiresBookerEmailVerification: false,
+        bookingRequiresAuthentication: false,
+        recurrence: null,
+        bookingFields: [],
+      },
+    })
+
+    await expect(getCalcomBookingCompatibility(42)).rejects.toThrow()
   })
 })
 

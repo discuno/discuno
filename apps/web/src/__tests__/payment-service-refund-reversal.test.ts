@@ -59,7 +59,7 @@ vi.mock('~/server/db', () => ({
   },
 }))
 
-import { syncStripeRefund } from '~/lib/services/payment-service'
+import { holdBookingPaymentForManualReview, syncStripeRefund } from '~/lib/services/payment-service'
 
 describe('payment-service refund reconciliation', () => {
   const paymentState: Record<string, unknown> = {
@@ -207,5 +207,51 @@ describe('payment-service refund reconciliation', () => {
       transferStatus: 'reversed',
     })
     expect(mocks.refundStripePaymentIntent).not.toHaveBeenCalled()
+  })
+
+  it('persists and alerts once for an unclassified paid cancellation', async () => {
+    mocks.select.mockImplementationOnce(() => ({
+      from: () => ({
+        innerJoin: () => ({
+          where: () => ({
+            limit: vi.fn().mockResolvedValue([
+              {
+                paymentId: 42,
+                platformStatus: 'SUCCEEDED',
+              },
+            ]),
+          }),
+        }),
+      }),
+    }))
+    mocks.update.mockImplementationOnce(() => ({
+      set: (values: Record<string, unknown>) => {
+        mocks.updateSets.push(values)
+        return {
+          where: () => ({
+            returning: vi.fn().mockResolvedValue([{ id: 42 }]),
+          }),
+        }
+      },
+    }))
+
+    await expect(
+      holdBookingPaymentForManualReview(
+        'booking-needs-review',
+        'late cancellation could not be attributed'
+      )
+    ).resolves.toMatchObject({ success: true, reason: 'manual_review' })
+
+    expect(mocks.updateSets).toContainEqual(
+      expect.objectContaining({
+        requiresManualReview: true,
+        reviewReason: 'Cancellation actor unresolved: late cancellation could not be attributed',
+      })
+    )
+    expect(mocks.sendAdminAlert).toHaveBeenCalledWith({
+      type: 'CANCELLATION_ACTOR_REQUIRES_REVIEW',
+      paymentId: 42,
+      error: 'Cancellation actor unresolved: late cancellation could not be attributed',
+    })
   })
 })

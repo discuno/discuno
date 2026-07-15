@@ -142,7 +142,9 @@ export const createBooking = async (input: CreateBookingInput) => {
         description: input.description,
         startTime: input.startTime,
         endTime: input.endTime,
-        status: 'ACCEPTED',
+        // Preserve Cal's authoritative state. In particular, never make a
+        // confirmation-required PENDING booking payout-eligible locally.
+        status: input.status ?? 'PENDING',
         mentorEventTypeId: mentorEventType.id,
         paymentId: input.paymentId,
         webhookPayload: input.webhookPayload,

@@ -5,12 +5,10 @@ import { ExternalApiError } from '~/lib/errors'
 
 const MAX_CALCOM_ERROR_BODY_LENGTH = 8_192
 const MAX_CALCOM_ERROR_CODE_LENGTH = 80
-const MAX_CALCOM_ERROR_MESSAGE_LENGTH = 500
 const MAX_CALCOM_REQUEST_ID_LENGTH = 128
 
 type CalcomErrorSummary = {
   code?: string
-  message?: string
   requestId?: string
 }
 
@@ -22,26 +20,6 @@ const sanitizeIdentifier = (value: string, maximumLength: number): string | unde
     .trim()
     .replace(/[^a-zA-Z0-9._:-]/g, '_')
     .slice(0, maximumLength)
-  return sanitized || undefined
-}
-
-const redactCalcomErrorMessage = (value: string): string | undefined => {
-  const redacted = value
-    .replace(/https?:\/\/[^\s<>"']+/gi, '[redacted-url]')
-    .replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi, '[redacted-email]')
-    .replace(/(?:\+?\d|\(\d)[\d\s().-]{7,}\d/g, match => {
-      const digitCount = match.replace(/\D/g, '').length
-      return digitCount >= 10 && digitCount <= 15 ? '[redacted-phone]' : match
-    })
-
-  const sanitized = Array.from(redacted, character => {
-    const codePoint = character.codePointAt(0)
-    return codePoint !== undefined && (codePoint <= 31 || codePoint === 127) ? ' ' : character
-  })
-    .join('')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .slice(0, MAX_CALCOM_ERROR_MESSAGE_LENGTH)
   return sanitized || undefined
 }
 
@@ -62,12 +40,7 @@ const getCalcomErrorSummary = async (response: Response): Promise<CalcomErrorSum
       typeof parsed.error.code === 'string'
         ? sanitizeIdentifier(parsed.error.code, MAX_CALCOM_ERROR_CODE_LENGTH)
         : undefined
-    const message =
-      typeof parsed.error.message === 'string'
-        ? redactCalcomErrorMessage(parsed.error.message)
-        : undefined
-
-    return { code, message, requestId }
+    return { code, requestId }
   } catch {
     return { requestId }
   }
@@ -114,13 +87,9 @@ export const calcomRequest = async <T>(
       path: pathWithoutQuery?.length ? pathWithoutQuery : '/',
       status: response.status,
       ...(summary.code ? { code: summary.code } : {}),
-      ...(summary.message ? { message: summary.message } : {}),
       ...(summary.requestId ? { requestId: summary.requestId } : {}),
     })
-    const providerError = [summary.code, summary.message].filter(Boolean).join(': ')
-    throw new ExternalApiError(
-      `Cal.com API request failed (${response.status})${providerError ? `: ${providerError}` : ''}`
-    )
+    throw new ExternalApiError(`Cal.com API request failed (${response.status})`)
   }
 
   if (response.status === 204) {

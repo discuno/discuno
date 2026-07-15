@@ -20,6 +20,7 @@ import {
 } from '~/lib/services/booking-service'
 import { getUserIdByCalcomUserId } from '~/lib/services/calcom-tokens-service'
 import {
+  holdBookingPaymentForManualReview,
   refundBookingPayment,
   scheduleBookingMentorPayout,
   scheduleMentorPayout,
@@ -31,6 +32,26 @@ import { createAnalyticsEvent } from '~/server/dal/analytics'
 type MentorMetadataPayload = Partial<CalcomBookingPayload> & {
   uid: string
   metadata: { mentorUserId: string; actorUserId?: string }
+}
+
+type CancellationActor = 'host' | 'attendee' | 'unknown'
+
+const classifyCancellationActor = ({
+  email,
+  hostEmails,
+  attendeeEmails,
+}: {
+  email?: string | null
+  hostEmails: string[]
+  attendeeEmails: string[]
+}): CancellationActor => {
+  const normalized = email?.trim().toLowerCase()
+  if (!normalized) return 'unknown'
+  if (hostEmails.some(candidate => candidate.trim().toLowerCase() === normalized)) return 'host'
+  if (attendeeEmails.some(candidate => candidate.trim().toLowerCase() === normalized)) {
+    return 'attendee'
+  }
+  return 'unknown'
 }
 
 const hasMentorMetadata = (data: unknown): data is MentorMetadataPayload => {
@@ -214,42 +235,60 @@ export async function POST(req: Request) {
             console.log(`Cal.com cancellation already handled for booking ${cancelledBooking.uid}`)
           }
 
+          const cancellationTime = new Date(createdAt)
+          const earlyCancellation = shouldAutomaticallyRefundCancellation({
+            cancelledByEmail: null,
+            organizerEmail: cancelledBooking.organizer.email,
+            startTime: cancelledBooking.startTime,
+            now: cancellationTime,
+          })
           let cancelledByEmail = cancelledBooking.cancelledByEmail ?? null
-          if (!cancelledByEmail) {
+          let cancellationActor = classifyCancellationActor({
+            email: cancelledByEmail,
+            hostEmails: [cancelledBooking.organizer.email],
+            attendeeEmails: cancelledBooking.attendees.map(attendee => attendee.email),
+          })
+
+          // Actor identity does not change the full-refund outcome at least 24 hours
+          // before the session. Only call Cal when a late cancellation needs proof.
+          if (!earlyCancellation && cancellationActor === 'unknown') {
             try {
-              cancelledByEmail =
-                (await getCalcomBooking(cancelledBooking.uid)).cancelledByEmail ?? null
+              const bookingDetails = await getCalcomBooking(cancelledBooking.uid)
+              cancelledByEmail = bookingDetails.cancelledByEmail ?? cancelledByEmail
+              cancellationActor = classifyCancellationActor({
+                email: cancelledByEmail,
+                hostEmails: [
+                  cancelledBooking.organizer.email,
+                  ...bookingDetails.hosts.map(host => host.email),
+                ],
+                attendeeEmails: [
+                  ...cancelledBooking.attendees.map(attendee => attendee.email),
+                  ...bookingDetails.attendees.map(attendee => attendee.email),
+                ],
+              })
             } catch (error) {
               console.error(`Could not resolve cancellation actor for ${cancelledBooking.uid}`, {
                 error: error instanceof Error ? error.message : 'Unknown Cal.com error',
               })
-              throw error
             }
           }
-          const shouldRefund = shouldAutomaticallyRefundCancellation({
-            cancelledByEmail,
-            organizerEmail: cancelledBooking.organizer.email,
-            startTime: cancelledBooking.startTime,
-            now: new Date(createdAt),
-          })
-          // Both mentor and mentee cancellations are refundable at least 24 hours
-          // before the session, so missing Cal attribution is immaterial there.
-          // Within 24 hours attribution determines whether the mentor is paid;
-          // fail closed rather than guessing and releasing funds.
-          if (!cancelledByEmail && !shouldRefund) {
-            throw new Error(
-              `Late cancellation actor could not be resolved for ${cancelledBooking.uid}`
-            )
-          }
-          const cancelledByOrganizer =
-            cancelledByEmail?.trim().toLowerCase() ===
-            cancelledBooking.organizer.email.trim().toLowerCase()
 
-          await setLocalBookingMentorPayoutEligibility(cancelledBooking.uid, !shouldRefund)
-          if (shouldRefund) {
+          const shouldRefund = earlyCancellation || cancellationActor === 'host'
+          const requiresManualReview = !earlyCancellation && cancellationActor === 'unknown'
+          await setLocalBookingMentorPayoutEligibility(
+            cancelledBooking.uid,
+            !shouldRefund && !requiresManualReview
+          )
+          if (requiresManualReview) {
+            const hold = await holdBookingPaymentForManualReview(
+              cancelledBooking.uid,
+              'late cancellation could not be attributed to a host or attendee'
+            )
+            if (!hold.success) throw new Error(hold.error ?? 'Cancellation review hold failed')
+          } else if (shouldRefund) {
             const refund = await refundBookingPayment(
               cancelledBooking.uid,
-              cancelledByOrganizer ? 'mentor_cancelled' : 'early_cancellation'
+              cancellationActor === 'host' ? 'mentor_cancelled' : 'early_cancellation'
             )
             if (!refund.success) throw new Error(refund.error ?? 'Cancellation refund failed')
           } else {
@@ -264,9 +303,10 @@ export async function POST(req: Request) {
 
           const mentorUserId = await getUserIdByCalcomUserId(cancelledBooking.organizer.id)
           if (mentorUserId && cancellation.transitioned) {
-            const actorUserId = cancelledByOrganizer
-              ? mentorUserId
-              : (cancelledBooking.metadata.actorUserId ?? null)
+            const actorUserId =
+              cancellationActor === 'host'
+                ? mentorUserId
+                : (cancelledBooking.metadata.actorUserId ?? null)
             await createAnalyticsEvent({
               eventType: 'CANCELLED_BOOKING',
               targetUserId: mentorUserId,
@@ -317,6 +357,7 @@ async function storeBooking(event: unknown) {
       organizer,
       eventTypeId,
       metadata,
+      status,
     } = validation.data
 
     const [attendee] = attendees
@@ -359,6 +400,7 @@ async function storeBooking(event: unknown) {
         timeZone: attendee.timeZone,
       },
       webhookPayload: validation.data,
+      status,
     })
 
     if (!created) console.log(`Cal.com booking ${uid} was already stored`)
