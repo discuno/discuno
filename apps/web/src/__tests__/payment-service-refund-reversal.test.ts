@@ -217,13 +217,19 @@ describe('payment-service refund reconciliation', () => {
             limit: vi.fn().mockResolvedValue([
               {
                 paymentId: 42,
-                platformStatus: 'SUCCEEDED',
               },
             ]),
           }),
         }),
       }),
     }))
+    mocks.findPayment.mockResolvedValue({
+      id: 42,
+      platformStatus: 'SUCCEEDED',
+      transferId: null,
+      transferReversalId: null,
+      transferStatus: null,
+    })
     mocks.update.mockImplementationOnce(() => ({
       set: (values: Record<string, unknown>) => {
         mocks.updateSets.push(values)
@@ -253,5 +259,81 @@ describe('payment-service refund reconciliation', () => {
       paymentId: 42,
       error: 'Cancellation actor unresolved: late cancellation could not be attributed',
     })
+  })
+
+  it('reverses an existing transfer under the payment lock before holding cancellation funds', async () => {
+    mocks.select.mockImplementationOnce(() => ({
+      from: () => ({
+        innerJoin: () => ({
+          where: () => ({
+            limit: vi.fn().mockResolvedValue([{ paymentId: 42 }]),
+          }),
+        }),
+      }),
+    }))
+    mocks.findPayment.mockResolvedValue({
+      id: 42,
+      platformStatus: 'TRANSFERRED',
+      transferId: 'tr_cancellation_hold',
+      transferReversalId: null,
+      transferStatus: 'created',
+    })
+    mocks.retrieveTransfer.mockResolvedValue({
+      amount: 4_250,
+      amount_reversed: 0,
+      id: 'tr_cancellation_hold',
+      reversed: false,
+      reversals: { data: [] },
+    })
+    mocks.createReversal.mockResolvedValue({ amount: 4_250, id: 'trr_cancellation_hold' })
+    mocks.update.mockImplementation(() => ({
+      set: (values: Record<string, unknown>) => {
+        mocks.updateSets.push(values)
+        return {
+          where: (condition: SQL) => {
+            mocks.updateWhereClauses.push({ condition, values })
+            if (
+              values.requiresManualReview === true &&
+              typeof values.reviewReason === 'string' &&
+              values.reviewReason.startsWith('Cancellation actor unresolved:')
+            ) {
+              return { returning: vi.fn().mockResolvedValue([{ id: 42 }]) }
+            }
+            return Promise.resolve([])
+          },
+        }
+      },
+    }))
+
+    await expect(
+      holdBookingPaymentForManualReview(
+        'booking-needs-review',
+        'late cancellation could not be attributed'
+      )
+    ).resolves.toMatchObject({ success: true, reason: 'manual_review' })
+
+    expect(mocks.transaction).toHaveBeenCalledOnce()
+    expect(mocks.transactionExecute).toHaveBeenCalledOnce()
+    expect(mocks.createReversal).toHaveBeenCalledWith(
+      'tr_cancellation_hold',
+      {
+        amount: 4_250,
+        metadata: {
+          discunoPaymentId: '42',
+          discunoPurpose: 'unclassified_cancellation_hold',
+        },
+      },
+      { idempotencyKey: 'discuno:transfer-reversal:v2:tr_cancellation_hold' }
+    )
+    expect(mocks.updateSets).toContainEqual(
+      expect.objectContaining({
+        transferReversalId: 'trr_cancellation_hold',
+        transferStatus: 'reversed',
+      })
+    )
+    expect(mocks.updateSets).toContainEqual(
+      expect.objectContaining({ platformStatus: 'SUCCEEDED' })
+    )
+    expect(mocks.updateSets).toContainEqual(expect.objectContaining({ requiresManualReview: true }))
   })
 })

@@ -622,46 +622,62 @@ export const holdBookingPaymentForManualReview = async (
   reason: string
 ): Promise<PaymentOperationResult> => {
   const [record] = await db
-    .select({
-      paymentId: payment.id,
-      platformStatus: payment.platformStatus,
-    })
+    .select({ paymentId: payment.id })
     .from(booking)
     .innerJoin(payment, eq(payment.id, booking.paymentId))
     .where(eq(booking.calcomUid, calcomBookingUid))
     .limit(1)
 
   if (!record) return { success: true, skipped: true, reason: 'unpaid_booking' }
-  if (record.platformStatus === 'REFUNDED') {
-    return { success: true, skipped: true, reason: 'already_refunded' }
-  }
 
-  const reviewReason = `Cancellation actor unresolved: ${reason}`.slice(0, 500)
-  const [held] = await db
-    .update(payment)
-    .set({ requiresManualReview: true, reviewReason, updatedAt: new Date() })
-    .where(
-      and(
-        eq(payment.id, record.paymentId),
-        eq(payment.requiresManualReview, false),
-        ne(payment.platformStatus, 'REFUNDED')
-      )
-    )
-    .returning({ id: payment.id })
-
-  if (held) {
-    await sendAdminAlert({
-      type: 'CANCELLATION_ACTOR_REQUIRES_REVIEW',
-      paymentId: record.paymentId,
-      error: reviewReason,
+  return withPaymentOperationLock(record.paymentId, async () => {
+    const current = await db.query.payment.findFirst({
+      where: eq(payment.id, record.paymentId),
     })
-  }
+    if (!current) return { success: false, error: 'Payment not found' }
 
-  return {
-    success: true,
-    skipped: !held,
-    reason: held ? 'manual_review' : 'manual_review_existing',
-  }
+    if (current.transferId && current.transferStatus !== 'reversed') {
+      const reversal = await reverseMentorTransfer({
+        paymentId: current.id,
+        transferId: current.transferId,
+        existingReversalId: current.transferReversalId,
+        purpose: 'unclassified_cancellation_hold',
+      })
+      if (!reversal.success) return reversal
+
+      if (current.platformStatus === 'TRANSFERRED') {
+        await db
+          .update(payment)
+          .set({ platformStatus: 'SUCCEEDED', updatedAt: new Date() })
+          .where(eq(payment.id, current.id))
+      }
+    }
+
+    if (current.platformStatus === 'REFUNDED') {
+      return { success: true, skipped: true, reason: 'already_refunded' }
+    }
+
+    const reviewReason = `Cancellation actor unresolved: ${reason}`.slice(0, 500)
+    const [held] = await db
+      .update(payment)
+      .set({ requiresManualReview: true, reviewReason, updatedAt: new Date() })
+      .where(and(eq(payment.id, current.id), eq(payment.requiresManualReview, false)))
+      .returning({ id: payment.id })
+
+    if (held) {
+      await sendAdminAlert({
+        type: 'CANCELLATION_ACTOR_REQUIRES_REVIEW',
+        paymentId: current.id,
+        error: reviewReason,
+      })
+    }
+
+    return {
+      success: true,
+      skipped: !held,
+      reason: held ? 'manual_review' : 'manual_review_existing',
+    }
+  })
 }
 
 const transferMentorPaymentUnlocked = async ({
