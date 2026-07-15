@@ -19,9 +19,39 @@ import { config } from 'dotenv'
 import { sql } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
+import { createInterface } from 'node:readline/promises'
 import Stripe from 'stripe'
 import { seedDatabase } from '~/lib/db/seed'
 type Environment = 'local' | 'preview' | 'test'
+
+const RESET_ENVIRONMENTS = ['local', 'preview', 'test'] as const
+
+const parseEnvironment = (value: string | undefined): Environment => {
+  if (!value || !RESET_ENVIRONMENTS.includes(value as Environment)) {
+    throw new Error('Reset target must be exactly one of: local, preview, test')
+  }
+  return value as Environment
+}
+
+const requireTypedConfirmation = async (environment: Environment): Promise<void> => {
+  const expected = `RESET ${environment.toUpperCase()}`
+  const supplied = process.argv.find(argument => argument.startsWith('--confirm='))?.slice(10)
+  if (supplied === expected) return
+
+  if (!process.stdin.isTTY || !process.stdout.isTTY) {
+    throw new Error(
+      `Refusing non-interactive reset without the exact argument --confirm="${expected}"`
+    )
+  }
+
+  const prompt = createInterface({ input: process.stdin, output: process.stdout })
+  try {
+    const answer = await prompt.question(`Type "${expected}" to continue: `)
+    if (answer !== expected) throw new Error('Database reset confirmation did not match')
+  } finally {
+    prompt.close()
+  }
+}
 
 const loadEnvironmentConfig = (environment: Environment) => {
   const envFiles = {
@@ -83,42 +113,33 @@ const dropAllTables = async (environment: Environment) => {
           'Refusing to reset database: the dedicated Discuno test-environment guard is missing.'
         )
       }
+    } else {
+      let marker: unknown
+      try {
+        const guardRows = await db.execute(sql`
+          SELECT marker
+          FROM _discuno_database_environment_guard
+          LIMIT 1
+        `)
+        marker = Array.from(guardRows)[0]?.marker
+      } catch {
+        throw new Error(
+          'Refusing to reset database: the dedicated Discuno environment guard is missing.'
+        )
+      }
+
+      const expectedMarker = `discuno-${environment}-environment-v1`
+      if (marker !== expectedMarker) {
+        throw new Error(
+          `Refusing to reset database: expected the ${environment} environment guard.`
+        )
+      }
     }
 
     if (environment !== 'test' && process.env.ALLOW_EXTERNAL_ACCOUNT_CLEANUP === 'true') {
-      // External cleanup is deliberately opt-in and only targets account IDs stored
-      // in the database being reset. It never enumerates and deletes an entire team.
-      console.log('🌐 Cleaning up external seed accounts recorded in this database...')
-      const calcomApiBase = process.env.NEXT_PUBLIC_CALCOM_API_URL
-      const calcomClientId = process.env.NEXT_PUBLIC_X_CAL_ID
-      const calcomSecretKey = process.env.X_CAL_SECRET_KEY
-      const calcomOrgId = process.env.CALCOM_ORG_ID
-      if (!calcomApiBase || !calcomClientId || !calcomSecretKey || !calcomOrgId) {
-        console.warn('⚠️ Missing Cal.com credentials. Skipping Cal.com cleanup.')
-      } else {
-        try {
-          const users = await db.execute(sql`SELECT calcom_user_id FROM discuno_calcom_token`)
-          for (const row of users) {
-            const calcomUserId = Number(row.calcom_user_id)
-            const response = await fetch(
-              `${calcomApiBase}/organizations/${calcomOrgId}/users/${calcomUserId}`,
-              {
-                method: 'DELETE',
-                headers: {
-                  'x-cal-secret-key': calcomSecretKey,
-                  'x-cal-client-id': calcomClientId,
-                },
-              }
-            )
-            if (!response.ok && response.status !== 404) {
-              console.error(`Failed to delete Cal.com user ${calcomUserId}: ${response.status}`)
-            }
-          }
-        } catch (error) {
-          console.error('Error during Cal.com cleanup:', error)
-        }
-      }
-
+      // Cal.com accounts are mentor-owned OAuth connections and must never be
+      // deleted when Discuno resets a database. Only platform-owned Stripe test
+      // accounts are eligible for this explicitly enabled cleanup.
       const stripeSecretKey = process.env.STRIPE_SECRET_KEY
       if (!stripeSecretKey?.startsWith('sk_test_')) {
         throw new Error('External reset cleanup requires a Stripe test-mode secret key.')
@@ -202,11 +223,17 @@ const dropAllTables = async (environment: Environment) => {
       }
       // Drop enum types to match updated schema
       console.log(
-        '   Dropping enum types: stripe_account_status, school_year, booking_status, payment_status, stripe_payment_status, analytics_event_type'
+        '   Dropping enum types: stripe_account_status, school_year, booking_status, calcom_booking_lifecycle_state, calcom_booking_financial_disposition, payment_status, stripe_payment_status, analytics_event_type'
       )
       await tx.execute(sql.raw(`DROP TYPE IF EXISTS public."stripe_account_status" CASCADE;`))
       await tx.execute(sql.raw(`DROP TYPE IF EXISTS public."school_year" CASCADE;`))
       await tx.execute(sql.raw(`DROP TYPE IF EXISTS public."booking_status" CASCADE;`))
+      await tx.execute(
+        sql.raw(`DROP TYPE IF EXISTS public."calcom_booking_lifecycle_state" CASCADE;`)
+      )
+      await tx.execute(
+        sql.raw(`DROP TYPE IF EXISTS public."calcom_booking_financial_disposition" CASCADE;`)
+      )
       await tx.execute(sql.raw(`DROP TYPE IF EXISTS public."payment_status" CASCADE;`))
       await tx.execute(sql.raw(`DROP TYPE IF EXISTS public."stripe_payment_status" CASCADE;`))
       await tx.execute(sql.raw(`DROP TYPE IF EXISTS public."analytics_event_type" CASCADE;`))
@@ -300,14 +327,17 @@ const pushSchema = async (environment: Environment) => {
 }
 
 const main = async () => {
-  const environment = process.argv[2] as Environment | undefined
-
-  if (!environment) {
+  let environment: Environment
+  try {
+    environment = parseEnvironment(process.argv[2])
+  } catch (error) {
     console.error('❌ Environment is required. Usage: tsx scripts/db-reset.ts <environment>')
     console.error('   Valid environments: local, preview, test')
     console.error('   🚨 Production reset is disabled for safety')
-    process.exit(1)
+    throw error
   }
+
+  await requireTypedConfirmation(environment)
 
   console.log(`🔄 Starting database reset for ${environment} environment`)
   console.log(`📅 Timestamp: ${new Date().toISOString()}`)

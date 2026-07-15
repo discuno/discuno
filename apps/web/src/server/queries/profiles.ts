@@ -238,7 +238,7 @@ export const getPublicProfileByUsername = cache(
       userId: userData.id,
       userProfileId: userData.userProfileId,
       email: null,
-      emailVerified: userData.emailVerified ?? false,
+      emailVerified: userData.emailVerified,
       schoolEmailVerified: hasVerifiedSchoolEmail({
         email: userData.email,
         emailVerified: userData.emailVerified,

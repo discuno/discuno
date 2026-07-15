@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { and, desc, eq, ne, or } from 'drizzle-orm'
+import { and, desc, eq, isNull, lt, ne, or } from 'drizzle-orm'
 import { NotFoundError } from '~/lib/errors'
 import type { NewBooking, NewBookingAttendee, NewBookingOrganizer } from '~/lib/schemas/db'
 import { db } from '~/server/db'
@@ -52,6 +52,7 @@ export const getBookingByCalcomUidAndMentorId = async (
     .select({
       id: schema.booking.id,
       calcomUid: schema.booking.calcomUid,
+      mentorUserId: schema.bookingOrganizer.userId,
     })
     .from(schema.booking)
     .innerJoin(schema.bookingOrganizer, eq(schema.booking.id, schema.bookingOrganizer.bookingId))
@@ -66,15 +67,156 @@ export const getBookingByCalcomUidAndMentorId = async (
   return booking ?? null
 }
 
+/** Resolve trusted local ownership for transitional webhook deliveries. */
+export const getBookingLifecycleContextByCalcomUid = async (calcomBookingUid: string) => {
+  const [context] = await db
+    .select({
+      expectedMentorUserId: schema.bookingOrganizer.userId,
+      expectedCalcomUserId: schema.calcomToken.calcomUserId,
+    })
+    .from(schema.booking)
+    .innerJoin(schema.bookingOrganizer, eq(schema.bookingOrganizer.bookingId, schema.booking.id))
+    .innerJoin(schema.calcomToken, eq(schema.calcomToken.userId, schema.bookingOrganizer.userId))
+    .where(eq(schema.booking.calcomUid, calcomBookingUid))
+    .limit(1)
+
+  return context ?? null
+}
+
 /**
  * Create a booking with organizer and attendee
  */
 type CreateBookingInput = NewBooking & {
   duration: number
   calcomEventTypeId: number
+  calcomUserId?: number
+  lifecycleEventCreatedAt?: Date
+  rescheduledFromUid?: string
+  supersededByUid?: string
   organizer: Omit<NewBookingOrganizer, 'bookingId'>
   attendee: Omit<NewBookingAttendee, 'bookingId'>
   meetingUrl?: string
+}
+
+export type BookingLifecycleState = (typeof schema.calcomBookingLifecycle.$inferSelect)['state']
+export type BookingFinancialDisposition =
+  (typeof schema.calcomBookingLifecycle.$inferSelect)['financialDisposition']
+export type BookingLifecycle = typeof schema.calcomBookingLifecycle.$inferSelect
+
+export type RecordBookingLifecycleInput = {
+  calcomUid: string
+  calcomBookingId?: number
+  mentorUserId: string
+  calcomUserId?: number
+  state: BookingLifecycleState
+  financialDisposition: BookingFinancialDisposition
+  mentorPayoutEligible?: boolean
+  eventCreatedAt: Date
+}
+
+export const assertBookingLifecycleOwnership = (
+  lifecycle: Pick<BookingLifecycle, 'mentorUserId' | 'calcomUserId'>,
+  expected: { mentorUserId: string; calcomUserId?: number }
+) => {
+  if (lifecycle.mentorUserId !== expected.mentorUserId) {
+    throw new Error('Cal.com lifecycle belongs to a different Discuno mentor')
+  }
+  if (
+    lifecycle.calcomUserId !== null &&
+    expected.calcomUserId !== undefined &&
+    lifecycle.calcomUserId !== expected.calcomUserId
+  ) {
+    throw new Error('Cal.com lifecycle belongs to a different Cal.com user')
+  }
+}
+
+const getLifecycleProjection = (
+  lifecycle: Pick<BookingLifecycle, 'state' | 'mentorPayoutEligible'>,
+  activeStatus: CreateBookingInput['status'] = 'PENDING'
+) => {
+  switch (lifecycle.state) {
+    case 'CANCELLED':
+      return {
+        status: 'CANCELLED' as const,
+        hostNoShow: false,
+        attendeeNoShow: false,
+        mentorPayoutEligible: lifecycle.mentorPayoutEligible,
+      }
+    case 'COMPLETED':
+      return {
+        status: 'COMPLETED' as const,
+        hostNoShow: false,
+        attendeeNoShow: false,
+        mentorPayoutEligible: false,
+      }
+    case 'HOST_NO_SHOW':
+      return {
+        status: 'NO_SHOW' as const,
+        hostNoShow: true,
+        attendeeNoShow: false,
+        mentorPayoutEligible: false,
+      }
+    case 'ATTENDEE_NO_SHOW':
+      return {
+        status: 'NO_SHOW' as const,
+        hostNoShow: false,
+        attendeeNoShow: true,
+        mentorPayoutEligible: false,
+      }
+    case 'ACTIVE':
+      return {
+        status: activeStatus,
+        hostNoShow: false,
+        attendeeNoShow: false,
+        mentorPayoutEligible: false,
+      }
+  }
+}
+
+const lifecycleSeedForBooking = ({
+  status,
+  hostNoShow,
+}: Pick<CreateBookingInput, 'status' | 'hostNoShow'>): {
+  state: BookingLifecycleState
+  financialDisposition: BookingFinancialDisposition
+  mentorPayoutEligible: boolean
+} => {
+  switch (status) {
+    case 'CANCELLED':
+      // A cancelled snapshot without its cancellation event cannot prove who
+      // cancelled. Hold it conservatively until the authoritative event lands.
+      return {
+        state: 'CANCELLED',
+        financialDisposition: 'HOLD_LATE_CANCELLATION',
+        mentorPayoutEligible: false,
+      }
+    case 'REJECTED':
+      return {
+        state: 'CANCELLED',
+        financialDisposition: 'REFUND_PROVIDER_REJECTION',
+        mentorPayoutEligible: false,
+      }
+    case 'COMPLETED':
+      return {
+        state: 'COMPLETED',
+        financialDisposition: 'PAYOUT_COMPLETED',
+        mentorPayoutEligible: false,
+      }
+    case 'NO_SHOW':
+      return hostNoShow
+        ? {
+            state: 'HOST_NO_SHOW',
+            financialDisposition: 'REFUND_MENTOR_NO_SHOW',
+            mentorPayoutEligible: false,
+          }
+        : {
+            state: 'ATTENDEE_NO_SHOW',
+            financialDisposition: 'PAYOUT_ATTENDEE_NO_SHOW',
+            mentorPayoutEligible: false,
+          }
+    default:
+      return { state: 'ACTIVE', financialDisposition: 'NONE', mentorPayoutEligible: false }
+  }
 }
 
 export const createBooking = async (input: CreateBookingInput) => {
@@ -98,8 +240,14 @@ export const createBooking = async (input: CreateBookingInput) => {
       const paymentRecord = await tx.query.payment.findFirst({
         where: eq(schema.payment.id, input.paymentId),
       })
-      if (!paymentRecord || paymentRecord.platformStatus !== 'SUCCEEDED') {
-        throw new Error('Paid booking does not reference a succeeded Discuno payment')
+      if (!paymentRecord) {
+        throw new Error('Paid booking does not reference a Discuno payment')
+      }
+      if (
+        paymentRecord.platformStatus !== 'SUCCEEDED' &&
+        paymentRecord.calcomBookingUid !== input.calcomUid
+      ) {
+        throw new Error('Terminal payment does not recognize this Cal.com booking')
       }
       if (paymentRecord.mentorUserId !== input.organizer.userId) {
         throw new Error('Paid booking organizer does not match the payment mentor')
@@ -113,11 +261,43 @@ export const createBooking = async (input: CreateBookingInput) => {
         metadata && typeof metadata === 'object' && 'checkoutSessionMetadata' in metadata
           ? (metadata.checkoutSessionMetadata as Record<string, unknown>)
           : null
+      const checkoutStart =
+        typeof checkoutMetadata?.startTime === 'string'
+          ? new Date(checkoutMetadata.startTime)
+          : null
+      const checkoutDuration =
+        typeof checkoutMetadata?.eventDurationMinutes === 'string'
+          ? Number(checkoutMetadata.eventDurationMinutes)
+          : Number.NaN
+      const rescheduledPredecessor = input.rescheduledFromUid
+        ? await tx.query.booking.findFirst({
+            where: and(
+              eq(schema.booking.paymentId, input.paymentId),
+              eq(schema.booking.calcomUid, input.rescheduledFromUid),
+              eq(schema.booking.status, 'CANCELLED')
+            ),
+            columns: { calcomUid: true },
+          })
+        : null
+      const recognizedReschedule = Boolean(
+        input.rescheduledFromUid &&
+        (rescheduledPredecessor ?? paymentRecord.calcomBookingUid === input.rescheduledFromUid)
+      )
       if (
-        checkoutMetadata?.eventTypeId &&
-        checkoutMetadata.eventTypeId !== input.calcomEventTypeId.toString()
+        !checkoutMetadata ||
+        checkoutMetadata.eventTypeId !== input.calcomEventTypeId.toString() ||
+        checkoutMetadata.mentorUserId !== input.organizer.userId ||
+        typeof checkoutMetadata.attendeeEmail !== 'string' ||
+        checkoutMetadata.attendeeEmail.toLowerCase() !== input.attendee.email.toLowerCase() ||
+        !checkoutStart ||
+        Number.isNaN(checkoutStart.getTime()) ||
+        (!recognizedReschedule && checkoutStart.getTime() !== input.startTime.getTime()) ||
+        (input.rescheduledFromUid !== undefined && !recognizedReschedule) ||
+        !Number.isSafeInteger(checkoutDuration) ||
+        checkoutDuration !== input.duration ||
+        input.endTime.getTime() !== input.startTime.getTime() + input.duration * 60 * 1000
       ) {
-        throw new Error('Paid booking event type does not match the checkout session')
+        throw new Error('Paid booking does not match its server-authoritative checkout')
       }
 
       const linkedBooking = await tx.query.booking.findFirst({
@@ -128,9 +308,97 @@ export const createBooking = async (input: CreateBookingInput) => {
         columns: { calcomUid: true },
       })
       if (linkedBooking && linkedBooking.calcomUid !== input.calcomUid) {
-        throw new Error('Payment is already linked to another active booking')
+        if (!input.supersededByUid || linkedBooking.calcomUid !== input.supersededByUid) {
+          throw new Error('Payment is already linked to another active booking')
+        }
       }
     }
+
+    const existingBookingBeforeInsert = await tx.query.booking.findFirst({
+      where: or(
+        eq(schema.booking.calcomBookingId, input.calcomBookingId),
+        eq(schema.booking.calcomUid, input.calcomUid)
+      ),
+    })
+    if (
+      existingBookingBeforeInsert &&
+      (existingBookingBeforeInsert.calcomBookingId !== input.calcomBookingId ||
+        existingBookingBeforeInsert.calcomUid !== input.calcomUid)
+    ) {
+      throw new Error(`Conflicting Cal.com identifiers for booking ${input.calcomUid}`)
+    }
+    if (existingBookingBeforeInsert) {
+      const existingOrganizer = await tx.query.bookingOrganizer.findFirst({
+        where: eq(schema.bookingOrganizer.bookingId, existingBookingBeforeInsert.id),
+        columns: { userId: true },
+      })
+      if (!existingOrganizer || existingOrganizer.userId !== input.organizer.userId) {
+        throw new Error('Existing Cal.com booking belongs to a different Discuno mentor')
+      }
+    }
+
+    const lifecycleSeed = input.supersededByUid
+      ? {
+          state: 'CANCELLED' as const,
+          financialDisposition: 'NONE' as const,
+          mentorPayoutEligible: false,
+        }
+      : lifecycleSeedForBooking(existingBookingBeforeInsert ?? input)
+    const lifecycleNow = new Date()
+    await tx
+      .insert(schema.calcomBookingLifecycle)
+      .values({
+        calcomUid: input.calcomUid,
+        calcomBookingId: input.calcomBookingId,
+        mentorUserId: input.organizer.userId,
+        calcomUserId: input.calcomUserId,
+        state: lifecycleSeed.state,
+        financialDisposition: existingBookingBeforeInsert
+          ? 'NONE'
+          : lifecycleSeed.financialDisposition,
+        mentorPayoutEligible:
+          existingBookingBeforeInsert?.mentorPayoutEligible ?? lifecycleSeed.mentorPayoutEligible,
+        eventCreatedAt: input.lifecycleEventCreatedAt ?? lifecycleNow,
+        // Existing rows predate this ledger and may already have received their
+        // financial side effects. Preserve their state without replaying money.
+        sideEffectsCompletedAt: existingBookingBeforeInsert ? lifecycleNow : null,
+      })
+      .onConflictDoNothing({ target: schema.calcomBookingLifecycle.calcomUid })
+
+    const [lifecycle] = await tx
+      .select()
+      .from(schema.calcomBookingLifecycle)
+      .where(eq(schema.calcomBookingLifecycle.calcomUid, input.calcomUid))
+      .for('update')
+
+    if (!lifecycle) {
+      throw new Error(`Failed to establish lifecycle state for Cal.com booking ${input.calcomUid}`)
+    }
+
+    assertBookingLifecycleOwnership(lifecycle, {
+      mentorUserId: input.organizer.userId,
+      calcomUserId: input.calcomUserId,
+    })
+
+    if (lifecycle.calcomBookingId !== null && lifecycle.calcomBookingId !== input.calcomBookingId) {
+      throw new Error(`Conflicting Cal.com lifecycle identifiers for booking ${input.calcomUid}`)
+    }
+    if (lifecycle.calcomBookingId === null || lifecycle.calcomUserId === null) {
+      await tx
+        .update(schema.calcomBookingLifecycle)
+        .set({
+          ...(lifecycle.calcomBookingId === null ? { calcomBookingId: input.calcomBookingId } : {}),
+          ...(lifecycle.calcomUserId === null && input.calcomUserId !== undefined
+            ? { calcomUserId: input.calcomUserId }
+            : {}),
+          updatedAt: lifecycleNow,
+        })
+        .where(eq(schema.calcomBookingLifecycle.calcomUid, input.calcomUid))
+      lifecycle.calcomBookingId = input.calcomBookingId
+      if (input.calcomUserId !== undefined) lifecycle.calcomUserId = input.calcomUserId
+    }
+
+    const lifecycleProjection = getLifecycleProjection(lifecycle, input.status)
 
     // Create the booking record
     const [booking] = await tx
@@ -142,9 +410,9 @@ export const createBooking = async (input: CreateBookingInput) => {
         description: input.description,
         startTime: input.startTime,
         endTime: input.endTime,
-        // Preserve Cal's authoritative state. In particular, never make a
-        // confirmation-required PENDING booking payout-eligible locally.
-        status: input.status ?? 'PENDING',
+        // A terminal lifecycle row wins even when BOOKING_CREATED was delivered
+        // after it. Otherwise preserve Cal's authoritative create status.
+        ...lifecycleProjection,
         mentorEventTypeId: mentorEventType.id,
         paymentId: input.paymentId,
         webhookPayload: input.webhookPayload,
@@ -154,12 +422,14 @@ export const createBooking = async (input: CreateBookingInput) => {
       .returning()
 
     if (!booking) {
-      const existingBooking = await tx.query.booking.findFirst({
-        where: or(
-          eq(schema.booking.calcomBookingId, input.calcomBookingId),
-          eq(schema.booking.calcomUid, input.calcomUid)
-        ),
-      })
+      const existingBooking =
+        existingBookingBeforeInsert ??
+        (await tx.query.booking.findFirst({
+          where: or(
+            eq(schema.booking.calcomBookingId, input.calcomBookingId),
+            eq(schema.booking.calcomUid, input.calcomUid)
+          ),
+        }))
 
       if (!existingBooking) {
         throw new Error(`Failed to create or find Cal.com booking ${input.calcomUid}`)
@@ -175,11 +445,14 @@ export const createBooking = async (input: CreateBookingInput) => {
       if (input.paymentId) {
         await tx
           .update(schema.payment)
-          .set({ calcomBookingUid: existingBooking.calcomUid, updatedAt: new Date() })
+          .set({
+            calcomBookingUid: input.supersededByUid ?? existingBooking.calcomUid,
+            updatedAt: new Date(),
+          })
           .where(eq(schema.payment.id, input.paymentId))
       }
 
-      return { booking: existingBooking, created: false as const }
+      return { booking: existingBooking, lifecycle, created: false as const }
     }
 
     // Create the organizer record
@@ -197,12 +470,303 @@ export const createBooking = async (input: CreateBookingInput) => {
     if (input.paymentId) {
       await tx
         .update(schema.payment)
-        .set({ calcomBookingUid: booking.calcomUid, updatedAt: new Date() })
+        .set({
+          calcomBookingUid: input.supersededByUid ?? booking.calcomUid,
+          updatedAt: new Date(),
+        })
         .where(eq(schema.payment.id, input.paymentId))
     }
 
-    return { booking, created: true as const }
+    return { booking, lifecycle, created: true as const }
   })
+}
+
+/**
+ * Decide whether an incoming lifecycle event may replace the durable current
+ * state. BOOKING_CREATED never calls this function: it can seed ACTIVE, but it
+ * cannot overwrite an existing terminal row.
+ */
+export const shouldReplaceBookingLifecycle = (
+  current: Pick<
+    BookingLifecycle,
+    'state' | 'financialDisposition' | 'mentorPayoutEligible' | 'eventCreatedAt'
+  >,
+  incoming: RecordBookingLifecycleInput
+) => {
+  const currentTime = current.eventCreatedAt.getTime()
+  const incomingTime = incoming.eventCreatedAt.getTime()
+  const isSameDecision =
+    current.state === incoming.state &&
+    current.financialDisposition === incoming.financialDisposition &&
+    current.mentorPayoutEligible === (incoming.mentorPayoutEligible ?? false)
+
+  if (current.state === incoming.state) {
+    return incomingTime > currentTime || (incomingTime === currentTime && !isSameDecision)
+  }
+
+  // Any lifecycle event can close an ACTIVE create snapshot, regardless of
+  // delivery latency. Cal's event timestamp remains authoritative afterwards.
+  if (current.state === 'ACTIVE') return incoming.state !== 'ACTIVE'
+
+  // Cal can explicitly clear an attendee no-show. It must never clear a host
+  // no-show, completion, or cancellation.
+  if (incoming.state === 'ACTIVE') {
+    return current.state === 'ATTENDEE_NO_SHOW' && incomingTime >= currentTime
+  }
+
+  if (current.state === 'ATTENDEE_NO_SHOW') {
+    if (incoming.state === 'COMPLETED') return false
+    return incomingTime >= currentTime
+  }
+
+  if (current.state === 'COMPLETED') {
+    return (
+      (incoming.state === 'HOST_NO_SHOW' || incoming.state === 'CANCELLED') &&
+      incomingTime >= currentTime
+    )
+  }
+
+  if (current.state === 'HOST_NO_SHOW') {
+    return incoming.state === 'CANCELLED' && incomingTime >= currentTime
+  }
+
+  // Cancellation is final. A replay may refine its financial disposition via
+  // the same-state branch above, but no other event can resurrect it.
+  return false
+}
+
+/**
+ * Persist the privacy-minimal lifecycle decision, then project it onto the
+ * full booking snapshot when that snapshot already exists.
+ */
+export const recordBookingLifecycleEvent = async (input: RecordBookingLifecycleInput) => {
+  if (Number.isNaN(input.eventCreatedAt.getTime())) {
+    throw new Error('Cal.com lifecycle event timestamp is invalid')
+  }
+
+  return db.transaction(async tx => {
+    const now = new Date()
+    const existingBookingSnapshot = await tx.query.booking.findFirst({
+      where: eq(schema.booking.calcomUid, input.calcomUid),
+      columns: { id: true },
+    })
+    if (existingBookingSnapshot) {
+      const existingOrganizer = await tx.query.bookingOrganizer.findFirst({
+        where: eq(schema.bookingOrganizer.bookingId, existingBookingSnapshot.id),
+        columns: { userId: true },
+      })
+      if (!existingOrganizer || existingOrganizer.userId !== input.mentorUserId) {
+        throw new Error('Cal.com booking lifecycle event belongs to a different Discuno mentor')
+      }
+    }
+
+    const [inserted] = await tx
+      .insert(schema.calcomBookingLifecycle)
+      .values({
+        calcomUid: input.calcomUid,
+        calcomBookingId: input.calcomBookingId,
+        mentorUserId: input.mentorUserId,
+        calcomUserId: input.calcomUserId,
+        state: input.state,
+        financialDisposition: input.financialDisposition,
+        mentorPayoutEligible: input.mentorPayoutEligible ?? false,
+        eventCreatedAt: input.eventCreatedAt,
+      })
+      .onConflictDoNothing({ target: schema.calcomBookingLifecycle.calcomUid })
+      .returning()
+
+    let lifecycle = inserted
+    let changed = Boolean(inserted)
+    if (!lifecycle) {
+      const [current] = await tx
+        .select()
+        .from(schema.calcomBookingLifecycle)
+        .where(eq(schema.calcomBookingLifecycle.calcomUid, input.calcomUid))
+        .for('update')
+      if (!current) {
+        throw new Error(`Cal.com lifecycle row ${input.calcomUid} disappeared during processing`)
+      }
+      assertBookingLifecycleOwnership(current, {
+        mentorUserId: input.mentorUserId,
+        calcomUserId: input.calcomUserId,
+      })
+
+      lifecycle = current
+      if (shouldReplaceBookingLifecycle(current, input)) {
+        const [updated] = await tx
+          .update(schema.calcomBookingLifecycle)
+          .set({
+            calcomBookingId: input.calcomBookingId ?? current.calcomBookingId,
+            calcomUserId: input.calcomUserId ?? current.calcomUserId,
+            state: input.state,
+            financialDisposition: input.financialDisposition,
+            mentorPayoutEligible: input.mentorPayoutEligible ?? false,
+            // Cal exposes a generic updatedAt rather than a dedicated
+            // cancelledAt. Preserve the first authenticated provider instant
+            // once cancellation is observed; later reads may change updatedAt
+            // while refining actor/disposition evidence.
+            eventCreatedAt:
+              current.state === 'CANCELLED' && input.state === 'CANCELLED'
+                ? current.eventCreatedAt
+                : input.eventCreatedAt,
+            sideEffectsClaimedAt: null,
+            sideEffectsCompletedAt: null,
+            updatedAt: now,
+          })
+          .where(eq(schema.calcomBookingLifecycle.calcomUid, input.calcomUid))
+          .returning()
+        if (!updated) throw new Error(`Failed to update Cal.com lifecycle ${input.calcomUid}`)
+        lifecycle = updated
+        changed = true
+      } else if (
+        (current.calcomBookingId === null && input.calcomBookingId !== undefined) ||
+        (current.calcomUserId === null && input.calcomUserId !== undefined)
+      ) {
+        const [identified] = await tx
+          .update(schema.calcomBookingLifecycle)
+          .set({
+            ...(current.calcomBookingId === null && input.calcomBookingId !== undefined
+              ? { calcomBookingId: input.calcomBookingId }
+              : {}),
+            ...(current.calcomUserId === null && input.calcomUserId !== undefined
+              ? { calcomUserId: input.calcomUserId }
+              : {}),
+            updatedAt: now,
+          })
+          .where(eq(schema.calcomBookingLifecycle.calcomUid, input.calcomUid))
+          .returning()
+        if (identified) lifecycle = identified
+      }
+    }
+
+    const projection = getLifecycleProjection(lifecycle, 'ACCEPTED')
+    const update = {
+      ...projection,
+      updatedAt: now,
+    }
+    const [projectedBooking] =
+      lifecycle.state === 'ACTIVE'
+        ? await tx
+            .update(schema.booking)
+            .set(update)
+            .where(
+              and(
+                eq(schema.booking.calcomUid, input.calcomUid),
+                eq(schema.booking.status, 'NO_SHOW'),
+                eq(schema.booking.attendeeNoShow, true),
+                eq(schema.booking.hostNoShow, false)
+              )
+            )
+            .returning({ id: schema.booking.id })
+        : await tx
+            .update(schema.booking)
+            .set(update)
+            .where(eq(schema.booking.calcomUid, input.calcomUid))
+            .returning({ id: schema.booking.id })
+
+    const existingBooking =
+      projectedBooking ??
+      (await tx.query.booking.findFirst({
+        where: eq(schema.booking.calcomUid, input.calcomUid),
+        columns: { id: true },
+      }))
+
+    return {
+      id: existingBooking?.id ?? null,
+      missing: !existingBooking,
+      recorded: changed,
+      transitioned: changed && Boolean(existingBooking),
+      lifecycle,
+    }
+  })
+}
+
+const BOOKING_LIFECYCLE_SIDE_EFFECT_LEASE_MS = 2 * 60 * 1000
+
+/** Atomically claim the exact current decision before touching money. */
+export const claimBookingLifecycleSideEffects = async (
+  lifecycle: Pick<BookingLifecycle, 'calcomUid' | 'mentorUserId' | 'state' | 'eventCreatedAt'>
+) => {
+  const claimedAt = new Date()
+  const staleBefore = new Date(claimedAt.getTime() - BOOKING_LIFECYCLE_SIDE_EFFECT_LEASE_MS)
+  const [claimed] = await db
+    .update(schema.calcomBookingLifecycle)
+    .set({ sideEffectsClaimedAt: claimedAt, updatedAt: claimedAt })
+    .where(
+      and(
+        eq(schema.calcomBookingLifecycle.calcomUid, lifecycle.calcomUid),
+        eq(schema.calcomBookingLifecycle.mentorUserId, lifecycle.mentorUserId),
+        eq(schema.calcomBookingLifecycle.state, lifecycle.state),
+        eq(schema.calcomBookingLifecycle.eventCreatedAt, lifecycle.eventCreatedAt),
+        isNull(schema.calcomBookingLifecycle.sideEffectsCompletedAt),
+        or(
+          isNull(schema.calcomBookingLifecycle.sideEffectsClaimedAt),
+          lt(schema.calcomBookingLifecycle.sideEffectsClaimedAt, staleBefore)
+        )
+      )
+    )
+    .returning({ calcomUid: schema.calcomBookingLifecycle.calcomUid })
+
+  return claimed ? claimedAt : null
+}
+
+export const getBookingLifecycle = async (calcomUid: string, mentorUserId: string) => {
+  return (
+    (await db.query.calcomBookingLifecycle.findFirst({
+      where: and(
+        eq(schema.calcomBookingLifecycle.calcomUid, calcomUid),
+        eq(schema.calcomBookingLifecycle.mentorUserId, mentorUserId)
+      ),
+    })) ?? null
+  )
+}
+
+/** Mark financial reconciliation complete only for the exact claimed decision. */
+export const markBookingLifecycleSideEffectsCompleted = async (
+  lifecycle: Pick<BookingLifecycle, 'calcomUid' | 'mentorUserId' | 'state' | 'eventCreatedAt'>,
+  claimedAt: Date
+) => {
+  const completedAt = new Date()
+  const [completed] = await db
+    .update(schema.calcomBookingLifecycle)
+    .set({
+      sideEffectsClaimedAt: null,
+      sideEffectsCompletedAt: completedAt,
+      updatedAt: completedAt,
+    })
+    .where(
+      and(
+        eq(schema.calcomBookingLifecycle.calcomUid, lifecycle.calcomUid),
+        eq(schema.calcomBookingLifecycle.mentorUserId, lifecycle.mentorUserId),
+        eq(schema.calcomBookingLifecycle.state, lifecycle.state),
+        eq(schema.calcomBookingLifecycle.eventCreatedAt, lifecycle.eventCreatedAt),
+        eq(schema.calcomBookingLifecycle.sideEffectsClaimedAt, claimedAt),
+        isNull(schema.calcomBookingLifecycle.sideEffectsCompletedAt)
+      )
+    )
+    .returning({ calcomUid: schema.calcomBookingLifecycle.calcomUid })
+
+  return Boolean(completed)
+}
+
+/** Release a failed lease so the durable inbox retry can claim it immediately. */
+export const releaseBookingLifecycleSideEffectsClaim = async (
+  lifecycle: Pick<BookingLifecycle, 'calcomUid' | 'mentorUserId' | 'state' | 'eventCreatedAt'>,
+  claimedAt: Date
+) => {
+  await db
+    .update(schema.calcomBookingLifecycle)
+    .set({ sideEffectsClaimedAt: null, updatedAt: new Date() })
+    .where(
+      and(
+        eq(schema.calcomBookingLifecycle.calcomUid, lifecycle.calcomUid),
+        eq(schema.calcomBookingLifecycle.mentorUserId, lifecycle.mentorUserId),
+        eq(schema.calcomBookingLifecycle.state, lifecycle.state),
+        eq(schema.calcomBookingLifecycle.eventCreatedAt, lifecycle.eventCreatedAt),
+        eq(schema.calcomBookingLifecycle.sideEffectsClaimedAt, claimedAt),
+        isNull(schema.calcomBookingLifecycle.sideEffectsCompletedAt)
+      )
+    )
 }
 
 const getExistingBooking = async (calcomBookingUid: string) => {

@@ -229,7 +229,7 @@ const ForMentorsPage = async ({
                 </Link>
               </Button>
               <Button asChild size="lg" variant="outline" className="h-12 px-6 text-base">
-                <Link href="#student-questions">See what students ask</Link>
+                <Link href="#student-questions">See where you can help</Link>
               </Button>
             </div>
             <div className="text-muted-foreground mt-7 flex flex-wrap gap-x-6 gap-y-3 text-sm">
@@ -252,13 +252,13 @@ const ForMentorsPage = async ({
             <div className="border-border bg-card overflow-hidden rounded-3xl border shadow-xl shadow-black/5">
               <div className="border-border flex items-center justify-between border-b px-6 py-5">
                 <div>
-                  <p className="font-semibold">Questions students are asking</p>
+                  <p className="font-semibold">Questions you could help untangle</p>
                   <p className="text-muted-foreground mt-0.5 text-sm">
-                    You may already know what they need to hear
+                    A few examples of focused student decisions
                   </p>
                 </div>
                 <span className="bg-muted text-muted-foreground rounded-full px-3 py-1 text-xs font-medium">
-                  Right now
+                  Examples
                 </span>
               </div>
               <div className="space-y-3 p-5 sm:p-6">

@@ -1,6 +1,7 @@
 'use client'
 
 import { CreditCard, ExternalLink, Loader2 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import {
@@ -12,14 +13,24 @@ import { Button } from '~/components/ui/button'
 
 interface StripeDashboardButtonProps {
   hasStripeAccount: boolean
-  chargesEnabled: boolean
+  payoutsReady: boolean
 }
 
 export const StripeDashboardButton = ({
   hasStripeAccount,
-  chargesEnabled,
+  payoutsReady,
 }: StripeDashboardButtonProps) => {
+  const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
+
+  const redirectToReauthentication = (result: {
+    code?: 'SESSION_NOT_FRESH'
+    reauthUrl?: string
+  }): boolean => {
+    if (result.code !== 'SESSION_NOT_FRESH' || !result.reauthUrl) return false
+    router.push(result.reauthUrl)
+    return true
+  }
 
   const handleOpenDashboard = async () => {
     setIsLoading(true)
@@ -28,6 +39,8 @@ export const StripeDashboardButton = ({
 
       if (result.success && result.url) {
         window.open(result.url, '_blank', 'noopener,noreferrer')
+      } else if (redirectToReauthentication(result)) {
+        return
       } else {
         toast.error("Couldn't open the payout dashboard", {
           description: result.error ?? 'Please try again later',
@@ -47,6 +60,10 @@ export const StripeDashboardButton = ({
     try {
       const result = await createStripeConnectAccount()
 
+      if (redirectToReauthentication(result)) {
+        return
+      }
+
       if (result.success) {
         const linkResult = await createStripeAccountLink({
           type: 'account_onboarding',
@@ -56,6 +73,8 @@ export const StripeDashboardButton = ({
         if (linkResult.success && linkResult.url) {
           toast.success('Opening secure payout setup…')
           window.location.href = linkResult.url
+        } else if (redirectToReauthentication(linkResult)) {
+          return
         } else {
           toast.error("Couldn't open payout setup", {
             description: linkResult.error ?? 'Please try again later',
@@ -75,7 +94,7 @@ export const StripeDashboardButton = ({
     }
   }
 
-  if (!hasStripeAccount || !chargesEnabled) {
+  if (!hasStripeAccount || !payoutsReady) {
     const label = hasStripeAccount ? 'Finish payout setup' : 'Set up payouts'
 
     return (

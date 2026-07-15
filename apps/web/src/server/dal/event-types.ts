@@ -42,8 +42,10 @@ export const getEnabledEventTypesWithStripeStatus = async (userId: string) => {
       duration: mentorEventType.duration,
       customPrice: mentorEventType.customPrice,
       currency: mentorEventType.currency,
+      bookingCompatible: mentorEventType.bookingCompatible,
       chargesEnabled: mentorStripeAccount.chargesEnabled,
       payoutsEnabled: mentorStripeAccount.payoutsEnabled,
+      transfersEnabled: mentorStripeAccount.transfersEnabled,
       stripeAccountStatus: mentorStripeAccount.stripeAccountStatus,
     })
     .from(mentorEventType)
@@ -52,6 +54,7 @@ export const getEnabledEventTypesWithStripeStatus = async (userId: string) => {
       and(
         eq(mentorEventType.mentorUserId, userId),
         eq(mentorEventType.isEnabled, true),
+        eq(mentorEventType.bookingCompatible, true),
         isNull(mentorEventType.deletedAt),
         isNotNull(mentorEventType.calcomEventTypeId)
       )

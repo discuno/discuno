@@ -1,82 +1,102 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# Discuno Web App Development Setup Script
-# This script helps set up the development environment
+# Bootstrap the Discuno monorepo with the toolchain declared in package.json.
 
-set -e
+set -Eeuo pipefail
 
-echo "🚀 Setting up Discuno Web App development environment..."
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+WEB_DIR="$(cd -- "$SCRIPT_DIR/.." && pwd)"
+REPO_ROOT="$(cd -- "$WEB_DIR/../.." && pwd)"
 
-# Check if required tools are installed
+cd "$REPO_ROOT"
+
+echo "🚀 Setting up the Discuno development environment..."
+
 check_tool() {
-    if ! command -v $1 &> /dev/null; then
-        echo "❌ $1 is not installed. Please install it first."
-        exit 1
-    else
-        echo "✅ $1 is installed"
-    fi
+  local tool="$1"
+  if ! command -v "$tool" >/dev/null 2>&1; then
+    echo "❌ $tool is not installed. Install it before continuing."
+    exit 1
+  fi
+  echo "✅ $tool is installed"
+}
+
+version_at_least() {
+  local actual="${1%%-*}"
+  local required="${2%%-*}"
+  local actual_major actual_minor actual_patch
+  local required_major required_minor required_patch
+
+  IFS=. read -r actual_major actual_minor actual_patch <<<"$actual"
+  IFS=. read -r required_major required_minor required_patch <<<"$required"
+  actual_minor="${actual_minor:-0}"
+  actual_patch="${actual_patch:-0}"
+  required_minor="${required_minor:-0}"
+  required_patch="${required_patch:-0}"
+
+  [[ "$actual_major$actual_minor$actual_patch$required_major$required_minor$required_patch" =~ ^[0-9]+$ ]] || return 1
+
+  ((10#$actual_major > 10#$required_major)) ||
+    ((10#$actual_major == 10#$required_major && 10#$actual_minor > 10#$required_minor)) ||
+    ((10#$actual_major == 10#$required_major && 10#$actual_minor == 10#$required_minor && 10#$actual_patch >= 10#$required_patch))
 }
 
 echo "📋 Checking required tools..."
-check_tool "node"
-check_tool "pnpm"
-check_tool "git"
+check_tool node
+check_tool pnpm
+check_tool git
 
-# Check Node.js version
-node_version=$(node --version | cut -d'v' -f2)
-required_version="18.0.0"
+node_version="$(node --version)"
+node_version="${node_version#v}"
+node_major="${node_version%%.*}"
+if [[ "$node_major" != "24" ]]; then
+  echo "❌ Node.js $node_version is unsupported. Discuno requires Node.js 24.x."
+  exit 1
+fi
+echo "✅ Node.js $node_version matches the required 24.x release line"
 
-if [ "$(printf '%s\n' "$required_version" "$node_version" | sort -V | head -n1)" != "$required_version" ]; then
-    echo "❌ Node.js version $node_version is below required version $required_version"
-    exit 1
+pnpm_version="$(pnpm --version)"
+if ! version_at_least "$pnpm_version" "11.13.0"; then
+  echo "❌ pnpm $pnpm_version is unsupported. Discuno requires pnpm 11.13.0 or newer."
+  exit 1
+fi
+echo "✅ pnpm $pnpm_version meets the 11.13.0 minimum"
+
+echo "📦 Installing the reviewed dependency graph..."
+pnpm install --frozen-lockfile
+
+env_file="$WEB_DIR/.env.local"
+env_template="$WEB_DIR/.env.example"
+if [[ ! -f "$env_file" ]]; then
+  if [[ -f "$env_template" ]]; then
+    cp "$env_template" "$env_file"
+    echo "📝 Created apps/web/.env.local from apps/web/.env.example"
+    echo "🔧 Add your local credentials before starting the application"
+  else
+    echo "❌ apps/web/.env.example is missing. Create apps/web/.env.local manually."
+  fi
 else
-    echo "✅ Node.js version $node_version meets requirements"
+  echo "✅ apps/web/.env.local exists"
 fi
 
-# Install dependencies
-echo "📦 Installing dependencies..."
-pnpm install
-
-# Check for environment file
-if [ ! -f ".env.local" ]; then
-    echo "⚠️  .env.local not found. Creating from template..."
-    if [ -f ".env.example" ]; then
-        cp .env.example .env.local
-        echo "📝 Created .env.local from .env.example"
-        echo "🔧 Please edit .env.local with your configuration"
-    else
-        echo "❌ .env.example not found. Please create .env.local manually"
-    fi
-else
-    echo "✅ .env.local exists"
-fi
-
-# Run type checking
-echo "🔍 Running type check..."
+echo "🔍 Checking application types..."
 pnpm typecheck
 
-# Run linting
-echo "🧹 Running linter..."
+echo "🔍 Checking test types..."
+pnpm typecheck:tests
+
+echo "🧹 Running the linter..."
 pnpm lint
 
-# Setup git hooks
-echo "🪝 Setting up git hooks..."
-npx husky install
-
-echo ""
+echo
 echo "🎉 Development environment setup complete!"
-echo ""
+echo
 echo "Next steps:"
-echo "1. Edit .env.local with your database and API credentials"
-echo "2. Test your database connection with 'pnpm db:test:local'"
-echo "3. Set up your database with 'pnpm db:reset:local' (includes schema and seed data)"
-echo "4. Run 'pnpm dev' to start the development server"
-echo ""
-echo "Available database commands:"
-echo "  - pnpm db:test:local              # Test database connection"
-echo "  - pnpm db:reset:local             # Reset database with fresh data"
-echo "  - pnpm db:seed local              # Add seed data to existing database"
-echo "  - pnpm db:push local              # Push local schema to database"
-echo "  - pnpm db:generate:local         # Generate TypeScript definitions from local schema"
-echo ""
-echo "Happy coding! 🚀"
+echo "1. Review apps/web/.env.local and add your local credentials."
+echo "2. Test database connectivity with 'pnpm db:test:local'."
+echo "3. Review and apply the local schema with 'pnpm db:push:local'."
+echo "4. Seed reference data with 'pnpm db:seed'."
+echo "5. Check integrations with 'pnpm integrations:check:local'."
+echo "6. Start the app with 'pnpm dev:web' (or all workspaces with 'pnpm dev')."
+echo
+echo "Destructive option: 'pnpm db:reset:local' resets the local database."

@@ -9,7 +9,7 @@ nodeOptions: '--max-old-space-size=4096'
 preferWorkspacePackages: true
 resolutionMode: highest
 sharedWorkspaceLockfile: true
-strictPeerDependencies: false
+strictPeerDependencies: true
 supportedArchitectures:
   os:
     - current
@@ -21,20 +21,15 @@ supportedArchitectures:
     - current
     - glibc
 
-# These versions were intentionally selected during this modernization and
-# landed within pnpm 11's default 24-hour publication holdback window.
+# Hold newly published dependency versions for 24 hours. Explicit exceptions
+# below are versions already reviewed for the current Stripe and Vitest stacks.
+minimumReleaseAge: 1440
 minimumReleaseAgeExclude:
-  - '@stripe/stripe-js'
-  - '@turbo/*'
-  - '@typescript-eslint/*'
-  - ast-v8-to-istanbul
-  - posthog-js
-  - react-email
-  - turbo
-  - typescript-eslint
+  - '@stripe/stripe-js@9.10.0'
+  - ast-v8-to-istanbul@1.0.5
 
 overrides:
-  esbuild: ^0.25.5
+  esbuild: ^0.28.1
   postcss: ^8.5.10
   react-is: ^19.2.0
   '@types/react': ^19.2.2

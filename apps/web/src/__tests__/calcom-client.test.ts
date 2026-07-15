@@ -2,9 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('~/env', () => ({
   env: {
-    NEXT_PUBLIC_CALCOM_API_URL: 'https://api.cal.test/v2',
-    NEXT_PUBLIC_X_CAL_ID: 'test-client-id',
-    X_CAL_SECRET_KEY: 'test-secret-key',
+    CALCOM_API_URL: 'https://api.cal.test/v2',
   },
 }))
 

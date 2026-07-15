@@ -20,6 +20,7 @@ interface AttendeeDetailsStepProps {
   setFormData: (formData: BookingFormData) => void
   setCurrentStep: (step: 'calendar' | 'booking') => void
   createBookingMutation: UseMutationResult<void, Error, void>
+  detailsLocked: boolean
 }
 
 export const AttendeeDetailsStep = ({
@@ -30,20 +31,24 @@ export const AttendeeDetailsStep = ({
   setFormData,
   setCurrentStep,
   createBookingMutation,
+  detailsLocked,
 }: AttendeeDetailsStepProps) => {
-  const [touched, setTouched] = useState({ name: false, email: false })
+  const [touched, setTouched] = useState({ name: false, email: false, phone: false })
   const [attemptedSubmit, setAttemptedSubmit] = useState(false)
 
   const hasValidName = formData.name.trim().length >= 2
   const hasValidEmail = validateEmail(formData.email)
+  const normalizedPhone = formData.phone.replace(/[\s\-().]/g, '')
+  const hasValidPhone = /^\+[1-9]\d{7,14}$/.test(normalizedPhone)
   const showNameError = (touched.name || attemptedSubmit) && !hasValidName
   const showEmailError = (touched.email || attemptedSubmit) && !hasValidEmail
+  const showPhoneError = (touched.phone || attemptedSubmit) && !hasValidPhone
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setAttemptedSubmit(true)
 
-    if (!hasValidName || !hasValidEmail || createBookingMutation.isPending) return
+    if (!hasValidName || !hasValidEmail || !hasValidPhone || createBookingMutation.isPending) return
     createBookingMutation.mutate()
   }
 
@@ -104,6 +109,12 @@ export const AttendeeDetailsStep = ({
         )}
 
         <div className="space-y-5">
+          {detailsLocked && (
+            <p className="bg-muted/40 text-muted-foreground rounded-lg border px-3 py-2 text-xs leading-5">
+              These details are fixed for this payment attempt. To edit them, choose Change time and
+              select a time again.
+            </p>
+          )}
           <div className="space-y-2">
             <Label htmlFor="booking-name">Full name</Label>
             <Input
@@ -118,6 +129,7 @@ export const AttendeeDetailsStep = ({
               aria-invalid={showNameError}
               aria-describedby={showNameError ? 'booking-name-error' : undefined}
               className="h-11"
+              disabled={detailsLocked}
               required
             />
             {showNameError && (
@@ -142,6 +154,7 @@ export const AttendeeDetailsStep = ({
               aria-invalid={showEmailError}
               aria-describedby={showEmailError ? 'booking-email-error' : 'booking-email-help'}
               className="h-11"
+              disabled={detailsLocked}
               required
             />
             {showEmailError ? (
@@ -151,6 +164,35 @@ export const AttendeeDetailsStep = ({
             ) : (
               <p id="booking-email-help" className="text-muted-foreground text-xs">
                 Your receipt and calendar invitation will be sent here.
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="booking-phone">Mobile number</Label>
+            <Input
+              id="booking-phone"
+              name="phone"
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+              value={formData.phone}
+              onChange={event => setFormData({ ...formData, phone: event.target.value })}
+              onBlur={() => setTouched(current => ({ ...current, phone: true }))}
+              placeholder="+1 555 123 4567"
+              aria-invalid={showPhoneError}
+              aria-describedby={showPhoneError ? 'booking-phone-error' : 'booking-phone-help'}
+              className="h-11"
+              disabled={detailsLocked}
+              required
+            />
+            {showPhoneError ? (
+              <p id="booking-phone-error" className="text-destructive text-xs" role="alert">
+                Include your country code, for example +1 555 123 4567.
+              </p>
+            ) : (
+              <p id="booking-phone-help" className="text-muted-foreground text-xs">
+                Used only for session coordination and any reminders the mentor has enabled.
               </p>
             )}
           </div>

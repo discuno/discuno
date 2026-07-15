@@ -8,6 +8,7 @@ import {
   CreditCard,
   DollarSign,
   Mail,
+  Link2,
   User,
 } from 'lucide-react'
 import Link from 'next/link'
@@ -47,6 +48,7 @@ const iconMap = {
   CreditCard,
   BookOpen,
   DollarSign,
+  Link2,
 } as const
 
 const quickActions = [

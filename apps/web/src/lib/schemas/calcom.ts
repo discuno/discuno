@@ -94,12 +94,16 @@ export const CalcomBookingPayloadSchema = z
       .object({
         videoCallUrl: z
           .url()
+          .max(2_048)
           .nullish()
           .transform(value => value ?? undefined),
         paymentId: z.string().regex(/^\d+$/).optional(),
         mentorUserId: z.uuid({ error: 'Mentor user ID must be a valid UUID' }),
         actorUserId: z.uuid({ error: 'Actor user ID must be a valid UUID' }).optional(),
-        bookingAttemptId: z.string().length(64).optional(),
+        // UUIDs are used by the current booking flow. The legacy 64-character
+        // digest remains accepted while older Cal.com bookings can still emit
+        // webhooks during the rollout window.
+        bookingAttemptId: z.union([z.uuid(), z.string().length(64)]).optional(),
       })
       .passthrough(),
     status: z.enum(['ACCEPTED', 'PENDING', 'CANCELLED', 'REJECTED']),
@@ -168,6 +172,16 @@ const CalcomUnknownPayloadSchema = z.record(z.string(), z.any())
 export const CalcomWebhookSchema = z.discriminatedUnion('triggerEvent', [
   z.object({
     triggerEvent: z.literal('BOOKING_CREATED'),
+    createdAt: z.string(),
+    payload: CalcomBookingPayloadSchema,
+  }),
+  z.object({
+    triggerEvent: z.literal('BOOKING_REJECTED'),
+    createdAt: z.string(),
+    payload: CalcomBookingPayloadSchema,
+  }),
+  z.object({
+    triggerEvent: z.literal('BOOKING_COMPLETED'),
     createdAt: z.string(),
     payload: CalcomBookingPayloadSchema,
   }),

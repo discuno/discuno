@@ -25,13 +25,9 @@ type RankingEvent = keyof typeof RANKING_EVENT_WEIGHTS
  * Decays all mentor ranking scores by a percentage.
  */
 export async function decayRankingScores() {
-  console.log(
-    `typeof RANKING_EVENT_WEIGHTS.WEEKLY_DECAY_PERCENTAGE: ${typeof RANKING_EVENT_WEIGHTS.WEEKLY_DECAY_PERCENTAGE}`
-  )
   await db.update(userProfile).set({
     rankingScore: sql`"ranking_score" * (1.0 - ${RANKING_EVENT_WEIGHTS.WEEKLY_DECAY_PERCENTAGE})`,
   })
-  console.log('DECAYING RANKING SCORES: Invalidating posts cache')
   revalidatePosts()
 }
 
@@ -39,48 +35,45 @@ export async function decayRankingScores() {
  * Processes analytics events to update mentor ranking scores.
  */
 export async function processAnalyticsEvents() {
-  // Get all unprocessed analytics events
-  const events = await db.query.analyticEvent.findMany({
-    where: (events, { eq }) => eq(events.processed, false),
-  })
+  const processedCount = await db.transaction(async tx => {
+    const events = await tx.query.analyticEvent.findMany({
+      where: (events, { eq }) => eq(events.processed, false),
+    })
 
-  if (events.length === 0) {
-    return
-  }
+    if (events.length === 0) return 0
 
-  // Calculate score changes for each mentor
-  const scoreChanges = new Map<string, number>()
-  for (const event of events) {
-    const weight = RANKING_EVENT_WEIGHTS[event.eventType as RankingEvent]
-    if (weight) {
-      const currentScore = scoreChanges.get(event.targetUserId) ?? 0
-      scoreChanges.set(event.targetUserId, currentScore + weight)
+    const scoreChanges = new Map<string, number>()
+    for (const event of events) {
+      const weight = RANKING_EVENT_WEIGHTS[event.eventType as RankingEvent]
+      if (weight) {
+        const currentScore = scoreChanges.get(event.targetUserId) ?? 0
+        scoreChanges.set(event.targetUserId, currentScore + weight)
+      }
     }
-  }
 
-  // Update mentor ranking scores in a batch
-  const promises = Array.from(scoreChanges.entries()).map(([mentorId, scoreChange]) => {
-    return db
-      .update(userProfile)
-      .set({
-        rankingScore: sql`"ranking_score" + ${scoreChange}`,
-      })
-      .where(eq(userProfile.userId, mentorId))
+    // Keep score updates and the processed markers in one transaction. A crash
+    // can therefore never apply a score without also consuming its events.
+    for (const [mentorId, scoreChange] of scoreChanges) {
+      await tx
+        .update(userProfile)
+        .set({
+          rankingScore: sql`"ranking_score" + ${scoreChange}`,
+        })
+        .where(eq(userProfile.userId, mentorId))
+    }
+
+    await tx
+      .update(analyticEvent)
+      .set({ processed: true })
+      .where(
+        inArray(
+          analyticEvent.id,
+          events.map(event => event.id)
+        )
+      )
+
+    return events.length
   })
 
-  await Promise.all(promises)
-
-  // Mark events as processed
-  await db
-    .update(analyticEvent)
-    .set({ processed: true })
-    .where(
-      inArray(
-        analyticEvent.id,
-        events.map(e => e.id)
-      )
-    )
-
-  console.log('PROCESSING ANALYTICS EVENTS: Invalidating posts cache')
-  revalidatePosts()
+  if (processedCount > 0) revalidatePosts()
 }

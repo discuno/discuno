@@ -13,22 +13,34 @@ import { createCalcomBooking, getCalcomBookingCompatibility } from '~/lib/calcom
 import { CALCOM_API_VERSIONS } from '~/lib/calcom/client'
 import { MAXIMUM_PAID_BOOKING_PRICE, MINIMUM_PAID_BOOKING_PRICE } from '~/lib/constants'
 import { AppError, BadRequestError, ExternalApiError, StripeError } from '~/lib/errors'
-import { freeBookingActorRatelimit, freeBookingIpRatelimit, ratelimit } from '~/lib/rate-limiter'
+import { getSafeErrorName } from '~/lib/operational-logging'
+import {
+  checkoutIpRatelimit,
+  freeBookingActorRatelimit,
+  freeBookingIpRatelimit,
+  ratelimit,
+  slotLookupIpRatelimit,
+} from '~/lib/rate-limiter'
 import { stripe } from '~/lib/stripe'
 import {
   getCheckoutFulfillmentEventId,
   getCheckoutPaymentIntentId,
+  isDefinitiveStripeCheckoutExpiryError,
   isCheckoutSessionReadyForFulfillment,
 } from '~/lib/stripe/checkout'
 import { getOrCreateStripeCustomerId } from '~/lib/stripe/customer'
 import { calculateMarketplaceAmounts, getMentorPayoutEligibleAt } from '~/lib/stripe/marketplace'
+import { createCheckoutWithReservedSlot } from '~/lib/services/checkout-slot-reservation'
 import { db } from '~/server/db'
+import { resolveCanonicalUserId } from '~/server/dal/user-identities'
 import { mentorStripeAccount, payment } from '~/server/db/schema/index'
 import { getCalcomConnectionByUsername } from '~/server/queries/calcom'
 import { getMentorEnabledEventTypes } from '~/server/queries/event-types'
 import { getPublicProfileByUsername } from '~/server/queries/profiles'
 
 const EventTypeIdSchema = z.number().int().positive('Event type ID must be a positive integer')
+const createOperationalReference = (value: string): string =>
+  createHash('sha256').update(value).digest('hex').slice(0, 16)
 const StartTimeSchema = z.iso
   .datetime({
     offset: true,
@@ -44,6 +56,15 @@ const AttendeeNameSchema = z
   .min(2, 'Attendee name must be at least 2 characters')
   .max(100, 'Name must be at most 100 characters')
 const AttendeeEmailSchema = z.string().trim().email('Valid email is required').max(255)
+const AttendeePhoneSchema = z
+  .string()
+  .trim()
+  .transform(value => value.replace(/[\s\-().]/g, ''))
+  .pipe(
+    z
+      .string()
+      .regex(/^\+[1-9]\d{7,14}$/, 'Phone number must include a valid international country code')
+  )
 const MentorUsernameSchema = z
   .string()
   .trim()
@@ -71,9 +92,11 @@ const CreateBookingInputSchema = z.object({
   username: MentorUsernameSchema,
   eventTypeId: EventTypeIdSchema,
   startTime: StartTimeSchema,
+  bookingAttemptId: z.uuid(),
   attendee: z.object({
     name: AttendeeNameSchema,
     email: AttendeeEmailSchema,
+    phone: AttendeePhoneSchema,
     timeZone: TimeZoneSchema.optional(),
   }),
 })
@@ -85,10 +108,8 @@ export const createBooking = async (input: CreateBookingInput): Promise<string> 
   // without forcing account creation during checkout.
   const { user } = await requireAuth()
   const requestHeaders = await headers()
-  const forwardedIp =
-    requestHeaders.get('x-forwarded-for')?.split(',')[0]?.trim() ??
-    requestHeaders.get('x-real-ip')?.trim()
-  const ipFingerprint = forwardedIp ? createHash('sha256').update(forwardedIp).digest('hex') : null
+  const trustedIp = requestHeaders.get('x-vercel-forwarded-for')?.trim()
+  const ipFingerprint = trustedIp ? createHash('sha256').update(trustedIp).digest('hex') : null
   const [actorLimit, ipLimit] = await Promise.all([
     freeBookingActorRatelimit.limit(user.id),
     ipFingerprint
@@ -102,7 +123,7 @@ export const createBooking = async (input: CreateBookingInput): Promise<string> 
   const validatedInput = CreateBookingInputSchema.safeParse(input)
   if (!validatedInput.success) throw new BadRequestError('Invalid booking details')
 
-  const { eventTypeId, startTime, attendee, username } = validatedInput.data
+  const { eventTypeId, startTime, bookingAttemptId, attendee, username } = validatedInput.data
   const { mentorConnection, eventType } = await resolveBookableEventType(username, eventTypeId)
 
   if ((eventType.customPrice ?? 0) > 0) {
@@ -112,15 +133,12 @@ export const createBooking = async (input: CreateBookingInput): Promise<string> 
     throw new BadRequestError('You cannot book your own mentor session')
   }
 
-  const bookingAttemptId = createHash('sha256')
-    .update(`free:${user.id}:${eventTypeId}:${startTime}`)
-    .digest('hex')
-
   const booking = await createCalcomBooking({
     calcomEventTypeId: eventTypeId,
     start: startTime,
     attendeeName: attendee.name,
     attendeeEmail: attendee.email,
+    attendeePhone: attendee.phone,
     timeZone: attendee.timeZone ?? 'America/New_York',
     mentorUserId: mentorConnection.userId,
     actorUserId: user.id,
@@ -151,15 +169,10 @@ const BookingFormInputSchema = z.object({
   startTimeIso: StartTimeSchema,
   attendeeName: AttendeeNameSchema,
   attendeeEmail: AttendeeEmailSchema,
-  attendeePhone: z
-    .string()
-    .trim()
-    .optional()
-    .refine(val => !val || /^\+?[0-9\s\-()]{7,20}$/.test(val), {
-      message: 'Phone number must be a valid international phone number',
-    }),
+  attendeePhone: AttendeePhoneSchema,
   mentorUsername: MentorUsernameSchema,
   timeZone: TimeZoneSchema,
+  bookingAttemptId: z.uuid(),
 })
 
 const CheckoutSessionMetadataSchema = z.object({
@@ -179,6 +192,14 @@ const CheckoutSessionMetadataSchema = z.object({
   menteeFee: z.string().regex(/^\d+$/),
   mentorAmount: z.string().regex(/^\d+$/),
   mentorStripeAccountId: z.string().startsWith('acct_').max(255),
+  // Checkout Sessions opened before booking-attempt IDs were introduced can
+  // still complete during rollout. Paid fulfillment is idempotent by the
+  // Stripe session/payment IDs and Cal.com payment metadata, so this field is
+  // not part of the financial trust boundary.
+  bookingAttemptId: z.uuid().optional(),
+  calcomReservationUid: z.uuid().optional(),
+  calcomReservationUntil: z.iso.datetime().optional(),
+  checkoutReservationGeneration: z.string().regex(/^\d+$/).optional(),
 })
 
 export type BookingFormInput = z.infer<typeof BookingFormInputSchema>
@@ -201,7 +222,7 @@ const resolveBookableEventType = async (username: string, eventTypeId: number) =
     throw new BadRequestError('Mentor scheduling configuration is inconsistent')
   }
 
-  const compatibility = await getCalcomBookingCompatibility(eventTypeId)
+  const compatibility = await getCalcomBookingCompatibility(eventTypeId, mentorConnection.userId)
   if (!compatibility.compatible) {
     console.warn('Cal.com event type is incompatible with Discuno checkout', {
       eventTypeId,
@@ -215,14 +236,17 @@ const resolveBookableEventType = async (username: string, eventTypeId: number) =
   return { mentorConnection, mentorProfile, eventType }
 }
 
-type AvailableSlotsResponse = {
-  status: 'success' | 'error'
-  data: {
-    [date: string]: {
-      start: string // ISO 8601 string with timezone offset
-    }[]
-  }
-}
+const AvailableSlotsResponseSchema = z.object({
+  status: z.literal('success'),
+  data: z.record(
+    z.string(),
+    z.array(
+      z.object({
+        start: z.iso.datetime({ offset: true }),
+      })
+    )
+  ),
+})
 
 /**
  * Fetch available event types for a given username (using database with joins)
@@ -232,7 +256,6 @@ export const fetchEventTypes = async (username: string): Promise<EventType[]> =>
   const mentorPrefs = await getMentorEnabledEventTypes(mentorConnection.userId)
 
   if (!mentorPrefs.length) {
-    console.log(`No enabled event types found for user: ${username}`)
     return []
   }
 
@@ -255,33 +278,59 @@ export const fetchAvailableSlots = async (
   endDate: Date,
   timeZone?: string
 ): Promise<Record<string, TimeSlot[]>> => {
-  const url = new URL(`${env.NEXT_PUBLIC_CALCOM_API_URL}/slots`)
-  url.searchParams.append('eventTypeId', eventTypeId.toString())
-  url.searchParams.append('start', new Date(startDate).toISOString())
-  url.searchParams.append('end', new Date(endDate).toISOString())
-  if (timeZone) url.searchParams.append('timeZone', timeZone)
+  const parsedEventTypeId = EventTypeIdSchema.safeParse(eventTypeId)
+  const parsedTimeZone = timeZone ? TimeZoneSchema.safeParse(timeZone) : null
+  const start = new Date(startDate)
+  const end = new Date(endDate)
+  const maximumRangeMs = 31 * 24 * 60 * 60 * 1000
+  if (
+    !parsedEventTypeId.success ||
+    (parsedTimeZone && !parsedTimeZone.success) ||
+    !Number.isFinite(start.getTime()) ||
+    !Number.isFinite(end.getTime()) ||
+    end <= start ||
+    end.getTime() - start.getTime() > maximumRangeMs
+  ) {
+    throw new BadRequestError('Invalid availability range')
+  }
+
+  const requestHeaders = await headers()
+  const trustedIp = requestHeaders.get('x-vercel-forwarded-for')?.trim()
+  if (trustedIp) {
+    const ipFingerprint = createHash('sha256').update(trustedIp).digest('hex')
+    const rateLimit = await slotLookupIpRatelimit.limit(ipFingerprint)
+    if (!rateLimit.success) throw new BadRequestError('Too many availability requests')
+  }
+
+  const apiBase = `${env.CALCOM_API_URL.replace(/\/+$/, '')}/`
+  const url = new URL('slots', apiBase)
+  url.searchParams.set('eventTypeId', parsedEventTypeId.data.toString())
+  url.searchParams.set('start', start.toISOString())
+  url.searchParams.set('end', end.toISOString())
+  if (parsedTimeZone?.success) url.searchParams.set('timeZone', parsedTimeZone.data)
 
   const response = await fetch(url.toString(), {
     headers: {
       'cal-api-version': CALCOM_API_VERSIONS.slots,
     },
+    cache: 'no-store',
+    signal: AbortSignal.timeout(15_000),
   })
 
   if (!response.ok) {
-    const err = await response.text()
-    throw new ExternalApiError(`Failed to fetch slots: ${response.status} ${err}`)
+    console.error('Cal.com slot lookup failed', { status: response.status })
+    throw new ExternalApiError(`Failed to fetch slots (${response.status})`)
   }
 
-  const data: AvailableSlotsResponse = await response.json()
-
-  if (data.status !== 'success' || typeof data.data !== 'object') {
+  const data = AvailableSlotsResponseSchema.safeParse(await response.json().catch(() => undefined))
+  if (!data.success) {
     throw new ExternalApiError('Invalid slots response')
   }
 
   const availableSlots: Record<string, TimeSlot[]> = {}
 
-  for (const dateKey in data.data) {
-    const slots = data.data[dateKey]
+  for (const dateKey in data.data.data) {
+    const slots = data.data.data[dateKey]
     if (slots) {
       availableSlots[dateKey] = slots.map(s => ({
         time: s.start,
@@ -305,8 +354,16 @@ export const createStripeCheckoutSession = async (
 }> => {
   // Keep a durable actor for abuse prevention and analytics while allowing guests.
   const { user } = await requireAuth()
-  const rateLimit = await ratelimit.limit(`checkout:${user.id}`)
-  if (!rateLimit.success) throw new BadRequestError('Too many checkout attempts. Please try again.')
+  const requestHeaders = await headers()
+  const trustedIp = requestHeaders.get('x-vercel-forwarded-for')?.trim()
+  const ipFingerprint = trustedIp ? createHash('sha256').update(trustedIp).digest('hex') : null
+  const [actorLimit, ipLimit] = await Promise.all([
+    ratelimit.limit(`checkout:${user.id}`),
+    ipFingerprint ? checkoutIpRatelimit.limit(ipFingerprint) : Promise.resolve({ success: true }),
+  ])
+  if (!actorLimit.success || !ipLimit.success) {
+    throw new BadRequestError('Too many checkout attempts. Please try again.')
+  }
 
   try {
     const validatedInput = BookingFormInputSchema.parse(input)
@@ -318,6 +375,7 @@ export const createStripeCheckoutSession = async (
       attendeePhone,
       mentorUsername,
       timeZone,
+      bookingAttemptId,
     } = validatedInput
     const { mentorConnection, mentorProfile, eventType } = await resolveBookableEventType(
       mentorUsername,
@@ -330,12 +388,6 @@ export const createStripeCheckoutSession = async (
     if (user.id === mentorUserId) {
       throw new BadRequestError('You cannot book your own mentor session')
     }
-
-    console.log('Creating Stripe checkout session for:', {
-      mentorUsername,
-      attendeeUserId: user.id,
-      price: subtotal,
-    })
 
     if (subtotal > 0 && subtotal < MINIMUM_PAID_BOOKING_PRICE) {
       throw new BadRequestError('The minimum price for a paid booking is $5.00.')
@@ -360,14 +412,14 @@ export const createStripeCheckoutSession = async (
       .limit(1)
 
     if (!stripeAccount.length || !stripeAccount[0]?.stripeAccountId) {
-      console.error(`Mentor ${mentorUsername} has not set up a Stripe account.`)
+      console.warn('Stripe checkout unavailable because payout setup is incomplete')
       throw new BadRequestError('Mentor has not set up payments')
     }
 
     const stripeAccountData = stripeAccount[0]
     if (
       stripeAccountData.stripeAccountStatus !== 'active' ||
-      !stripeAccountData.chargesEnabled ||
+      !(stripeAccountData.transfersEnabled ?? stripeAccountData.payoutsEnabled) ||
       !stripeAccountData.payoutsEnabled
     ) {
       throw new BadRequestError('Mentor payments are temporarily unavailable')
@@ -375,10 +427,8 @@ export const createStripeCheckoutSession = async (
 
     const { mentorFee, menteeFee, mentorAmount } = calculateMarketplaceAmounts(subtotal)
     const payoutEligibleAt = getMentorPayoutEligibleAt(startTimeIso, eventType.duration)
-    const bookingAttemptHash = createHash('sha256')
-      .update(`${user.id}:${eventTypeId}:${new Date(startTimeIso).toISOString()}`)
-      .digest('hex')
-    const transferGroup = `discuno_booking_${bookingAttemptHash.slice(0, 40)}`
+    const checkoutReference = createOperationalReference(bookingAttemptId)
+    console.info('Stripe checkout creation started', { checkoutReference })
     const customerId = await getOrCreateStripeCustomerId({
       userId: user.id,
       // A permanent Stripe Customer follows the Discuno account, not mutable
@@ -387,102 +437,124 @@ export const createStripeCheckoutSession = async (
       name: user.isAnonymous ? attendeeName : user.name,
     })
 
-    const createParams: Stripe.Checkout.SessionCreateParams = {
-      automatic_tax: { enabled: true, liability: { type: 'self' } },
-      line_items: [
-        {
-          price_data: {
-            currency: currency.toLowerCase(),
-            product_data: {
-              name: 'Mentor Session',
-              metadata: {
-                mentorUserId: mentorUserId.toString(),
-                eventTypeId: eventTypeId.toString(),
-                startTime: startTimeIso,
-                attendeeName: attendeeName,
+    const session = await createCheckoutWithReservedSlot({
+      bookingAttemptId,
+      actorUserId: user.id,
+      mentorUserId,
+      eventTypeId,
+      startTime: startTimeIso,
+      durationMinutes: eventType.duration,
+      retrieveSession: sessionId => stripe.checkout.sessions.retrieve(sessionId),
+      expireSession: sessionId => stripe.checkout.sessions.expire(sessionId),
+      buildCheckoutRequest: ({
+        reservationUid,
+        reservationUntil,
+        checkoutExpiresAt,
+        generation,
+      }) => {
+        const generationHash = createHash('sha256')
+          .update(`${bookingAttemptId}:${generation}`)
+          .digest('hex')
+        const transferGroup = `discuno_booking_${generationHash.slice(0, 40)}`
+        const cancelUrl = new URL('/booking/cancel', env.NEXT_PUBLIC_BASE_URL)
+        cancelUrl.searchParams.set('attempt', bookingAttemptId)
+        cancelUrl.searchParams.set('generation', generation.toString())
+        cancelUrl.searchParams.set('returnTo', `/mentor/${mentorUsername}`)
+
+        const params: Stripe.Checkout.SessionCreateParams = {
+          automatic_tax: { enabled: true, liability: { type: 'self' } },
+          line_items: [
+            {
+              price_data: {
+                currency: currency.toLowerCase(),
+                product_data: {
+                  name: 'Mentor Session',
+                  metadata: {
+                    mentorUserId: mentorUserId.toString(),
+                    eventTypeId: eventTypeId.toString(),
+                    startTime: startTimeIso,
+                    attendeeName,
+                  },
+                },
+                unit_amount: subtotal,
               },
+              quantity: 1,
             },
-            unit_amount: subtotal,
+          ],
+          mode: 'payment',
+          payment_method_types: ['card'],
+          client_reference_id: generationHash,
+          allow_promotion_codes: false,
+          consent_collection: { promotions: 'auto' },
+          billing_address_collection: 'required',
+          currency: currency.toLowerCase(),
+          customer: customerId,
+          customer_update: { address: 'auto', name: 'auto' },
+          payment_intent_data: {
+            capture_method: 'automatic_async',
+            transfer_group: transferGroup,
+            metadata: {
+              discunoUserId: user.id,
+              mentorUserId,
+              mentorStripeAccountId: stripeAccountData.stripeAccountId,
+              transferGroup,
+            },
+            receipt_email: attendeeEmail,
+            ...(!user.isAnonymous && { setup_future_usage: 'on_session' as const }),
+            statement_descriptor_suffix: 'MENTOR SESSION',
           },
-          quantity: 1,
-        },
-      ],
-      mode: 'payment',
-      client_reference_id: bookingAttemptHash,
-      // ui_mode: 'hosted', // Default is hosted
-      // Discounts and adaptive currency need payout proration; keep launch accounting exact.
-      allow_promotion_codes: false,
-      consent_collection: {
-        promotions: 'auto',
-      },
-      billing_address_collection: 'required',
-      currency: currency.toLowerCase(),
-      customer: customerId,
-      customer_update: {
-        address: 'auto',
-        name: 'auto',
-      },
-      // TODO: discounts
-      payment_intent_data: {
-        capture_method: 'automatic_async',
-        transfer_group: transferGroup,
-        metadata: {
-          discunoUserId: user.id,
-          mentorUserId,
-          mentorStripeAccountId: stripeAccountData.stripeAccountId,
-          transferGroup,
-        },
-        receipt_email: attendeeEmail,
-        ...(!user.isAnonymous && { setup_future_usage: 'on_session' as const }),
-        statement_descriptor_suffix: `MENTOR SESSION`,
-      },
-      invoice_creation: {
-        enabled: true,
-        invoice_data: {
-          issuer: {
-            type: 'self',
+          invoice_creation: {
+            enabled: true,
+            invoice_data: { issuer: { type: 'self' } },
           },
-        },
-      },
-      payment_method_options: {
-        card: {},
-        paypal: {},
-      },
-      ...(!user.isAnonymous && {
-        saved_payment_method_options: {
-          allow_redisplay_filters: ['always'] as const,
-          payment_method_remove: 'enabled' as const,
-          payment_method_save: 'enabled' as const,
-        },
-      }),
-      success_url: `${env.NEXT_PUBLIC_BASE_URL}/booking/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${env.NEXT_PUBLIC_BASE_URL}/mentor/${mentorUsername}`,
+          payment_method_options: { card: {} },
+          ...(!user.isAnonymous && {
+            saved_payment_method_options: {
+              allow_redisplay_filters: ['always'] as const,
+              payment_method_remove: 'enabled' as const,
+              payment_method_save: 'enabled' as const,
+            },
+          }),
+          success_url: `${env.NEXT_PUBLIC_BASE_URL}/booking/success?session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: cancelUrl.toString(),
+          expires_at: Math.floor(checkoutExpiresAt.getTime() / 1000),
+          metadata: {
+            mentorUserId: mentorUserId.toString(),
+            eventTypeId: eventTypeId.toString(),
+            startTime: startTimeIso,
+            attendeeName,
+            attendeeEmail,
+            attendeePhone,
+            attendeeTimeZone: timeZone,
+            mentorUsername: mentorProfile.name ?? mentorUsername,
+            actorUserId: user.id,
+            eventDurationMinutes: eventType.duration.toString(),
+            payoutEligibleAt: payoutEligibleAt.toISOString(),
+            transferGroup,
+            mentorFee: mentorFee.toString(),
+            menteeFee: menteeFee.toString(),
+            mentorAmount: mentorAmount.toString(),
+            mentorStripeAccountId: stripeAccountData.stripeAccountId,
+            bookingAttemptId,
+            checkoutReservationGeneration: generation.toString(),
+            calcomReservationUid: reservationUid,
+            calcomReservationUntil: reservationUntil.toISOString(),
+          },
+        }
 
-      metadata: {
-        mentorUserId: mentorUserId.toString(),
-        eventTypeId: eventTypeId.toString(),
-        startTime: startTimeIso,
-        attendeeName: attendeeName,
-        attendeeEmail,
-        attendeePhone: attendeePhone ?? '',
-        attendeeTimeZone: timeZone,
-        mentorUsername: mentorProfile.name ?? mentorUsername,
-        actorUserId: user.id,
-        eventDurationMinutes: eventType.duration.toString(),
-        payoutEligibleAt: payoutEligibleAt.toISOString(),
-        transferGroup,
-        mentorFee: mentorFee.toString(),
-        menteeFee: menteeFee.toString(),
-        mentorAmount: mentorAmount.toString(),
-        mentorStripeAccountId: stripeAccountData.stripeAccountId,
+        // Persist the exact per-generation request before Stripe sees it. JSON
+        // normalization removes undefined fields and makes an ambiguous replay
+        // byte-for-byte parameter stable.
+        return JSON.parse(JSON.stringify(params)) as Record<string, unknown>
       },
-    }
-
-    const session = await stripe.checkout.sessions.create(createParams, {
-      idempotencyKey: `discuno:checkout:v2:${bookingAttemptHash}`,
+      createSession: ({ checkoutRequest, idempotencyKey }) =>
+        stripe.checkout.sessions.create(checkoutRequest, {
+          idempotencyKey,
+        }),
+      isDefinitiveCheckoutExpiryError: isDefinitiveStripeCheckoutExpiryError,
     })
 
-    console.log(`Successfully created Checkout Session: ${session.id}`)
+    console.info('Stripe checkout session created', { checkoutReference })
 
     if (!session.url) {
       throw new ExternalApiError('Failed to create checkout session URL')
@@ -494,7 +566,9 @@ export const createStripeCheckoutSession = async (
       checkoutSessionId: session.id,
     }
   } catch (error) {
-    console.error('Stripe checkout session creation failed:', error)
+    console.error('Stripe checkout session creation failed', {
+      errorName: getSafeErrorName(error),
+    })
     if (error instanceof z.ZodError) {
       throw new BadRequestError('Invalid input data.')
     }
@@ -502,7 +576,7 @@ export const createStripeCheckoutSession = async (
 
     // Handle specific Stripe errors
     if (error && typeof error === 'object' && 'type' in error) {
-      const stripeError = error as { type: string; code?: string; message?: string }
+      const stripeError = error as { type: string; code?: string }
 
       // Handle insufficient capabilities error specifically
       if (stripeError.code === 'insufficient_capabilities_for_transfer') {
@@ -513,7 +587,7 @@ export const createStripeCheckoutSession = async (
 
       // Handle other specific Stripe errors
       if (stripeError.type === 'StripeInvalidRequestError') {
-        throw new StripeError(stripeError.message ?? 'Invalid request to Stripe')
+        throw new StripeError('Stripe could not start this payment. Please try again.')
       }
     }
 
@@ -550,6 +624,7 @@ export const handleCheckoutSessionWebhook = async (
   session: Stripe.Checkout.Session
 ): Promise<Response> => {
   const { metadata, id: sessionId } = session
+  const sessionReference = createOperationalReference(sessionId)
 
   // checkout.session.completed can arrive before delayed payment methods settle.
   // Stripe will later send checkout.session.async_payment_succeeded when paid.
@@ -559,7 +634,7 @@ export const handleCheckoutSessionWebhook = async (
         tag: 'CheckoutWebhook',
         level: 'info',
         event: 'payment_not_ready_for_fulfillment',
-        sessionId,
+        sessionReference,
         paymentStatus: session.payment_status,
       })
     )
@@ -576,7 +651,7 @@ export const handleCheckoutSessionWebhook = async (
         tag: 'CheckoutWebhook',
         level: 'error',
         event: 'missing_metadata',
-        sessionId,
+        sessionReference,
       })
     )
     return new Response(JSON.stringify({ error: 'Missing metadata' }), { status: 400 })
@@ -587,7 +662,7 @@ export const handleCheckoutSessionWebhook = async (
       tag: 'CheckoutWebhook',
       level: 'info',
       event: 'webhook_received',
-      sessionId,
+      sessionReference,
     })
   )
 
@@ -598,8 +673,8 @@ export const handleCheckoutSessionWebhook = async (
         tag: 'CheckoutWebhook',
         level: 'error',
         event: 'invalid_metadata',
-        sessionId,
-        metadata: Object.keys(metadata),
+        sessionReference,
+        metadataKeyCount: Object.keys(metadata).length,
       })
     )
     return new Response(JSON.stringify({ error: 'Invalid checkout metadata' }), { status: 400 })
@@ -652,10 +727,18 @@ export const handleCheckoutSessionWebhook = async (
         tag: 'CheckoutWebhook',
         level: 'error',
         event: 'missing_payment_intent_id',
-        sessionId,
+        sessionReference,
       })
     )
     return new Response(JSON.stringify({ error: 'Missing payment intent id' }), { status: 400 })
+  }
+  const paymentIntentReference = createOperationalReference(paymentIntentId)
+  const canonicalActorUserId = await resolveCanonicalUserId(checkoutMetadata.actorUserId)
+  const persistedCheckoutMetadata = {
+    ...checkoutMetadata,
+    // Keep the captured UUID when the account is genuinely gone. Payment JSON
+    // has no user FK, and fulfillment resolves it to null before attendee insert.
+    actorUserId: canonicalActorUserId ?? checkoutMetadata.actorUserId,
   }
 
   // Persist payment record to database (canonical state) with idempotency
@@ -675,7 +758,7 @@ export const handleCheckoutSessionWebhook = async (
     platformStatus: 'SUCCEEDED',
     stripeStatus: session.status ?? undefined,
     disputePeriodEnds: disputePeriodEnd,
-    metadata: { checkoutSessionMetadata: checkoutMetadata },
+    metadata: { checkoutSessionMetadata: persistedCheckoutMetadata },
   }
 
   // Use onConflictDoNothing for idempotency - if Stripe retries webhook, we skip duplicate insert
@@ -701,8 +784,8 @@ export const handleCheckoutSessionWebhook = async (
         tag: 'CheckoutWebhook',
         level: 'critical',
         event: 'payment_record_unavailable',
-        sessionId,
-        paymentIntentId,
+        sessionReference,
+        paymentIntentReference,
       })
     )
     return new Response('Failed to persist payment', { status: 500 })
@@ -727,8 +810,8 @@ export const handleCheckoutSessionWebhook = async (
         tag: 'CheckoutWebhook',
         level: 'info',
         event: 'payment_already_exists',
-        sessionId,
-        paymentIntentId,
+        sessionReference,
+        paymentIntentReference,
         message: 'Idempotent webhook retry detected',
       })
     )
@@ -740,8 +823,8 @@ export const handleCheckoutSessionWebhook = async (
         tag: 'CheckoutWebhook',
         level: 'info',
         event: 'payment_record_created',
-        sessionId,
-        paymentIntentId,
+        sessionReference,
+        paymentIntentReference,
         paymentId: paymentRecord.id,
       })
     )
@@ -753,8 +836,8 @@ export const handleCheckoutSessionWebhook = async (
         tag: 'CheckoutWebhook',
         level: 'info',
         event: 'fulfillment_already_queued',
-        sessionId,
-        paymentIntentId,
+        sessionReference,
+        paymentIntentReference,
       })
     )
     return new Response('ok', { status: 200 })
@@ -772,28 +855,6 @@ export const handleCheckoutSessionWebhook = async (
       name: 'stripe/checkout.completed',
       data: {
         paymentId: paymentRecord.id,
-        paymentIntentId,
-        sessionId,
-        metadata: {
-          mentorUserId: checkoutMetadata.mentorUserId,
-          eventTypeId: checkoutMetadata.eventTypeId,
-          startTime: checkoutMetadata.startTime,
-          attendeeName: checkoutMetadata.attendeeName,
-          attendeeEmail: checkoutMetadata.attendeeEmail,
-          attendeePhone: checkoutMetadata.attendeePhone,
-          attendeeTimeZone: checkoutMetadata.attendeeTimeZone,
-          mentorUsername: checkoutMetadata.mentorUsername,
-          mentorFee: checkoutMetadata.mentorFee,
-          menteeFee: checkoutMetadata.menteeFee,
-          mentorAmount: checkoutMetadata.mentorAmount,
-          mentorStripeAccountId: checkoutMetadata.mentorStripeAccountId,
-          actorUserId: checkoutMetadata.actorUserId,
-          eventDurationMinutes: checkoutMetadata.eventDurationMinutes,
-          payoutEligibleAt: checkoutMetadata.payoutEligibleAt,
-          transferGroup: checkoutMetadata.transferGroup,
-        },
-        sessionAmount: session.amount_total,
-        sessionCurrency: session.currency,
       },
     })
     await db
@@ -805,8 +866,8 @@ export const handleCheckoutSessionWebhook = async (
         tag: 'CheckoutWebhook',
         level: 'info',
         event: 'inngest_event_sent',
-        sessionId,
-        paymentIntentId,
+        sessionReference,
+        paymentIntentReference,
       })
     )
   } catch (inngestError) {
@@ -817,9 +878,9 @@ export const handleCheckoutSessionWebhook = async (
         tag: 'CheckoutWebhook',
         level: 'critical',
         event: 'inngest_event_failed',
-        sessionId,
-        paymentIntentId,
-        error: inngestError instanceof Error ? inngestError.message : 'Unknown error',
+        sessionReference,
+        paymentIntentReference,
+        errorName: getSafeErrorName(inngestError),
         message: 'Failed to queue side-effects. Stripe will retry this webhook.',
       })
     )
@@ -833,7 +894,7 @@ export const handleCheckoutSessionWebhook = async (
       tag: 'CheckoutWebhook',
       level: 'info',
       event: 'webhook_response_sent',
-      sessionId,
+      sessionReference,
     })
   )
   return new Response('ok', { status: 200 })

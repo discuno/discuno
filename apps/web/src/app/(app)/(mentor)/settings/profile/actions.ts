@@ -2,7 +2,13 @@
 import 'server-only'
 
 import { revalidatePath } from 'next/cache'
-import { deleteProfileImage, extractPathnameFromBlobUrl } from '~/lib/blob'
+import { after } from 'next/server'
+import {
+  deleteProfileImage,
+  extractPathnameFromBlobUrl,
+  validateProfileImageBlob,
+} from '~/lib/blob'
+import { getSafeErrorName } from '~/lib/operational-logging'
 import {
   completeUserProfile,
   getUserImageUrl,
@@ -10,8 +16,30 @@ import {
   setUserTimezone,
   updateProfileImage,
 } from '~/lib/services/profile-service'
+import { getUserId } from '~/server/queries/profiles'
+
+const scheduleProfileImageDeletion = (pathname: string, userId: string): void => {
+  after(
+    deleteProfileImage(pathname, userId).catch(error => {
+      console.error('Deferred profile image deletion failed', {
+        errorName: getSafeErrorName(error),
+      })
+    })
+  )
+}
 
 export const updateUserProfileImage = async (imageUrl: string) => {
+  const userId = await getUserId()
+  try {
+    await validateProfileImageBlob(imageUrl, userId)
+  } catch (error) {
+    const rejectedPathname = extractPathnameFromBlobUrl(imageUrl)
+    if (rejectedPathname) {
+      await deleteProfileImage(rejectedPathname, userId).catch(() => undefined)
+    }
+    throw error
+  }
+
   // Get current user image to check for existing image
   const currentImageUrl = await getUserImageUrl()
 
@@ -19,13 +47,10 @@ export const updateUserProfileImage = async (imageUrl: string) => {
   await updateProfileImage(imageUrl)
 
   // Delete old image if it exists and is a blob URL
-  if (currentImageUrl?.includes('blob.vercel-storage.com')) {
+  if (currentImageUrl !== imageUrl && currentImageUrl?.includes('blob.vercel-storage.com')) {
     const pathname = extractPathnameFromBlobUrl(currentImageUrl)
     if (pathname) {
-      // Run deletion in background - don't block user experience
-      deleteProfileImage(pathname).catch(error => {
-        console.error('Failed to delete old profile image:', error)
-      })
+      scheduleProfileImageDeletion(pathname, userId)
     }
   }
 
@@ -41,6 +66,7 @@ export const updateUserProfileImage = async (imageUrl: string) => {
  * Remove the current user's profile image
  */
 export const removeUserProfileImage = async () => {
+  const userId = await getUserId()
   // Get current user image
   const currentImageUrl = await getUserImageUrl()
 
@@ -51,10 +77,7 @@ export const removeUserProfileImage = async () => {
   if (currentImageUrl?.includes('blob.vercel-storage.com')) {
     const pathname = extractPathnameFromBlobUrl(currentImageUrl)
     if (pathname) {
-      // Run deletion in background
-      deleteProfileImage(pathname).catch(error => {
-        console.error('Failed to delete profile image from blob storage:', error)
-      })
+      scheduleProfileImageDeletion(pathname, userId)
     }
   }
 

@@ -85,7 +85,11 @@ export const EditProfileContent = ({ profile, schools, majors }: EditProfileCont
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Left Column - Profile Image */}
         <div className="lg:col-span-1">
-          <ProfileImageUpload currentImageUrl={profile.image} userName={profile.name} />
+          <ProfileImageUpload
+            currentImageUrl={profile.image}
+            userName={profile.name}
+            userId={profile.userId}
+          />
         </div>
 
         {/* Right Column - Form Fields */}

@@ -1,16 +1,18 @@
 export type StripeAccountStatus = 'pending' | 'active' | 'restricted' | 'inactive'
 
 type StripeAccountState = {
-  charges_enabled: boolean
   payouts_enabled: boolean
   details_submitted: boolean
+  capabilities?: {
+    transfers?: 'active' | 'inactive' | 'pending' | null
+  } | null
   requirements?: {
     disabled_reason?: string | null
   } | null
 }
 
 export const deriveStripeAccountStatus = (account: StripeAccountState): StripeAccountStatus => {
-  if (account.charges_enabled && account.payouts_enabled) {
+  if (account.capabilities?.transfers === 'active' && account.payouts_enabled) {
     return 'active'
   }
 

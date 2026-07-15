@@ -36,6 +36,11 @@ const staticNavItems: NavMainProps['items'] = [
         icon: 'CalendarCheck',
       },
       {
+        title: 'Calendar connection',
+        url: '/settings/calendar',
+        icon: 'Calendar',
+      },
+      {
         title: 'Availability',
         url: '/settings/availability',
         icon: 'Calendar',

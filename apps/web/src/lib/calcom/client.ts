@@ -1,6 +1,7 @@
 import 'server-only'
 
-import { env } from '~/env'
+import { getCalcomAccessToken } from '~/lib/calcom/tokens'
+import { getCalcomApiUrl, getCalcomRequestSignal } from '~/lib/calcom/transport'
 import { ExternalApiError } from '~/lib/errors'
 
 const MAX_CALCOM_ERROR_BODY_LENGTH = 8_192
@@ -54,30 +55,57 @@ export const CALCOM_API_VERSIONS = {
   slots: '2024-09-04',
 } as const
 
-export const getCalcomPlatformHeaders = (apiVersion?: string): HeadersInit => ({
-  'x-cal-client-id': env.NEXT_PUBLIC_X_CAL_ID,
-  'x-cal-secret-key': env.X_CAL_SECRET_KEY,
-  ...(apiVersion ? { 'cal-api-version': apiVersion } : {}),
-})
+type CalcomRequestInit = RequestInit & {
+  apiVersion?: string
+  userId?: string
+  /** Pre-resolved OAuth token for code already holding the connection lock. */
+  accessToken?: string
+  /** Durable marker written after auth resolution and immediately before fetch. */
+  onBeforeRequest?: () => Promise<void>
+}
 
-export const calcomRequest = async <T>(
+const executeCalcomRequest = async (
   path: string,
-  init: RequestInit & { apiVersion?: string } = {}
-): Promise<T> => {
-  const { apiVersion, ...requestInit } = init
+  requestInit: RequestInit,
+  apiVersion?: string,
+  accessToken?: string
+): Promise<Response> => {
   const headers = new Headers(requestInit.headers)
-
-  for (const [key, value] of Object.entries(getCalcomPlatformHeaders(apiVersion))) {
-    headers.set(key, value)
-  }
-  if (requestInit.body && !headers.has('Content-Type')) {
+  if (apiVersion) headers.set('cal-api-version', apiVersion)
+  if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`)
+  if (requestInit.body && !headers.has('Content-Type'))
     headers.set('Content-Type', 'application/json')
-  }
 
-  const response = await fetch(`${env.NEXT_PUBLIC_CALCOM_API_URL}${path}`, {
+  return fetch(getCalcomApiUrl(path), {
     ...requestInit,
     headers,
+    cache: requestInit.cache ?? 'no-store',
+    signal: getCalcomRequestSignal(requestInit.signal),
   })
+}
+
+export const calcomRequest = async <T>(path: string, init: CalcomRequestInit = {}): Promise<T> => {
+  const {
+    apiVersion,
+    userId,
+    accessToken: suppliedAccessToken,
+    onBeforeRequest,
+    ...requestInit
+  } = init
+  if (userId && suppliedAccessToken) {
+    throw new TypeError('Cal.com requests must use either a user ID or a supplied access token')
+  }
+  let accessToken = suppliedAccessToken ?? (userId ? await getCalcomAccessToken(userId) : undefined)
+  await onBeforeRequest?.()
+  let response = await executeCalcomRequest(path, requestInit, apiVersion, accessToken)
+
+  // Tokens can be revoked or expire just before a request. Refresh once under
+  // the per-user database lock, then retry the same idempotent/request-safe call.
+  if (response.status === 401 && userId) {
+    accessToken = await getCalcomAccessToken(userId, { forceRefresh: true })
+    await onBeforeRequest?.()
+    response = await executeCalcomRequest(path, requestInit, apiVersion, accessToken)
+  }
 
   if (!response.ok) {
     const summary = await getCalcomErrorSummary(response)
@@ -89,7 +117,7 @@ export const calcomRequest = async <T>(
       ...(summary.code ? { code: summary.code } : {}),
       ...(summary.requestId ? { requestId: summary.requestId } : {}),
     })
-    throw new ExternalApiError(`Cal.com API request failed (${response.status})`)
+    throw new ExternalApiError(`Cal.com API request failed (${response.status})`, response.status)
   }
 
   if (response.status === 204) {

@@ -5,6 +5,7 @@ import { Redis } from '@upstash/redis'
 import { config } from 'dotenv'
 import postgres from 'postgres'
 import Stripe from 'stripe'
+import { assertAuthIntegrationReadiness } from '../src/lib/auth/integration-readiness'
 
 type Environment = 'local' | 'preview' | 'production'
 
@@ -30,6 +31,12 @@ const required = (name: string): string => {
 
 const checks: Array<{ name: string; run: () => Promise<void> }> = [
   {
+    name: 'Better Auth / identity provider configuration',
+    run: async () => {
+      assertAuthIntegrationReadiness(process.env, environment)
+    },
+  },
+  {
     name: 'PostgreSQL',
     run: async () => {
       const sql = postgres(required('DATABASE_URL'), { max: 1 })
@@ -41,17 +48,31 @@ const checks: Array<{ name: string; run: () => Promise<void> }> = [
     },
   },
   {
-    name: 'Cal.com',
+    name: 'Cal.com OAuth configuration/API',
     run: async () => {
-      const apiUrl = required('NEXT_PUBLIC_CALCOM_API_URL')
-      const orgId = required('CALCOM_ORG_ID')
-      const response = await fetch(`${apiUrl}/organizations/${orgId}/users?take=1`, {
-        headers: {
-          'x-cal-client-id': required('NEXT_PUBLIC_X_CAL_ID'),
-          'x-cal-secret-key': required('X_CAL_SECRET_KEY'),
-        },
+      const apiUrl = new URL(required('CALCOM_API_URL'))
+      new URL(required('CALCOM_APP_URL'))
+      new URL(required('CALCOM_OAUTH_REDIRECT_URI'))
+      required('CALCOM_OAUTH_CLIENT_ID')
+      required('CALCOM_OAUTH_CLIENT_SECRET')
+      const legacySharedWebhooks = process.env.CALCOM_ALLOW_LEGACY_SHARED_WEBHOOKS ?? 'false'
+      if (legacySharedWebhooks !== 'true' && legacySharedWebhooks !== 'false') {
+        throw new Error('CALCOM_ALLOW_LEGACY_SHARED_WEBHOOKS must be true or false')
+      }
+      if (legacySharedWebhooks === 'true') required('CALCOM_WEBHOOK_SECRET')
+      const encryptionKey = Buffer.from(required('CALCOM_TOKEN_ENCRYPTION_KEY'), 'base64')
+      if (encryptionKey.length !== 32) {
+        throw new Error('CALCOM_TOKEN_ENCRYPTION_KEY must decode to 32 bytes')
+      }
+
+      // A deliberately invalid bearer token verifies that the configured API host
+      // is reachable without consuming or rotating a mentor's OAuth credentials.
+      const response = await fetch(new URL('me', `${apiUrl.toString().replace(/\/$/, '')}/`), {
+        headers: { Authorization: 'Bearer discuno-connectivity-probe' },
       })
-      if (!response.ok) throw new Error(`HTTP ${response.status}`)
+      if (response.status !== 401 && response.status !== 403) {
+        throw new Error(`Unexpected probe response: HTTP ${response.status}`)
+      }
     },
   },
   {

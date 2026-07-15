@@ -14,9 +14,14 @@ import { removeUserProfileImage, updateUserProfileImage } from '../actions'
 interface ProfileImageUploadProps {
   currentImageUrl?: string | null
   userName?: string | null
+  userId: string
 }
 
-export const ProfileImageUpload = ({ currentImageUrl, userName }: ProfileImageUploadProps) => {
+export const ProfileImageUpload = ({
+  currentImageUrl,
+  userName,
+  userId,
+}: ProfileImageUploadProps) => {
   const [isUploading, setIsUploading] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentImageUrl ?? null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -43,7 +48,7 @@ export const ProfileImageUpload = ({ currentImageUrl, userName }: ProfileImageUp
       const objectUrl = URL.createObjectURL(compressedFile)
       setPreviewUrl(objectUrl)
 
-      const newBlob = await upload(compressedFile.name, compressedFile, {
+      const newBlob = await upload(`profile-images/${userId}/avatar.webp`, compressedFile, {
         access: 'public',
         handleUploadUrl: '/api/avatar/upload',
       })

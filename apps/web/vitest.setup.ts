@@ -19,9 +19,10 @@ vi.mock('~/env', () => {
       STRIPE_API_KEY: process.env.STRIPE_API_KEY,
       STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
       STRIPE_CONNECT_WEBHOOK_SECRET: process.env.STRIPE_CONNECT_WEBHOOK_SECRET,
-      X_CAL_SECRET_KEY: process.env.X_CAL_SECRET_KEY,
+      CALCOM_API_URL: process.env.CALCOM_API_URL,
       DATABASE_URL: process.env.DATABASE_URL,
       BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
+      BETTER_AUTH_SECRETS: process.env.BETTER_AUTH_SECRETS,
     },
   }
 })

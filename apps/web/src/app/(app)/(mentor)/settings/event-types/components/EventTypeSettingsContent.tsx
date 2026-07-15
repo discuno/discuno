@@ -1,7 +1,15 @@
 'use client'
 
 import type { UseMutationResult } from '@tanstack/react-query'
-import { CreditCard, DollarSign, Settings, Timer } from 'lucide-react'
+import {
+  CalendarPlus,
+  CreditCard,
+  DollarSign,
+  ExternalLink,
+  RefreshCw,
+  Settings,
+  Timer,
+} from 'lucide-react'
 import { useState } from 'react'
 import { type updateMentorEventTypePreferences } from '~/app/(app)/(mentor)/settings/actions'
 import { Alert, AlertDescription } from '~/components/ui/alert'
@@ -22,6 +30,8 @@ interface EventTypePreference {
   isEnabled: boolean
   customPrice: number | null
   currency: string
+  bookingCompatible: boolean
+  bookingCompatibilityReasons: string[]
 }
 
 interface StripeStatus {
@@ -29,6 +39,7 @@ interface StripeStatus {
   onboardingCompleted: boolean
   payoutsEnabled: boolean
   chargesEnabled: boolean
+  transfersEnabled: boolean
 }
 
 interface EventTypeSettingsContentProps {
@@ -46,9 +57,11 @@ interface EventTypeSettingsContentProps {
     },
     unknown
   >
+  isRefreshing: boolean
   onToggleEventType: (eventType: EventTypePreference, checked: boolean) => Promise<void>
   onPricingChange: (eventType: EventTypePreference) => void
   onSavePricing: () => Promise<void>
+  onRefresh: () => void
   setShowPricingDialog: (show: boolean) => void
   setTempPrice: (price: string) => void
 }
@@ -60,13 +73,16 @@ export const EventTypeSettingsContent = ({
   showPricingDialog,
   tempPrice,
   updateEventTypeMutation,
+  isRefreshing,
   onToggleEventType,
   onPricingChange,
   onSavePricing,
+  onRefresh,
   setShowPricingDialog,
   setTempPrice,
 }: EventTypeSettingsContentProps) => {
-  const isStripeActive = stripeStatus?.chargesEnabled === true
+  const isStripeActive =
+    stripeStatus?.transfersEnabled === true && stripeStatus.payoutsEnabled === true
   const hasStripeAccount = stripeStatus?.hasAccount === true
   const needsStripeSetup = !hasStripeAccount || !isStripeActive
   const [priceError, setPriceError] = useState('')
@@ -128,100 +144,158 @@ export const EventTypeSettingsContent = ({
         <div className="border-b p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h3 className="text-lg font-semibold">Event Type Settings</h3>
+              <h3 className="text-lg font-semibold">Session types</h3>
               <p className="text-muted-foreground text-sm">
-                Configure which event types are available for booking and set your pricing
+                Choose what students can book and what each session costs
               </p>
             </div>
 
-            {/* Stripe Status Badge - Simple indicator */}
-            {isStripeActive && (
-              <Badge variant="default" className="gap-1.5">
-                <CreditCard className="h-3 w-3" />
-                Stripe Connected
-              </Badge>
-            )}
+            <div className="flex flex-wrap items-center gap-2">
+              <Button variant="outline" size="sm" onClick={onRefresh} disabled={isRefreshing}>
+                <RefreshCw className={isRefreshing ? 'animate-spin' : undefined} />
+                {isRefreshing ? 'Refreshing' : 'Refresh session types'}
+              </Button>
+              {isStripeActive && (
+                <Badge variant="default" className="gap-1.5">
+                  <CreditCard className="h-3 w-3" />
+                  Payouts ready
+                </Badge>
+              )}
+            </div>
           </div>
         </div>
 
         {/* Event Types List */}
         <CardContent className="p-6">
-          <div className="space-y-4">
-            {eventTypes.map(eventType => (
-              <Card
-                key={eventType.id}
-                className="hover:border-muted-foreground/50 transition-colors"
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-4">
-                    {/* Toggle Switch */}
-                    <div className="pt-0.5">
-                      {eventType.customPrice && eventType.customPrice > 0 && !isStripeActive ? (
-                        <TooltipProvider>
-                          <Tooltip delayDuration={0}>
-                            <TooltipTrigger asChild>
-                              <div>
-                                <Switch
-                                  checked={eventType.isEnabled}
-                                  onCheckedChange={checked => onToggleEventType(eventType, checked)}
-                                  disabled={updateEventTypeMutation.isPending}
-                                />
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Complete Stripe setup to enable paid event types</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      ) : (
-                        <Switch
-                          checked={eventType.isEnabled}
-                          onCheckedChange={checked => onToggleEventType(eventType, checked)}
-                          disabled={updateEventTypeMutation.isPending}
-                        />
-                      )}
-                    </div>
+          {eventTypes.length === 0 ? (
+            <div className="flex flex-col items-center px-4 py-10 text-center">
+              <div className="bg-muted mb-4 rounded-full p-3">
+                <CalendarPlus className="text-primary size-6" aria-hidden="true" />
+              </div>
+              <h4 className="font-semibold">Create the first session students can book</h4>
+              <p className="text-muted-foreground mt-2 max-w-md text-sm leading-6">
+                Set the duration and meeting location in Cal.com, then refresh this page to choose a
+                price and publish it on Discuno.
+              </p>
+              <div className="mt-5 flex flex-wrap justify-center gap-2">
+                <Button asChild>
+                  <a href="https://app.cal.com/event-types" target="_blank" rel="noreferrer">
+                    Create a session type
+                    <ExternalLink aria-hidden="true" />
+                  </a>
+                </Button>
+                <Button variant="outline" onClick={onRefresh} disabled={isRefreshing}>
+                  <RefreshCw className={isRefreshing ? 'animate-spin' : undefined} />
+                  Refresh
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {eventTypes.map(eventType => (
+                <Card
+                  key={eventType.id}
+                  className="hover:border-muted-foreground/50 transition-colors"
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-4">
+                      {/* Toggle Switch */}
+                      <div className="pt-0.5">
+                        {!eventType.bookingCompatible && !eventType.isEnabled ? (
+                          <TooltipProvider>
+                            <Tooltip delayDuration={0}>
+                              <TooltipTrigger asChild>
+                                <div>
+                                  <Switch checked={false} disabled />
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Update this session type in Cal.com, then refresh</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        ) : eventType.customPrice &&
+                          eventType.customPrice > 0 &&
+                          !isStripeActive ? (
+                          <TooltipProvider>
+                            <Tooltip delayDuration={0}>
+                              <TooltipTrigger asChild>
+                                <div>
+                                  <Switch
+                                    checked={eventType.isEnabled}
+                                    onCheckedChange={checked =>
+                                      onToggleEventType(eventType, checked)
+                                    }
+                                    disabled={updateEventTypeMutation.isPending}
+                                  />
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Complete Stripe setup to enable paid event types</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        ) : (
+                          <Switch
+                            checked={eventType.isEnabled}
+                            onCheckedChange={checked => onToggleEventType(eventType, checked)}
+                            disabled={updateEventTypeMutation.isPending}
+                          />
+                        )}
+                      </div>
 
-                    {/* Content */}
-                    <div className="flex-1 space-y-2">
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-semibold">{eventType.title}</h4>
-                          <Badge variant="secondary" className="gap-1">
-                            <Timer className="h-3 w-3" />
-                            {eventType.length} min
-                          </Badge>
+                      {/* Content */}
+                      <div className="flex-1 space-y-2">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-semibold">{eventType.title}</h4>
+                            <Badge variant="secondary" className="gap-1">
+                              <Timer className="h-3 w-3" />
+                              {eventType.length} min
+                            </Badge>
+                            {!eventType.bookingCompatible && (
+                              <Badge variant="destructive">Needs Cal.com update</Badge>
+                            )}
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => onPricingChange(eventType)}
+                            disabled={updateEventTypeMutation.isPending}
+                            className="gap-1.5"
+                          >
+                            <Settings className="h-4 w-4" />
+                            Edit Pricing
+                          </Button>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => onPricingChange(eventType)}
-                          disabled={updateEventTypeMutation.isPending}
-                          className="gap-1.5"
-                        >
-                          <Settings className="h-4 w-4" />
-                          Edit Pricing
-                        </Button>
-                      </div>
 
-                      {eventType.description && (
-                        <p className="text-muted-foreground text-sm">{eventType.description}</p>
-                      )}
+                        {eventType.description && (
+                          <p className="text-muted-foreground text-sm">{eventType.description}</p>
+                        )}
 
-                      <div className="flex items-center gap-1.5">
-                        <DollarSign className="text-muted-foreground h-4 w-4" />
-                        <span className="text-sm font-medium">
-                          {eventType.customPrice
-                            ? `$${(eventType.customPrice / 100).toFixed(2)}`
-                            : 'Free'}
-                        </span>
+                        {!eventType.bookingCompatible && (
+                          <p className="text-destructive text-sm">
+                            This session uses a Cal.com option Discuno cannot book yet. Remove
+                            recurrence, manual confirmation, required sign-in/email verification, or
+                            custom required questions in Cal.com, then refresh.
+                          </p>
+                        )}
+
+                        <div className="flex items-center gap-1.5">
+                          <DollarSign className="text-muted-foreground h-4 w-4" />
+                          <span className="text-sm font-medium">
+                            {eventType.customPrice
+                              ? `$${(eventType.customPrice / 100).toFixed(2)}`
+                              : 'Free'}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 

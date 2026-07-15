@@ -1,4 +1,4 @@
-import { execSync } from 'child_process'
+import { execFileSync } from 'node:child_process'
 
 /**
  * Global setup runs once before all test files
@@ -7,6 +7,9 @@ import { execSync } from 'child_process'
  */
 export default function setup() {
   console.log('🔄 Running global test setup: resetting database...')
-  execSync('pnpm db:reset:test', { stdio: 'inherit' })
+  // The database-side marker is the safety boundary. Supplying the exact test
+  // confirmation keeps CI non-interactive without weakening the reset script
+  // for local/preview targets.
+  execFileSync('pnpm', ['db:reset:test', '--', '--confirm=RESET TEST'], { stdio: 'inherit' })
   console.log('✅ Global test setup complete')
 }

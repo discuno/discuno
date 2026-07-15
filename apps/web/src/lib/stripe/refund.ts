@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto'
+import { getSafeErrorName } from '~/lib/operational-logging'
 import { stripe } from '~/lib/stripe'
 import { normalizeStripeRefundStatus, type StripeRefundStatus } from '~/lib/stripe/marketplace'
 
@@ -17,6 +19,8 @@ export const refundStripePaymentIntent = async (
   amount?: number
   error?: string
 }> => {
+  const paymentReference = createHash('sha256').update(paymentIntentId).digest('hex').slice(0, 16)
+
   try {
     const purpose = options.purpose ?? 'booking_refund'
     const refund = await stripe.refunds.create(
@@ -33,7 +37,8 @@ export const refundStripePaymentIntent = async (
     const status = normalizeStripeRefundStatus(refund.status)
     const success = status !== 'failed' && status !== 'canceled'
 
-    console.log(`Created refund ${refund.id} for payment intent ${paymentIntentId}`, {
+    console.info('Stripe refund created', {
+      paymentReference,
       status,
     })
     return {
@@ -44,10 +49,13 @@ export const refundStripePaymentIntent = async (
       ...(!success && { error: `Stripe refund ${status}` }),
     }
   } catch (error) {
-    console.error(`Failed to refund payment intent ${paymentIntentId}:`, error)
+    console.error('Stripe refund request failed', {
+      paymentReference,
+      errorName: getSafeErrorName(error),
+    })
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown refund error',
+      error: 'Stripe refund request failed',
     }
   }
 }

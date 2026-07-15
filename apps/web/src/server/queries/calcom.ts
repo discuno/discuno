@@ -4,7 +4,7 @@ import { cache } from 'react'
 import { requirePermission } from '~/lib/auth/auth-utils'
 import { NotFoundError } from '~/lib/errors'
 import {
-  getConnectionByUserId,
+  getReadyConnectionByUserId,
   getConnectionByUsername,
   getUsernameByUserId,
   type CalcomConnection,
@@ -12,7 +12,7 @@ import {
 
 export const getMentorCalcomConnection = cache(async (): Promise<CalcomConnection> => {
   const { user } = await requirePermission({ mentor: ['manage'] })
-  const connection = await getConnectionByUserId(user.id)
+  const connection = await getReadyConnectionByUserId(user.id)
   if (!connection) throw new NotFoundError('Cal.com connection not found')
   return connection
 })

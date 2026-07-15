@@ -1,5 +1,37 @@
+import 'server-only'
+
 import { PostHog } from 'posthog-node'
 import { env } from '~/env'
+import { getUserAnalyticsPreference } from '~/server/dal/analytics-preferences'
+import { resolveCanonicalUserId } from '~/server/dal/user-identities'
+
+const DATABASE_USER_ID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+/**
+ * Non-user system distinct IDs retain the historical capture behavior. User
+ * IDs require an explicit durable opt-in, and lookup failures fail closed so
+ * an unset or opted-out user's event is never sent.
+ */
+const resolveCaptureIdentity = async (
+  distinctId: string
+): Promise<{ distinctId: string; canCapture: boolean }> => {
+  if (!DATABASE_USER_ID_PATTERN.test(distinctId)) return { distinctId, canCapture: true }
+
+  try {
+    const canonicalUserId = await resolveCanonicalUserId(distinctId)
+    if (!canonicalUserId) return { distinctId, canCapture: false }
+    return {
+      distinctId: canonicalUserId,
+      canCapture: (await getUserAnalyticsPreference(canonicalUserId)) === true,
+    }
+  } catch (error) {
+    console.error('PostHog consent lookup failed; analytics operation suppressed', {
+      errorName: error instanceof Error ? error.name : 'UnknownError',
+    })
+    return { distinctId, canCapture: false }
+  }
+}
 
 /**
  * Creates a new PostHog client instance, configured for serverless environments.
@@ -25,21 +57,28 @@ export const trackServerEvent = async (
   event: string,
   properties?: Record<string, unknown>
 ) => {
+  const captureIdentity = await resolveCaptureIdentity(distinctId)
+  if (!captureIdentity.canCapture) return
+
   const client = createPostHogClient()
   try {
     client.capture({
-      distinctId,
+      distinctId: captureIdentity.distinctId,
       event,
       properties,
     })
     // Ensure the event is sent before the function terminates
     await client.shutdown()
-    console.log(`✅ PostHog event tracked: ${event}`, { distinctId, properties })
   } catch (error) {
-    console.error(`❌ Failed to track PostHog event: ${event}`, error)
+    console.error('PostHog event tracking failed', {
+      event,
+      errorName: error instanceof Error ? error.name : 'UnknownError',
+    })
     // Attempt to shut down even if capture fails
     await client.shutdown().catch(shutdownError => {
-      console.error(`Error shutting down PostHog client after a capture error:`, shutdownError)
+      console.error('PostHog client shutdown failed after capture', {
+        errorName: shutdownError instanceof Error ? shutdownError.name : 'UnknownError',
+      })
     })
   }
 }
@@ -51,19 +90,25 @@ export const trackServerEvent = async (
  * @param properties - User properties
  */
 export const identifyUser = async (distinctId: string, properties?: Record<string, unknown>) => {
+  const captureIdentity = await resolveCaptureIdentity(distinctId)
+  if (!captureIdentity.canCapture) return
+
   const client = createPostHogClient()
   try {
     client.identify({
-      distinctId,
+      distinctId: captureIdentity.distinctId,
       properties,
     })
     await client.shutdown()
-    console.log(`✅ PostHog user identified: ${distinctId}`, properties)
   } catch (error) {
-    console.error(`❌ Failed to identify PostHog user: ${distinctId}`, error)
+    console.error('PostHog user identification failed', {
+      errorName: error instanceof Error ? error.name : 'UnknownError',
+    })
     // Attempt to shut down even if identify fails
     await client.shutdown().catch(shutdownError => {
-      console.error(`Error shutting down PostHog client after an identify error:`, shutdownError)
+      console.error('PostHog client shutdown failed after identify', {
+        errorName: shutdownError instanceof Error ? shutdownError.name : 'UnknownError',
+      })
     })
   }
 }

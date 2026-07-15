@@ -5,17 +5,35 @@ export * from './post'
 export * from './booking'
 export * from './payment'
 export * from './analytics'
+export * from './webhook'
 
-import { account, session, user, userMajor, userProfile, userSchool, verification } from './user'
+import {
+  account,
+  anonymousUserLink,
+  session,
+  user,
+  userMajor,
+  userProfile,
+  userSchool,
+  verification,
+} from './user'
 import { major, school } from './reference'
 import { mentorEventType, mentorReview, mentorStripeAccount, calcomToken } from './mentor'
 import { post } from './post'
-import { booking, bookingAttendee, bookingOrganizer } from './booking'
+import {
+  booking,
+  bookingAttendee,
+  bookingOrganizer,
+  calcomBookingLifecycle,
+  checkoutSlotReservation,
+} from './booking'
 import { payment } from './payment'
 import { analyticEvent } from './analytics'
+import { calcomWebhookCleanup, calcomWebhookInbox, stripeWebhookInbox } from './webhook'
 
 export const allTables = {
   user,
+  anonymousUserLink,
   session,
   account,
   verification,
@@ -32,8 +50,13 @@ export const allTables = {
   booking,
   bookingAttendee,
   bookingOrganizer,
+  calcomBookingLifecycle,
+  checkoutSlotReservation,
   payment,
   analyticEvent,
+  calcomWebhookCleanup,
+  calcomWebhookInbox,
+  stripeWebhookInbox,
 } as const
 
 export const tables = Object.values(allTables)

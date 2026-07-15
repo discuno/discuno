@@ -1,4 +1,5 @@
 import { type Metadata } from 'next'
+import { resolveReauthenticationReturnTo } from '~/lib/auth/config'
 import { createMetadata } from '~/lib/metadata'
 import { LoginPage } from './LoginPage'
 
@@ -19,9 +20,16 @@ export const metadata: Metadata = createMetadata({
 export default async function AuthPage({
   searchParams,
 }: {
-  searchParams: Promise<{ intent?: string }>
+  searchParams: Promise<{ intent?: string; reauth?: string; returnTo?: string }>
 }) {
-  const { intent } = await searchParams
+  const { intent, reauth, returnTo } = await searchParams
+  const reauthenticationRequired = reauth === '1'
 
-  return <LoginPage initialUserType={intent === 'student' ? 'student' : 'mentor'} />
+  return (
+    <LoginPage
+      initialUserType={intent === 'student' ? 'student' : 'mentor'}
+      reauthenticationRequired={reauthenticationRequired}
+      returnTo={returnTo ? resolveReauthenticationReturnTo(returnTo) : undefined}
+    />
+  )
 }

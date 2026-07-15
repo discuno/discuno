@@ -3,17 +3,66 @@ import 'server-only'
 import { type PutBlobResult, put } from '@vercel/blob'
 import sharp from 'sharp'
 import { env } from '~/env'
+import { getSafeErrorName } from '~/lib/operational-logging'
 
-const IMAGE_SIGNATURES = {
-  '89504e47': 'image/png',
-  '47494638': 'image/gif',
-  ffd8ffdb: 'image/jpeg',
-  ffd8ffe0: 'image/jpeg',
-  ffd8ffe1: 'image/jpeg',
-  ffd8ffe2: 'image/jpeg',
-  ffd8ffe3: 'image/jpeg',
-  ffd8ffe8: 'image/jpeg',
-} as const
+export const MAX_PROFILE_IMAGE_INPUT_BYTES = 2 * 1024 * 1024
+const MAX_PROFILE_IMAGE_DIMENSION = 4096
+const MAX_PROFILE_IMAGE_PIXELS = MAX_PROFILE_IMAGE_DIMENSION * MAX_PROFILE_IMAGE_DIMENSION
+
+const hasSupportedImageSignature = (buffer: Uint8Array): boolean => {
+  if (buffer.byteLength < 12) return false
+
+  const isJpeg = buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff
+  const isPng =
+    buffer[0] === 0x89 &&
+    buffer[1] === 0x50 &&
+    buffer[2] === 0x4e &&
+    buffer[3] === 0x47 &&
+    buffer[4] === 0x0d &&
+    buffer[5] === 0x0a &&
+    buffer[6] === 0x1a &&
+    buffer[7] === 0x0a
+  const isGif =
+    buffer[0] === 0x47 &&
+    buffer[1] === 0x49 &&
+    buffer[2] === 0x46 &&
+    buffer[3] === 0x38 &&
+    (buffer[4] === 0x37 || buffer[4] === 0x39) &&
+    buffer[5] === 0x61
+  const isWebp =
+    buffer[0] === 0x52 &&
+    buffer[1] === 0x49 &&
+    buffer[2] === 0x46 &&
+    buffer[3] === 0x46 &&
+    buffer[8] === 0x57 &&
+    buffer[9] === 0x45 &&
+    buffer[10] === 0x42 &&
+    buffer[11] === 0x50
+
+  return isJpeg || isPng || isGif || isWebp
+}
+
+export const isImageBuffer = async (buffer: Buffer): Promise<boolean> => {
+  if (buffer.byteLength > MAX_PROFILE_IMAGE_INPUT_BYTES || !hasSupportedImageSignature(buffer)) {
+    return false
+  }
+
+  try {
+    const metadata = await sharp(buffer, {
+      failOn: 'warning',
+      limitInputPixels: MAX_PROFILE_IMAGE_PIXELS,
+    }).metadata()
+    return (
+      ['gif', 'jpeg', 'png', 'webp'].includes(metadata.format) &&
+      metadata.width > 0 &&
+      metadata.height > 0 &&
+      metadata.width <= MAX_PROFILE_IMAGE_DIMENSION &&
+      metadata.height <= MAX_PROFILE_IMAGE_DIMENSION
+    )
+  } catch {
+    return false
+  }
+}
 
 /**
  * Check if a file is a valid image by reading its magic bytes.
@@ -21,10 +70,8 @@ const IMAGE_SIGNATURES = {
  * @returns A promise that resolves to true if the file is a valid image, false otherwise.
  */
 export const isImage = async (file: File): Promise<boolean> => {
-  const buffer = await file.arrayBuffer()
-  const view = new DataView(buffer)
-  const signature = view.getUint32(0).toString(16)
-  return Object.hasOwn(IMAGE_SIGNATURES, signature)
+  if (file.size > MAX_PROFILE_IMAGE_INPUT_BYTES) return false
+  return isImageBuffer(Buffer.from(await file.arrayBuffer()))
 }
 
 /**
@@ -33,7 +80,13 @@ export const isImage = async (file: File): Promise<boolean> => {
  * @returns Promise with the processed buffer
  */
 export const processBuffer = async (buffer: Buffer): Promise<Buffer> => {
-  const processedBuffer = await sharp(buffer)
+  if (!(await isImageBuffer(buffer))) throw new Error('Image contents are invalid')
+
+  const processedBuffer = await sharp(buffer, {
+    failOn: 'warning',
+    limitInputPixels: MAX_PROFILE_IMAGE_PIXELS,
+  })
+    .rotate()
     .resize(1024, 1024, { fit: 'inside' })
     .toFormat('webp', { quality: 80 })
     .toBuffer()
@@ -67,7 +120,9 @@ export const uploadBuffer = async (buffer: Buffer, userId: string): Promise<PutB
 
     return blob
   } catch (error) {
-    console.error('Error uploading profile image:', error)
+    console.error('Profile image upload failed', {
+      errorName: getSafeErrorName(error),
+    })
     throw new Error('Failed to upload profile image')
   }
 }

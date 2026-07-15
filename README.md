@@ -22,15 +22,16 @@ A professional monorepo built with Next.js, Cal.com scheduling, and Stripe Conne
 
 ## ✨ Features
 
-- 📅 **Seamless Scheduling** - Cal.com integration for professional booking management
+- 📅 **Reliable Scheduling** - Standard Cal.com OAuth, fail-closed booking contracts, and durable lifecycle processing
 - 👥 **Mentorship Platform** - Connect mentors and mentees with advanced matching
-- 🔐 **Secure Authentication** - better-auth with email OTP + Google & Microsoft OAuth
+- 🔐 **Secure Authentication** - Better Auth with email OTP, Google/Microsoft OAuth, and durable guest-account linking
 - 📱 **Mobile-First Design** - Responsive UI built with Tailwind CSS & Radix UI
 - 💳 **Mentor Payments** - Server-authoritative Stripe Checkout with delayed Connect payouts
 - 🧪 **Guarded Testing** - Fast unit tests plus isolated Railway database integration tests
 - 🚀 **Performance Optimized** - Turbopack builds, Server Components, and Cache Components
 - 🎨 **Modern UI** - Beautiful and responsive interface with Tailwind CSS & Radix UI
 - 📊 **Database Integration** - Type-safe queries with Drizzle ORM
+- 🧭 **Privacy Controls** - Persistent analytics consent with session replay disabled
 
 ## 🏗️ Monorepo Structure
 
@@ -85,13 +86,16 @@ pnpm build
 # Run quality checks
 pnpm lint         # ESLint check
 pnpm typecheck    # TypeScript validation
-pnpm test:run     # Run unit tests once
+pnpm typecheck:tests # Test-suite TypeScript validation
+pnpm test:coverage  # Run coverage-gated unit tests
+pnpm test:e2e       # Run read-only Chromium smoke tests
 pnpm format       # Format code with Prettier
 pnpm integrations:check:local # Read-only service connectivity check
 
 # Database operations
 pnpm db:push:local # Review and push schema changes to the local database
 pnpm db:studio    # Open Drizzle Studio (use db:studio:<env> for scoped access)
+pnpm db:guard:local # One-time reset-guard provisioning; prints its required confirmation
 ```
 
 ## 📦 Application
@@ -115,8 +119,11 @@ pnpm db:studio    # Open Drizzle Studio (use db:studio:<env> for scoped access)
 - Discuno retains a 15% mentor-side commission and the mentor share is 85%.
 - Checkout creates a platform charge. The mentor transfer is separate and becomes eligible after the scheduled session end plus 72 hours.
 - Mentor cancellations, mentor no-shows, and mentee cancellations at least 24 hours before the session start receive a full refund. Refundable cancellations set mentor payout eligibility false.
-- A mentee cancellation less than 24 hours before the start is non-refundable and remains eligible for the mentor's 85% share after the scheduled session end plus 72 hours. The Cal cancellation event's `createdAt` timestamp determines the boundary.
+- A mentee cancellation less than 24 hours before the start is non-refundable and remains eligible for the mentor's 85% share after the scheduled session end plus 72 hours. An authenticated Cal.com read confirms the cancellation and actor; the immutable first conservative observation determines the boundary.
+- Paid Checkout temporarily reserves the selected Cal.com slot for 45 minutes around a 35-minute card Checkout and durably links both provider objects. This reduces concurrent Discuno checkout races; final Cal.com creation/reconciliation and the refund fallback remain authoritative.
 - Paid booking fulfillment is retried through Inngest, and Cal.com retries reconcile the Discuno payment ID before creating another booking.
+- Recovery uses an exact authenticated Cal.com GET once a UID is known; bounded metadata pagination is used only while it is unknown. Provider identity, schedule, payer, payment metadata, and reschedule lineage must all match Checkout.
+- Immediately before a provider booking, fulfillment reconciles the authoritative Stripe PaymentIntent, charge, refunds, and disputes and rechecks the Cal.com event duration/compatibility. Holds or drift fail closed.
 - Stripe transfers, refunds, and disputes are recorded in durable ledgers and reconciled before retrying a financial mutation. A `requires_action` refund hard-holds payout, reverses transferred mentor funds, and requires manual review.
 
 ## 🛠️ Tech Stack
@@ -137,7 +144,7 @@ pnpm db:studio    # Open Drizzle Studio (use db:studio:<env> for scoped access)
 <details>
 <summary><strong>Development Tools</strong></summary>
 
-- **Testing**: Vitest, Testing Library, guarded PostgreSQL integration tests
+- **Testing**: Vitest, Testing Library, Playwright Chromium smoke tests, guarded PostgreSQL integration tests
 - **Linting**: ESLint, TypeScript ESLint
 - **Formatting**: Prettier, Tailwind Prettier plugin
 - **Git Hooks**: Husky, lint-staged, Commitlint
@@ -152,7 +159,7 @@ pnpm db:studio    # Open Drizzle Studio (use db:studio:<env> for scoped access)
 - **Platform**: Vercel (optimized for Next.js)
 - **Database**: Railway (PostgreSQL), Upstash Redis (rate limiting)
 - **Payments**: Stripe Checkout + Connect (separate charges and transfers)
-- **Scheduling**: Cal.com organization and team APIs
+- **Scheduling**: Cal.com standard OAuth with per-mentor account connections
 - **Durable Workflows**: Inngest
 - **CDN**: Vercel Edge Network
 - **Analytics**: PostHog
@@ -177,7 +184,7 @@ We welcome contributions from the community! Please see our [Contributing Guide]
 - [ ] Create a feature branch (`git checkout -b feature/amazing-feature`)
 - [ ] Make your changes
 - [ ] Add tests for new functionality
-- [ ] Ensure all checks pass (`pnpm lint && pnpm typecheck && pnpm test:run`)
+- [ ] Ensure all checks pass (`pnpm lint && pnpm typecheck && pnpm typecheck:tests && pnpm test:coverage`)
 - [ ] Commit with conventional format (`feat: add amazing feature`)
 - [ ] Push and create a Pull Request
 
@@ -202,6 +209,9 @@ We welcome contributions from the community! Please see our [Contributing Guide]
 - [📜 Code of Conduct](CODE_OF_CONDUCT.md)
 - [🔒 Security Policy](SECURITY.md)
 - [📋 Changelog](CHANGELOG.md)
+- [📅 Cal.com OAuth and Scheduling Operations](docs/calcom-oauth.md)
+- [🚦 Modernization Rollout Runbook](docs/modernization-rollout.md)
+- [🗣️ Positioning and Public Voice](docs/positioning.md)
 - [⚖️ License](LICENSE)
 
 ## 📊 Project Stats

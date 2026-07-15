@@ -1,11 +1,12 @@
 import type Stripe from 'stripe'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   inngestSend: vi.fn(),
   insert: vi.fn(),
   select: vi.fn(),
   update: vi.fn(),
+  resolveCanonicalUserId: vi.fn(),
 }))
 
 vi.mock('next/headers', () => ({ headers: vi.fn() }))
@@ -13,7 +14,7 @@ vi.mock('next/headers', () => ({ headers: vi.fn() }))
 vi.mock('~/env', () => ({
   env: {
     NEXT_PUBLIC_BASE_URL: 'https://discuno.test',
-    NEXT_PUBLIC_CALCOM_API_URL: 'https://api.cal.test/v2',
+    CALCOM_API_URL: 'https://api.cal.test/v2',
   },
 }))
 
@@ -30,6 +31,7 @@ vi.mock('~/lib/calcom/client', () => ({
   CALCOM_API_VERSIONS: { slots: '2024-09-04' },
 }))
 vi.mock('~/lib/rate-limiter', () => ({
+  checkoutIpRatelimit: { limit: vi.fn() },
   freeBookingActorRatelimit: { limit: vi.fn() },
   freeBookingIpRatelimit: { limit: vi.fn() },
   ratelimit: { limit: vi.fn() },
@@ -39,6 +41,9 @@ vi.mock('~/lib/stripe/customer', () => ({ getOrCreateStripeCustomerId: vi.fn() }
 vi.mock('~/server/queries/calcom', () => ({ getCalcomConnectionByUsername: vi.fn() }))
 vi.mock('~/server/queries/event-types', () => ({ getMentorEnabledEventTypes: vi.fn() }))
 vi.mock('~/server/queries/profiles', () => ({ getPublicProfileByUsername: vi.fn() }))
+vi.mock('~/server/dal/user-identities', () => ({
+  resolveCanonicalUserId: mocks.resolveCanonicalUserId,
+}))
 
 vi.mock('~/server/db', () => ({
   db: {
@@ -90,6 +95,7 @@ const createCheckoutSession = (
       menteeFee: '0',
       mentorAmount: '4250',
       mentorStripeAccountId: 'acct_discuno_mentor',
+      bookingAttemptId: '33333333-3333-4333-8333-333333333333',
     },
     ...overrides,
   }) as Stripe.Checkout.Session
@@ -160,6 +166,13 @@ describe('Stripe Checkout webhook boundary', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mocks.inngestSend.mockResolvedValue({ ids: ['event-id'] })
+    mocks.resolveCanonicalUserId.mockImplementation(async (userId: string) => userId)
+    vi.spyOn(console, 'info').mockImplementation(() => undefined)
+    vi.spyOn(console, 'error').mockImplementation(() => undefined)
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
   })
 
   it('acknowledges an unpaid session without persisting or queueing fulfillment', async () => {
@@ -252,19 +265,54 @@ describe('Stripe Checkout webhook boundary', () => {
       expect.objectContaining({
         id: `stripe-checkout-${sessionId}`,
         name: 'stripe/checkout.completed',
-        data: expect.objectContaining({
-          paymentId: 42,
-          paymentIntentId,
-          sessionId,
-          sessionAmount: 5_400,
-          sessionCurrency: 'usd',
-        }),
+        data: { paymentId: 42 },
       })
     )
     expect(update.set).toHaveBeenCalledWith(
       expect.objectContaining({
         fulfillmentQueuedAt: expect.any(Date),
         updatedAt: expect.any(Date),
+      })
+    )
+  })
+
+  it('fulfills a paid Checkout Session opened before booking-attempt IDs were introduced', async () => {
+    const baseSession = createCheckoutSession()
+    const { bookingAttemptId: _legacyMissingField, ...legacyMetadata } = baseSession.metadata ?? {}
+    const insert = mockInsertResult([createPaymentRecord()])
+    mockUpdateResult()
+
+    const response = await handleCheckoutSessionWebhook(
+      createCheckoutSession({ metadata: legacyMetadata })
+    )
+
+    expect(response.status).toBe(200)
+    expect(insert.values).toHaveBeenCalledWith(
+      expect.objectContaining({
+        metadata: {
+          checkoutSessionMetadata: expect.not.objectContaining({
+            bookingAttemptId: expect.anything(),
+          }),
+        },
+      })
+    )
+    expect(mocks.inngestSend).toHaveBeenCalledOnce()
+  })
+
+  it('canonicalizes a linked guest identity before persisting payment metadata', async () => {
+    const linkedUserId = '44444444-4444-4444-8444-444444444444'
+    mocks.resolveCanonicalUserId.mockResolvedValue(linkedUserId)
+    const insert = mockInsertResult([createPaymentRecord()])
+    mockUpdateResult()
+
+    const response = await handleCheckoutSessionWebhook(createCheckoutSession())
+
+    expect(response.status).toBe(200)
+    expect(insert.values).toHaveBeenCalledWith(
+      expect.objectContaining({
+        metadata: {
+          checkoutSessionMetadata: expect.objectContaining({ actorUserId: linkedUserId }),
+        },
       })
     )
   })
@@ -283,12 +331,33 @@ describe('Stripe Checkout webhook boundary', () => {
 
   it('returns a retriable failure when durable fulfillment cannot be queued', async () => {
     mockInsertResult([createPaymentRecord()])
-    mocks.inngestSend.mockRejectedValue(new Error('Inngest unavailable'))
+    const privateError = 'Inngest key for mentee@example.edu is private'
+    mocks.inngestSend.mockRejectedValue(new Error(privateError))
 
     const response = await handleCheckoutSessionWebhook(createCheckoutSession())
+    const logs = JSON.stringify([
+      ...vi.mocked(console.info).mock.calls,
+      ...vi.mocked(console.error).mock.calls,
+    ])
 
     expect(response.status).toBe(500)
     expect(await response.text()).toBe('Failed to send event to Inngest')
     expect(mocks.update).not.toHaveBeenCalled()
+    for (const privateValue of [
+      privateError,
+      sessionId,
+      paymentIntentId,
+      'mentee@example.edu',
+      'Mentee Name',
+      mentorUserId,
+      actorUserId,
+      'acct_discuno_mentor',
+    ]) {
+      expect(logs).not.toContain(privateValue)
+    }
+    expect(logs).toContain('sessionReference')
+    expect(logs).toContain('paymentIntentReference')
+    expect(logs).toContain('errorName')
+    expect(logs).toContain('Error')
   })
 })

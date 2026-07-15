@@ -1,23 +1,43 @@
 import { z } from 'zod'
 
-const CalcomOrganizationProfileSchema = z.object({
-  id: z.number().int(),
-  organizationId: z.number().int(),
-  userId: z.number().int(),
-  username: z.string().nullable().optional(),
+/**
+ * Cal.com calls this field `meetingUrl`, but current non-video bookings can
+ * contain an address or phone number. Preserve only safe web URLs because the
+ * local booking UI renders this value as an external link.
+ */
+export const CalcomSafeMeetingUrlSchema = z
+  .preprocess(
+    value => (typeof value === 'string' && !value.trim() ? undefined : value),
+    z.string().trim().min(1).max(2_048).nullish()
+  )
+  .transform(value => {
+    if (value == null) return value
+    try {
+      const url = new URL(value)
+      return url.protocol === 'https:' || url.protocol === 'http:' ? url.toString() : undefined
+    } catch {
+      return undefined
+    }
+  })
+
+export const CalcomWebhookResourceSchema = z.object({
+  // Cal.com v2 uses UUID strings. Numeric IDs are accepted only so existing
+  // pre-v2 cleanup records can be normalized during the rollout.
+  id: z.union([z.string().min(1), z.number().int().positive().transform(String)]),
+  subscriberUrl: z.url(),
+  active: z.boolean(),
 })
 
-export const CalcomOrganizationUserSchema = z.object({
-  id: z.number().int(),
-  email: z.email(),
-  username: z.string().nullable().optional(),
-  name: z.string().nullable().optional(),
-  profile: CalcomOrganizationProfileSchema,
-})
+export type CalcomWebhookResource = z.infer<typeof CalcomWebhookResourceSchema>
 
-export const CreateCalcomUserResponseSchema = z.object({
+export const CalcomWebhookListResponseSchema = z.object({
   status: z.literal('success'),
-  data: CalcomOrganizationUserSchema,
+  data: z.array(CalcomWebhookResourceSchema),
+})
+
+export const CalcomWebhookResponseSchema = z.object({
+  status: z.literal('success'),
+  data: CalcomWebhookResourceSchema,
 })
 
 export const CalcomScheduleSchema = z.object({
@@ -51,67 +71,5 @@ export const GetCalcomSchedulesResponseSchema = z.object({
 
 export type CalcomSchedule = z.infer<typeof CalcomScheduleSchema>
 
-export type CalcomLocale =
-  | 'ar'
-  | 'ca'
-  | 'de'
-  | 'es'
-  | 'eu'
-  | 'he'
-  | 'id'
-  | 'ja'
-  | 'lv'
-  | 'pl'
-  | 'ro'
-  | 'sr'
-  | 'th'
-  | 'vi'
-  | 'az'
-  | 'cs'
-  | 'el'
-  | 'es-419'
-  | 'fi'
-  | 'hr'
-  | 'it'
-  | 'km'
-  | 'nl'
-  | 'pt'
-  | 'ru'
-  | 'sv'
-  | 'tr'
-  | 'zh-CN'
-  | 'bg'
-  | 'da'
-  | 'en'
-  | 'et'
-  | 'fr'
-  | 'hu'
-  | 'iw'
-  | 'ko'
-  | 'no'
-  | 'pt-BR'
-  | 'sk'
-  | 'ta'
-  | 'uk'
-  | 'zh-TW'
-
 export type DayOfWeek =
   'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday'
-
-export interface CreateCalcomUserInput {
-  userId: string
-  email: string
-  name: string
-  timeFormat?: '12' | '24'
-  weekStart?: DayOfWeek
-  timeZone?: string
-  locale?: CalcomLocale
-  avatarUrl?: string
-  bio?: string
-  metadata?: Record<string, string | number | boolean>
-}
-
-export interface UpdateCalcomUserInput extends Partial<CreateCalcomUserInput> {
-  userId: string
-  calcomUserId: number
-}

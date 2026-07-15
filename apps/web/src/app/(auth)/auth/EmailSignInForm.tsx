@@ -11,7 +11,7 @@ import { Spinner } from '~/components/ui/spinner'
 import { authClient } from '~/lib/auth-client'
 import { validateEduEmail } from '~/lib/utils/validation'
 
-export function EmailSignInForm() {
+export function EmailSignInForm({ returnTo = '/settings' }: { returnTo?: string }) {
   const [email, setEmail] = useState('')
   const [emailError, setEmailError] = useState('')
   const [otp, setOtp] = useState('')
@@ -73,7 +73,7 @@ export function EmailSignInForm() {
         toast.success('Success!', {
           description: 'You have been signed in successfully.',
         })
-        window.location.href = '/settings'
+        window.location.href = returnTo
       }
     } catch (error) {
       console.error('Verification error:', error)

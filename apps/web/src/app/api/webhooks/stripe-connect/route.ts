@@ -1,76 +1,71 @@
-import { headers } from 'next/headers'
 import { NextResponse } from 'next/server'
 import type { Stripe } from 'stripe'
 import { env } from '~/env'
-import { deriveStripeAccountStatus } from '~/lib/stripe/account-status'
-import { upsertStripeAccount } from '~/server/dal/stripe'
+import { readBoundedUtf8Body, RequestBodyTooLargeError } from '~/lib/http/request-body'
+import { getSafeErrorName } from '~/lib/operational-logging'
 import { stripe } from '~/lib/stripe'
+import { enqueueVerifiedStripeWebhook } from '~/lib/stripe/webhook-inbox'
+
+const MAX_STRIPE_WEBHOOK_BYTES = 1024 * 1024
+
+const configuredStripeLivemode = (): boolean =>
+  env.STRIPE_SECRET_KEY.startsWith('sk_live_') || env.STRIPE_SECRET_KEY.startsWith('rk_live_')
 
 export async function POST(req: Request) {
-  const signature = (await headers()).get('stripe-signature') ?? ''
+  const signature = req.headers.get('stripe-signature') ?? ''
 
   let event: Stripe.Event
+  let body: string
 
   try {
-    event = stripe.webhooks.constructEvent(
-      await req.text(),
-      signature,
-      env.STRIPE_CONNECT_WEBHOOK_SECRET
-    )
+    body = await readBoundedUtf8Body(req, MAX_STRIPE_WEBHOOK_BYTES)
+  } catch (error) {
+    const tooLarge = error instanceof RequestBodyTooLargeError
+    console.error('Stripe Connect webhook body could not be read', {
+      errorName: getSafeErrorName(error),
+    })
+    return new Response(tooLarge ? 'Payload too large' : 'Invalid webhook payload', {
+      status: tooLarge ? 413 : 400,
+    })
+  }
+
+  try {
+    event = stripe.webhooks.constructEvent(body, signature, env.STRIPE_CONNECT_WEBHOOK_SECRET)
   } catch (err) {
-    const errorMessage = err instanceof Error ? err.message : 'Unknown error'
-    console.error(`❌ Webhook signature verification failed: ${errorMessage}`)
+    console.error('Stripe Connect webhook signature verification failed', {
+      errorName: getSafeErrorName(err),
+    })
     return new Response('Invalid webhook signature', {
       status: 400,
     })
   }
 
-  try {
-    switch (event.type) {
-      case 'account.updated':
-        await handleAccountUpdated(event.data.object)
-        break
-
-      default:
-        console.log(`🤷‍♀️ Unhandled event type: ${event.type}`)
-    }
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    console.error(`❌ Webhook handler failed: ${errorMessage}`)
-    return new Response('Webhook handler failed', {
-      status: 500,
+  // Stripe Connect webhook endpoints can receive both test and live events.
+  // A verified event from the opposite mode cannot be retrieved with this
+  // deployment's API key, so acknowledge it without adding an impossible job
+  // to the durable inbox.
+  if (event.livemode !== configuredStripeLivemode()) {
+    console.info('Ignored Stripe Connect webhook from the opposite mode', {
+      eventId: event.id,
     })
+    return NextResponse.json({ received: true, ignored: true })
   }
 
-  return NextResponse.json({ received: true })
-}
-
-/**
- * Handle Stripe account updates
- */
-async function handleAccountUpdated(account: Stripe.Account) {
   try {
-    const userId = account.metadata?.userId
-
-    if (!userId) {
-      console.error(`❌ Stripe account ${account.id} has no userId in metadata.`)
-      return
-    }
-
-    await upsertStripeAccount({
-      userId,
-      stripeAccountId: account.id,
-      stripeAccountStatus: deriveStripeAccountStatus(account),
-      chargesEnabled: account.charges_enabled,
-      payoutsEnabled: account.payouts_enabled,
-      detailsSubmitted: account.details_submitted,
-      requirements: account.requirements,
+    const result = await enqueueVerifiedStripeWebhook({
+      eventId: event.id,
+      eventType: event.type,
+      source: 'connect',
+      connectedAccountId: event.account ?? null,
     })
-
-    console.log(`✅ Successfully handled account update for Stripe account: ${account.id}`)
+    return NextResponse.json({ received: true, duplicate: result.duplicate })
   } catch (error) {
-    console.error(`❌ Error handling account update for Stripe account ${account.id}:`, error)
-    // Re-throw the error to be caught by the main POST function's error handler
-    throw error
+    console.error('Failed to persist or queue verified Stripe Connect webhook', {
+      eventId: event.id,
+      errorName: getSafeErrorName(error),
+    })
+    return new Response('Webhook queue unavailable', {
+      status: 500,
+    })
   }
 }

@@ -29,5 +29,4 @@ export interface ClientAnalyticsEvent {
   eventType: NewAnalyticsEvent['eventType']
   targetUserId: string
   postId?: number
-  distinctId: string
 }

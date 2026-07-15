@@ -2,6 +2,7 @@ import { Shield } from 'lucide-react'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
+import { AnalyticsPrivacyControls } from './AnalyticsPrivacyControls'
 import { createMetadata } from '~/lib/metadata'
 
 export const metadata: Metadata = createMetadata({
@@ -76,8 +77,8 @@ export default function PrivacyPage() {
                   profile photo, university affiliation, graduation year, major
                 </li>
                 <li>
-                  <strong>Guest Booking Information:</strong> Name, email address, and time zone
-                  submitted when booking without a permanent account
+                  <strong>Guest Booking Information:</strong> Name, email address, mobile number,
+                  and time zone submitted when booking without a permanent account
                 </li>
                 <li>
                   <strong>Profile Information:</strong> Bio, academic background, session details,
@@ -106,12 +107,13 @@ export default function PrivacyPage() {
                   operating system, device identifiers
                 </li>
                 <li>
-                  <strong>Usage Data:</strong> Pages visited, time spent on pages, click patterns,
-                  session duration, referring URLs
+                  <strong>First-Party Discovery Signals:</strong> Limited interactions such as
+                  mentor profile views that Discuno stores to operate and improve mentor discovery.
+                  These records are not sent to PostHog and are not used for advertising
                 </li>
                 <li>
-                  <strong>Analytics Data:</strong> Collected through PostHog to understand user
-                  behavior and improve our services
+                  <strong>Analytics Data:</strong> When optional analytics is enabled, collected
+                  through PostHog to understand usage and improve Discuno
                 </li>
                 <li>
                   <strong>Cookies and Similar Technologies:</strong> Session cookies, authentication
@@ -223,8 +225,8 @@ export default function PrivacyPage() {
                   <strong>Cal.com:</strong> Calendar management, booking coordination, scheduling
                 </li>
                 <li>
-                  <strong>PostHog:</strong> Analytics and product insights (anonymized when
-                  possible)
+                  <strong>PostHog:</strong> Optional product analytics and usage insights; events
+                  may be associated with your Discuno user identifier
                 </li>
                 <li>
                   <strong>Resend:</strong> Transactional and authentication email delivery
@@ -292,10 +294,11 @@ export default function PrivacyPage() {
                 legitimate business records.
               </p>
               <p className="mt-4">
-                <strong>Account Deletion:</strong> When you delete your account, your personal
-                information and public profile will be deleted or anonymized within 30 days.
-                Booking, payment, fraud-prevention, dispute, tax, and accounting records may be
-                retained where required for legal obligations or legitimate business records.
+                <strong>Account Deletion:</strong> After we receive and verify your deletion
+                request, your personal information and public profile will be deleted or anonymized
+                within 30 days. Booking, payment, fraud-prevention, dispute, tax, and accounting
+                records may be retained where required for legal obligations or legitimate business
+                records.
               </p>
               <p>
                 Transaction records and payment history may be retained for up to 7 years to comply
@@ -332,7 +335,7 @@ export default function PrivacyPage() {
                 <strong>5.3 Deletion</strong>
               </p>
               <ul className="ml-6 list-disc space-y-2">
-                <li>Delete your account and associated data</li>
+                <li>Request deletion of your account and associated data</li>
                 <li>Request deletion of specific information (subject to legal obligations)</li>
               </ul>
 
@@ -384,8 +387,7 @@ export default function PrivacyPage() {
                   role-based permissions
                 </li>
                 <li>
-                  <strong>Monitoring:</strong> Security logging, intrusion detection, regular
-                  security audits
+                  <strong>Monitoring:</strong> Security logging and automated abuse prevention
                 </li>
                 <li>
                   <strong>Infrastructure:</strong> Secure cloud hosting with reputable providers
@@ -414,7 +416,8 @@ export default function PrivacyPage() {
                   <strong>Functional Cookies:</strong> Remember your preferences and settings
                 </li>
                 <li>
-                  <strong>Analytics Cookies:</strong> Understand how you use our platform (PostHog)
+                  <strong>Analytics Cookies:</strong> When enabled, understand how Discuno is used
+                  through PostHog
                 </li>
                 <li>
                   <strong>Performance Cookies:</strong> Monitor platform performance and errors
@@ -424,6 +427,7 @@ export default function PrivacyPage() {
                 You can control cookies through your browser settings. Note that disabling certain
                 cookies may limit platform functionality.
               </p>
+              <AnalyticsPrivacyControls />
             </CardContent>
           </Card>
 
@@ -444,10 +448,10 @@ export default function PrivacyPage() {
                 <li>Moderate content and maintain community standards</li>
               </ul>
               <p className="mt-4">
-                These tools operate primarily on aggregated, anonymized data. When personal data is
-                processed, it is done in accordance with this Privacy Policy and applicable data
-                protection laws. We do not use your personal information to train third-party AI
-                models without your explicit consent.
+                These tools may use aggregated usage information and, where necessary, account-level
+                data. When personal data is processed, it is handled in accordance with this Privacy
+                Policy and applicable data protection laws. We do not use your personal information
+                to train third-party AI models without your explicit consent.
               </p>
               <p>
                 If we integrate third-party AI services (such as OpenAI or similar providers) in the
@@ -632,7 +636,9 @@ export default function PrivacyPage() {
                 <li>We do not sell your personal information</li>
                 <li>You have rights to access, correct, and delete your information</li>
                 <li>We implement industry-standard security measures</li>
-                <li>We use cookies for essential functionality and analytics</li>
+                <li>
+                  We use cookies for essential functionality and optional analytics you enable
+                </li>
                 <li>Contact us at support@discuno.com with privacy questions</li>
               </ul>
             </CardContent>

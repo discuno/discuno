@@ -46,13 +46,18 @@ describe('mentor booking cancellation authorization', () => {
     mocks.getBookingByCalcomUidAndMentorId.mockResolvedValue({
       id: 42,
       calcomUid: 'booking-owned',
+      mentorUserId: 'mentor-1',
     })
 
     await cancelOwnedMentorBooking('booking-owned', 'Cancelled by mentor')
 
     expect(mocks.requirePermission).toHaveBeenCalledWith({ mentor: ['manage'] })
     expect(mocks.getBookingByCalcomUidAndMentorId).toHaveBeenCalledWith('booking-owned', 'mentor-1')
-    expect(mocks.cancelCalcomBooking).toHaveBeenCalledWith('booking-owned', 'Cancelled by mentor')
+    expect(mocks.cancelCalcomBooking).toHaveBeenCalledWith(
+      'mentor-1',
+      'booking-owned',
+      'Cancelled by mentor'
+    )
     expect(mocks.refundBookingPayment).toHaveBeenCalledWith('booking-owned', 'mentor_cancelled')
   })
 

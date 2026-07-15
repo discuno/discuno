@@ -123,6 +123,11 @@ export const getActivePostConditions = () => {
     isNull(userProfile.deletedAt),
     isNull(post.deletedAt),
     isNotNull(calcomToken.id),
+    eq(calcomToken.authMode, 'oauth'),
+    isNull(calcomToken.disconnectedAt),
+    isNotNull(calcomToken.accessToken),
+    isNotNull(calcomToken.refreshToken),
+    isNotNull(calcomToken.webhookId),
     // Ensure the mentor has at least one bookable event type (matching active status)
     exists(
       db
@@ -133,6 +138,7 @@ export const getActivePostConditions = () => {
           and(
             eq(mentorEventType.mentorUserId, user.id),
             eq(mentorEventType.isEnabled, true),
+            eq(mentorEventType.bookingCompatible, true),
             isNull(mentorEventType.deletedAt),
             or(
               // Free event types (price is 0 or null)
@@ -142,7 +148,13 @@ export const getActivePostConditions = () => {
               and(
                 gt(mentorEventType.customPrice, 0),
                 eq(mentorStripeAccount.stripeAccountStatus, 'active'),
-                eq(mentorStripeAccount.chargesEnabled, true),
+                or(
+                  eq(mentorStripeAccount.transfersEnabled, true),
+                  and(
+                    isNull(mentorStripeAccount.transfersEnabled),
+                    eq(mentorStripeAccount.payoutsEnabled, true)
+                  )
+                ),
                 eq(mentorStripeAccount.payoutsEnabled, true)
               )
             )

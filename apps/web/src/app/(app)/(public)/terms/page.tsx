@@ -47,8 +47,9 @@ export default function TermsPage() {
                   related services.
                 </li>
                 <li>
-                  <strong>&quot;Mentor&quot;</strong> means a verified user with a .edu email
-                  address offering mentorship services through the Platform.
+                  <strong>&quot;Mentor&quot;</strong> means a user who has demonstrated access to a
+                  supported school-issued .edu email address and offers mentorship services through
+                  the Platform.
                 </li>
                 <li>
                   <strong>&quot;Mentee&quot;</strong> means a user booking and receiving mentorship
@@ -106,10 +107,7 @@ export default function TermsPage() {
               <p>To use the Platform, you must:</p>
               <ul className="ml-6 list-disc space-y-2">
                 <li>Be at least 18 years of age or the age of majority in your jurisdiction</li>
-                <li>
-                  For Mentors: Have a valid .edu email address from an accredited educational
-                  institution
-                </li>
+                <li>For Mentors: Have access to a supported school-issued .edu email address</li>
                 <li>Provide accurate, complete, and current information during registration</li>
                 <li>
                   Maintain the security of your account credentials and be responsible for all
@@ -135,9 +133,10 @@ export default function TermsPage() {
                 are responsible for maintaining the confidentiality of your account credentials.
               </p>
               <p>
-                <strong>3.2 Account Verification:</strong> Mentors must verify their identity
-                through their .edu email address. We may request additional verification at any
-                time.
+                <strong>3.2 School Email Check:</strong> Mentors must demonstrate access to a
+                supported school-issued .edu email address. This check supports an affiliation
+                claim; it does not verify identity, current enrollment or employment, background,
+                expertise, or outcomes. We may request additional verification at any time.
               </p>
               <p>
                 <strong>3.3 Account Security:</strong> You must immediately notify us of any
@@ -145,8 +144,10 @@ export default function TermsPage() {
                 from your failure to protect your account credentials.
               </p>
               <p>
-                <strong>3.4 Account Termination:</strong> You may terminate your account at any time
-                through your account settings. We may suspend or terminate your account for
+                <strong>3.4 Account Termination:</strong> You may request account termination at any
+                time by contacting support@discuno.com from the email address associated with your
+                account. We may need to verify the request and retain records where required by law
+                or legitimate business obligations. We may suspend or terminate your account for
                 violation of these Terms, fraudulent activity, or any other reason at our
                 discretion.
               </p>
@@ -333,19 +334,18 @@ export default function TermsPage() {
             <CardContent className="text-muted-foreground space-y-4">
               <p>
                 Your privacy is important to us. Our Privacy Policy explains how we collect, use,
-                and protect your personal information. By using the Platform, you consent to our
-                data practices as described in the Privacy Policy.
+                and protect your personal information and the choices available to you.
               </p>
               <p>
-                We use analytics services (PostHog) to improve our Platform. We do not sell your
-                personal information to third parties.
+                Optional product analytics through PostHog can be controlled from the Privacy Policy
+                page. We do not sell your personal information to third parties.
               </p>
               <p>
                 <strong>Data Retention:</strong> We retain user data only as long as necessary to
                 provide the Platform, comply with legal obligations, resolve disputes, and enforce
-                our agreements. When you delete your account, we will delete or anonymize your
-                personal information within 30 days, except where we are required to retain it for
-                legal, tax, or regulatory purposes.
+                our agreements. After we verify an account-deletion request, we will delete or
+                anonymize your personal information within 30 days, except where we are required to
+                retain it for legal, tax, or regulatory purposes.
               </p>
             </CardContent>
           </Card>

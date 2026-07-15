@@ -1,12 +1,13 @@
 'use client'
 
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import {
   getMentorEventTypePreferences,
   getMentorStripeStatus,
+  refreshMentorEventTypes,
   updateMentorEventTypePreferences,
 } from '~/app/(app)/(mentor)/settings/actions'
 import { EventTypeSettingsContent } from '~/app/(app)/(mentor)/settings/event-types/components/EventTypeSettingsContent'
@@ -23,6 +24,8 @@ interface EventTypePreference {
   isEnabled: boolean
   customPrice: number | null
   currency: string
+  bookingCompatible: boolean
+  bookingCompatibilityReasons: string[]
 }
 
 export const EventTypeToggleSection = () => {
@@ -30,22 +33,7 @@ export const EventTypeToggleSection = () => {
   const [selectedEventType, setSelectedEventType] = useState<EventTypePreference | null>(null)
   const [showPricingDialog, setShowPricingDialog] = useState(false)
   const [tempPrice, setTempPrice] = useState<string>('')
-
-  // Handle Stripe onboarding return
-  useEffect(() => {
-    const stripeSetup = searchParams.get('stripe_setup')
-    const stripeRefresh = searchParams.get('stripe_refresh')
-
-    if (stripeSetup === 'success') {
-      toast.success('Stripe setup completed! You can now accept payments.')
-      // Clean up URL params
-      window.history.replaceState({}, '', '/settings/event-types')
-    } else if (stripeRefresh === 'true') {
-      toast.error('Stripe setup expired or was invalid. Please try again.')
-      // Clean up URL params
-      window.history.replaceState({}, '', '/settings/event-types')
-    }
-  }, [searchParams])
+  const hasHandledStripeReturn = useRef(false)
 
   // Fetch mentor's event type preferences
   const {
@@ -60,33 +48,109 @@ export const EventTypeToggleSection = () => {
   })
 
   // Fetch mentor's Stripe status
-  const { data: stripeStatusData, isLoading: stripeStatusLoading } = useQuery({
+  const {
+    data: stripeStatusData,
+    isLoading: stripeStatusLoading,
+    refetch: refetchStripeStatus,
+  } = useQuery({
     queryKey: ['mentor-stripe-status'],
     queryFn: getMentorStripeStatus,
     staleTime: 5 * 60 * 1000,
   })
 
+  // A Stripe return URL only proves that the mentor came back. Reconcile the
+  // provider account before describing payouts as ready.
+  useEffect(() => {
+    if (hasHandledStripeReturn.current) return
+
+    const stripeSetup = searchParams.get('stripe_setup')
+    const stripeRefresh = searchParams.get('stripe_refresh')
+    if (stripeSetup !== 'success' && stripeRefresh !== 'true') return
+
+    hasHandledStripeReturn.current = true
+
+    if (stripeRefresh === 'true') {
+      toast.error('Payout setup expired before it was finished. Please try again.')
+      window.history.replaceState({}, '', '/settings/event-types')
+      return
+    }
+
+    const toastId = toast.loading('Checking payout setup…')
+    void refetchStripeStatus()
+      .then(result => {
+        const statusResult = result.data
+        const status = statusResult?.data
+
+        if (statusResult?.success && status?.onboardingCompleted) {
+          toast.success('Payout setup is ready', {
+            id: toastId,
+            description: 'You can now offer paid sessions.',
+          })
+          return
+        }
+
+        if (statusResult?.success) {
+          toast.info('Payout setup still needs attention', {
+            id: toastId,
+            description:
+              'Stripe has not enabled payouts yet. Use “Finish payout setup” to complete any remaining steps.',
+          })
+          return
+        }
+
+        toast.error("Couldn't confirm payout setup", {
+          id: toastId,
+          description: statusResult?.error ?? 'Please refresh the page and try again.',
+        })
+      })
+      .catch(() => {
+        toast.error("Couldn't confirm payout setup", {
+          id: toastId,
+          description: 'Please refresh the page and try again.',
+        })
+      })
+      .finally(() => window.history.replaceState({}, '', '/settings/event-types'))
+  }, [refetchStripeStatus, searchParams])
+
   // Update event type preferences
   const updateEventTypeMutation = useMutation({
     mutationFn: ({ eventTypeId, data }: { eventTypeId: number; data: UpdateMentorEventType }) =>
       updateMentorEventTypePreferences(eventTypeId, data),
-    onSuccess: () => {
-      toast.success('Event type preferences updated!')
+    onSuccess: result => {
+      if (!result.success) {
+        toast.error(result.error ?? 'Could not update this session type')
+        return
+      }
+      toast.success('Session type updated')
       void refetchEventTypes()
     },
-    onError: error => {
-      console.error('Failed to update event type preferences:', error)
-      toast.error('Failed to update preferences')
+    onError: () => toast.error('Could not update this session type'),
+  })
+
+  const refreshEventTypesMutation = useMutation({
+    mutationFn: refreshMentorEventTypes,
+    onSuccess: result => {
+      if (!result.success) {
+        toast.error(result.error ?? 'Could not refresh session types')
+        return
+      }
+      toast.success('Session types refreshed')
+      void refetchEventTypes()
     },
+    onError: () => toast.error('Could not refresh session types'),
   })
 
   const eventTypes = eventTypesData?.data ?? []
   const stripeStatus = stripeStatusData?.data
 
   const handleToggleEventType = async (eventType: EventTypePreference, checked: boolean) => {
+    if (checked && !eventType.bookingCompatible) {
+      toast.error('Update this session type in Cal.com, then refresh before enabling it')
+      return
+    }
     // Prevent enabling paid event types without Stripe
     if (checked && eventType.customPrice && eventType.customPrice > 0) {
-      if (!stripeStatus?.chargesEnabled) {
+      if (!stripeStatus?.transfersEnabled || !stripeStatus.payoutsEnabled) {
         toast.error('Complete Stripe setup to enable paid event types')
         return
       }
@@ -143,9 +207,11 @@ export const EventTypeToggleSection = () => {
       showPricingDialog={showPricingDialog}
       tempPrice={tempPrice}
       updateEventTypeMutation={updateEventTypeMutation}
+      isRefreshing={refreshEventTypesMutation.isPending}
       onToggleEventType={handleToggleEventType}
       onPricingChange={handlePricingChange}
       onSavePricing={handleSavePricing}
+      onRefresh={() => refreshEventTypesMutation.mutate()}
       setShowPricingDialog={setShowPricingDialog}
       setTempPrice={setTempPrice}
     />

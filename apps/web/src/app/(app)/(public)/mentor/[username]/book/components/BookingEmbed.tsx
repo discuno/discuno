@@ -20,11 +20,13 @@ import { BookingConfirmationStep } from '~/app/(app)/(public)/mentor/[username]/
 import type { BookingData } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingModal'
 
 import { useSession } from '~/lib/auth-client'
+import { MINIMUM_PAID_BOOKING_LEAD_MINUTES } from '~/lib/constants'
 import { BadRequestError, ExternalApiError } from '~/lib/errors'
 
 export interface BookingFormData {
   name: string
   email: string
+  phone: string
 }
 
 type BookingStep = 'calendar' | 'booking' | 'confirmation'
@@ -45,10 +47,13 @@ export const BookingEmbed = ({
   const [selectedDate, setSelectedDate] = useState<Date | undefined>()
   const [currentMonth, setCurrentMonth] = useState(today)
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string | null>(null)
+  const [bookingAttemptId, setBookingAttemptId] = useState(() => crypto.randomUUID())
+  const [paidAttemptSubmitted, setPaidAttemptSubmitted] = useState(false)
   const [currentStep, setCurrentStep] = useState<BookingStep>('calendar')
   const [formData, setFormData] = useState<BookingFormData>({
     name: '',
     email: '',
+    phone: '',
   })
 
   // Date range for calendar
@@ -77,6 +82,7 @@ export const BookingEmbed = ({
   const currentEventId = selectedEventType?.id
   const {
     data: monthlyAvailability = {},
+    dataUpdatedAt,
     isFetching,
     error,
   } = useQuery({
@@ -96,16 +102,33 @@ export const BookingEmbed = ({
     enabled: currentStep === 'calendar' && !!currentEventId,
   })
 
+  const displayedAvailability = useMemo(() => {
+    if ((selectedEventType?.price ?? 0) <= 0) return monthlyAvailability
+    const earliestPaidStart = dataUpdatedAt + MINIMUM_PAID_BOOKING_LEAD_MINUTES * 60 * 1000
+    return Object.fromEntries(
+      Object.entries(monthlyAvailability).map(([date, slots]) => [
+        date,
+        slots.filter(slot => Date.parse(slot.time) >= earliestPaidStart),
+      ])
+    )
+  }, [dataUpdatedAt, monthlyAvailability, selectedEventType?.price])
+
   // Event handlers
   const handleEventTypeSelect = useCallback((eventType: EventType | null) => {
     setSelectedEventTypeOverride(eventType)
     setSelectedDate(undefined)
     setSelectedTimeSlot(null)
+    setBookingAttemptId(crypto.randomUUID())
+    setPaidAttemptSubmitted(false)
   }, [])
 
   const handleTimeSlotSelect = useCallback((timeSlot: string | null) => {
     setSelectedTimeSlot(timeSlot)
-    if (timeSlot) setCurrentStep('booking')
+    if (timeSlot) {
+      setBookingAttemptId(crypto.randomUUID())
+      setPaidAttemptSubmitted(false)
+      setCurrentStep('booking')
+    }
   }, [])
 
   // Mutations
@@ -120,13 +143,19 @@ export const BookingEmbed = ({
 
       // For paid sessions, redirect to Stripe Hosted Checkout
       if ((selectedEventType.price ?? 0) > 0) {
+        // An ambiguous Stripe response must replay this attempt's exact server
+        // snapshot. Freeze recipient details until the student selects a new
+        // time (and therefore a new attempt ID) instead of implying edits took.
+        setPaidAttemptSubmitted(true)
         const bookingPayload: BookingFormInput = {
           eventTypeId: selectedEventType.id,
           startTimeIso: startTime.toISOString(),
           attendeeName: displayedFormData.name,
           attendeeEmail: displayedFormData.email,
+          attendeePhone: displayedFormData.phone,
           mentorUsername: bookingData.username,
           timeZone: timeZone,
+          bookingAttemptId,
         }
 
         const response = await createStripeCheckoutSession(bookingPayload)
@@ -144,9 +173,11 @@ export const BookingEmbed = ({
         username: bookingData.username,
         eventTypeId: selectedEventType.id,
         startTime: startTime.toISOString(),
+        bookingAttemptId,
         attendee: {
           name: displayedFormData.name,
           email: displayedFormData.email,
+          phone: displayedFormData.phone,
           timeZone,
         },
       })
@@ -177,7 +208,7 @@ export const BookingEmbed = ({
           bookingData={bookingData}
           startMonth={startMonth}
           endMonth={endMonth}
-          monthlyAvailability={monthlyAvailability}
+          monthlyAvailability={displayedAvailability}
           isFetchingSlots={isFetching}
           onSelectEventType={handleEventTypeSelect}
           onChangeMonth={month => setCurrentMonth(new TZDate(month, timeZone))}
@@ -194,6 +225,7 @@ export const BookingEmbed = ({
           setFormData={setFormData}
           setCurrentStep={setCurrentStep}
           createBookingMutation={createBookingMutation}
+          detailsLocked={paidAttemptSubmitted}
         />
       ) : (
         <BookingConfirmationStep />

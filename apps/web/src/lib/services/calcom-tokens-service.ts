@@ -1,11 +1,14 @@
 import type { NewCalcomToken } from '~/lib/schemas/db'
 import {
+  type CalcomConnectionWriteResult,
   getUserIdByCalcomUserId as getUserIdByCalcomUserIdDal,
   storeCalcomConnection,
 } from '~/server/dal/calcom'
 
-/** Store the Cal.com organization identity for a Discuno user. */
-export const storeCalcomConnectionForUser = async (data: NewCalcomToken): Promise<void> => {
+/** Store the encrypted standard OAuth connection for a Discuno user. */
+export const storeCalcomConnectionForUser = async (
+  data: NewCalcomToken
+): Promise<CalcomConnectionWriteResult> => {
   return storeCalcomConnection(data)
 }
 

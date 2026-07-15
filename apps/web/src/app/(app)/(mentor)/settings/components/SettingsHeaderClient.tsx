@@ -18,6 +18,7 @@ import { StripeDashboardButton } from './StripeDashboardButton'
 
 const routeLabels: Record<string, string> = {
   '/settings': 'Mentor workspace',
+  '/settings/calendar': 'Calendar connection',
   '/settings/availability': 'Availability',
   '/settings/event-types': 'Session types',
   '/settings/bookings': 'Bookings',
@@ -27,12 +28,12 @@ const routeLabels: Record<string, string> = {
 
 interface SettingsHeaderClientProps {
   hasStripeAccount: boolean
-  chargesEnabled: boolean
+  payoutsReady: boolean
 }
 
 export function SettingsHeaderClient({
   hasStripeAccount,
-  chargesEnabled,
+  payoutsReady,
 }: SettingsHeaderClientProps) {
   const { toggleSidebar } = useSidebar()
   const pathname = usePathname()
@@ -79,10 +80,7 @@ export function SettingsHeaderClient({
             )}
           </BreadcrumbList>
         </Breadcrumb>
-        <StripeDashboardButton
-          hasStripeAccount={hasStripeAccount}
-          chargesEnabled={chargesEnabled}
-        />
+        <StripeDashboardButton hasStripeAccount={hasStripeAccount} payoutsReady={payoutsReady} />
       </div>
     </header>
   )

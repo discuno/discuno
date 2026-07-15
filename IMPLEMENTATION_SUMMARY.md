@@ -1,101 +1,144 @@
 # 2026 Payments and Booking Implementation Snapshot
 
-**Snapshot date:** July 14, 2026
+**Snapshot date:** July 15, 2026
 
-This document describes the payment and booking architecture implemented in the current branch. It is not a production-readiness certificate: the controlled Stripe test-mode matrix, operational alert delivery, and the production backup/schema/deployment gates must still be completed before the flow is promoted to production.
+This document describes the code in the modernization branch. It is not evidence that the branch,
+schema, or provider configuration is deployed. Keep `PAYMENTS_ENABLED=false` until the separate
+[rollout runbook](docs/modernization-rollout.md) is complete.
 
-Current branch verification on July 14, 2026:
+## Current deployment status
 
-- Type checking, linting, formatting, all 115 unit tests across 19 files, and the Next.js production build pass. The build emits 41 application routes.
-- The guarded Railway test database suite passes, the preview schema is applied, and a second preview schema push reports no changes.
-- All eight preview integration configuration checks pass. Signed Stripe platform, Stripe Connect, and Cal.com preview webhook smokes return success on both the immutable deployment URL and `preview.discuno.com`.
-- The official Inngest Vercel integration is connected to Preview with fresh managed keys. The route exposes four product functions and six Cloud-visible configurations after the two generated failure handlers. `verify-inngest-invocation` completed successfully in the Preview branch environment and reported only the expected environment and commit metadata. The real `process-checkout-side-effects` business function also ran through its production handler during the controlled paid booking below.
-- One controlled Stripe test-mode transaction completed Checkout → signed Stripe webhook → payment ledger → Inngest → PostHog → Cal.com → signed Cal webhook with exactly one payment and one linked booking. The $5.00 session produced $0.33 of test tax and a $5.33 platform charge. This proves the core immediate-payment path, not the entire delayed-payment/payout/dispute matrix.
-- The same booking was cancelled more than 24 hours before start using Cal.com's authoritative cancellation time. The signed cancellation path produced exactly one successful $5.33 Stripe refund and one refund ledger row, left zero transfers, kept the booking payout-ineligible, and required no manual review.
-- The exercise exposed two Cal.com contract changes. The live fixture required Cal email verification, which Discuno's backend checkout cannot supply, and API cancellations return a blank actor email. Event compatibility is now checked before Checkout and again immediately before Cal creation; blank/unknown cancellation actors are handled without guessing, and unsafe late cases create a locked manual-review hold that reverses any active transfer.
+The earlier preview transaction in this repository was exercised against a pre-modernization
+schema. It does not validate this branch. Read-only inventory currently shows:
+
+- Railway `local`, `staging`, and `production` are missing core modernization tables, including the
+  Checkout reservation bridge and durable webhook/identity inboxes. The dedicated guarded `test`
+  environment now has the current schema; integration tests, data-backed Chromium smoke tests, and
+  a clean second schema push passed there.
+- Production contains 23 legacy Cal connection rows without the new `auth_mode` column; they must
+  reconnect the same account before becoming bookable.
+- Vercel Preview and Production are missing modern Cal OAuth/encryption configuration and
+  `OAUTH_PROXY_SECRET`.
+- `preview.discuno.com` redirects the Cal callback and webhook paths to Vercel SSO, so Cal.com
+  cannot reach them.
+
+Only Railway's dedicated guarded `test` schema was reset and updated while validating this branch.
+No local, staging, or production database, provider configuration, or application deployment was
+changed.
 
 ## Business policy encoded in the application
 
-- The mentee pays the mentor's listed session price plus applicable tax. Discuno adds no buyer service fee.
-- Discuno retains a 15% mentor-side commission; the mentor share is 85% of the listed price.
-- Stripe Checkout creates a platform charge. It does not create an immediate destination transfer.
-- The mentor transfer becomes eligible after the scheduled session end plus 72 hours for a completed session, an attendee no-show, an otherwise accepted booking that reached its end, or a late mentee cancellation explicitly marked payout-eligible.
-- Mentor cancellations and mentor no-shows receive a full refund. Mentee cancellations at least 24 hours before the start receive a full refund and set payout eligibility false.
-- A mentee cancellation less than 24 hours before the start is non-refundable and sets payout eligibility true, preserving the mentor's 85% transfer after the normal scheduled-end-plus-72-hour window. The Cal cancellation event envelope's `createdAt` determines this inclusive 24-hour boundary.
-- Refunds, disputes, administrative holds, and manual-review state block automatic mentor transfers. A Stripe refund in `requires_action` is a hard hold that reverses any existing transfer and requires manual review.
+- The mentee pays the mentor's listed price plus applicable tax; Discuno adds no buyer service fee.
+- Discuno retains a 15% mentor-side commission. The mentor share is 85% of the listed price.
+- Stripe makes a platform charge. A separate mentor transfer becomes eligible after the scheduled
+  session end plus 72 hours.
+- Completed sessions, proven attendee no-shows, accepted sessions past their end, and proven late
+  mentee cancellations may be paid.
+- Mentor cancellation/no-show and mentee cancellation at least 24 hours before start receive a full
+  refund. Refundable cancellations are explicitly payout-ineligible.
+- A late cancellation pays only when an authenticated Cal read proves the canceller is the exact
+  paying attendee. Unknown actors enter manual review; mentor cancellation refunds.
+- Pending/successful refunds, `requires_action`, disputes, ambiguity, or manual review block or
+  reverse transfers. `requires_action` is a hard hold.
 
-The reusable policy calculations live in `apps/web/src/lib/stripe/marketplace.ts`.
+## Server-authoritative Checkout and temporary slot hold
 
-## Paid Checkout
+The booking action resolves the mentor, event type, price, currency, duration, connected account,
+15% commission, and 85% payout on the server. Client values cannot author any financial field.
+Mentor payout readiness requires the active `transfers` capability and payouts enabled.
 
-The booking action at `apps/web/src/app/(app)/(public)/mentor/[username]/book/actions.ts` treats the server as the source of truth:
+Before a paid Checkout opens, Discuno:
 
-1. It validates the requested mentor username, event type, start time, and attendee details.
-2. It resolves the mentor, Cal.com event type, listed price, currency, duration, and Stripe connected account from stored data.
-3. It rejects Cal.com event types that require Cal email verification/authentication, recurrence, manual confirmation, or a required field the custom checkout does not supply.
-4. It verifies the mentor's Stripe account is active and supports both charges and payouts.
-5. It calculates the 15% commission and 85% mentor share on the server.
-6. It creates a Stripe Checkout Session for a platform charge, using a deterministic booking-attempt idempotency key and transfer group.
+1. Re-fetches Cal event compatibility and rejects unsupported authentication, required fields,
+   recurrence, confirmation, pricing, seats, or location selection.
+2. Requests a 45-minute Cal slot reservation.
+3. Persists `discuno_checkout_slot_reservation`, binding the client attempt, mentor, event type,
+   start/duration, reservation UID, exact Checkout request, generation, and Stripe Session.
+4. Creates a 35-minute, card-only hosted Checkout with generation-scoped idempotency.
 
-The client does not author price, currency, fee, payout amount, or connected-account values. Checkout metadata is schema-validated again during fulfillment, including arithmetic checks against the session amount.
+Retries re-attest and reuse their own active Session/hold. An exact request replay may roll to a new
+generation only after Stripe definitively rejects its now-too-close `expires_at`; network, API,
+generic validation, and idempotency ambiguity retain the original generation. A provider hold must
+be proven durably bound locally before Stripe can open, and a known hold is released if that binding
+cannot be established. The cancel route expires Stripe before releasing Cal; Checkout expiry,
+payment failure, fulfillment success, and terminal fulfillment failure release or consume the hold.
+Cleanup treats Stripe as authoritative when a row references a Session and keeps the mentor guard
+until Stripe proves expiry or the exact payment row has taken ownership.
 
-Each authenticated or anonymous Discuno user can have a `stripe_customer_id` on `discuno_user`. `apps/web/src/lib/stripe/customer.ts` creates or reuses that user-bound customer and does not search for an existing Stripe Customer by email. Anonymous-to-permanent account linking migrates the binding when appropriate.
+The Cal create-booking API does not atomically consume the reservation and supplies no Discuno
+idempotency primitive, so the hold reduces Discuno-to-Discuno races but cannot guarantee against a
+direct external Cal booking. Discuno durably records the first possible Cal POST before sending it.
+After that boundary, retries reconcile only and never POST again; an unresolved negative provider
+read becomes manual review instead of a duplicate booking or an unsafe refund. A definitive 4xx
+provider rejection other than timeout resolves the marker; network, timeout, 5xx, and invalid
+success responses retain it. Final authenticated booking reconciliation and the safe hold/refund
+fallback remain authoritative.
 
-## Durable fulfillment and Cal.com booking reconciliation
+Stripe Customers are bound to the Discuno user ID and are never recovered by matching email.
+Durable anonymous-to-permanent identity links preserve customer and delayed-work attribution.
 
-The Stripe webhook at `apps/web/src/app/api/webhooks/stripe/route.ts` accepts paid Checkout completion, including delayed-payment success, and persists the canonical payment before queuing `stripe/checkout.completed`.
+## Durable Stripe receipt and fulfillment
 
-`process-checkout-side-effects` in `apps/web/src/inngest/functions.ts` performs the Cal.com booking work as retryable steps. Paid Cal.com creates include the Discuno payment ID in booking metadata. Before a retry sends another create request, `findCalcomBookingByPaymentId` queries recent bookings by attendee and event type and returns an existing metadata match. This is the recovery mechanism for an ambiguous Cal.com create response.
+The platform and Connect endpoints verify Stripe signatures and persist privacy-minimal receipt
+metadata in `discuno_stripe_webhook_inbox` before acknowledging. Inngest receives only the inbox
+row ID. Its worker retrieves the authoritative Stripe event by event ID, processes it idempotently,
+and marks or quarantines the receipt. Five-minute recovery requeues stranded work.
 
-Immediately before any new Cal booking POST, the integration checks compatibility again. This closes the Checkout-to-fulfillment settings window: a newly incompatible event fails into the existing retry/reconciliation/refund workflow rather than creating an unsafe pending booking. Cal's authoritative `PENDING` state is also preserved locally instead of being promoted to `ACCEPTED`.
+Paid fulfillment reconciles the PaymentIntent, charge, complete refund collection, disputes,
+manual-review state, amount, currency, and immutable Checkout metadata under the payment lock before
+creating a Cal booking. Provider hold, ambiguity, or event configuration drift fails closed.
 
-If checkout fulfillment exhausts its retries, the failure handler waits briefly and checks the payment and local booking state written by the Cal.com webhook or prior steps. Each attempted create already reconciled Cal.com before sending another request. The failure handler preserves a booking it can identify; otherwise it requests a payment refund and sends the failure notification. An unsuccessful refund is alerted for operational attention and returned as unsuccessful.
+If a Cal UID is known, recovery uses that exact authenticated GET. Only when the UID is genuinely
+unknown may it perform a bounded cursor-paginated metadata scan. Attestation matches Cal UID/ID,
+event type, current schedule, duration, payment ID, mentor, actor, paying attendee, and reschedule
+lineage to Checkout. A database constraint permits only one current financially relevant booking
+per payment. Exhausted/ambiguous recovery enters hold/refund handling rather than creating again.
+Every terminal fulfillment path performs the same locked Cal reconciliation before refunding. A
+recovered booking is persisted and, if the payment is held, cancelled; only provider-proven absence
+without a prior create-attempt marker can reach automatic refund.
 
-Cal.com webhooks validate organizer, mentor, attendee, event-type, and payment relationships before binding paid booking state locally. For `BOOKING_CANCELLED`, the handler uses the signed event envelope's `createdAt` rather than webhook delivery time. Early cancellations refund regardless of actor attribution. A late cancellation pays the mentor only when the actor is proven to be an attendee; hosts refund, while a blank or unknown actor creates a durable manual-review hold. That hold uses the payment lock and reverses any active transfer before the webhook is acknowledged.
+## Cal webhook trust and lifecycle
 
-Free bookings do not enter the Stripe flow. Their public booking action is protected by separate actor and IP rate limits, and a deterministic attempt ID is reconciled against Cal.com metadata before a retry creates another booking.
+Each mentor connection gets an opaque webhook route and encrypted random signing secret. HMAC proves
+tenant routing and notification delivery only; a mentor can manage that webhook, so it is never
+financial authority. Paid booking binding, rejection/cancellation/no-show effects, and payout each
+re-read Cal through the mentor's OAuth credentials and match the provider object to Checkout.
 
-## Payment state and ledgers
+Signed payloads enter `discuno_calcom_webhook_inbox`; Inngest receives only the row ID. Invalid
+contract payloads are immediately quarantined, scrubbed, fingerprinted by HTTP status/trigger, and
+alerted. Transient failures retry before quarantine. The lifecycle ledger and atomic side-effect
+leases preserve terminal events delivered out of order and stop duplicate financial effects.
 
-`apps/web/src/server/db/schema/payment.ts` defines one current payment snapshot plus normalized Stripe object history:
+Cal has no dedicated cancellation timestamp. Discuno immutably stores the earlier of authenticated
+provider `updatedAt` and the signed envelope `createdAt`. Receipt time is never used, and a later
+delivery cannot move the boundary toward mentor payout.
 
-- `discuno_payment` stores the canonical Checkout/PaymentIntent/charge references, mentor and amount snapshot, Cal.com booking UID, latest transfer and refund state, eligibility date, and manual-review flags.
-- `discuno_booking.mentor_payout_eligible` is false by default and is set true only when a late mentee cancellation remains payable; refundable cancellations explicitly keep it false.
-- `discuno_payment_transfer` stores each Stripe transfer generation and any reversal.
-- `discuno_payment_refund` stores every Stripe refund, including partial or repeated refunds.
-- `discuno_payment_dispute` stores every Stripe dispute and its reconciled active, lost, or released state.
+Current v2 webhook IDs are UUID strings. New subscriptions use supported triggers including
+`MEETING_ENDED`; `BOOKING_COMPLETED` remains inbound legacy compatibility only.
+Webhook provisioning and the six-hour connection audit page through the complete provider
+`take`/`skip` inventory and fail closed at their safety bound.
 
-The ledger tables are required for auditability and for handling multiple Stripe objects against one charge. Do not replace them with only the latest IDs on `discuno_payment`.
+## Financial ledgers and payout
 
-## Transfers, refunds, and disputes
+`apps/web/src/lib/services/payment-service.ts` is the financial mutation boundary. Nested advisory
+locks share one reserved PostgreSQL session, preventing payment/Checkout-to-token-refresh pool
+deadlocks while retaining cross-process serialization.
 
-`apps/web/src/lib/services/payment-service.ts` is the financial mutation boundary.
+- `discuno_payment` is the canonical snapshot and manual-review state.
+- `discuno_payment_transfer` records every transfer generation and reversal.
+- `discuno_payment_refund` records each refund and its evolving state.
+- `discuno_payment_dispute` records active, lost, and released disputes.
+- `discuno_calcom_booking_lifecycle` records tenant-owned terminal state and immutable first
+  financial observation.
 
-- A PostgreSQL advisory transaction lock serializes operations for one payment.
-- Before creating a transfer, the service reconciles Stripe transfers using the transfer group, payment metadata, destination account, source charge, amount, and currency. This remains effective after Stripe's idempotency-key retention window.
-- A mentor transfer uses the platform charge as its source transaction and sends the stored 85% mentor amount. Transfer generations permit a valid payout to be recreated after a prior transfer was reversed.
-- Refund processing reconciles Stripe's charge/refund state and records each refund in the refund ledger.
-- Pending and `requires_action` refunds prevent payout and reverse any existing mentor transfer. `requires_action` additionally marks the payment for manual review until the refund is safely resolved.
-- An active or lost dispute holds the payment and reverses any remaining mentor transfer. When every dispute is released, an otherwise eligible payout can be queued again.
-- Failed reversals, ambiguous partial-refund situations, or other unsafe states mark the payment for manual review and prevent automatic transfer.
-- An unclassified late cancellation acquires the same payment lock as transfer creation, reverses or reconciles an existing transfer, and then marks the payment for manual review with a one-time admin alert.
+Immediately before transfer, the service reconciles the Stripe refund collection/transfer state and
+performs an authenticated Cal GET. The hourly payout reconciliation job is recovery for missed
+events or newly released holds; it does not replace those provider checks.
 
-Call this payment service from booking, webhook, or administrative flows. Bypassing it would also bypass locking, Stripe reconciliation, ledgers, and common idempotency behavior.
-
-## Payout recovery
-
-There are two payout paths in `apps/web/src/inngest/functions.ts`:
-
-- `process-mentor-payout` handles event-driven payout scheduling and retries.
-- `reconcile-eligible-mentor-payouts` runs hourly at minute 15 and queues up to 100 due payments that meet all transfer conditions.
-
-The hourly function is the safety net for a missed Cal.com webhook, missed Inngest event, delayed eligibility, or a payout released after dispute resolution. It is not a substitute for the payment service's Stripe-side reconciliation.
-
-## Stripe webhook events required
-
-The platform Stripe webhook must subscribe to:
+## Required Stripe platform webhook events
 
 - `checkout.session.completed`
+- `checkout.session.expired`
 - `checkout.session.async_payment_succeeded`
 - `checkout.session.async_payment_failed`
 - `refund.created`
@@ -108,57 +151,18 @@ The platform Stripe webhook must subscribe to:
 - `payment_intent.canceled`
 - `charge.failed`
 
-The Stripe Connect webhook remains separately configured for connected-account lifecycle events used by mentor onboarding.
+The separate Connect endpoint handles connected-account lifecycle/capability events. Keep platform
+and Connect modes isolated; events delivered through the wrong endpoint are not financial evidence.
 
-## Verification status and remaining release work
+## Release and incident rules
 
-Targeted unit coverage exists for the real Checkout webhook handler, marketplace calculations, Cal compatibility and cancellation actor policy, Stripe refund/reversal/locked-hold behavior, Cal.com schemas, mentor cancellation authorization, and the side-effect-free Inngest operational probe. The former `checkout-inngest.test.ts` was removed because it exercised standalone mocks rather than production code. The broader paid-booking matrix must still prove delayed and post-service financial cases.
+Follow `docs/modernization-rollout.md`: back up and validate local/test/preview schemas first,
+make the stable preview callback/webhook publicly reachable, configure separate approved Cal OAuth
+clients, verify Inngest and every webhook, then exercise the complete test-mode booking/refund/
+dispute/payout matrix. Production schema and deployment happen with `PAYMENTS_ENABLED=false`; paid
+traffic is a later, explicit business decision.
 
-Completed Preview gates:
-
-1. Lint, type checking, unit tests, the production build, and the guarded database integration suite pass.
-2. The new nullable payment columns, `stripe_customer_id`, `mentor_payout_eligible`, and the three ledger tables are applied to Preview; a second schema diff is empty.
-3. The Preview Stripe webhooks contain every required event above and their signed smokes succeed.
-4. The Cal.com webhook triggers and signing secret match the current versioned payloads, and the local Cal.com MCP connection passes an authenticated read.
-5. The official Inngest Vercel integration is connected to Preview, stale Preview keys are rotated, all six Cloud-visible configurations are registered, authenticated route inspection succeeds through Deployment Protection, and the operational smoke completed with the expected Preview environment/commit metadata.
-6. A controlled $5.33 Stripe test-mode charge completed the immediate paid-booking path through the real Stripe webhook, payment ledger, Inngest business function, PostHog, Cal.com create/reconciliation, signed Cal webhook, and exactly one linked local booking. No duplicate charge, booking, refund, or transfer was created during retry recovery.
-7. The controlled early-cancellation path completed through the real Cal handler and payment service: one full $5.33 refund, one refund ledger entry, zero transfers, `mentor_payout_eligible=false`, and matching refunded state in Stripe and PostgreSQL.
-
-Remaining before production rollout:
-
-1. Complete the remaining Preview matrix: delayed payment success, late attendee cancellation, mentor no-show, eligible transfer, transfer reversal, active/lost/released disputes, and the unknown-actor admin-alert path.
-2. Verify manual-review messages reach the configured `ADMIN_ALERT_EMAIL`; there is not yet a dedicated manual-review administration UI.
-3. Decide the supported launch policy for mentor event types. The current fixture has Cal email verification restored to `true`, so the safety gate intentionally blocks new Checkout until the event is configured compatibly or Discuno implements its own verified-attendee flow.
-4. Back up production, inspect the production schema diff, apply the schema, deploy with `PAYMENTS_ENABLED=false`, and repeat the signed webhook and read-only smoke checks before enabling paid traffic.
-
-## Production rollout and recovery runbook
-
-`PAYMENTS_ENABLED` is the server-side launch and incident switch for creating new paid Checkout sessions. It defaults to `false`; webhook processing deliberately remains active so already-paid sessions, refunds, disputes, and reversals can still settle safely. An already-created Stripe Checkout URL remains payable until it expires or is explicitly expired in Stripe, so the application switch alone is not a hard provider-side charge freeze.
-
-Roll out in this order:
-
-1. Complete every preview gate above and freeze unrelated production changes.
-2. Take a Railway production backup and record table counts for users, bookings, payments, transfers, refunds, and disputes.
-3. Keep `PAYMENTS_ENABLED=false`. Inspect the interactive production Drizzle diff, apply only the reviewed additive columns/tables and constraint changes, then rerun the push and require an empty diff.
-4. Deploy the new Vercel application while new paid Checkout creation remains disabled. Verify public/auth routes, database connectivity, signed Stripe/Connect/Cal webhooks, Inngest registration and invocation, email delivery, and operational alerts.
-5. Set `PAYMENTS_ENABLED=true`, redeploy during a monitored low-traffic window, and run one controlled paid booking. Verify the local ledgers, Cal.com booking, notifications, refund path, payout hold, and reconciliation before opening broader marketing traffic.
-
-If an incident occurs:
-
-1. Set `PAYMENTS_ENABLED=false` and redeploy immediately to stop creating new Checkout Sessions. For a hard charge freeze, also list and explicitly expire every relevant open Checkout Session in Stripe, then verify that none remain. Keep webhook endpoints enabled so in-flight financial events are acknowledged and reconciled.
-2. Pause the affected Inngest payout function if transfers are unsafe; mark affected payments for manual review and reconcile Stripe objects against the local ledgers.
-3. Keep the switch-aware deployment in place and fix forward. Do not promote a deployment that predates `PAYMENTS_ENABLED`, because it can reopen Checkout creation. If an older deployment is ever required, first enforce an independent provider-side block and verify it before promotion.
-4. Do not drop ledger tables or restore an older database snapshot over live financial records. Refund/reverse through the payment service where required, and restore processing only after Stripe, Cal.com, and the database agree.
-
-Useful commands:
-
-```bash
-pnpm lint
-pnpm typecheck
-pnpm test:run
-pnpm build
-pnpm integrations:check:preview
-pnpm db:push:preview
-```
-
-Use the Railway-guarded command in `AGENTS.md` for database integration tests. Never point the reset-based integration suite at a database without the expected test-environment guard marker.
+During an incident, disable new Checkout, explicitly expire relevant open Stripe Sessions for a
+hard charge freeze, and leave webhook processing active so in-flight refunds, disputes, reversals,
+and completed payments reconcile safely. Never roll financial ledgers backward or bypass the
+payment service.

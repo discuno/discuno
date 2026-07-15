@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
   transaction: vi.fn(),
   transactionExecute: vi.fn(),
   update: vi.fn(),
+  withDatabaseAdvisoryLock: vi.fn(),
   updateSets: [] as Array<Record<string, unknown>>,
   updateWhereClauses: [] as Array<{
     condition: SQL
@@ -26,6 +27,11 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('~/inngest/client', () => ({
   inngest: { send: vi.fn() },
+}))
+
+vi.mock('~/lib/calcom', () => ({
+  cancelCalcomBooking: vi.fn(),
+  getCalcomBooking: vi.fn(),
 }))
 
 vi.mock('~/lib/emails/booking-notifications', () => ({
@@ -59,6 +65,10 @@ vi.mock('~/server/db', () => ({
   },
 }))
 
+vi.mock('~/server/db/advisory-lock', () => ({
+  withDatabaseAdvisoryLock: mocks.withDatabaseAdvisoryLock,
+}))
+
 import { holdBookingPaymentForManualReview, syncStripeRefund } from '~/lib/services/payment-service'
 
 describe('payment-service refund reconciliation', () => {
@@ -86,6 +96,9 @@ describe('payment-service refund reconciliation', () => {
     mocks.transaction.mockImplementation(
       async (operation: (tx: { execute: typeof mocks.transactionExecute }) => Promise<unknown>) =>
         operation({ execute: mocks.transactionExecute })
+    )
+    mocks.withDatabaseAdvisoryLock.mockImplementation(
+      async (_key: string, operation: () => Promise<unknown>) => operation()
     )
     mocks.insert.mockImplementation(() => ({
       values: (values: Record<string, unknown>) => {
@@ -139,7 +152,7 @@ describe('payment-service refund reconciliation', () => {
       metadata: { discunoPurpose: 'mentor_cancelled' },
       payment_intent: 'pi_refunded_payment',
       status: 'requires_action',
-    } as Stripe.Refund
+    } as unknown as Stripe.Refund
 
     mocks.findPayment.mockResolvedValueOnce({ id: 42 }).mockResolvedValueOnce({
       id: 42,
@@ -312,8 +325,10 @@ describe('payment-service refund reconciliation', () => {
       )
     ).resolves.toMatchObject({ success: true, reason: 'manual_review' })
 
-    expect(mocks.transaction).toHaveBeenCalledOnce()
-    expect(mocks.transactionExecute).toHaveBeenCalledOnce()
+    expect(mocks.withDatabaseAdvisoryLock).toHaveBeenCalledWith(
+      'discuno:payment-operation:42',
+      expect.any(Function)
+    )
     expect(mocks.createReversal).toHaveBeenCalledWith(
       'tr_cancellation_hold',
       {

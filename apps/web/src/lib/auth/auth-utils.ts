@@ -1,12 +1,14 @@
 import type { Session, User } from 'better-auth'
 import { headers } from 'next/headers'
 import { auth } from '~/lib/auth'
-import { UnauthenticatedError, UnauthorizedError } from '~/lib/errors'
+import { AUTH_SESSION_FRESH_AGE_SECONDS } from '~/lib/auth/config'
+import { SessionNotFreshError, UnauthenticatedError, UnauthorizedError } from '~/lib/errors'
 
 export type AuthenticatedUser = User & {
   id: string
   role?: string
   isAnonymous?: boolean
+  analyticsEnabled?: boolean | null
 }
 
 // Re-export error classes for convenience
@@ -17,9 +19,54 @@ export {
   ExternalApiError,
   InternalServerError,
   NotFoundError,
+  SessionNotFreshError,
   UnauthenticatedError,
   UnauthorizedError,
 } from '~/lib/errors'
+
+type SessionFreshnessOptions = {
+  freshAgeSeconds?: number
+  now?: number
+}
+
+/** Match Better Auth's fresh-session boundary exactly: the session becomes
+ * stale when its age is greater than or equal to `freshAge`.
+ */
+export const isSessionFresh = (
+  session: Pick<Session, 'createdAt'>,
+  {
+    freshAgeSeconds = AUTH_SESSION_FRESH_AGE_SECONDS,
+    now = Date.now(),
+  }: SessionFreshnessOptions = {}
+): boolean => {
+  if (freshAgeSeconds === 0) return true
+
+  const createdAt = new Date(session.createdAt).getTime()
+  return !(now - createdAt >= freshAgeSeconds * 1000)
+}
+
+export const assertSessionIsFresh = (
+  session: Pick<Session, 'createdAt'>,
+  options?: SessionFreshnessOptions
+): void => {
+  if (!isSessionFresh(session, options)) throw new SessionNotFreshError()
+}
+
+const readAuthSession = async (
+  disableCookieCache: boolean
+): Promise<{ session: Session; user: AuthenticatedUser } | null> => {
+  const res = await auth.api.getSession({
+    headers: await headers(),
+    query: disableCookieCache ? { disableCookieCache: true } : undefined,
+  })
+
+  const session = res?.session
+  const user = res?.user as AuthenticatedUser | undefined
+
+  if (!session?.userId || !user) return null
+
+  return { session, user }
+}
 
 /**
  * Require authentication for a page
@@ -27,21 +74,9 @@ export {
  * Allows anonymous sessions - use requireNonAnonymousAuth to block anonymous users
  */
 export const requireAuth = async (): Promise<{ session: Session; user: AuthenticatedUser }> => {
-  const res = await auth.api.getSession({
-    headers: await headers(),
-  })
-
-  const session = res?.session
-  const user = res?.user as AuthenticatedUser | undefined
-
-  if (!session?.userId || !user) {
-    throw new UnauthenticatedError()
-  }
-
-  return {
-    session,
-    user,
-  }
+  const result = await readAuthSession(false)
+  if (!result) throw new UnauthenticatedError()
+  return result
 }
 
 /**
@@ -52,21 +87,7 @@ export const getAuthSession = async (): Promise<{
   session: Session
   user: AuthenticatedUser
 } | null> => {
-  const res = await auth.api.getSession({
-    headers: await headers(),
-  })
-
-  const session = res?.session
-  const user = res?.user as AuthenticatedUser | undefined
-
-  if (!session?.userId || !user) {
-    return null
-  }
-
-  return {
-    session,
-    user,
-  }
+  return readAuthSession(false)
 }
 
 /**
@@ -85,6 +106,22 @@ export const requireNonAnonymousAuth = async (): Promise<{
   }
 
   return { session, user }
+}
+
+/**
+ * Require a valid session created inside the configured freshness window.
+ * Cookie caching is bypassed so a revoked session cannot authorize a
+ * credential-sensitive mutation.
+ */
+export const requireFreshAuth = async (): Promise<{
+  session: Session
+  user: AuthenticatedUser
+}> => {
+  const result = await readAuthSession(true)
+  if (!result) throw new UnauthenticatedError()
+
+  assertSessionIsFresh(result.session)
+  return result
 }
 
 /**
@@ -112,7 +149,13 @@ export const requirePermission = async (
   session: Session
   user: AuthenticatedUser
 }> => {
-  const { session, user } = await requireNonAnonymousAuth()
+  // Permission checks are the query-layer security boundary. Bypass the
+  // short-lived cookie cache so session revocation takes effect immediately.
+  const result = await readAuthSession(true)
+  if (!result || result.user.isAnonymous) {
+    throw new UnauthenticatedError('Please sign in to continue')
+  }
+  const { session, user } = result
 
   // Check if user has the required permissions
   const { success } = await auth.api.userHasPermission({
@@ -135,6 +178,18 @@ export const requirePermission = async (
   return { session, user }
 }
 
+/** Require the normal ACL boundary and a recently-created session. */
+export const requireFreshPermission = async (
+  permissions: Record<string, string[]>
+): Promise<{
+  session: Session
+  user: AuthenticatedUser
+}> => {
+  const result = await requirePermission(permissions)
+  assertSessionIsFresh(result.session)
+  return result
+}
+
 /**
  * Check if current user has specific permissions (non-throwing)
  *
@@ -152,8 +207,8 @@ export const requirePermission = async (
  */
 export const hasPermission = async (permissions: Record<string, string[]>): Promise<boolean> => {
   try {
-    const session = await getAuthSession()
-    if (!session) return false
+    const session = await readAuthSession(true)
+    if (!session || session.user.isAnonymous) return false
 
     const { success } = await auth.api.userHasPermission({
       body: {

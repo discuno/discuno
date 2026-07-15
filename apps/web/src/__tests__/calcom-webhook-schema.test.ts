@@ -4,8 +4,13 @@ import {
   CalcomNoShowPayloadSchema,
   CalcomWebhookEnvelopeSchema,
 } from '~/lib/schemas/calcom'
+import { booking } from '~/server/db/schema'
 
 const mentorUserId = '11111111-1111-4111-8111-111111111111'
+const meetingUrlWithLength = (length: number) => {
+  const prefix = 'https://meet.example.com/'
+  return `${prefix}${'a'.repeat(length - prefix.length)}`
+}
 
 const currentBookingPayload = {
   type: 'standard-event-type',
@@ -57,6 +62,47 @@ describe('Cal.com webhook schemas', () => {
     expect(result.attendees[0]?.phoneNumber).toBeUndefined()
     expect(result.metadata.futureCalField).toBe('preserved')
     expect(result.futurePayloadField).toEqual({ retained: true })
+  })
+
+  it.each(['33333333-3333-4333-8333-333333333333', 'a'.repeat(64)])(
+    'accepts current and rollout booking-attempt metadata: %s',
+    bookingAttemptId => {
+      const result = CalcomBookingPayloadSchema.parse({
+        ...currentBookingPayload,
+        metadata: {
+          ...currentBookingPayload.metadata,
+          bookingAttemptId,
+        },
+      })
+
+      expect(result.metadata.bookingAttemptId).toBe(bookingAttemptId)
+    }
+  )
+
+  it('accepts Cal.com meeting URLs through the 2048-character storage contract', () => {
+    const videoCallUrl = meetingUrlWithLength(2_048)
+    const result = CalcomBookingPayloadSchema.parse({
+      ...currentBookingPayload,
+      metadata: { ...currentBookingPayload.metadata, videoCallUrl },
+    })
+
+    expect(result.metadata.videoCallUrl).toBe(videoCallUrl)
+    expect(videoCallUrl).toHaveLength(2_048)
+  })
+
+  it('rejects a meeting URL that cannot fit the local storage contract', () => {
+    const videoCallUrl = meetingUrlWithLength(2_049)
+
+    expect(
+      CalcomBookingPayloadSchema.safeParse({
+        ...currentBookingPayload,
+        metadata: { ...currentBookingPayload.metadata, videoCallUrl },
+      }).success
+    ).toBe(false)
+  })
+
+  it('keeps the booking column aligned with the validated meeting URL contract', () => {
+    expect(booking.meetingUrl.getSQLType()).toBe('varchar(2048)')
   })
 
   it('accepts flat meeting events without a nested payload', () => {

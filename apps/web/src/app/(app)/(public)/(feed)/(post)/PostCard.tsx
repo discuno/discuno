@@ -8,23 +8,27 @@ import { logAnalyticsEvent } from '~/app/(app)/(public)/(feed)/(post)/actions'
 import type { Card } from '~/app/types'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
+import { getClientAnalyticsConsentSnapshot } from '~/lib/analytics/client-consent'
 
 export const PostCard = ({ card }: { card: Card }) => {
   const [imageFailed, setImageFailed] = useState(false)
 
   const handleProfileView = () => {
-    void import('posthog-js').then(({ default: posthog }) => {
-      const distinctId = posthog.get_distinct_id()
-      posthog.capture('profile_view', {
-        post_user_id: card.createdById,
-        post_id: card.id,
+    if (getClientAnalyticsConsentSnapshot() === 'enabled') {
+      void import('posthog-js').then(({ default: posthog }) => {
+        posthog.capture('profile_view', {
+          post_user_id: card.createdById,
+          post_id: card.id,
+        })
       })
-      void logAnalyticsEvent({
-        eventType: 'PROFILE_VIEW',
-        distinctId,
-        targetUserId: card.createdById,
-        postId: card.id,
-      })
+    }
+
+    // This first-party signal powers mentor discovery inside Discuno. It is
+    // intentionally independent from optional PostHog analytics.
+    void logAnalyticsEvent({
+      eventType: 'PROFILE_VIEW',
+      targetUserId: card.createdById,
+      postId: card.id,
     })
   }
 

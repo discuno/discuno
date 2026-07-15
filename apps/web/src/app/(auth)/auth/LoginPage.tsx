@@ -57,7 +57,15 @@ const studentReasons = [
   },
 ]
 
-export function LoginPage({ initialUserType = 'mentor' }: { initialUserType?: UserType }) {
+export function LoginPage({
+  initialUserType = 'mentor',
+  reauthenticationRequired = false,
+  returnTo,
+}: {
+  initialUserType?: UserType
+  reauthenticationRequired?: boolean
+  returnTo?: string
+}) {
   const [userType, setUserType] = useState<UserType>(initialUserType)
   const [isLoading, setIsLoading] = useState<string | null>(null)
   const reasons = userType === 'mentor' ? mentorReasons : studentReasons
@@ -67,7 +75,7 @@ export function LoginPage({ initialUserType = 'mentor' }: { initialUserType?: Us
       setIsLoading(provider)
       await authClient.signIn.social({
         provider,
-        callbackURL: userType === 'mentor' ? '/settings' : '/#mentors',
+        callbackURL: returnTo ?? (userType === 'mentor' ? '/settings' : '/#mentors'),
       })
     } catch (error) {
       console.error('Sign in error:', error)
@@ -144,15 +152,25 @@ export function LoginPage({ initialUserType = 'mentor' }: { initialUserType?: Us
 
             <div className="mt-8">
               <p className="eyebrow">
-                {userType === 'mentor' ? 'Start mentoring' : 'Optional account'}
+                {reauthenticationRequired
+                  ? 'Confirm it’s you'
+                  : userType === 'mentor'
+                    ? 'Start mentoring'
+                    : 'Optional account'}
               </p>
               <h1 className="mt-3 text-3xl font-semibold tracking-[-0.04em]">
-                {userType === 'mentor' ? 'Share what you have learned' : 'Keep your details handy'}
+                {reauthenticationRequired
+                  ? 'Sign in again to continue'
+                  : userType === 'mentor'
+                    ? 'Share what you have learned'
+                    : 'Keep your details handy'}
               </h1>
               <p className="text-muted-foreground mt-3 leading-7">
-                {userType === 'mentor'
-                  ? 'New and returning mentors use the same sign-in. A supported school email opens mentor access.'
-                  : 'Browsing and booking are available without an account. Sign in only if you want your details prefilled.'}
+                {reauthenticationRequired
+                  ? 'This extra check protects changes to your calendar and payout details. You will return to where you left off.'
+                  : userType === 'mentor'
+                    ? 'New and returning mentors use the same sign-in. A supported school email opens mentor access.'
+                    : 'Browsing and booking are available without an account. Sign in only if you want your details prefilled.'}
               </p>
 
               {userType === 'mentor' && (
@@ -185,7 +203,7 @@ export function LoginPage({ initialUserType = 'mentor' }: { initialUserType?: Us
                     </p>
                   </div>
                 </div>
-                <EmailSignInForm />
+                <EmailSignInForm returnTo={returnTo} />
               </div>
 
               <div className="relative py-1">

@@ -29,9 +29,6 @@ const coreConfig = {
       },
     },
   },
-  experimental: {
-    optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
-  },
   images: {
     remotePatterns: [
       // User avatars
@@ -65,7 +62,8 @@ const coreConfig = {
       // Example: Cloudinary, Imgur, your CDN, etc.
     ],
     formats: ['image/webp', 'image/avif'],
-    minimumCacheTTL: 60 * 60, // 1 hour
+    qualities: [75],
+    minimumCacheTTL: 60 * 60 * 4,
   },
   headers: async () => [
     {

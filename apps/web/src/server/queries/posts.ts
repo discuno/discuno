@@ -4,6 +4,7 @@ import { cacheLife, cacheTag, revalidateTag } from 'next/cache'
 import { z } from 'zod'
 import type { Card } from '~/app/types'
 import { InternalServerError, NotFoundError } from '~/lib/errors'
+import { getSafeErrorName } from '~/lib/operational-logging'
 import type { PostQueryResult } from '~/server/dal/posts'
 import {
   getPostById as getPostByIdDal,
@@ -100,7 +101,7 @@ export const getInfiniteScrollPosts = async (
         postId = decodedCursor.post_id
       }
     } catch (error) {
-      console.error('Failed to decode cursor:', error)
+      console.error('Failed to decode cursor', { errorName: getSafeErrorName(error) })
     }
   }
 
@@ -183,7 +184,9 @@ export const getPostsByFilters = async (
         postId = decodedCursor.post_id
       }
     } catch (error) {
-      console.error('Failed to decode filtered-post cursor:', error)
+      console.error('Failed to decode filtered-post cursor', {
+        errorName: getSafeErrorName(error),
+      })
     }
   }
 

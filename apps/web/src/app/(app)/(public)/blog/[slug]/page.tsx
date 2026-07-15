@@ -179,7 +179,7 @@ const BlogPostPage = async ({ params }: Props) => {
               alt={post.title}
               fill
               className="object-cover"
-              priority
+              preload
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1200px"
             />
           </div>

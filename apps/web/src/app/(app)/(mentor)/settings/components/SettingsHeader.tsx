@@ -11,7 +11,10 @@ export const SettingsHeader = async () => {
   return (
     <SettingsHeaderClient
       hasStripeAccount={stripeStatus.data?.hasAccount ?? false}
-      chargesEnabled={stripeStatus.data?.chargesEnabled ?? false}
+      payoutsReady={
+        (stripeStatus.data?.transfersEnabled ?? false) &&
+        (stripeStatus.data?.payoutsEnabled ?? false)
+      }
     />
   )
 }

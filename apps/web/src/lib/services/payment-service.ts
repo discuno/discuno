@@ -1,8 +1,12 @@
 import 'server-only'
 
+import { AsyncLocalStorage } from 'node:async_hooks'
 import { and, desc, eq, isNull, like, ne, or, sql } from 'drizzle-orm'
 import type Stripe from 'stripe'
+import { z } from 'zod'
 import { inngest } from '~/inngest/client'
+import { cancelCalcomBooking, getCalcomBooking } from '~/lib/calcom'
+import { paidCalcomBookingMatchesCheckout } from '~/lib/calcom/paid-booking-attestation'
 import {
   sendAdminAlert,
   sendPayoutNotificationEmail,
@@ -21,9 +25,11 @@ import {
 } from '~/lib/stripe/marketplace'
 import { refundStripePaymentIntent } from '~/lib/stripe/refund'
 import { db } from '~/server/db'
+import { withDatabaseAdvisoryLock } from '~/server/db/advisory-lock'
 import {
   booking,
   bookingOrganizer,
+  calcomBookingLifecycle,
   payment,
   paymentDispute,
   paymentRefund,
@@ -39,20 +45,86 @@ type PaymentOperationResult = {
   nextAttemptAt?: string
 }
 
-const PAYMENT_OPERATION_LOCK_NAMESPACE = 1_144_337_921
+const PayoutCheckoutSnapshotSchema = z.object({
+  checkoutSessionMetadata: z.object({
+    mentorUserId: z.uuid(),
+    actorUserId: z.uuid(),
+    attendeeEmail: z.email(),
+    eventTypeId: z.string().regex(/^\d+$/),
+    startTime: z.iso.datetime(),
+    eventDurationMinutes: z.string().regex(/^\d+$/),
+  }),
+})
+
 const DIRECT_PAYOUT_SCHEDULE_HORIZON_MS = 6 * 24 * 60 * 60 * 1000
 
-/** Serialize money-moving work for one payment across serverless requests. */
-const withPaymentOperationLock = async <T>(
+export const cancelFutureBookingAfterPaymentHold = async (
+  paymentId: number,
+  reason: string
+): Promise<void> => {
+  const [activeBooking] = await db
+    .select({
+      calcomUid: booking.calcomUid,
+      mentorUserId: bookingOrganizer.userId,
+      startTime: booking.startTime,
+    })
+    .from(booking)
+    .innerJoin(bookingOrganizer, eq(bookingOrganizer.bookingId, booking.id))
+    .where(
+      and(
+        eq(booking.paymentId, paymentId),
+        or(eq(booking.status, 'PENDING'), eq(booking.status, 'ACCEPTED'))
+      )
+    )
+    .orderBy(desc(booking.startTime))
+    .limit(1)
+
+  if (!activeBooking || activeBooking.startTime <= new Date()) return
+
+  try {
+    await cancelCalcomBooking(activeBooking.mentorUserId, activeBooking.calcomUid, reason)
+  } catch {
+    try {
+      const current = await getCalcomBooking(activeBooking.calcomUid, activeBooking.mentorUserId)
+      if (['cancelled', 'rejected'].includes(current.status.toLowerCase())) return
+    } catch {
+      // Fall through to a durable manual-review hold and operator alert.
+    }
+
+    await db
+      .update(payment)
+      .set({
+        requiresManualReview: true,
+        reviewReason: 'Payment was held but the future Cal.com booking could not be cancelled',
+        updatedAt: new Date(),
+      })
+      .where(eq(payment.id, paymentId))
+    await sendAdminAlert({
+      type: 'PAYMENT_HOLD_BOOKING_CANCELLATION_FAILED',
+      paymentId,
+      error: 'A future booking requires manual cancellation after a payment hold',
+    })
+  }
+}
+
+const heldPaymentLocks = new AsyncLocalStorage<ReadonlySet<number>>()
+
+/**
+ * Serialize money-moving work for one payment across serverless requests.
+ * Re-entrant calls in the same async operation reuse the outer database lock;
+ * lifecycle reconciliation can therefore call refund/hold helpers safely.
+ */
+export const withPaymentOperationLock = async <T>(
   paymentId: number,
   operation: () => Promise<T>
-): Promise<T> =>
-  db.transaction(async tx => {
-    await tx.execute(
-      sql`select pg_advisory_xact_lock(${PAYMENT_OPERATION_LOCK_NAMESPACE}, ${paymentId})`
-    )
-    return operation()
-  })
+): Promise<T> => {
+  const existingLocks = heldPaymentLocks.getStore()
+  if (existingLocks?.has(paymentId)) return operation()
+
+  return withDatabaseAdvisoryLock(`discuno:payment-operation:${paymentId}`, () =>
+    heldPaymentLocks.run(new Set([...(existingLocks ?? []), paymentId]), operation)
+  )
+}
 
 const persistTransferSnapshot = async ({
   paymentId,
@@ -166,7 +238,7 @@ const sendRefundNotificationOnce = async ({
     .returning({ id: payment.id })
 
   if (!claimed) return
-  const sent = await sendRefundNotificationEmail({ customerEmail, amount, reason })
+  const sent = await sendRefundNotificationEmail({ paymentId, customerEmail, amount, reason })
   if (!sent) {
     await db
       .update(payment)
@@ -690,6 +762,9 @@ const transferMentorPaymentUnlocked = async ({
   const [record] = await db
     .select({
       paymentId: payment.id,
+      mentorUserId: payment.mentorUserId,
+      customerEmail: payment.customerEmail,
+      currentCalcomBookingUid: payment.calcomBookingUid,
       paymentIntentId: payment.stripePaymentIntentId,
       platformStatus: payment.platformStatus,
       currency: payment.currency,
@@ -703,16 +778,21 @@ const transferMentorPaymentUnlocked = async ({
       disputeRequested: payment.disputeRequested,
       disputePeriodEnds: payment.disputePeriodEnds,
       bookingStatus: booking.status,
+      calcomBookingId: booking.calcomBookingId,
+      bookingStartTime: booking.startTime,
       bookingEndTime: booking.endTime,
       hostNoShow: booking.hostNoShow,
       attendeeNoShow: booking.attendeeNoShow,
       mentorPayoutEligible: booking.mentorPayoutEligible,
+      cancellationObservedAt: calcomBookingLifecycle.eventCreatedAt,
       mentorEmail: user.email,
       requiresManualReview: payment.requiresManualReview,
       reviewReason: payment.reviewReason,
+      checkoutSnapshot: payment.metadata,
     })
     .from(payment)
     .innerJoin(booking, eq(booking.paymentId, payment.id))
+    .leftJoin(calcomBookingLifecycle, eq(calcomBookingLifecycle.calcomUid, booking.calcomUid))
     .innerJoin(
       bookingOrganizer,
       and(
@@ -785,6 +865,112 @@ const transferMentorPaymentUnlocked = async ({
     return { success: false, error: 'Mentor Stripe account is missing' }
   }
 
+  // The mentor owns their Cal.com account webhook and can view its HMAC secret,
+  // so a signed lifecycle notification is not sufficient financial evidence.
+  // Re-read the provider state immediately before funds leave the platform.
+  const providerBooking = await getCalcomBooking(calcomBookingUid, record.mentorUserId)
+  const checkoutSnapshot = PayoutCheckoutSnapshotSchema.safeParse(record.checkoutSnapshot)
+  const checkoutMetadata = checkoutSnapshot.success
+    ? checkoutSnapshot.data.checkoutSessionMetadata
+    : null
+  const checkoutStart = checkoutMetadata ? new Date(checkoutMetadata.startTime) : null
+  const checkoutDuration = checkoutMetadata ? Number(checkoutMetadata.eventDurationMinutes) : null
+  const providerStart = new Date(providerBooking.start)
+  const providerEnd = new Date(providerBooking.end)
+  const localDuration =
+    (record.bookingEndTime.getTime() - record.bookingStartTime.getTime()) / (60 * 1000)
+  const providerStatus = providerBooking.status.toLowerCase()
+  const providerCanceller = providerBooking.cancelledByEmail?.trim().toLowerCase()
+  const providerAttendeeEmails = new Set(
+    providerBooking.attendees.map(attendee => attendee.email.trim().toLowerCase())
+  )
+  const checkoutAttendeeEmail = checkoutMetadata?.attendeeEmail.trim().toLowerCase() ?? null
+  const providerRescheduledFromUid = providerBooking.rescheduledFromUid?.trim()
+  const rescheduledFromUid = providerRescheduledFromUid?.length ? providerRescheduledFromUid : null
+  const [rescheduledPredecessor] = rescheduledFromUid
+    ? await db
+        .select({ id: booking.id })
+        .from(booking)
+        .where(
+          and(
+            eq(booking.paymentId, paymentId),
+            eq(booking.calcomUid, rescheduledFromUid),
+            eq(booking.status, 'CANCELLED'),
+            eq(booking.mentorPayoutEligible, false)
+          )
+        )
+        .limit(1)
+    : []
+  const lineageMatches = rescheduledFromUid === null || Boolean(rescheduledPredecessor)
+  const providerIdentityMatches = Boolean(
+    checkoutMetadata &&
+    checkoutStart &&
+    checkoutDuration === localDuration &&
+    Number.isSafeInteger(localDuration) &&
+    record.currentCalcomBookingUid === calcomBookingUid &&
+    record.customerEmail.trim().toLowerCase() === checkoutAttendeeEmail &&
+    lineageMatches &&
+    paidCalcomBookingMatchesCheckout({
+      booking: providerBooking,
+      checkout: checkoutMetadata,
+      paymentId,
+      expectedUid: calcomBookingUid,
+      expectedBookingId: record.calcomBookingId,
+      expectedCurrentStart: record.bookingStartTime,
+      rescheduledFromUid,
+    }) &&
+    providerEnd.getTime() === record.bookingEndTime.getTime()
+  )
+  const lateAttendeeCancellationConfirmed =
+    record.bookingStatus === 'CANCELLED' &&
+    record.mentorPayoutEligible === true &&
+    providerStatus === 'cancelled' &&
+    Boolean(
+      providerCanceller &&
+      providerCanceller === checkoutAttendeeEmail &&
+      providerAttendeeEmails.has(providerCanceller)
+    ) &&
+    record.cancellationObservedAt instanceof Date &&
+    providerStart.getTime() - record.cancellationObservedAt.getTime() < 24 * 60 * 60 * 1000
+  const attendeeNoShowConfirmed =
+    record.bookingStatus === 'NO_SHOW' &&
+    record.attendeeNoShow === true &&
+    providerStatus === 'accepted' &&
+    providerBooking.attendees.some(
+      attendee => attendee.email.trim().toLowerCase() === checkoutAttendeeEmail && attendee.absent
+    ) &&
+    !providerBooking.absentHost
+  const deliveredBookingConfirmed =
+    (record.bookingStatus === 'ACCEPTED' || record.bookingStatus === 'COMPLETED') &&
+    providerStatus === 'accepted' &&
+    !providerBooking.absentHost
+
+  if (
+    !providerIdentityMatches ||
+    !(lateAttendeeCancellationConfirmed || attendeeNoShowConfirmed || deliveredBookingConfirmed)
+  ) {
+    const reviewReason = 'Cal.com could not confirm the booking state required for mentor payout'
+    const [held] = await db
+      .update(payment)
+      .set({ requiresManualReview: true, reviewReason, updatedAt: new Date() })
+      .where(
+        and(
+          eq(payment.id, paymentId),
+          ne(payment.platformStatus, 'TRANSFERRED'),
+          eq(payment.requiresManualReview, false)
+        )
+      )
+      .returning({ id: payment.id })
+    if (held) {
+      await sendAdminAlert({
+        type: 'CALCOM_PAYOUT_RECONCILIATION_FAILED',
+        paymentId,
+        error: reviewReason,
+      })
+    }
+    return { success: true, skipped: true, reason: 'manual_review' }
+  }
+
   try {
     const paymentIntent = await stripe.paymentIntents.retrieve(record.paymentIntentId)
     if (paymentIntent.status !== 'succeeded') {
@@ -803,6 +989,50 @@ const transferMentorPaymentUnlocked = async ({
     const charge = await stripe.charges.retrieve(chargeId)
     if (!charge.paid || charge.status !== 'succeeded') {
       throw new Error(`Stripe charge ${chargeId} is ${charge.status}, not succeeded`)
+    }
+
+    // Dashboard/API refunds can exist before their webhook reaches our durable
+    // inbox. Reconcile Stripe's collection under the payment lock immediately
+    // before transfer so pending, action-required, partial, and successful
+    // refunds all remain hard payout holds.
+    const stripeRefunds = await stripe.refunds.list({
+      payment_intent: record.paymentIntentId,
+      limit: 100,
+    })
+    const firstStripeRefund = stripeRefunds.data[0]
+    if (firstStripeRefund) await syncStripeRefundUnlocked(firstStripeRefund)
+    if (stripeRefunds.has_more) {
+      const reason = 'Stripe refund reconciliation exceeded the 100-object safety limit'
+      await db
+        .update(payment)
+        .set({ requiresManualReview: true, reviewReason: reason, updatedAt: new Date() })
+        .where(eq(payment.id, paymentId))
+      await sendAdminAlert({
+        type: 'REFUND_RECONCILIATION_LIMIT_EXCEEDED',
+        paymentId,
+        error: reason,
+      })
+      return { success: true, skipped: true, reason: 'manual_review' }
+    }
+    if (firstStripeRefund) {
+      const reconciledPayment = await db.query.payment.findFirst({
+        where: eq(payment.id, paymentId),
+        columns: {
+          platformStatus: true,
+          refundStatus: true,
+          refundedAmount: true,
+          requiresManualReview: true,
+        },
+      })
+      if (
+        !reconciledPayment ||
+        reconciledPayment.platformStatus !== 'SUCCEEDED' ||
+        reconciledPayment.refundStatus !== null ||
+        (reconciledPayment.refundedAmount ?? 0) > 0 ||
+        reconciledPayment.requiresManualReview
+      ) {
+        return { success: true, skipped: true, reason: 'refund_hold' }
+      }
     }
 
     // A missed or delayed dispute webhook must never allow a payout. Stripe's
@@ -1250,6 +1480,10 @@ const syncStripeDisputeUnlocked = async (dispute: Stripe.Dispute): Promise<boole
     if (!reversal.success) {
       throw new Error(reversal.error ?? `Could not reverse transfer for dispute ${dispute.id}`)
     }
+    await cancelFutureBookingAfterPaymentHold(
+      record.id,
+      'Session cancelled because the payment is disputed'
+    )
   }
 
   if (disputeState !== 'released') {
@@ -1468,6 +1702,10 @@ const syncStripeRefundUnlocked = async (refund: Stripe.Refund): Promise<boolean>
   }
 
   if (reconciledRefundStatus === 'succeeded' && isFullRefund) {
+    await cancelFutureBookingAfterPaymentHold(
+      record.id,
+      'Session cancelled because the payment was refunded'
+    )
     await sendRefundNotificationOnce({
       paymentId: record.id,
       customerEmail: record.customerEmail,
@@ -1492,15 +1730,96 @@ export const syncStripeRefund = async (refund: Stripe.Refund): Promise<boolean> 
   return withPaymentOperationLock(record.id, () => syncStripeRefundUnlocked(refund))
 }
 
+/**
+ * Reconcile Stripe's authoritative state immediately before a Cal.com create.
+ * The caller must already hold the payment operation lock. Webhook inboxes are
+ * intentionally asynchronous, so the local payment row alone is not a safe
+ * fulfillment gate for dashboard-created refunds or disputes.
+ */
+export const reconcileStripeStateBeforeFulfillment = async (
+  paymentId: number
+): Promise<{ fulfillable: boolean; reason?: string }> => {
+  const record = await db.query.payment.findFirst({ where: eq(payment.id, paymentId) })
+  if (!record) return { fulfillable: false, reason: 'payment_missing' }
+
+  const paymentIntent = await stripe.paymentIntents.retrieve(record.stripePaymentIntentId)
+  if (paymentIntent.status !== 'succeeded') {
+    return { fulfillable: false, reason: `payment_intent_${paymentIntent.status}` }
+  }
+
+  const chargeId = getExpandableId(paymentIntent.latest_charge)
+  if (!chargeId) {
+    await db
+      .update(payment)
+      .set({
+        requiresManualReview: true,
+        reviewReason: 'Succeeded Stripe PaymentIntent has no charge for fulfillment',
+        updatedAt: new Date(),
+      })
+      .where(eq(payment.id, paymentId))
+    return { fulfillable: false, reason: 'charge_missing' }
+  }
+
+  const [charge, refunds, disputes] = await Promise.all([
+    stripe.charges.retrieve(chargeId),
+    stripe.refunds.list({ payment_intent: record.stripePaymentIntentId, limit: 100 }),
+    stripe.disputes.list({ charge: chargeId, limit: 100 }),
+  ])
+
+  for (const refund of refunds.data) await syncStripeRefundUnlocked(refund)
+  for (const dispute of disputes.data) await syncStripeDisputeUnlocked(dispute)
+
+  if (refunds.has_more || disputes.has_more || (charge.refunded && refunds.data.length === 0)) {
+    await db
+      .update(payment)
+      .set({
+        requiresManualReview: true,
+        reviewReason: 'Stripe fulfillment reconciliation exceeded its safe object boundary',
+        updatedAt: new Date(),
+      })
+      .where(eq(payment.id, paymentId))
+    return { fulfillable: false, reason: 'provider_reconciliation_incomplete' }
+  }
+
+  const current = await db.query.payment.findFirst({ where: eq(payment.id, paymentId) })
+  const fulfillable = Boolean(
+    current &&
+    current.platformStatus === 'SUCCEEDED' &&
+    !current.disputeRequested &&
+    !current.requiresManualReview &&
+    !current.refundStatus &&
+    !current.refundedAmount &&
+    charge.paid &&
+    !charge.refunded &&
+    charge.amount_refunded === 0 &&
+    !charge.disputed
+  )
+  return fulfillable ? { fulfillable: true } : { fulfillable: false, reason: 'provider_hold' }
+}
+
 export const updatePaymentPayoutEligibility = async (
   paymentId: number,
   startTime: Date | string,
   durationMinutes: number
 ) => {
-  const eligibleAt = getMentorPayoutEligibleAt(startTime, durationMinutes)
-  await db
-    .update(payment)
-    .set({ disputePeriodEnds: eligibleAt, updatedAt: new Date() })
-    .where(eq(payment.id, paymentId))
+  const computedEligibleAt = getMentorPayoutEligibleAt(startTime, durationMinutes)
+  const record = await db.query.payment.findFirst({
+    where: eq(payment.id, paymentId),
+    columns: { disputePeriodEnds: true },
+  })
+  if (!record) throw new Error(`Payment ${paymentId} was not found`)
+
+  // Checkout establishes the earliest permissible payout date from values the
+  // server resolved before payment. Provider metadata may delay that boundary,
+  // but can never move mentor funds earlier.
+  const eligibleAt = new Date(
+    Math.max(record.disputePeriodEnds.getTime(), computedEligibleAt.getTime())
+  )
+  if (eligibleAt.getTime() !== record.disputePeriodEnds.getTime()) {
+    await db
+      .update(payment)
+      .set({ disputePeriodEnds: eligibleAt, updatedAt: new Date() })
+      .where(eq(payment.id, paymentId))
+  }
   return eligibleAt
 }

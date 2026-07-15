@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next'
 import { getAllPosts } from '~/lib/blog'
 import { absoluteUrl } from '~/lib/metadata'
+import { getSafeErrorName } from '~/lib/operational-logging'
 import { getPostsWithCursor } from '~/server/dal/posts'
 
 const MAX_MENTOR_URLS = 45_000
@@ -24,7 +25,9 @@ const getPublicMentorPages = async (): Promise<MetadataRoute.Sitemap> => {
   } catch (error) {
     // A transient database outage should not prevent the static acquisition and
     // editorial pages from retaining a valid sitemap.
-    console.error('Unable to include mentor profiles in sitemap', error)
+    console.error('Unable to include mentor profiles in sitemap', {
+      errorName: getSafeErrorName(error),
+    })
     return []
   }
 }

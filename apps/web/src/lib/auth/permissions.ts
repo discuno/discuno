@@ -1,5 +1,5 @@
 import { createAccessControl } from 'better-auth/plugins/access'
-import { adminAc, defaultStatements, userAc } from 'better-auth/plugins/admin/access'
+import { defaultStatements, userAc } from 'better-auth/plugins/admin/access'
 
 /**
  * Discuno Access Control System
@@ -68,10 +68,23 @@ export const mentor = ac.newRole({
  * Admin Role
  *
  * Full system access - can impersonate mentors
- * Includes BetterAuth admin capabilities (user management, session control, etc.)
+ * Includes the Better Auth admin and session capabilities Discuno currently
+ * supports. Deliberately omit `user:delete`: provider cleanup and financial
+ * guards must run through an application-owned account-deletion workflow.
  */
 export const admin = ac.newRole({
-  ...adminAc.statements, // BetterAuth admin defaults
+  user: [
+    'create',
+    'list',
+    'set-role',
+    'ban',
+    'impersonate',
+    'set-password',
+    'set-email',
+    'get',
+    'update',
+  ],
+  session: ['list', 'revoke', 'delete'],
   content: ['create', 'read', 'update', 'delete'],
   mentor: ['manage'], // ← Can access mentor dashboard (impersonation)
 })
