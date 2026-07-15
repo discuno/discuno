@@ -33,9 +33,11 @@ part of the schema deployment.
   `PAYMENTS_ENABLED=false`. The obsolete Preview variables `CALCOM_WEBHOOK_SECRET`,
   `COLLEGE_MENTOR_TEAM_ID`, `CALCOM_ORG_ID`, `X_CAL_SECRET_KEY`, `NEXT_PUBLIC_X_CAL_ID`, and
   `NEXT_PUBLIC_CALCOM_API_URL` were removed before the final redeploy.
-- The final application deployment `dpl_56foyAgxFmat5vTpeHGR6PLDDVat` is Ready at
-  `https://discuno-arczy2x0v-brad-mcnews-projects.vercel.app`, and `preview.discuno.com` points to
-  it.
+- The Git-backed application deployment for modernization commit `ed36b7e` is Ready as
+  `dpl_2YH7ELFk3FN4PHE432WeHwBrGJGC` at
+  `https://discuno-qrscj18tu-brad-mcnews-projects.vercel.app`. `preview.discuno.com` tracks the
+  modernization branch; the runtime checks below were last executed against that immutable
+  application deployment.
 - Vercel project SSO Protection is disabled because Cal.com must reach the OAuth callback and
   webhook without an interactive Vercel login. On the Hobby plan this makes all preview and
   generated deployment URLs public; Discuno's own authentication and route authorization remain
