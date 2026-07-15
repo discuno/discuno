@@ -323,6 +323,7 @@ Keep this query-layer boundary intact; layout redirects are only a UX optimizati
 - All booking state stored locally with Cal.com IDs as foreign keys
 - For `BOOKING_CANCELLED`, use the Cal event envelope's `createdAt` timestamp—not webhook receipt time—to apply the inclusive 24-hour refund boundary
 - Paid booking creation carries the Discuno payment ID in Cal.com metadata; retries reconcile that metadata before issuing another create request
+- Custom booking rejects event types that require Cal email/authentication, recurrence, confirmation, or unsupported required fields. Check compatibility both before Checkout and immediately before Cal booking creation.
 
 #### Stripe Integration (`apps/web/src/lib/stripe/`)
 
@@ -338,6 +339,7 @@ Keep this query-layer boundary intact; layout redirects are only a UX optimizati
 - Per-payment database locks, Stripe-side object reconciliation, and transfer/refund/dispute ledgers protect retries and out-of-order webhooks
 - Pending and `requires_action` refunds, successful refunds, and active disputes hold or reverse mentor transfers; `requires_action` also forces manual review until resolved
 - Payments marked for manual review are excluded from automatic transfers
+- A late cancellation may pay the mentor only when the canceller is proven to be an attendee. Unknown actors create a locked manual-review hold and reverse any active transfer before acknowledgement.
 
 #### PostHog Analytics
 

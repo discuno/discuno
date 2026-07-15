@@ -6,11 +6,13 @@ This document describes the payment and booking architecture implemented in the 
 
 Current branch verification on July 14, 2026:
 
-- Type checking, linting, formatting, the full unit test suite, and the Next.js production build pass. The build emits 41 application routes.
+- Type checking, linting, formatting, all 115 unit tests across 19 files, and the Next.js production build pass. The build emits 41 application routes.
 - The guarded Railway test database suite passes, the preview schema is applied, and a second preview schema push reports no changes.
 - All eight preview integration configuration checks pass. Signed Stripe platform, Stripe Connect, and Cal.com preview webhook smokes return success on both the immutable deployment URL and `preview.discuno.com`.
-- The official Inngest Vercel integration is connected to Preview with fresh managed keys. The current route exposes four product functions and six Cloud-visible configurations after the two generated failure handlers. `verify-inngest-invocation` handles only the dedicated `operations/inngest.smoke` event and returns non-sensitive deployment metadata without touching the database or an external provider. The preceding five-configuration deployment registered successfully and accepted branch event ingress; this six-configuration revision still needs to be deployed, registered, and invoked through Deployment Protection before charging a card. A real business-function invocation remains part of the paid-booking matrix below.
-- A real Stripe test-mode paid booking has not yet completed the full Checkout → webhook → Inngest → Cal.com → refund/payout matrix. Production promotion remains gated on that exercise.
+- The official Inngest Vercel integration is connected to Preview with fresh managed keys. The route exposes four product functions and six Cloud-visible configurations after the two generated failure handlers. `verify-inngest-invocation` completed successfully in the Preview branch environment and reported only the expected environment and commit metadata. The real `process-checkout-side-effects` business function also ran through its production handler during the controlled paid booking below.
+- One controlled Stripe test-mode transaction completed Checkout → signed Stripe webhook → payment ledger → Inngest → PostHog → Cal.com → signed Cal webhook with exactly one payment and one linked booking. The $5.00 session produced $0.33 of test tax and a $5.33 platform charge. This proves the core immediate-payment path, not the entire delayed-payment/payout/dispute matrix.
+- The same booking was cancelled more than 24 hours before start using Cal.com's authoritative cancellation time. The signed cancellation path produced exactly one successful $5.33 Stripe refund and one refund ledger row, left zero transfers, kept the booking payout-ineligible, and required no manual review.
+- The exercise exposed two Cal.com contract changes. The live fixture required Cal email verification, which Discuno's backend checkout cannot supply, and API cancellations return a blank actor email. Event compatibility is now checked before Checkout and again immediately before Cal creation; blank/unknown cancellation actors are handled without guessing, and unsafe late cases create a locked manual-review hold that reverses any active transfer.
 
 ## Business policy encoded in the application
 
@@ -30,9 +32,10 @@ The booking action at `apps/web/src/app/(app)/(public)/mentor/[username]/book/ac
 
 1. It validates the requested mentor username, event type, start time, and attendee details.
 2. It resolves the mentor, Cal.com event type, listed price, currency, duration, and Stripe connected account from stored data.
-3. It verifies the mentor's Stripe account is active and supports both charges and payouts.
-4. It calculates the 15% commission and 85% mentor share on the server.
-5. It creates a Stripe Checkout Session for a platform charge, using a deterministic booking-attempt idempotency key and transfer group.
+3. It rejects Cal.com event types that require Cal email verification/authentication, recurrence, manual confirmation, or a required field the custom checkout does not supply.
+4. It verifies the mentor's Stripe account is active and supports both charges and payouts.
+5. It calculates the 15% commission and 85% mentor share on the server.
+6. It creates a Stripe Checkout Session for a platform charge, using a deterministic booking-attempt idempotency key and transfer group.
 
 The client does not author price, currency, fee, payout amount, or connected-account values. Checkout metadata is schema-validated again during fulfillment, including arithmetic checks against the session amount.
 
@@ -44,9 +47,11 @@ The Stripe webhook at `apps/web/src/app/api/webhooks/stripe/route.ts` accepts pa
 
 `process-checkout-side-effects` in `apps/web/src/inngest/functions.ts` performs the Cal.com booking work as retryable steps. Paid Cal.com creates include the Discuno payment ID in booking metadata. Before a retry sends another create request, `findCalcomBookingByPaymentId` queries recent bookings by attendee and event type and returns an existing metadata match. This is the recovery mechanism for an ambiguous Cal.com create response.
 
+Immediately before any new Cal booking POST, the integration checks compatibility again. This closes the Checkout-to-fulfillment settings window: a newly incompatible event fails into the existing retry/reconciliation/refund workflow rather than creating an unsafe pending booking. Cal's authoritative `PENDING` state is also preserved locally instead of being promoted to `ACCEPTED`.
+
 If checkout fulfillment exhausts its retries, the failure handler waits briefly and checks the payment and local booking state written by the Cal.com webhook or prior steps. Each attempted create already reconciled Cal.com before sending another request. The failure handler preserves a booking it can identify; otherwise it requests a payment refund and sends the failure notification. An unsuccessful refund is alerted for operational attention and returned as unsuccessful.
 
-Cal.com webhooks validate organizer, mentor, attendee, event-type, and payment relationships before binding paid booking state locally. For `BOOKING_CANCELLED`, the handler uses the signed event envelope's `createdAt` rather than webhook delivery time, stores the resulting `mentor_payout_eligible` decision, and then either refunds or schedules the normal delayed payout.
+Cal.com webhooks validate organizer, mentor, attendee, event-type, and payment relationships before binding paid booking state locally. For `BOOKING_CANCELLED`, the handler uses the signed event envelope's `createdAt` rather than webhook delivery time. Early cancellations refund regardless of actor attribution. A late cancellation pays the mentor only when the actor is proven to be an attendee; hosts refund, while a blank or unknown actor creates a durable manual-review hold. That hold uses the payment lock and reverses any active transfer before the webhook is acknowledged.
 
 Free bookings do not enter the Stripe flow. Their public booking action is protected by separate actor and IP rate limits, and a deterministic attempt ID is reconciled against Cal.com metadata before a retry creates another booking.
 
@@ -73,6 +78,7 @@ The ledger tables are required for auditability and for handling multiple Stripe
 - Pending and `requires_action` refunds prevent payout and reverse any existing mentor transfer. `requires_action` additionally marks the payment for manual review until the refund is safely resolved.
 - An active or lost dispute holds the payment and reverses any remaining mentor transfer. When every dispute is released, an otherwise eligible payout can be queued again.
 - Failed reversals, ambiguous partial-refund situations, or other unsafe states mark the payment for manual review and prevent automatic transfer.
+- An unclassified late cancellation acquires the same payment lock as transfer creation, reverses or reconciles an existing transfer, and then marks the payment for manual review with a one-time admin alert.
 
 Call this payment service from booking, webhook, or administrative flows. Bypassing it would also bypass locking, Stripe reconciliation, ledgers, and common idempotency behavior.
 
@@ -106,7 +112,7 @@ The Stripe Connect webhook remains separately configured for connected-account l
 
 ## Verification status and remaining release work
 
-Targeted unit coverage exists for the real Checkout webhook handler, marketplace calculations, Cal cancellation timestamp and payout decisions, Stripe refund creation/status policy, Cal.com schemas, mentor cancellation authorization, and the side-effect-free Inngest operational probe configuration/acknowledgement. The former `checkout-inngest.test.ts` was removed because it exercised standalone mocks rather than production code. The paid-booking matrix must still prove execution of the real business functions and their financial side effects.
+Targeted unit coverage exists for the real Checkout webhook handler, marketplace calculations, Cal compatibility and cancellation actor policy, Stripe refund/reversal/locked-hold behavior, Cal.com schemas, mentor cancellation authorization, and the side-effect-free Inngest operational probe. The former `checkout-inngest.test.ts` was removed because it exercised standalone mocks rather than production code. The broader paid-booking matrix must still prove delayed and post-service financial cases.
 
 Completed Preview gates:
 
@@ -114,13 +120,15 @@ Completed Preview gates:
 2. The new nullable payment columns, `stripe_customer_id`, `mentor_payout_eligible`, and the three ledger tables are applied to Preview; a second schema diff is empty.
 3. The Preview Stripe webhooks contain every required event above and their signed smokes succeed.
 4. The Cal.com webhook triggers and signing secret match the current versioned payloads, and the local Cal.com MCP connection passes an authenticated read.
-5. The official Inngest Vercel integration is connected to Preview, stale Preview keys are rotated, all five configurations from the preceding deployment are registered, authenticated route inspection succeeds through Deployment Protection, and branch event ingress is accepted.
+5. The official Inngest Vercel integration is connected to Preview, stale Preview keys are rotated, all six Cloud-visible configurations are registered, authenticated route inspection succeeds through Deployment Protection, and the operational smoke completed with the expected Preview environment/commit metadata.
+6. A controlled $5.33 Stripe test-mode charge completed the immediate paid-booking path through the real Stripe webhook, payment ledger, Inngest business function, PostHog, Cal.com create/reconciliation, signed Cal webhook, and exactly one linked local booking. No duplicate charge, booking, refund, or transfer was created during retry recovery.
+7. The controlled early-cancellation path completed through the real Cal handler and payment service: one full $5.33 refund, one refund ledger entry, zero transfers, `mentor_payout_eligible=false`, and matching refunded state in Stripe and PostgreSQL.
 
 Remaining before production rollout:
 
-1. Deploy and register the current six-configuration Inngest route, send `operations/inngest.smoke` to the Preview branch environment, and confirm its successful run reports the expected Preview environment and commit SHA through Deployment Protection.
-2. Run Preview end-to-end cases for a paid booking, delayed payment success, Cal.com retry reconciliation, early and late cancellation, mentor no-show, refund, transfer, transfer reversal, and dispute release. This must include an observable real Inngest business-function run through Deployment Protection.
-3. Verify manual-review messages reach the configured `ADMIN_ALERT_EMAIL`; there is not yet a dedicated manual-review administration UI.
+1. Complete the remaining Preview matrix: delayed payment success, late attendee cancellation, mentor no-show, eligible transfer, transfer reversal, active/lost/released disputes, and the unknown-actor admin-alert path.
+2. Verify manual-review messages reach the configured `ADMIN_ALERT_EMAIL`; there is not yet a dedicated manual-review administration UI.
+3. Decide the supported launch policy for mentor event types. The current fixture has Cal email verification restored to `true`, so the safety gate intentionally blocks new Checkout until the event is configured compatibly or Discuno implements its own verified-attendee flow.
 4. Back up production, inspect the production schema diff, apply the schema, deploy with `PAYMENTS_ENABLED=false`, and repeat the signed webhook and read-only smoke checks before enabling paid traffic.
 
 ## Production rollout and recovery runbook
