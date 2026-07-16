@@ -332,6 +332,9 @@ better-auth is configured in `apps/web/src/lib/auth.ts` with helpers in `apps/we
   row-locked `reconcileMentorAccessForUser` path, which promotes only verified, supported `.edu`
   accounts from null/`user` to `mentor`, restores their school link atomically, and preserves
   admin/custom roles
+- Provider OAuth does not supply Discuno's public route identity. Mentors choose a unique,
+  normalized Discuno username in profile settings; onboarding remains incomplete while it is
+  missing. Keep it separate from the connected Cal.com username
 
 ## Access Control (ACL) System
 

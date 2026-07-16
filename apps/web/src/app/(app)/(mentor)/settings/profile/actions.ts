@@ -3,12 +3,14 @@ import 'server-only'
 
 import { revalidatePath } from 'next/cache'
 import { after } from 'next/server'
+import { ZodError } from 'zod/v4'
 import {
   deleteProfileImage,
   extractPathnameFromBlobUrl,
   validateProfileImageBlob,
 } from '~/lib/blob'
 import { getSafeErrorName } from '~/lib/operational-logging'
+import { AppError } from '~/lib/errors'
 import {
   completeUserProfile,
   getUserImageUrl,
@@ -55,9 +57,8 @@ export const updateUserProfileImage = async (imageUrl: string) => {
   }
 
   // Revalidate profile pages to show new image
-  revalidatePath('/profile')
-  revalidatePath('/profile/view')
-  revalidatePath('/profile/edit')
+  revalidatePath('/settings')
+  revalidatePath('/settings/profile/edit')
 
   return { success: true, imageUrl }
 }
@@ -82,9 +83,8 @@ export const removeUserProfileImage = async () => {
   }
 
   // Revalidate profile pages
-  revalidatePath('/profile')
-  revalidatePath('/profile/view')
-  revalidatePath('/profile/edit')
+  revalidatePath('/settings')
+  revalidatePath('/settings/profile/edit')
 
   return { success: true }
 }
@@ -94,6 +94,7 @@ export const removeUserProfileImage = async () => {
 export const updateUserProfile = async (formData: FormData) => {
   // Extract form data
   const name = formData.get('name') as string
+  const username = formData.get('username') as string
   const bio = formData.get('bio') as string
   const schoolYear = formData.get('schoolYear') as string
   const graduationYear = formData.get('graduationYear') as string
@@ -103,6 +104,7 @@ export const updateUserProfile = async (formData: FormData) => {
   // Prepare the update data, filtering out empty strings
   const updateData = {
     ...(name && name.trim() && { name: name.trim() }),
+    ...(username && username.trim() && { username: username.trim() }),
     bio: bio.trim() || null, // Allow clearing bio by setting to null
     ...(schoolYear &&
       schoolYear !== 'default' && {
@@ -121,12 +123,19 @@ export const updateUserProfile = async (formData: FormData) => {
     await completeUserProfile(updateData)
 
     // Revalidate profile pages
-    revalidatePath('/profile')
-    revalidatePath('/profile/edit')
+    revalidatePath('/')
+    revalidatePath('/settings')
+    revalidatePath('/settings/profile/edit')
+    revalidatePath('/mentor/[username]', 'page')
 
     return { success: true }
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred.'
+    const errorMessage =
+      error instanceof AppError
+        ? error.message
+        : error instanceof ZodError
+          ? (error.issues[0]?.message ?? 'Please check your profile information.')
+          : 'We could not update your profile. Please try again.'
     return { success: false, message: errorMessage }
   }
 }

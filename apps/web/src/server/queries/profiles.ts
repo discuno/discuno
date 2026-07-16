@@ -95,6 +95,7 @@ const getFullProfileById = async (userId: string): Promise<FullUserProfile | nul
       // User basic info
       id: schema.user.id,
       name: schema.user.name,
+      username: schema.user.username,
       email: schema.user.email,
       emailVerified: schema.user.emailVerified,
       image: schema.user.image,
@@ -131,6 +132,7 @@ const getFullProfileById = async (userId: string): Promise<FullUserProfile | nul
   return {
     userId: userData.id,
     userProfileId: userData.userProfileId ?? 0,
+    username: userData.username,
     email: userData.email,
     emailVerified: !!userData.emailVerified,
     bio: userData.bio,
@@ -188,6 +190,7 @@ export const getPublicProfileByUsername = cache(
       .selectDistinct({
         id: schema.user.id,
         name: schema.user.name,
+        username: schema.user.username,
         email: schema.user.email,
         emailVerified: schema.user.emailVerified,
         image: schema.user.image,
@@ -237,6 +240,7 @@ export const getPublicProfileByUsername = cache(
     return {
       userId: userData.id,
       userProfileId: userData.userProfileId,
+      username: userData.username,
       email: null,
       emailVerified: userData.emailVerified,
       schoolEmailVerified: hasVerifiedSchoolEmail({

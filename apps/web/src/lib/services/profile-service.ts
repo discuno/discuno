@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { requireAuth } from '~/lib/auth/auth-utils'
+import { ConflictError } from '~/lib/errors'
 import type { UpdateUser, UpdateUserProfile } from '~/lib/schemas/db'
 import { updateCompleteProfileSchema } from '~/lib/schemas/db'
 import { updateProfileTimezone, upsertProfile } from '~/server/dal/profiles'
@@ -9,7 +10,13 @@ import {
   replaceUserMajors,
   replaceUserSchools,
 } from '~/server/dal/schools'
-import { getUserImageById, removeUserImage, updateUser, updateUserImage } from '~/server/dal/users'
+import {
+  getUserByUsername,
+  getUserImageById,
+  removeUserImage,
+  updateUser,
+  updateUserImage,
+} from '~/server/dal/users'
 import { db } from '~/server/db'
 import { getFullProfile } from '~/server/queries/profiles'
 
@@ -28,37 +35,61 @@ export const completeUserProfile = async (
   const { user } = await requireAuth()
   const userId = user.id
 
-  await db.transaction(async () => {
-    // 1. Update user basic info
-    if (validData.name) {
-      await updateUser(userId, { name: validData.name })
+  if (validData.username) {
+    const existingUser = await getUserByUsername(validData.username)
+    if (existingUser && existingUser.id !== userId) {
+      throw new ConflictError('That username is already taken.')
     }
+  }
 
-    // 2. Update user profile
-    if (validData.bio !== undefined || validData.schoolYear || validData.graduationYear) {
-      await upsertProfile(userId, {
-        bio: validData.bio,
-        schoolYear: validData.schoolYear ?? 'Freshman',
-        graduationYear: validData.graduationYear ?? new Date().getFullYear(),
-      })
-    }
-
-    // 3. Handle school relationship
-    if (validData.school) {
-      const schoolId = await findSchoolByName(validData.school)
-      if (schoolId) {
-        await replaceUserSchools(userId, [schoolId])
+  try {
+    await db.transaction(async () => {
+      // 1. Update user basic info
+      if (validData.name || validData.username) {
+        await updateUser(userId, {
+          ...(validData.name ? { name: validData.name } : {}),
+          ...(validData.username
+            ? { username: validData.username, displayUsername: validData.username }
+            : {}),
+        })
       }
-    }
 
-    // 4. Handle major relationship
-    if (validData.major) {
-      const majorId = await findMajorByName(validData.major)
-      if (majorId) {
-        await replaceUserMajors(userId, [majorId])
+      // 2. Update user profile
+      if (validData.bio !== undefined || validData.schoolYear || validData.graduationYear) {
+        await upsertProfile(userId, {
+          bio: validData.bio,
+          schoolYear: validData.schoolYear ?? 'Freshman',
+          graduationYear: validData.graduationYear ?? new Date().getFullYear(),
+        })
       }
+
+      // 3. Handle school relationship
+      if (validData.school) {
+        const schoolId = await findSchoolByName(validData.school)
+        if (schoolId) {
+          await replaceUserSchools(userId, [schoolId])
+        }
+      }
+
+      // 4. Handle major relationship
+      if (validData.major) {
+        const majorId = await findMajorByName(validData.major)
+        if (majorId) {
+          await replaceUserMajors(userId, [majorId])
+        }
+      }
+    })
+  } catch (error) {
+    const databaseError = error as { code?: unknown; constraint_name?: unknown }
+    if (
+      databaseError.code === '23505' &&
+      typeof databaseError.constraint_name === 'string' &&
+      databaseError.constraint_name.includes('username')
+    ) {
+      throw new ConflictError('That username is already taken.')
     }
-  })
+    throw error
+  }
 
   // Return updated profile
   return getFullProfile()

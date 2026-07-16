@@ -85,6 +85,11 @@ constraint. A reconciliation failure is logged only as a fixed error category an
 ordinary sign-in, but mentor permission remains denied until a later successful attempt. Do not
 replace this path with an email-only role update or a separate school insert.
 
+Provider OAuth does not supply Discuno's public route identity. A mentor chooses a unique public
+username in profile settings; the shared username normalizer keeps that value consistent with the
+Better Auth username plugin, and onboarding remains incomplete while it is missing. Keep this
+Discuno username separate from the connected Cal.com username.
+
 ## Anonymous checkout conversion
 
 Checkout may capture a Better Auth guest ID before the student signs into a permanent account.

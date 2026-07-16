@@ -114,6 +114,28 @@ export const EditProfileContent = ({ profile, schools, majors }: EditProfileCont
                 />
               </Field>
               <Field>
+                <FieldLabel htmlFor="username">
+                  Public username <span className="text-red-500">*</span>
+                </FieldLabel>
+                <Input
+                  id="username"
+                  name="username"
+                  defaultValue={profile.username ?? ''}
+                  placeholder="your-name"
+                  minLength={3}
+                  maxLength={30}
+                  pattern="[A-Za-z0-9_-]+"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  required
+                  className="text-base"
+                />
+                <FieldDescription>
+                  Your profile will live at discuno.com/mentor/your-username. Letters, numbers,
+                  hyphens, and underscores only.
+                </FieldDescription>
+              </Field>
+              <Field>
                 <FieldLabel htmlFor="bio">
                   Biography <span className="text-red-500">*</span>
                 </FieldLabel>

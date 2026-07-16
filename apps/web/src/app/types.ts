@@ -61,6 +61,7 @@ export interface Toast {
 export interface FullUserProfile {
   userId: string
   userProfileId: number
+  username: string | null
   email: string | null
   emailVerified: boolean
   bio: string | null

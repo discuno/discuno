@@ -26,6 +26,7 @@ import {
   isAnonymousAuthEmail,
   requireOtpRecipientSendAllowance,
 } from '~/lib/auth/security'
+import { isValidDiscunoUsername, normalizeDiscunoUsername } from '~/lib/auth/username'
 import { getLinkedAnalyticsPreferenceUpdate } from '~/lib/analytics/preference-policy'
 import { downloadAndUploadProfileImage } from '~/lib/blob'
 import { authOtpRecipientRatelimit } from '~/lib/rate-limiter'
@@ -413,14 +414,8 @@ export const auth = betterAuth({
     username({
       minUsernameLength: 3,
       maxUsernameLength: 30,
-      usernameValidator: uname => {
-        // Allow alphanumeric, underscores, hyphens
-        return /^[a-z0-9_-]+$/.test(uname)
-      },
-      usernameNormalization: uname => {
-        // Lowercase and replace special chars
-        return uname.toLowerCase().replace(/[^a-z0-9_-]/g, '-')
-      },
+      usernameValidator: isValidDiscunoUsername,
+      usernameNormalization: normalizeDiscunoUsername,
     }),
     nextCookies(),
   ],

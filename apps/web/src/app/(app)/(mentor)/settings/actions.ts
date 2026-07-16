@@ -991,6 +991,7 @@ export const getMentorOnboardingStatus = async (): Promise<{
   if (!profile?.bio) missingProfileFields.push('Bio')
   if (!profile?.image) missingProfileFields.push('Profile photo')
   if (!profile?.name) missingProfileFields.push('Name')
+  if (!profile?.username) missingProfileFields.push('Public username')
   if (!profile?.major) missingProfileFields.push('Major')
 
   const hasProfile = missingProfileFields.length === 0
