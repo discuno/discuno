@@ -9,6 +9,21 @@ type AnonymousPluginOptions = {
   onLinkAccount: (context: AnonymousLinkContext) => Promise<void>
 }
 
+type CapturedAuthOptions = {
+  databaseHooks?: {
+    session?: {
+      create?: {
+        before?: (session: { userId: string }) => Promise<void>
+      }
+    }
+    user?: {
+      create?: {
+        after?: (user: { id: string; email: string; image?: string | null }) => Promise<void>
+      }
+    }
+  }
+}
+
 const mocks = vi.hoisted(() => {
   const writtenValues: Array<Record<string, unknown>> = []
   const where = vi.fn().mockResolvedValue(undefined)
@@ -31,6 +46,9 @@ const mocks = vi.hoisted(() => {
 
   return {
     anonymousOptions: undefined as AnonymousPluginOptions | undefined,
+    authOptions: undefined as CapturedAuthOptions | undefined,
+    reconcileMentorAccessForUser: vi.fn().mockResolvedValue({ status: 'ready' }),
+    rootInsertValues: vi.fn().mockResolvedValue(undefined),
     transaction: vi.fn(async (callback: (transaction: typeof tx) => Promise<void>) => callback(tx)),
     tx,
     writtenValues,
@@ -55,7 +73,12 @@ vi.mock('~/env', () => ({
     OAUTH_PROXY_SECRET: 'b'.repeat(32),
   },
 }))
-vi.mock('better-auth', () => ({ betterAuth: vi.fn(() => ({})) }))
+vi.mock('better-auth', () => ({
+  betterAuth: vi.fn((options: CapturedAuthOptions) => {
+    mocks.authOptions = options
+    return {}
+  }),
+}))
 vi.mock('better-auth/adapters/drizzle', () => ({ drizzleAdapter: vi.fn(() => ({})) }))
 vi.mock('better-auth/next-js', () => ({ nextCookies: vi.fn(() => ({})) }))
 vi.mock('better-auth/plugins', () => ({
@@ -84,7 +107,16 @@ vi.mock('~/lib/rate-limiter', () => ({
   authOtpRecipientRatelimit: { limit: vi.fn().mockResolvedValue({ success: true }) },
 }))
 vi.mock('~/server/auth/domain-cache', () => ({ getAllowedDomains: vi.fn() }))
-vi.mock('~/server/db', () => ({ db: { transaction: mocks.transaction } }))
+vi.mock('~/server/auth/mentor-access', () => ({
+  extractEduDomainPrefix: vi.fn(() => 'umich'),
+  reconcileMentorAccessForUser: mocks.reconcileMentorAccessForUser,
+}))
+vi.mock('~/server/db', () => ({
+  db: {
+    insert: vi.fn(() => ({ values: mocks.rootInsertValues })),
+    transaction: mocks.transaction,
+  },
+}))
 
 await import('~/lib/auth')
 
@@ -121,5 +153,47 @@ describe('anonymous account authorization preservation', () => {
 
     expect(mocks.writtenValues.length).toBeGreaterThan(0)
     expect(mocks.writtenValues.every(values => !Object.hasOwn(values, 'role'))).toBe(true)
+  })
+})
+
+describe('mentor access reconciliation hooks', () => {
+  beforeEach(() => {
+    mocks.reconcileMentorAccessForUser.mockReset()
+    mocks.reconcileMentorAccessForUser.mockResolvedValue({ status: 'ready' })
+    mocks.rootInsertValues.mockClear()
+  })
+
+  it('repairs mentor access before every new session is persisted', async () => {
+    const hook = mocks.authOptions?.databaseHooks?.session?.create?.before
+    expect(hook).toBeTypeOf('function')
+
+    await expect(hook?.({ userId: 'mentor-user-id' })).resolves.toBeUndefined()
+
+    expect(mocks.reconcileMentorAccessForUser).toHaveBeenCalledWith('mentor-user-id')
+  })
+
+  it('keeps sign-in fail-closed for mentor access when reconciliation fails', async () => {
+    const hook = mocks.authOptions?.databaseHooks?.session?.create?.before
+    const log = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    mocks.reconcileMentorAccessForUser.mockRejectedValueOnce(new Error('database unavailable'))
+
+    await expect(hook?.({ userId: 'mentor-user-id' })).resolves.toBeUndefined()
+
+    expect(log).toHaveBeenCalledWith('[Auth mentor access] Session reconciliation failed', {
+      errorKind: 'Error',
+    })
+    log.mockRestore()
+  })
+
+  it('uses the same idempotent repair path during new-user onboarding', async () => {
+    const hook = mocks.authOptions?.databaseHooks?.user?.create?.after
+    expect(hook).toBeTypeOf('function')
+
+    await expect(
+      hook?.({ id: 'new-mentor-id', email: 'student@umich.edu', image: null })
+    ).resolves.toBeUndefined()
+
+    expect(mocks.reconcileMentorAccessForUser).toHaveBeenCalledWith('new-mentor-id')
+    expect(mocks.rootInsertValues).toHaveBeenCalledWith({ createdById: 'new-mentor-id' })
   })
 })

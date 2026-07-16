@@ -196,10 +196,11 @@ const ForMentorsPage = async ({
                 <CircleAlert className="size-4" aria-hidden="true" />
               </span>
               <div>
-                <p className="font-semibold">That account does not have mentor access</p>
+                <p className="font-semibold">Mentor access is not active for this account</p>
                 <p className="text-muted-foreground mt-1 text-sm leading-6">
-                  You are signed in with a personal account. Mentor tools require a supported .edu
-                  address; continue with a school account, or keep this account to browse and book.
+                  Mentor tools require a verified .edu address from a supported school. If this is
+                  your school account, sign in again to refresh access. Otherwise, switch to a
+                  school account or keep browsing and booking.
                 </p>
               </div>
             </div>

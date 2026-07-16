@@ -33,7 +33,7 @@ export function MentorAccountRetryButton() {
   return (
     <Button type="button" className="shrink-0" onClick={handleRetry} disabled={isLoading}>
       {isLoading && <Spinner />}
-      Sign out and use school email
+      Try school sign-in again
     </Button>
   )
 }

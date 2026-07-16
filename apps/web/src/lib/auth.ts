@@ -30,6 +30,7 @@ import { getLinkedAnalyticsPreferenceUpdate } from '~/lib/analytics/preference-p
 import { downloadAndUploadProfileImage } from '~/lib/blob'
 import { authOtpRecipientRatelimit } from '~/lib/rate-limiter'
 import { getAllowedDomains } from '~/server/auth/domain-cache'
+import { extractEduDomainPrefix, reconcileMentorAccessForUser } from '~/server/auth/mentor-access'
 import { db } from '~/server/db'
 import * as schema from '~/server/db/schema/index'
 
@@ -64,40 +65,24 @@ const logAuthError = (message: string, error?: unknown): void => {
   console.error(message, error ? { errorKind: authErrorKind(error) } : undefined)
 }
 
-const isMentorEmail = (email: string): boolean => email.toLowerCase().endsWith('.edu')
-
-/**
- * Extract the primary domain prefix from an email address
- * Handles subdomains correctly (e.g., terpmail.umd.edu → umd, umd.edu → umd)
- */
-function extractDomainPrefix(email: string): string | null {
-  const emailDomain = email.split('@')[1]?.toLowerCase()
-  if (!emailDomain) return null
-
-  // Extract the part immediately before .edu (ignoring subdomains)
-  // Example: terpmail.umd.edu → umd, umd.edu → umd
-  const match = emailDomain.match(/([^.]+)\.edu$/)
-  return match?.[1] ?? null
-}
+const hasEduEmailSuffix = (email: string): boolean => email.toLowerCase().endsWith('.edu')
 
 /**
  * Helper function to validate .edu email and check if school is supported
  * Used for OAuth providers (Google, Microsoft)
  */
 async function validateEduEmail(email: string): Promise<void> {
-  // Validate .edu email format
-  const eduEmailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.edu$/
-  if (!eduEmailRegex.test(email)) {
+  const domainPrefix = extractEduDomainPrefix(email)
+  if (!domainPrefix) {
     throw new APIError('FORBIDDEN', {
       message: 'You must use a valid .edu email address to sign up.',
     })
   }
 
   // Check if school domain is in database
-  const domainPrefix = extractDomainPrefix(email)
   const allowedDomains = await getAllowedDomains()
 
-  if (!domainPrefix || !allowedDomains.has(domainPrefix)) {
+  if (!allowedDomains.has(domainPrefix)) {
     throw new APIError('FORBIDDEN', {
       message: 'Your school is not yet supported. Please contact support to add your school.',
     })
@@ -191,6 +176,19 @@ export const auth = betterAuth({
     }),
   },
   databaseHooks: {
+    session: {
+      create: {
+        before: async session => {
+          try {
+            await reconcileMentorAccessForUser(session.userId)
+          } catch (error) {
+            // Authentication may continue, but mentor access remains denied.
+            // A later sign-in retries the fail-closed reconciliation.
+            logAuthError('[Auth mentor access] Session reconciliation failed', error)
+          }
+        },
+      },
+    },
     user: {
       create: {
         before: async user => {
@@ -199,7 +197,7 @@ export const auth = betterAuth({
             return
           }
           // For .edu emails, validate that the school is supported
-          if (isMentorEmail(user.email)) {
+          if (hasEduEmailSuffix(user.email)) {
             await validateEduEmail(user.email)
           }
           // Non-.edu emails are allowed - they just won't be mentors
@@ -210,20 +208,20 @@ export const auth = betterAuth({
             return
           }
 
-          // Assign role based on email domain FIRST (for all users)
-          // .edu emails get 'mentor' role, others get 'user' role, anonymous users get no role
           const isAnonymous = isAnonymousAuthEmail(user.email)
-          const isMentor = isMentorEmail(user.email)
-          if (!isAnonymous) {
-            const role = isMentor ? 'mentor' : 'user'
-
-            // Update role directly in database
-            await db.update(schema.user).set({ role }).where(eq(schema.user.id, user.id))
-          }
 
           // Skip post-creation setup for anonymous users
           if (isAnonymous) {
             return
+          }
+
+          // Better Auth's admin plugin creates ordinary users with the `user`
+          // role. Promote only verified, supported school accounts and attach
+          // their school through the same idempotent path used by legacy users.
+          try {
+            await reconcileMentorAccessForUser(user.id)
+          } catch (error) {
+            logAuthError('[Auth onboarding] Mentor access reconciliation failed', error)
           }
 
           // Process profile image for OAuth users
@@ -240,26 +238,6 @@ export const auth = betterAuth({
             } catch (error) {
               logAuthError('[Auth onboarding] Profile image processing failed', error)
             }
-          }
-
-          // Assign user to school based on email domain
-          const domainPrefix = extractDomainPrefix(user.email)
-          if (domainPrefix) {
-            try {
-              const school = await db.query.school.findFirst({
-                where: eq(schema.school.domainPrefix, domainPrefix),
-              })
-
-              if (school) {
-                await db.insert(schema.userSchool).values({ userId: user.id, schoolId: school.id })
-              } else {
-                logAuthError('[Auth onboarding] School assignment lookup failed')
-              }
-            } catch (error) {
-              logAuthError('[Auth onboarding] School assignment failed', error)
-            }
-          } else {
-            logAuthError('[Auth onboarding] School assignment skipped for invalid domain')
           }
 
           // Create initial post for the user

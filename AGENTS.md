@@ -321,12 +321,17 @@ better-auth is configured in `apps/web/src/lib/auth.ts` with helpers in `apps/we
 - Better Auth rate limits use atomic Upstash counters; email OTP delivery combines a coarse IP/path
   safety bucket with an HMAC-addressed per-recipient bucket, while provider OAuth tokens are
   encrypted on write and OTP values are HMAC-hashed
-- Preview OAuth uses a dedicated shared `OAUTH_PROXY_SECRET`; shared-host deployments such as
-  Vercel must use exact trusted origins, while wildcards are limited to controlled custom domains
+- Preview OAuth uses `https://preview.discuno.com` as its stable callback/proxy hub. Generated
+  Vercel Preview hosts share a Preview-scoped `OAUTH_PROXY_SECRET`; Production has independent
+  proxy state and is not part of the Preview round trip. Shared-host deployments must use exact
+  trusted origins, while wildcards are limited to controlled custom domains
 - Server components should call `requireAuth`/`getAuthSession` (wraps `auth.api.getSession`)
 - Client components import `signIn`, `signOut`, and `useSession` from `authClient`
-- Database hooks seed a default post, attach school metadata, process avatars, and track first login; mentors connect Cal.com from settings
-- Database hooks assign `user`/`mentor` roles with direct Drizzle updates; the BetterAuth admin plugin remains enabled for ACL permission checks, not user management
+- Database hooks seed a default post, reconcile supported school metadata, process avatars, and track first login; mentors connect Cal.com from settings
+- Better Auth's admin plugin supplies the default `user` role. App-owned user/session hooks call the
+  row-locked `reconcileMentorAccessForUser` path, which promotes only verified, supported `.edu`
+  accounts from null/`user` to `mentor`, restores their school link atomically, and preserves
+  admin/custom roles
 
 ## Access Control (ACL) System
 
@@ -579,7 +584,9 @@ GitHub Actions in `.github/workflows/` run lint/format, application and test typ
 
 **IMPORTANT**: For MVP simplicity, we directly update the `user` table using Drizzle ORM for role and image updates. The admin plugin is kept for ACL permission checking (`userHasPermission`) but not for user management.
 
-- **Set user role**: Update directly via Drizzle: `db.update(schema.user).set({ role }).where(eq(schema.user.id, userId))`
+- **Set an explicit administrative role**: A deliberate admin operation may update the user row
+  directly. Email-derived mentor promotion must use `reconcileMentorAccessForUser`; never duplicate
+  its eligibility, locking, or school-link logic in a route or hook.
 - **Update user image**: Update directly via Drizzle: `db.update(schema.user).set({ image }).where(eq(schema.user.id, userId))`
 
 Custom tables (`userProfile`, `userSchool`, `userMajor`, etc.) can be manipulated directly with Drizzle.

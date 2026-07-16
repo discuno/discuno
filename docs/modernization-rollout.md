@@ -28,11 +28,15 @@ part of the schema deployment.
   booking, and one payment were preserved. A second `pnpm db:push:preview` reported no changes.
 - Vercel Preview has the sensitive `DATABASE_URL`, `CALCOM_OAUTH_CLIENT_ID`,
   `CALCOM_OAUTH_CLIENT_SECRET`, `CALCOM_TOKEN_ENCRYPTION_KEY`, and `OAUTH_PROXY_SECRET` values. It
-  also has the preview Cal.com API/app/callback/webhook URLs, Better Auth preview/production/trusted
-  origins, `NEXT_PUBLIC_APP_URL`, `CALCOM_ALLOW_LEGACY_SHARED_WEBHOOKS=false`, and
+  also has the preview Cal.com API/app/callback/webhook URLs, Better Auth base/hub/trusted origins,
+  `NEXT_PUBLIC_APP_URL`, `CALCOM_ALLOW_LEGACY_SHARED_WEBHOOKS=false`, and
   `PAYMENTS_ENABLED=false`. The obsolete Preview variables `CALCOM_WEBHOOK_SECRET`,
   `COLLEGE_MENTOR_TEAM_ID`, `CALCOM_ORG_ID`, `X_CAL_SECRET_KEY`, `NEXT_PUBLIC_X_CAL_ID`, and
   `NEXT_PUBLIC_CALCOM_API_URL` were removed before the final redeploy.
+- Preview's `BETTER_AUTH_PRODUCTION_URL` intentionally points to
+  `https://preview.discuno.com`, which is the stable Better Auth OAuth callback/proxy hub for
+  generated Vercel Preview hosts. Those hosts share the Preview-scoped `OAUTH_PROXY_SECRET`;
+  Production has independent proxy state and does not participate in the Preview OAuth round trip.
 - The Git-backed application deployment for modernization commit `ed36b7e` is Ready as
   `dpl_2YH7ELFk3FN4PHE432WeHwBrGJGC` at
   `https://discuno-qrscj18tu-brad-mcnews-projects.vercel.app`. `preview.discuno.com` tracks the
