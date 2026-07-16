@@ -19,6 +19,7 @@ interface BookingPageProps {
 
 const BookingPage = async ({ params }: BookingPageProps) => {
   const { username } = await params
+  const initialNowIso = new Date().toISOString()
 
   const profile = await getPublicProfileByUsername(username)
   if (!profile?.calcomUsername) notFound()
@@ -63,7 +64,7 @@ const BookingPage = async ({ params }: BookingPageProps) => {
           confirm.
         </p>
       </header>
-      <BookingInterface bookingData={bookingData} variant="inline" />
+      <BookingInterface bookingData={bookingData} variant="inline" initialNowIso={initialNowIso} />
     </div>
   )
 }

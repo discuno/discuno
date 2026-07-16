@@ -11,6 +11,7 @@ interface BookingInterfaceProps {
   variant?: 'button' | 'modal' | 'inline'
   className?: string
   bookingData: BookingData
+  initialNowIso?: string
 }
 
 export type BookingData = {
@@ -30,6 +31,7 @@ export const BookingInterface = ({
   variant = 'button',
   className,
   bookingData,
+  initialNowIso,
 }: BookingInterfaceProps) => {
   return (
     <Suspense fallback={<BookingEmbedSkeleton />}>
@@ -57,7 +59,7 @@ export const BookingInterface = ({
 
       {variant === 'inline' && (
         <div className={className}>
-          <BookingInline bookingData={bookingData} />
+          <BookingInline bookingData={bookingData} initialNowIso={initialNowIso} />
         </div>
       )}
     </Suspense>
@@ -65,11 +67,17 @@ export const BookingInterface = ({
 }
 
 // Inline booking component for full-page experiences
-const BookingInline = ({ bookingData }: { bookingData: BookingData }) => {
+const BookingInline = ({
+  bookingData,
+  initialNowIso,
+}: {
+  bookingData: BookingData
+  initialNowIso?: string
+}) => {
   return (
     <div className="w-full">
       <Suspense fallback={<BookingEmbedSkeleton />}>
-        <BookingEmbed bookingData={bookingData} isFullPage={true} />
+        <BookingEmbed bookingData={bookingData} isFullPage={true} initialNowIso={initialNowIso} />
       </Suspense>
     </div>
   )

@@ -3,7 +3,7 @@
 import { TZDate } from '@date-fns/tz'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { addDays, endOfMonth, format, startOfMonth } from 'date-fns'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState, useSyncExternalStore } from 'react'
 import { toast } from 'sonner'
 import { BookingSidebar } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingSidebar'
 
@@ -32,21 +32,45 @@ export interface BookingFormData {
 
 type BookingStep = 'calendar' | 'booking' | 'confirmation'
 
+const subscribeToBrowserEnvironment = () => () => undefined
+const getBrowserReady = () => true
+const getServerReady = () => false
+const getBrowserTimeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
+const getServerTimeZone = () => 'UTC'
+
 export const BookingEmbed = ({
   bookingData,
   isFullPage = false,
+  initialNowIso,
 }: {
   bookingData: BookingData
   isFullPage?: boolean
+  initialNowIso?: string
 }) => {
-  const timeZone = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC', [])
-  const today = useMemo(() => new TZDate(new Date(), timeZone), [timeZone])
+  // Hydrate with the same UTC snapshot the server rendered, then switch to the
+  // browser's zone. Reading Intl directly during render makes the server's UTC
+  // text disagree with the student's local zone during hydration.
+  const timeZone = useSyncExternalStore(
+    subscribeToBrowserEnvironment,
+    getBrowserTimeZone,
+    getServerTimeZone
+  )
+  const isBrowserReady = useSyncExternalStore(
+    subscribeToBrowserEnvironment,
+    getBrowserReady,
+    getServerReady
+  )
+  const today = useMemo(
+    () => new TZDate(initialNowIso ? new Date(initialNowIso) : new Date(), timeZone),
+    [initialNowIso, timeZone]
+  )
   const { data: session } = useSession()
 
   // State management
   const [selectedEventTypeOverride, setSelectedEventTypeOverride] = useState<EventType | null>(null)
   const [selectedDate, setSelectedDate] = useState<Date | undefined>()
-  const [currentMonth, setCurrentMonth] = useState(today)
+  const [currentMonthOverride, setCurrentMonthOverride] = useState<Date | undefined>()
+  const currentMonth = currentMonthOverride ?? today
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string | null>(null)
   const [bookingAttemptId, setBookingAttemptId] = useState(() => crypto.randomUUID())
   const [paidAttemptSubmitted, setPaidAttemptSubmitted] = useState(false)
@@ -88,7 +112,7 @@ export const BookingEmbed = ({
     isFetching,
     error,
   } = useQuery({
-    queryKey: ['available-slots', currentEventId, format(currentMonth, 'yyyy-MM')],
+    queryKey: ['available-slots', currentEventId, format(currentMonth, 'yyyy-MM'), timeZone],
     queryFn: () => {
       if (!currentEventId) throw new BadRequestError('No event type selected')
       const startDate = startOfMonth(currentMonth)
@@ -101,7 +125,7 @@ export const BookingEmbed = ({
       return fetchSlotsAction(currentEventId, startDate, endDate, timeZone)
     },
     staleTime: 1000 * 60, // 1 minute
-    enabled: currentStep === 'calendar' && !!currentEventId,
+    enabled: isBrowserReady && currentStep === 'calendar' && !!currentEventId,
   })
 
   const displayedAvailability = useMemo(() => {
@@ -215,7 +239,7 @@ export const BookingEmbed = ({
           monthlyAvailability={displayedAvailability}
           isFetchingSlots={isFetching}
           onSelectEventType={handleEventTypeSelect}
-          onChangeMonth={month => setCurrentMonth(new TZDate(month, timeZone))}
+          onChangeMonth={month => setCurrentMonthOverride(new TZDate(month, timeZone))}
           onSelectDate={setSelectedDate}
           onSelectTimeSlot={handleTimeSlotSelect}
           timeZone={timeZone}
