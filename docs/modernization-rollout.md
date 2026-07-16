@@ -10,7 +10,7 @@ Keep `PAYMENTS_ENABLED=false` in every environment until its schema, secrets, we
 jobs, and end-to-end refund path have been verified. Do not enable paid Checkout in production as
 part of the schema deployment.
 
-## Current rollout status (verified July 15, 2026 ET)
+## Current rollout status (verified July 16, 2026 ET)
 
 ### Completed away from production
 
@@ -37,11 +37,10 @@ part of the schema deployment.
   `https://preview.discuno.com`, which is the stable Better Auth OAuth callback/proxy hub for
   generated Vercel Preview hosts. Those hosts share the Preview-scoped `OAUTH_PROXY_SECRET`;
   Production has independent proxy state and does not participate in the Preview OAuth round trip.
-- The Git-backed application deployment for modernization commit `ed36b7e` is Ready as
-  `dpl_2YH7ELFk3FN4PHE432WeHwBrGJGC` at
-  `https://discuno-qrscj18tu-brad-mcnews-projects.vercel.app`. `preview.discuno.com` tracks the
-  modernization branch; the runtime checks below were last executed against that immutable
-  application deployment.
+- The Git-backed application deployment for mentor-access reconciliation commit `1d70bd5` is Ready
+  as `dpl_27rbZWh8VLAeQTzRDamfoagmRid8` at
+  `https://discuno-imykqvo8t-brad-mcnews-projects.vercel.app`. `preview.discuno.com` tracks the
+  modernization branch and was verified against that immutable application deployment.
 - Vercel project SSO Protection is disabled because Cal.com must reach the OAuth callback and
   webhook without an interactive Vercel login. On the Hobby plan this makes all preview and
   generated deployment URLs public; Discuno's own authentication and route authorization remain
@@ -55,15 +54,22 @@ part of the schema deployment.
   cron and Inngest requests returned `401`.
 - Remote Playwright smoke tests passed all three tests against `preview.discuno.com`. The read-only
   integration check passed for Better Auth, PostgreSQL, Cal.com configuration, Stripe, Upstash,
-  Blob, Resend, PostHog, and Inngest; the database check confirmed 28 tables and 59 users. All 478
-  unit tests, application and test type checks, lint, and formatting checks are green.
+  Blob, Resend, PostHog, and Inngest; the database check confirmed 28 tables and 59 users. Google
+  sign-in completed on the stable Preview hub, and live authorization probes confirmed that Google
+  and Microsoft both receive the exact `preview.discuno.com` callbacks. A legacy verified school
+  account with a null role was repaired without changing its existing school association; the
+  deployed session-time reconciliation now handles that migration automatically. All 481 unit
+  tests, 20 guarded database integration tests (including 12 concurrent mentor repairs), the
+  production build, application and test type checks, lint, and formatting checks are green.
+- The `Discuno Preview` confidential Cal.com OAuth client is approved with the required eight user
+  scopes and exact `https://preview.discuno.com/api/integrations/calcom/callback` redirect URI. Its
+  credentials are configured in Preview without exposing them to the repository.
 
 ### Still pending
 
-- The `Discuno Preview` confidential Cal.com OAuth client has the required eight user scopes and
-  the exact `https://preview.discuno.com/api/integrations/calcom/callback` redirect URI, but Cal.com
-  administrator approval is still pending. Live mentor authorization and per-connection,
-  route-scoped webhook provisioning cannot be validated until Cal.com approves it.
+- The first live mentor still needs to replace the existing legacy Platform connection through the
+  approved Cal.com OAuth flow. After that user action, verify the encrypted OAuth row, synchronized
+  event types, and per-connection route-scoped webhook before validating a free booking lifecycle.
 - `PAYMENTS_ENABLED` remains `false`. No paid-provider lifecycle validation or launch decision has
   been made.
 - Production database schema, deployment, and environment configuration are untouched. Two legacy
