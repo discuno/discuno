@@ -37,9 +37,9 @@ part of the schema deployment.
   `https://preview.discuno.com`, which is the stable Better Auth OAuth callback/proxy hub for
   generated Vercel Preview hosts. Those hosts share the Preview-scoped `OAUTH_PROXY_SECRET`;
   Production has independent proxy state and does not participate in the Preview OAuth round trip.
-- The Git-backed application deployment for mentor-access reconciliation commit `1d70bd5` is Ready
-  as `dpl_27rbZWh8VLAeQTzRDamfoagmRid8` at
-  `https://discuno-imykqvo8t-brad-mcnews-projects.vercel.app`. `preview.discuno.com` tracks the
+- The Git-backed application deployment for the mentor-profile publishing repair commit `d54103c`
+  is Ready as `dpl_HFWyYsAtYpDibN5StDBnufAQUFTY` at
+  `https://discuno-h42ovwz3n-brad-mcnews-projects.vercel.app`. `preview.discuno.com` tracks the
   modernization branch and was verified against that immutable application deployment.
 - Vercel project SSO Protection is disabled because Cal.com must reach the OAuth callback and
   webhook without an interactive Vercel login. On the Hobby plan this makes all preview and
@@ -58,18 +58,24 @@ part of the schema deployment.
   sign-in completed on the stable Preview hub, and live authorization probes confirmed that Google
   and Microsoft both receive the exact `preview.discuno.com` callbacks. A legacy verified school
   account with a null role was repaired without changing its existing school association; the
-  deployed session-time reconciliation now handles that migration automatically. All 481 unit
+  deployed session-time reconciliation now handles that migration automatically. All 487 unit
   tests, 20 guarded database integration tests (including 12 concurrent mentor repairs), the
   production build, application and test type checks, lint, and formatting checks are green.
 - The `Discuno Preview` confidential Cal.com OAuth client is approved with the required eight user
   scopes and exact `https://preview.discuno.com/api/integrations/calcom/callback` redirect URI. Its
   credentials are configured in Preview without exposing them to the repository.
+- The first live mentor replaced its legacy Platform connection through the approved OAuth flow.
+  An authenticated provider audit confirmed the stored Cal.com identity, all eight required
+  scopes, usable encrypted access/refresh credentials, seven synchronized event types (six
+  compatible), two owned schedules (one default), and exactly one Discuno webhook. The stored
+  webhook subscriber identity, opaque route hash, and required trigger set all match the provider.
 
 ### Still pending
 
-- The first live mentor still needs to replace the existing legacy Platform connection through the
-  approved Cal.com OAuth flow. After that user action, verify the encrypted OAuth row, synchronized
-  event types, and per-connection route-scoped webhook before validating a free booking lifecycle.
+- The live legacy mentor profile still needs a Discuno public username and major. After those are
+  saved through the supported profile editor, enable one of the six compatible event types as a
+  free session and validate the complete free booking lifecycle, including webhook ingestion and
+  authenticated provider reconciliation.
 - `PAYMENTS_ENABLED` remains `false`. No paid-provider lifecycle validation or launch decision has
   been made.
 - Production database schema, deployment, and environment configuration are untouched. Two legacy
