@@ -37,9 +37,9 @@ part of the schema deployment.
   `https://preview.discuno.com`, which is the stable Better Auth OAuth callback/proxy hub for
   generated Vercel Preview hosts. Those hosts share the Preview-scoped `OAUTH_PROXY_SECRET`;
   Production has independent proxy state and does not participate in the Preview OAuth round trip.
-- The Git-backed application deployment for the current Cal.com booking contract repair commit
-  `d97ae63` is Ready as `dpl_8N9gi2pooQq5yAiqk36atwZcgj7k` at
-  `https://discuno-cokpg8vv0-brad-mcnews-projects.vercel.app`. `preview.discuno.com` tracks the
+- The Git-backed application deployment for the current booking-page repair commit `0a7aead` is
+  Ready as `dpl_4L8ntspEzuCr32YxRhfU79rkTccu` at
+  `https://discuno-1jx3n00gz-brad-mcnews-projects.vercel.app`. `preview.discuno.com` tracks the
   modernization branch and was verified against that immutable application deployment.
 - Vercel project SSO Protection is disabled because Cal.com must reach the OAuth callback and
   webhook without an interactive Vercel login. On the Hobby plan this makes all preview and
@@ -84,6 +84,11 @@ part of the schema deployment.
   `BOOKING_CANCELLED` webhook was processed and scrubbed, and both Cal.com and Discuno lifecycle
   state report cancellation. No payment was created. The free Preview session remains enabled for
   future validation.
+- Browser QA also found and removed a server-UTC/browser-time-zone hydration mismatch on the
+  booking calendar. The server now supplies one stable render-time instant, the client hydrates
+  against the server snapshot, and availability waits for the student's browser time zone before
+  loading. Live Chromium verification shows `America/New_York`, usable slots, and no React console
+  or page errors.
 
 ### Still pending
 
