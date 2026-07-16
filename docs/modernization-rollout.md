@@ -37,9 +37,9 @@ part of the schema deployment.
   `https://preview.discuno.com`, which is the stable Better Auth OAuth callback/proxy hub for
   generated Vercel Preview hosts. Those hosts share the Preview-scoped `OAUTH_PROXY_SECRET`;
   Production has independent proxy state and does not participate in the Preview OAuth round trip.
-- The Git-backed application deployment for the mentor-profile publishing repair commit `d54103c`
-  is Ready as `dpl_HFWyYsAtYpDibN5StDBnufAQUFTY` at
-  `https://discuno-h42ovwz3n-brad-mcnews-projects.vercel.app`. `preview.discuno.com` tracks the
+- The Git-backed application deployment for the current Cal.com booking contract repair commit
+  `d97ae63` is Ready as `dpl_8N9gi2pooQq5yAiqk36atwZcgj7k` at
+  `https://discuno-cokpg8vv0-brad-mcnews-projects.vercel.app`. `preview.discuno.com` tracks the
   modernization branch and was verified against that immutable application deployment.
 - Vercel project SSO Protection is disabled because Cal.com must reach the OAuth callback and
   webhook without an interactive Vercel login. On the Hobby plan this makes all preview and
@@ -58,7 +58,7 @@ part of the schema deployment.
   sign-in completed on the stable Preview hub, and live authorization probes confirmed that Google
   and Microsoft both receive the exact `preview.discuno.com` callbacks. A legacy verified school
   account with a null role was repaired without changing its existing school association; the
-  deployed session-time reconciliation now handles that migration automatically. All 487 unit
+  deployed session-time reconciliation now handles that migration automatically. All 491 unit
   tests, 20 guarded database integration tests (including 12 concurrent mentor repairs), the
   production build, application and test type checks, lint, and formatting checks are green.
 - The `Discuno Preview` confidential Cal.com OAuth client is approved with the required eight user
@@ -69,13 +69,24 @@ part of the schema deployment.
   scopes, usable encrypted access/refresh credentials, seven synchronized event types (six
   compatible), two owned schedules (one default), and exactly one Discuno webhook. The stored
   webhook subscriber identity, opaque route hash, and required trigger set all match the provider.
+- The live mentor profile now has the public username `mcnew` and major `Computer Science`. A first
+  free-booking attempt correctly failed closed before a Cal.com booking mutation when the provider
+  exposed its default `title` booking field as newly required. Authenticated reconciliation proved
+  that no booking existed. Discuno now asks the student for a 3–200 character question and supplies
+  it through `bookingFieldsResponses.title`; a live event-type resync marks six event types
+  compatible under that current contract.
+- The complete free Preview lifecycle passed through the public UI using the enabled 20-minute
+  `Standard Session`: availability loaded, attendee details and the student's question were
+  accepted, and the UI confirmed the booking. An authenticated Cal.com read matched the exact
+  booking ID/UID, event type, mentor identity, attendee, duration, time, Discuno metadata, and title
+  response. The route-scoped signed `BOOKING_CREATED` webhook was tenant-bound, processed once, and
+  scrubbed. The test booking was then cancelled through the current API; the signed
+  `BOOKING_CANCELLED` webhook was processed and scrubbed, and both Cal.com and Discuno lifecycle
+  state report cancellation. No payment was created. The free Preview session remains enabled for
+  future validation.
 
 ### Still pending
 
-- The live legacy mentor profile still needs a Discuno public username and major. After those are
-  saved through the supported profile editor, enable one of the six compatible event types as a
-  free session and validate the complete free booking lifecycle, including webhook ingestion and
-  authenticated provider reconciliation.
 - `PAYMENTS_ENABLED` remains `false`. No paid-provider lifecycle validation or launch decision has
   been made.
 - Production database schema, deployment, and environment configuration are untouched. Two legacy
