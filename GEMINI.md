@@ -22,8 +22,10 @@ This repository is maintained by multiple AI agents (Gemini, Claude, etc.). When
   current identity; reconnecting the same account is the migration path.
 - Custom booking fails closed for unsupported authentication, fields, recurrence, confirmation,
   Cal-managed pricing, seats, or location selection. The student supplies a normalized mobile
-  number; one supported provider location is forwarded. Compatibility and duration are checked
-  before Checkout and again immediately before the Cal.com POST.
+  number and a 3–200 character question; one supported provider location is forwarded. The
+  question supplies Cal.com's required default `title` through `bookingFieldsResponses`.
+  Compatibility and duration are checked before Checkout and again immediately before the Cal.com
+  POST.
 - Before paid Checkout, Discuno creates a 45-minute Cal.com slot reservation and stores a durable
   bridge to a 35-minute, card-only Stripe Session. Persist and replay the exact generation-scoped
   Checkout request; roll generations only after Stripe definitively rejects a stale `expires_at`.
@@ -430,7 +432,10 @@ Keep this query-layer boundary intact; layout redirects are only a UX optimizati
   metadata search only while it is unknown. Match UID/ID, event type, current schedule, duration,
   payment, mentor, actor, paying attendee, and verified reschedule lineage. Only one current
   financially relevant booking may exist per payment.
-- Custom booking rejects event types that require Cal email/authentication, recurrence, confirmation, or unsupported required fields. Check compatibility both before Checkout and immediately before Cal booking creation.
+- Custom booking rejects event types that require Cal email/authentication, recurrence,
+  confirmation, or unsupported required fields. The student's question supplies the supported
+  default `title` booking field. Check compatibility both before Checkout and immediately before
+  Cal booking creation.
 - Booking attempts require a normalized mobile number, preserve one supported provider-defined location, snapshot duration, and fail closed on schedule/configuration drift.
 
 ### Stripe (`apps/web/src/lib/stripe/`)

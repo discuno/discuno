@@ -33,22 +33,36 @@ export const AttendeeDetailsStep = ({
   createBookingMutation,
   detailsLocked,
 }: AttendeeDetailsStepProps) => {
-  const [touched, setTouched] = useState({ name: false, email: false, phone: false })
+  const [touched, setTouched] = useState({
+    name: false,
+    email: false,
+    phone: false,
+    topic: false,
+  })
   const [attemptedSubmit, setAttemptedSubmit] = useState(false)
 
   const hasValidName = formData.name.trim().length >= 2
   const hasValidEmail = validateEmail(formData.email)
   const normalizedPhone = formData.phone.replace(/[\s\-().]/g, '')
   const hasValidPhone = /^\+[1-9]\d{7,14}$/.test(normalizedPhone)
+  const hasValidTopic = formData.topic.trim().length >= 3 && formData.topic.trim().length <= 200
   const showNameError = (touched.name || attemptedSubmit) && !hasValidName
   const showEmailError = (touched.email || attemptedSubmit) && !hasValidEmail
   const showPhoneError = (touched.phone || attemptedSubmit) && !hasValidPhone
+  const showTopicError = (touched.topic || attemptedSubmit) && !hasValidTopic
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setAttemptedSubmit(true)
 
-    if (!hasValidName || !hasValidEmail || !hasValidPhone || createBookingMutation.isPending) return
+    if (
+      !hasValidName ||
+      !hasValidEmail ||
+      !hasValidPhone ||
+      !hasValidTopic ||
+      createBookingMutation.isPending
+    )
+      return
     createBookingMutation.mutate()
   }
 
@@ -115,6 +129,33 @@ export const AttendeeDetailsStep = ({
               select a time again.
             </p>
           )}
+          <div className="space-y-2">
+            <Label htmlFor="booking-topic">What would you like to talk through?</Label>
+            <Input
+              id="booking-topic"
+              name="topic"
+              type="text"
+              value={formData.topic}
+              onChange={event => setFormData({ ...formData, topic: event.target.value })}
+              onBlur={() => setTouched(current => ({ ...current, topic: true }))}
+              placeholder="For example: choosing between two majors"
+              maxLength={200}
+              aria-invalid={showTopicError}
+              aria-describedby={showTopicError ? 'booking-topic-error' : 'booking-topic-help'}
+              className="h-11"
+              disabled={detailsLocked}
+              required
+            />
+            {showTopicError ? (
+              <p id="booking-topic-error" className="text-destructive text-xs" role="alert">
+                Share a short question or decision for the conversation.
+              </p>
+            ) : (
+              <p id="booking-topic-help" className="text-muted-foreground text-xs">
+                A sentence is enough. It helps your mentor arrive ready for the decision at hand.
+              </p>
+            )}
+          </div>
           <div className="space-y-2">
             <Label htmlFor="booking-name">Full name</Label>
             <Input

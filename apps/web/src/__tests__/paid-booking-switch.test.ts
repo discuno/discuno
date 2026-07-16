@@ -80,6 +80,7 @@ const input = {
   attendeeName: 'Test Student',
   attendeeEmail: 'student@example.edu',
   attendeePhone: '+1 555 010 9999',
+  attendeeTopic: 'Choosing between two majors',
   mentorUsername: 'test-mentor',
   timeZone: 'America/New_York',
 }
@@ -198,6 +199,7 @@ describe('paid booking launch switch', () => {
       input.attendeeEmail,
       input.attendeeName,
       input.attendeePhone,
+      input.attendeeTopic,
       input.mentorUsername,
       'acct_discuno_test_mentor',
       'cus_discuno_test_student',
@@ -279,6 +281,7 @@ describe('paid booking launch switch', () => {
         metadata: expect.objectContaining({
           startTime: '2099-01-02T15:00:00.000Z',
           calcomReservationUid: 'abffec74-2f4a-486b-a8c4-9bc403da31d2',
+          attendeeTopic: input.attendeeTopic,
         }),
       }),
       expect.objectContaining({

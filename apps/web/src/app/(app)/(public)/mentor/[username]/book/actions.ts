@@ -65,6 +65,11 @@ const AttendeePhoneSchema = z
       .string()
       .regex(/^\+[1-9]\d{7,14}$/, 'Phone number must include a valid international country code')
   )
+const AttendeeTopicSchema = z
+  .string()
+  .trim()
+  .min(3, 'Tell the mentor what you would like to talk through')
+  .max(200, 'Your question must be at most 200 characters')
 const MentorUsernameSchema = z
   .string()
   .trim()
@@ -97,6 +102,7 @@ const CreateBookingInputSchema = z.object({
     name: AttendeeNameSchema,
     email: AttendeeEmailSchema,
     phone: AttendeePhoneSchema,
+    topic: AttendeeTopicSchema,
     timeZone: TimeZoneSchema.optional(),
   }),
 })
@@ -139,6 +145,7 @@ export const createBooking = async (input: CreateBookingInput): Promise<string> 
     attendeeName: attendee.name,
     attendeeEmail: attendee.email,
     attendeePhone: attendee.phone,
+    bookingTitle: attendee.topic,
     timeZone: attendee.timeZone ?? 'America/New_York',
     mentorUserId: mentorConnection.userId,
     actorUserId: user.id,
@@ -170,6 +177,7 @@ const BookingFormInputSchema = z.object({
   attendeeName: AttendeeNameSchema,
   attendeeEmail: AttendeeEmailSchema,
   attendeePhone: AttendeePhoneSchema,
+  attendeeTopic: AttendeeTopicSchema,
   mentorUsername: MentorUsernameSchema,
   timeZone: TimeZoneSchema,
   bookingAttemptId: z.uuid(),
@@ -182,6 +190,7 @@ const CheckoutSessionMetadataSchema = z.object({
   attendeeName: AttendeeNameSchema,
   attendeeEmail: AttendeeEmailSchema,
   attendeePhone: z.string().max(50),
+  attendeeTopic: AttendeeTopicSchema.optional(),
   attendeeTimeZone: TimeZoneSchema,
   mentorUsername: z.string().trim().min(1).max(255),
   actorUserId: z.uuid(),
@@ -373,6 +382,7 @@ export const createStripeCheckoutSession = async (
       attendeeName,
       attendeeEmail,
       attendeePhone,
+      attendeeTopic,
       mentorUsername,
       timeZone,
       bookingAttemptId,
@@ -525,6 +535,7 @@ export const createStripeCheckoutSession = async (
             attendeeName,
             attendeeEmail,
             attendeePhone,
+            attendeeTopic,
             attendeeTimeZone: timeZone,
             mentorUsername: mentorProfile.name ?? mentorUsername,
             actorUserId: user.id,

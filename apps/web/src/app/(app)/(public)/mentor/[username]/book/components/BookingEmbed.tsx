@@ -27,6 +27,7 @@ export interface BookingFormData {
   name: string
   email: string
   phone: string
+  topic: string
 }
 
 type BookingStep = 'calendar' | 'booking' | 'confirmation'
@@ -54,6 +55,7 @@ export const BookingEmbed = ({
     name: '',
     email: '',
     phone: '',
+    topic: '',
   })
 
   // Date range for calendar
@@ -153,6 +155,7 @@ export const BookingEmbed = ({
           attendeeName: displayedFormData.name,
           attendeeEmail: displayedFormData.email,
           attendeePhone: displayedFormData.phone,
+          attendeeTopic: displayedFormData.topic,
           mentorUsername: bookingData.username,
           timeZone: timeZone,
           bookingAttemptId,
@@ -178,6 +181,7 @@ export const BookingEmbed = ({
           name: displayedFormData.name,
           email: displayedFormData.email,
           phone: displayedFormData.phone,
+          topic: displayedFormData.topic,
           timeZone,
         },
       })

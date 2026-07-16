@@ -82,14 +82,18 @@ const CalcomEventTypeBookingCompatibilitySchema = z.object({
   data: CalcomEventTypeCompatibilityDataSchema,
 })
 
-// Discuno's checkout always supplies these two required fields. Any other
+// Discuno's booking flow explicitly supplies these required fields. Any other
 // required Cal.com booking question must fail closed until the Discuno form
-// explicitly captures and forwards a response for it.
+// captures and forwards a response for it.
 const SUPPORTED_REQUIRED_CALCOM_BOOKING_FIELDS = new Set([
   'name',
   'email',
   'phone',
   'attendeePhoneNumber',
+  // Cal.com now exposes the default booking title as a required field. Discuno
+  // captures the student's question and forwards it through
+  // bookingFieldsResponses instead of asking mentors to remove the field.
+  'title',
 ])
 const BOOKER_SUPPLIED_LOCATION_TYPES = new Set([
   'attendeeaddress',
@@ -259,6 +263,7 @@ export const createCalcomBooking = async (input: {
   attendeeName: string
   attendeeEmail: string
   attendeePhone?: string
+  bookingTitle: string
   timeZone: string
   paymentId?: number
   mentorUserId: string
@@ -271,6 +276,10 @@ export const createCalcomBooking = async (input: {
   onDefinitiveCreateRejection?: () => Promise<void>
 }): Promise<CalcomBookingIdentity> => {
   const attendeePhone = input.attendeePhone?.trim()
+  const bookingTitle = input.bookingTitle.trim()
+  if (bookingTitle.length < 3 || bookingTitle.length > 200) {
+    throw new ExternalApiError('Cal.com booking title must be between 3 and 200 characters')
+  }
   const reconciliationKey = input.paymentId
     ? { metadataKey: 'paymentId' as const, metadataValue: input.paymentId.toString() }
     : input.bookingAttemptId
@@ -343,6 +352,7 @@ export const createCalcomBooking = async (input: {
           timeZone: input.timeZone,
           language: 'en',
         },
+        bookingFieldsResponses: { title: bookingTitle },
         eventTypeId: input.calcomEventTypeId,
         ...(input.lengthInMinutes !== undefined ? { lengthInMinutes: input.lengthInMinutes } : {}),
         ...(configuration.location ? { location: configuration.location } : {}),

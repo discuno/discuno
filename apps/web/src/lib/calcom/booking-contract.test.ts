@@ -41,6 +41,7 @@ const bookingInput = {
   start: BOOKING_START,
   attendeeName: 'Test Student',
   attendeeEmail: 'student@example.edu',
+  bookingTitle: 'Choosing between computer science and design',
   timeZone: 'America/New_York',
   mentorUserId: 'mentor-user-id',
 }
@@ -59,6 +60,7 @@ const compatibleEventTypeResponse = {
     bookingFields: [
       { slug: 'name', required: true, isDefault: true },
       { slug: 'email', required: true, isDefault: true },
+      { slug: 'title', required: true, isDefault: true },
     ],
   },
 }
@@ -106,6 +108,7 @@ const getCreateBookingBody = () => {
 
   return JSON.parse(init.body) as {
     attendee: Record<string, unknown>
+    bookingFieldsResponses?: Record<string, unknown>
     lengthInMinutes?: number
     location?: Record<string, unknown>
     metadata: Record<string, unknown>
@@ -149,6 +152,25 @@ describe('Cal.com booking contract', () => {
       mentorUserId: 'mentor-user-id',
     })
   })
+
+  it("forwards the student question as Cal.com's required booking title", async () => {
+    await createCalcomBooking(bookingInput)
+
+    expect(getCreateBookingBody().bookingFieldsResponses).toEqual({
+      title: bookingInput.bookingTitle,
+    })
+  })
+
+  it.each(['   ', 'x', 'x'.repeat(201)])(
+    'rejects an invalid booking title before contacting Cal.com',
+    async bookingTitle => {
+      await expect(createCalcomBooking({ ...bookingInput, bookingTitle })).rejects.toThrow(
+        'Cal.com booking title must be between 3 and 200 characters'
+      )
+
+      expect(mocks.calcomRequest).not.toHaveBeenCalled()
+    }
+  )
 
   it('sends the current event duration and single supported location to Cal.com', async () => {
     await createCalcomBooking({
@@ -264,6 +286,7 @@ describe('Cal.com event-type booking compatibility', () => {
         bookingFields: [
           { slug: 'name', required: true, isDefault: true },
           { slug: 'email', required: true, isDefault: true },
+          { slug: 'title', required: true, isDefault: true },
           { slug: 'company', required: false, isDefault: false },
         ],
       },
