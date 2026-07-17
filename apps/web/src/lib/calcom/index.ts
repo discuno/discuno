@@ -343,6 +343,12 @@ export const createCalcomBooking = async (input: {
             createAttemptState.marked = true
           }
         : undefined,
+      onDefinitiveResponseBeforeRetry: input.onDefinitiveCreateRejection
+        ? async () => {
+            await input.onDefinitiveCreateRejection?.()
+            createAttemptState.marked = false
+          }
+        : undefined,
       body: JSON.stringify({
         start: input.start,
         attendee: {

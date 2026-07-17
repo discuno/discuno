@@ -118,7 +118,12 @@ const activeOAuthConditions = [
   isNotNull(calcomToken.refreshToken),
 ] as const
 
-const readyOAuthConditions = [
+/**
+ * Canonical readiness contract shared by connection resolution and public
+ * mentor discovery. A webhook ID without its route/signing identity is still
+ * provisioning and must not be treated as bookable.
+ */
+export const readyCalcomOAuthConditions = [
   ...activeOAuthConditions,
   isNotNull(calcomToken.webhookId),
   isNotNull(calcomToken.webhookSecret),
@@ -154,7 +159,7 @@ export const getReadyConnectionByUserId = async (
   const [connection] = await db
     .select(connectionSelection)
     .from(calcomToken)
-    .where(and(eq(calcomToken.userId, userId), ...readyOAuthConditions))
+    .where(and(eq(calcomToken.userId, userId), ...readyCalcomOAuthConditions))
     .limit(1)
   return connection ?? null
 }
@@ -195,7 +200,7 @@ export const getConnectionByUsername = async (
       ...connectionSelection,
     })
     .from(calcomToken)
-    .where(and(eq(calcomToken.calcomUsername, username), ...readyOAuthConditions))
+    .where(and(eq(calcomToken.calcomUsername, username), ...readyCalcomOAuthConditions))
     .limit(1)
   return connection ?? null
 }
@@ -492,7 +497,7 @@ export const getUserIdByCalcomUserId = async (calcomUserId: number): Promise<str
   const [result] = await db
     .select({ userId: calcomToken.userId })
     .from(calcomToken)
-    .where(and(eq(calcomToken.calcomUserId, calcomUserId), ...readyOAuthConditions))
+    .where(and(eq(calcomToken.calcomUserId, calcomUserId), ...readyCalcomOAuthConditions))
     .limit(1)
   return result?.userId ?? null
 }

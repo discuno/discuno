@@ -59,7 +59,7 @@ part of the schema deployment.
   sign-in completed on the stable Preview hub, and live authorization probes confirmed that Google
   and Microsoft both receive the exact `preview.discuno.com` callbacks. A legacy verified school
   account with a null role was repaired without changing its existing school association; the
-  deployed session-time reconciliation now handles that migration automatically. All 491 unit
+  deployed session-time reconciliation now handles that migration automatically. All 538 unit
   tests, 20 guarded database integration tests (including 12 concurrent mentor repairs), the
   production build, application and test type checks, lint, and formatting checks are green.
 - The `Discuno Preview` confidential Cal.com OAuth client is approved with the required eight user
@@ -106,6 +106,49 @@ part of the schema deployment.
   loading. Live Chromium verification shows `America/New_York`, usable slots, and no React console
   or page errors.
 
+### Production preparation completed before deployment
+
+- A production PostgreSQL logical backup was created, encrypted, and verified before the schema
+  change. Railway's Hobby plan does not provide the native volume-backup facility needed for an
+  additional Railway-managed backup, so the verified logical backup is the recovery artifact for
+  this rollout. The restored dump matched the source SHA-256
+  `bc6ca19a45e795492754a9653e2af0d4cc1bfe746a363d08fed2651d4c4cbc31`; its age-encrypted,
+  cloud-backed copy has SHA-256
+  `536ce9f1807adc35492a9b50385eb1b97602f5653dec4d082f2b5fc47ba51502`, with recovery material
+  stored separately from the encrypted backup.
+- Production environment configuration is present without exposing its values: the separate Cal.com
+  OAuth client ID and secret, token-encryption key, callback and webhook URLs, and OAuth proxy
+  secret are installed. `PAYMENTS_ENABLED=false` and
+  `CALCOM_ALLOW_LEGACY_SHARED_WEBHOOKS=false` remain explicit production safeguards.
+- The `Discuno Production` confidential Cal.com OAuth client has the exact production callback and
+  eight required user scopes. Its credentials are installed, but Cal.com approval is still
+  **Pending**. Mentor authorization and reconnection must not be treated as available until the
+  client is approved.
+- Modern Stripe platform and Connect webhook endpoints are installed on API version
+  `2026-06-24.dahlia` with the required event subscriptions. The legacy endpoints remain enabled
+  until the matching application deployment is live and the modern endpoints have been verified
+  against it; preserving them here is intentional rollout overlap, not the desired final state.
+- The reviewed production schema was applied successfully without truncation. Production now has
+  28 application tables, zero invalid indexes, and all 767 users and 23 legacy Cal.com connection
+  rows were preserved. A second `pnpm db:push:prod` reported no changes.
+- PR #142 is green, marked ready for review, and awaits one independent approval. The public
+  production application is still the old deployment: neither the PR merge nor the matching
+  production application deployment has happened. Repository, environment, provider, and schema
+  readiness must not be mistaken for deployed application state.
+- Final review repaired two release edge cases with regressions: a definitive first Cal.com `401`
+  now clears the paid create-attempt marker before token refresh and re-marks immediately before a
+  retry POST, while mentor publication shares the same full webhook-identity readiness contract as
+  booking resolution. The resulting repository checks pass 538 unit tests, lint, formatting, both
+  TypeScript checks, and the production build.
+- The old deployment does not consume the new payments launch switch or modern platform webhook
+  secret. After confirming zero payment rows and zero open Checkout reservations, the rollout
+  temporarily disabled the 11 enabled paid event types owned by five mentors and quarantined all 10
+  stored Stripe destination identifiers and financial-readiness flags. Exact before-state and
+  update timestamps are held in protected rollback snapshots. This prevents the legacy Checkout
+  action from creating a payable Session even if a mentor changes a listing during the approval
+  window. Eighteen free event types across 12 mentors remain enabled. Restore only those recorded
+  rows after the matching deployment is live and has proved `PAYMENTS_ENABLED=false`.
+
 ### Still pending
 
 - `PAYMENTS_ENABLED` remains `false`. The core paid booking, early-cancellation refund, and
@@ -113,14 +156,25 @@ part of the schema deployment.
   launch decision. The broader live failure matrix (expiry, delayed payment, dispute,
   manual-review, reschedule, no-show, and delayed payout timing) remains a pre-launch gate alongside
   its automated coverage.
-- Production database schema, deployment, and environment configuration are untouched. Two legacy
-  Cal.com variables remain intentionally preserved in Production for the old production
-  deployment. Production still contains legacy Cal.com connections that will require a deliberate
-  same-account OAuth reconnection rollout after production is prepared.
+- Cal.com must approve the `Discuno Production` OAuth client before production mentor OAuth can be
+  validated or existing mentors can begin the same-account reconnection rollout.
+- Keep both payment safeguards in place while the old application is live. Restore only the
+  recorded event-type and Stripe-account rows, and only after the matching deployment proves the
+  production payments switch is false; this preserves mentor configuration without reopening
+  Checkout. Restoration must use each snapshot's exact row set and update timestamp so a later
+  user/provider change is not overwritten.
+- PR #142 still needs one independent review, merge, and the matching production deployment. The
+  new Stripe endpoints, production authentication, Inngest, protected cron routes, read-only
+  integrations, and application/schema compatibility still require post-deployment verification.
+- Production still contains 23 preserved legacy Cal.com connections. They remain intentionally
+  non-bookable and require a deliberate same-account OAuth reconnection after client approval and
+  deployment. Legacy Stripe endpoints must remain enabled until the replacement endpoints have
+  processed the expected events on the matching deployment.
 
-Continue the remaining preview validation in the order below. Do not apply the production schema,
-deploy this branch to production, or enable payments until the corresponding gates are explicitly
-completed.
+Continue the remaining production rollout in the order below. The schema and production
+configuration gates are complete, but do not claim the application is deployed until PR #142 is
+merged and the exact production deployment passes its checks. Do not enable payments as part of
+that deployment.
 
 ## 1. Prepare provider configuration
 

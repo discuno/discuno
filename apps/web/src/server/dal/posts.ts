@@ -3,6 +3,7 @@ import 'server-only'
 import { and, desc, eq, exists, gt, isNotNull, isNull, lt, or, sql } from 'drizzle-orm'
 import { env } from '~/env'
 import { db } from '~/server/db'
+import { readyCalcomOAuthConditions } from '~/server/dal/calcom'
 import {
   calcomToken,
   major,
@@ -143,12 +144,7 @@ export const getActivePostConditions = () => {
     isNotNull(userProfile.id),
     isNull(userProfile.deletedAt),
     isNull(post.deletedAt),
-    isNotNull(calcomToken.id),
-    eq(calcomToken.authMode, 'oauth'),
-    isNull(calcomToken.disconnectedAt),
-    isNotNull(calcomToken.accessToken),
-    isNotNull(calcomToken.refreshToken),
-    isNotNull(calcomToken.webhookId),
+    ...readyCalcomOAuthConditions,
     // Ensure the mentor has at least one bookable event type (matching active status)
     exists(
       db

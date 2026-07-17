@@ -72,6 +72,7 @@ describe('Cal.com OAuth API client', () => {
 
   it('refreshes once after a 401 and retries the same request with the new token', async () => {
     const onBeforeRequest = vi.fn().mockResolvedValue(undefined)
+    const onDefinitiveResponseBeforeRetry = vi.fn().mockResolvedValue(undefined)
     mocks.getCalcomAccessToken
       .mockResolvedValueOnce('expired-access-token')
       .mockResolvedValueOnce('fresh-access-token')
@@ -89,6 +90,7 @@ describe('Cal.com OAuth API client', () => {
         userId: 'mentor-user-id',
         body: JSON.stringify({ eventTypeId: 42 }),
         onBeforeRequest,
+        onDefinitiveResponseBeforeRetry,
       })
     ).resolves.toEqual({ status: 'success', data: { id: 42 } })
 
@@ -98,8 +100,16 @@ describe('Cal.com OAuth API client', () => {
     })
     expect(fetchMock).toHaveBeenCalledTimes(2)
     expect(onBeforeRequest).toHaveBeenCalledTimes(2)
+    expect(onDefinitiveResponseBeforeRetry).toHaveBeenCalledOnce()
+    expect(onDefinitiveResponseBeforeRetry).toHaveBeenCalledWith(401)
     expect(onBeforeRequest.mock.invocationCallOrder[0]).toBeLessThan(
       fetchMock.mock.invocationCallOrder[0]!
+    )
+    expect(fetchMock.mock.invocationCallOrder[0]).toBeLessThan(
+      onDefinitiveResponseBeforeRetry.mock.invocationCallOrder[0]!
+    )
+    expect(onDefinitiveResponseBeforeRetry.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.getCalcomAccessToken.mock.invocationCallOrder[1]!
     )
     expect(mocks.getCalcomAccessToken.mock.invocationCallOrder[0]).toBeLessThan(
       onBeforeRequest.mock.invocationCallOrder[0]!
@@ -119,6 +129,35 @@ describe('Cal.com OAuth API client', () => {
       body: JSON.stringify({ eventTypeId: 42 }),
       cache: 'no-store',
     })
+  })
+
+  it('resolves a definitively rejected request before a forced refresh can fail', async () => {
+    const onBeforeRequest = vi.fn().mockResolvedValue(undefined)
+    const onDefinitiveResponseBeforeRetry = vi.fn().mockResolvedValue(undefined)
+    mocks.getCalcomAccessToken
+      .mockResolvedValueOnce('expired-access-token')
+      .mockRejectedValueOnce(new Error('token refresh unavailable'))
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 401 }))
+
+    await expect(
+      calcomRequest('/bookings', {
+        method: 'POST',
+        userId: 'mentor-user-id',
+        onBeforeRequest,
+        onDefinitiveResponseBeforeRetry,
+      })
+    ).rejects.toThrow('token refresh unavailable')
+
+    expect(fetchMock).toHaveBeenCalledOnce()
+    expect(onBeforeRequest).toHaveBeenCalledOnce()
+    expect(onDefinitiveResponseBeforeRetry).toHaveBeenCalledOnce()
+    expect(onDefinitiveResponseBeforeRetry).toHaveBeenCalledWith(401)
+    expect(fetchMock.mock.invocationCallOrder[0]).toBeLessThan(
+      onDefinitiveResponseBeforeRetry.mock.invocationCallOrder[0]!
+    )
+    expect(onDefinitiveResponseBeforeRetry.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.getCalcomAccessToken.mock.invocationCallOrder[1]!
+    )
   })
 
   it('does not write a pre-request marker when OAuth resolution fails', async () => {

@@ -447,7 +447,7 @@ describe('Cal.com booking reconciliation', () => {
     expect(mocks.calcomRequest.mock.calls.some(([path]) => path === '/bookings')).toBe(false)
   })
 
-  it.each([409, 422])(
+  it.each([401, 409, 422])(
     'resolves the durable create marker after a definitive Cal.com %s rejection',
     async providerStatus => {
       const markCreateAttempt = vi.fn().mockResolvedValue(undefined)
@@ -478,6 +478,34 @@ describe('Cal.com booking reconciliation', () => {
       expect(resolveCreateRejection).toHaveBeenCalledOnce()
     }
   )
+
+  it('resolves the first marker before an OAuth refresh failure prevents a retry', async () => {
+    const markCreateAttempt = vi.fn().mockResolvedValue(undefined)
+    const resolveCreateRejection = vi.fn().mockResolvedValue(undefined)
+    mocks.calcomRequest.mockImplementation(async (path, init) => {
+      if (String(path).startsWith('/bookings?')) return bookingListPage({ data: [] })
+      if (path === '/event-types/42') return compatibleEventTypeResponse
+      if (path === '/bookings') {
+        await init?.onBeforeRequest?.()
+        await init?.onDefinitiveResponseBeforeRetry?.(401)
+        throw new Error('Cal.com OAuth refresh unavailable')
+      }
+      throw new Error(`Unexpected Cal.com request: ${String(path)}`)
+    })
+
+    await expect(
+      createCalcomBooking({
+        ...bookingInput,
+        paymentId: 77,
+        lengthInMinutes: BOOKING_LENGTH_MINUTES,
+        onBeforeCreateAttempt: markCreateAttempt,
+        onDefinitiveCreateRejection: resolveCreateRejection,
+      })
+    ).rejects.toThrow('Cal.com OAuth refresh unavailable')
+
+    expect(markCreateAttempt).toHaveBeenCalledOnce()
+    expect(resolveCreateRejection).toHaveBeenCalledOnce()
+  })
 
   it.each([408, 500])(
     'keeps the durable create marker after an ambiguous Cal.com %s failure',

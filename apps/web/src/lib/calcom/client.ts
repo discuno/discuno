@@ -62,6 +62,8 @@ type CalcomRequestInit = RequestInit & {
   accessToken?: string
   /** Durable marker written after auth resolution and immediately before fetch. */
   onBeforeRequest?: () => Promise<void>
+  /** Resolve that marker after a definitive response and before an authenticated retry. */
+  onDefinitiveResponseBeforeRetry?: (providerStatus: number) => Promise<void>
 }
 
 const executeCalcomRequest = async (
@@ -90,6 +92,7 @@ export const calcomRequest = async <T>(path: string, init: CalcomRequestInit = {
     userId,
     accessToken: suppliedAccessToken,
     onBeforeRequest,
+    onDefinitiveResponseBeforeRetry,
     ...requestInit
   } = init
   if (userId && suppliedAccessToken) {
@@ -102,6 +105,11 @@ export const calcomRequest = async <T>(path: string, init: CalcomRequestInit = {
   // Tokens can be revoked or expire just before a request. Refresh once under
   // the per-user database lock, then retry the same idempotent/request-safe call.
   if (response.status === 401 && userId) {
+    // The provider has definitively rejected this request, so no mutation from
+    // this attempt remains ambiguous. Clear any durable mutation marker before
+    // token refresh: refresh itself can fail, and a later retry must then be
+    // allowed to make a new, freshly marked request.
+    await onDefinitiveResponseBeforeRetry?.(response.status)
     accessToken = await getCalcomAccessToken(userId, { forceRefresh: true })
     await onBeforeRequest?.()
     response = await executeCalcomRequest(path, requestInit, apiVersion, accessToken)
