@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { del, head, type PutBlobResult } from '@vercel/blob'
+import { del, get, type PutBlobResult } from '@vercel/blob'
 import sharp from 'sharp'
 import { env } from '~/env'
 import {
@@ -13,6 +13,7 @@ import {
 import { getSafeErrorName } from '~/lib/operational-logging'
 
 const MAX_STORED_PROFILE_IMAGE_BYTES = 1024 * 1024
+const STORED_PROFILE_IMAGE_READ_TIMEOUT_MS = 5_000
 const PROVIDER_AVATAR_FETCH_TIMEOUT_MS = 5_000
 const ALLOWED_PROVIDER_AVATAR_HOSTS = new Set(['lh3.googleusercontent.com'])
 const ALLOWED_PROVIDER_AVATAR_CONTENT_TYPES = new Set([
@@ -37,18 +38,19 @@ export const isAllowedProviderAvatarUrl = (value: string): boolean => {
   }
 }
 
-const readResponseWithLimit = async (response: Response, maxBytes: number): Promise<Buffer> => {
-  const contentLength = response.headers.get('content-length')
-  if (contentLength) {
-    const declaredLength = Number(contentLength)
-    if (!Number.isSafeInteger(declaredLength) || declaredLength < 0 || declaredLength > maxBytes) {
-      throw new Error('Profile image response is too large')
-    }
+const readStreamWithLimit = async (
+  body: ReadableStream<Uint8Array>,
+  maxBytes: number,
+  declaredLength?: number
+): Promise<Buffer> => {
+  if (
+    declaredLength !== undefined &&
+    (!Number.isSafeInteger(declaredLength) || declaredLength < 0 || declaredLength > maxBytes)
+  ) {
+    throw new Error('Profile image response is too large')
   }
 
-  if (!response.body) throw new Error('Profile image response has no body')
-
-  const reader = response.body.getReader()
+  const reader = body.getReader()
   const chunks: Uint8Array[] = []
   let totalBytes = 0
 
@@ -69,6 +71,17 @@ const readResponseWithLimit = async (response: Response, maxBytes: number): Prom
   }
 
   return Buffer.concat(chunks, totalBytes)
+}
+
+const readResponseWithLimit = async (response: Response, maxBytes: number): Promise<Buffer> => {
+  if (!response.body) throw new Error('Profile image response has no body')
+
+  const contentLength = response.headers.get('content-length')
+  return readStreamWithLimit(
+    response.body,
+    maxBytes,
+    contentLength === null ? undefined : Number(contentLength)
+  )
 }
 
 const decodeInlineProviderAvatar = (value: string): Buffer | null => {
@@ -145,19 +158,33 @@ export const validateProfileImageBlob = async (url: string, userId: string): Pro
     throw new Error('Profile image does not belong to the authenticated user')
   }
 
-  const metadata = await head(url, { token: env.BLOB_READ_WRITE_TOKEN })
+  // Resolve the user-owned pathname through the authenticated Blob store. The
+  // submitted URL is never used as a network destination, which prevents SSRF
+  // and also binds the read to the store represented by our server token.
+  const storedBlob = await get(pathname, {
+    access: 'public',
+    token: env.BLOB_READ_WRITE_TOKEN,
+    useCache: false,
+    abortSignal: AbortSignal.timeout(STORED_PROFILE_IMAGE_READ_TIMEOUT_MS),
+  })
   if (
-    metadata.pathname !== pathname ||
-    metadata.size > MAX_STORED_PROFILE_IMAGE_BYTES ||
-    metadata.contentType !== 'image/webp'
+    !storedBlob ||
+    storedBlob.statusCode !== 200 ||
+    storedBlob.blob.pathname !== pathname ||
+    !Number.isSafeInteger(storedBlob.blob.size) ||
+    storedBlob.blob.size < 0 ||
+    storedBlob.blob.size > MAX_STORED_PROFILE_IMAGE_BYTES ||
+    storedBlob.blob.contentType !== 'image/webp'
   ) {
     throw new Error('Profile image metadata is invalid')
   }
 
-  const response = await fetch(url, { cache: 'no-store' })
-  if (!response.ok) throw new Error('Profile image could not be verified')
-  const buffer = await readResponseWithLimit(response, MAX_STORED_PROFILE_IMAGE_BYTES)
-  if (buffer.length !== metadata.size) {
+  const buffer = await readStreamWithLimit(
+    storedBlob.stream,
+    MAX_STORED_PROFILE_IMAGE_BYTES,
+    storedBlob.blob.size
+  )
+  if (buffer.length !== storedBlob.blob.size) {
     throw new Error('Profile image size is invalid')
   }
 
@@ -196,7 +223,13 @@ export const deleteProfileImage = async (pathname: string, userId: string): Prom
 export const extractPathnameFromBlobUrl = (url: string): string | null => {
   try {
     const urlObj = new URL(url)
-    if (urlObj.protocol !== 'https:' || !urlObj.hostname.endsWith('.blob.vercel-storage.com')) {
+    if (
+      urlObj.protocol !== 'https:' ||
+      urlObj.username !== '' ||
+      urlObj.password !== '' ||
+      urlObj.port !== '' ||
+      !urlObj.hostname.endsWith('.blob.vercel-storage.com')
+    ) {
       return null
     }
     // Vercel Blob URLs have the pathname after the domain

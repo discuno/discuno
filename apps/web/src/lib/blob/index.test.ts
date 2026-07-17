@@ -1,10 +1,10 @@
 import sharp from 'sharp'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-const mocks = vi.hoisted(() => ({ del: vi.fn(), head: vi.fn(), put: vi.fn() }))
+const mocks = vi.hoisted(() => ({ del: vi.fn(), get: vi.fn(), put: vi.fn() }))
 
 vi.mock('~/env', () => ({ env: { BLOB_READ_WRITE_TOKEN: 'blob-test' } }))
-vi.mock('@vercel/blob', () => ({ del: mocks.del, head: mocks.head, put: mocks.put }))
+vi.mock('@vercel/blob', () => ({ del: mocks.del, get: mocks.get, put: mocks.put }))
 
 import {
   downloadAndUploadProfileImage,
@@ -45,6 +45,21 @@ describe('profile image ownership', () => {
         `http://store.public.blob.vercel-storage.com/profile-images/${userId}/avatar.webp`
       )
     ).toBeNull()
+    expect(
+      extractPathnameFromBlobUrl(
+        `https://store.public.blob.vercel-storage.com.evil.test/profile-images/${userId}/avatar.webp`
+      )
+    ).toBeNull()
+    expect(
+      extractPathnameFromBlobUrl(
+        `https://evil.test/blob.vercel-storage.com/profile-images/${userId}/avatar.webp`
+      )
+    ).toBeNull()
+    expect(
+      extractPathnameFromBlobUrl(
+        `https://attacker@store.public.blob.vercel-storage.com/profile-images/${userId}/avatar.webp`
+      )
+    ).toBeNull()
   })
 
   it('prevents cross-user and traversal paths', () => {
@@ -61,20 +76,42 @@ describe('profile image ownership', () => {
     })
       .webp()
       .toBuffer()
-    mocks.head.mockResolvedValue({ pathname, size: image.length, contentType: 'image/webp' })
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(image)))
+    const response = new Response(image)
+    mocks.get.mockResolvedValue({
+      statusCode: 200,
+      stream: response.body,
+      headers: response.headers,
+      blob: { pathname, size: image.length, contentType: 'image/webp' },
+    })
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
 
     await expect(validateProfileImageBlob(url, userId)).resolves.toBeUndefined()
+    expect(mocks.get).toHaveBeenCalledWith(
+      pathname,
+      expect.objectContaining({
+        access: 'public',
+        token: 'blob-test',
+        useCache: false,
+        abortSignal: expect.any(AbortSignal),
+      })
+    )
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 
   it('rejects bytes that are not a decodable WebP image', async () => {
     const invalidImage = Buffer.from('not-an-image')
-    mocks.head.mockResolvedValue({
-      pathname,
-      size: invalidImage.length,
-      contentType: 'image/webp',
+    const response = new Response(invalidImage)
+    mocks.get.mockResolvedValue({
+      statusCode: 200,
+      stream: response.body,
+      headers: response.headers,
+      blob: {
+        pathname,
+        size: invalidImage.length,
+        contentType: 'image/webp',
+      },
     })
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(invalidImage)))
 
     await expect(validateProfileImageBlob(url, userId)).rejects.toThrow()
   })

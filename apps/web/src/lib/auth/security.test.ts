@@ -124,6 +124,8 @@ describe('auth security helpers', () => {
     expect(isAnonymousAuthEmail('temp-01abc@discuno.com')).toBe(true)
     expect(isAnonymousAuthEmail('TEMP-01ABC@DISCUNO.COM')).toBe(true)
     expect(isAnonymousAuthEmail('support@discuno.com')).toBe(false)
+    expect(isAnonymousAuthEmail('temp-@discuno.com')).toBe(false)
+    expect(isAnonymousAuthEmail('temp-user@discuno.com@attacker.example')).toBe(false)
     expect(isAnonymousAuthEmail('temp-user@discuno.com.attacker.example')).toBe(false)
   })
 })

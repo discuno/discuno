@@ -48,12 +48,14 @@ export const updateUserProfileImage = async (imageUrl: string) => {
   // Update user record with new image URL
   await updateProfileImage(imageUrl)
 
-  // Delete old image if it exists and is a blob URL
-  if (currentImageUrl !== imageUrl && currentImageUrl?.includes('blob.vercel-storage.com')) {
-    const pathname = extractPathnameFromBlobUrl(currentImageUrl)
-    if (pathname) {
-      scheduleProfileImageDeletion(pathname, userId)
-    }
+  // Parse the URL before deciding whether it belongs to Vercel Blob. Substring
+  // checks can be spoofed by placing the expected hostname in an attacker URL.
+  const previousImagePathname =
+    currentImageUrl !== imageUrl && currentImageUrl
+      ? extractPathnameFromBlobUrl(currentImageUrl)
+      : null
+  if (previousImagePathname) {
+    scheduleProfileImageDeletion(previousImagePathname, userId)
   }
 
   // Revalidate profile pages to show new image
@@ -74,12 +76,10 @@ export const removeUserProfileImage = async () => {
   // Update user record to remove image
   await removeProfileImage()
 
-  // Delete image from blob storage if it's a blob URL
-  if (currentImageUrl?.includes('blob.vercel-storage.com')) {
-    const pathname = extractPathnameFromBlobUrl(currentImageUrl)
-    if (pathname) {
-      scheduleProfileImageDeletion(pathname, userId)
-    }
+  // Delete only URLs whose parsed origin is a recognized Vercel Blob host.
+  const pathname = currentImageUrl ? extractPathnameFromBlobUrl(currentImageUrl) : null
+  if (pathname) {
+    scheduleProfileImageDeletion(pathname, userId)
   }
 
   // Revalidate profile pages

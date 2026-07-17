@@ -90,7 +90,13 @@ export const createAuthLogReference = (message: string): string =>
 export const authErrorKind = (error: unknown): string => getSafeErrorName(error)
 
 /** Match only the synthetic address shape produced by Better Auth's anonymous plugin. */
-export const isAnonymousAuthEmail = (email: string, domain = 'discuno.com'): boolean => {
-  const escapedDomain = domain.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  return new RegExp(`^temp-[^@]+@${escapedDomain}$`, 'i').test(email.trim())
+export const isAnonymousAuthEmail = (email: string): boolean => {
+  const [localPart, domain, unexpectedPart] = email.trim().toLowerCase().split('@')
+  return (
+    unexpectedPart === undefined &&
+    domain === 'discuno.com' &&
+    localPart !== undefined &&
+    localPart.startsWith('temp-') &&
+    localPart.length > 'temp-'.length
+  )
 }

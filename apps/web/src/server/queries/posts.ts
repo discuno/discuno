@@ -82,8 +82,6 @@ export const getInfiniteScrollPosts = async (
   cacheLife('max')
   cacheTag('posts')
 
-  console.log('CACHE MISS: Executing getInfiniteScrollPosts with limit:', limit, 'cursor:', cursor)
-
   let rankingScore: number | undefined
   let randomSortKey: number | undefined
   let postId: number | undefined

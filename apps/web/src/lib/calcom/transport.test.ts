@@ -19,7 +19,24 @@ describe('Cal.com HTTP transport', () => {
 
   it('normalizes base and path slashes without changing the API base path', () => {
     expect(getCalcomApiUrl('/auth/oauth2/token')).toBe('https://api.cal.test/v2/auth/oauth2/token')
-    expect(getCalcomApiUrl('me')).toBe('https://api.cal.test/v2/me')
+  })
+
+  it.each([
+    '//127.0.0.1/private',
+    'https://attacker.example/private',
+    '/../private',
+    '/%2e%2e/private',
+    '/bookings\\private',
+    '/bookings#https://attacker.example',
+    '/bookings\r\nX-Injected: true',
+  ])('rejects a route that could escape or corrupt the configured API base: %s', path => {
+    expect(() => getCalcomApiUrl(path)).toThrow(TypeError)
+  })
+
+  it('keeps encoded query values on the configured Cal.com origin and base path', () => {
+    expect(getCalcomApiUrl('/bookings?email=student%2Btest%40example.edu')).toBe(
+      'https://api.cal.test/v2/bookings?email=student%2Btest%40example.edu'
+    )
   })
 
   it('creates a bounded provider signal with the configured timeout', () => {
