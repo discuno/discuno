@@ -69,6 +69,8 @@ describe('extractEduDomainPrefix', () => {
 })
 
 describe('reconcileMentorAccessForUser', () => {
+  // This deliberately queues 12 transactions behind one row lock. Remote
+  // Railway latency can exceed Vitest's generic five-second unit-test limit.
   it('serializes concurrent repairs into one mentor role and one active school link', async () => {
     const user = await createUser()
 
@@ -85,7 +87,7 @@ describe('reconcileMentorAccessForUser', () => {
     const links = await readMatchingSchoolLinks(user.id)
     expect(links).toHaveLength(1)
     expect(links[0]?.deletedAt).toBeNull()
-  })
+  }, 15_000)
 
   it('restores the oldest matching soft-deleted link instead of inserting a duplicate', async () => {
     const user = await createUser({ role: 'user' })
