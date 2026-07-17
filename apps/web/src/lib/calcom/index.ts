@@ -354,7 +354,11 @@ export const createCalcomBooking = async (input: {
         },
         bookingFieldsResponses: { title: bookingTitle },
         eventTypeId: input.calcomEventTypeId,
-        ...(input.lengthInMinutes !== undefined ? { lengthInMinutes: input.lengthInMinutes } : {}),
+        // `lengthInMinutes` is only valid for Cal.com event types configured
+        // with multiple selectable durations. Discuno currently supports the
+        // fixed event duration, which we verify against the Checkout snapshot
+        // above and again against the create response below. Let Cal.com apply
+        // that fixed duration instead of sending the variable-duration field.
         ...(configuration.location ? { location: configuration.location } : {}),
         metadata: {
           ...(input.paymentId !== undefined ? { paymentId: input.paymentId.toString() } : {}),

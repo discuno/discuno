@@ -172,16 +172,15 @@ describe('Cal.com booking contract', () => {
     }
   )
 
-  it('sends the current event duration and single supported location to Cal.com', async () => {
+  it('verifies the fixed event duration without sending Cal.com a variable-duration field', async () => {
     await createCalcomBooking({
       ...bookingInput,
       lengthInMinutes: BOOKING_LENGTH_MINUTES,
     })
 
-    expect(getCreateBookingBody()).toMatchObject({
-      lengthInMinutes: BOOKING_LENGTH_MINUTES,
-      location: EVENT_LOCATION,
-    })
+    const body = getCreateBookingBody()
+    expect(body).not.toHaveProperty('lengthInMinutes')
+    expect(body.location).toEqual(EVENT_LOCATION)
   })
 
   it.each([
