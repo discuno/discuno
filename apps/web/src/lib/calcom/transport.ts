@@ -10,15 +10,15 @@ export const CALCOM_REQUEST_TIMEOUT_MS = 15_000
 const CALCOM_ROUTE_PATTERN =
   /^\/[A-Za-z0-9][A-Za-z0-9._~!$&'()*+,;=:@%/-]*(?:\?[A-Za-z0-9._~!$&'()*+,;=:@%/?-]*)?$/
 
-const assertSafeCalcomRoute = (path: string): void => {
+const canonicalizeSafeCalcomRoute = (path: string): string => {
   if (!CALCOM_ROUTE_PATTERN.test(path)) {
     throw new TypeError('Cal.com request path must be an absolute API route')
   }
 
   const queryStart = path.indexOf('?')
   const pathname = queryStart === -1 ? path : path.slice(0, queryStart)
-  for (const segment of pathname.split('/')) {
-    if (!segment) continue
+  const encodedSegments = pathname.split('/').map(segment => {
+    if (!segment) return ''
 
     let decodedSegment: string
     try {
@@ -37,11 +37,26 @@ const assertSafeCalcomRoute = (path: string): void => {
     ) {
       throw new TypeError('Cal.com request path contains an unsafe segment')
     }
-  }
+
+    // CodeQL recognizes encodeURIComponent as an SSRF sanitizer. Rebuilding
+    // every dynamic segment also makes the runtime guarantee explicit: input
+    // can never introduce a slash, origin, fragment, or traversal boundary.
+    return encodeURIComponent(decodedSegment)
+  })
+
+  const canonicalPathname = encodedSegments.join('/')
+  if (queryStart === -1 || queryStart === path.length - 1) return canonicalPathname
+
+  const canonicalQuery = Array.from(new URLSearchParams(path.slice(queryStart + 1))).map(
+    ([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`
+  )
+  return canonicalQuery.length
+    ? `${canonicalPathname}?${canonicalQuery.join('&')}`
+    : canonicalPathname
 }
 
 export const getCalcomApiUrl = (path: string): string => {
-  assertSafeCalcomRoute(path)
+  const canonicalRoute = canonicalizeSafeCalcomRoute(path)
 
   const baseUrl = new URL(env.CALCOM_API_URL)
   if (
@@ -55,7 +70,7 @@ export const getCalcomApiUrl = (path: string): string => {
   }
 
   baseUrl.pathname = `${baseUrl.pathname.replace(/\/+$/, '')}/`
-  const requestUrl = new URL(path.slice(1), baseUrl)
+  const requestUrl = new URL(canonicalRoute.slice(1), baseUrl)
   if (
     requestUrl.origin !== baseUrl.origin ||
     !requestUrl.pathname.startsWith(baseUrl.pathname) ||
