@@ -291,14 +291,17 @@ export const fetchAvailableSlots = async (
   const parsedTimeZone = timeZone ? TimeZoneSchema.safeParse(timeZone) : null
   const start = new Date(startDate)
   const end = new Date(endDate)
-  const maximumRangeMs = 31 * 24 * 60 * 60 * 1000
+  // A 31-day local calendar month can span 31 days plus one hour when it
+  // contains a daylight-saving fall-back. Keep the boundary below 32 full
+  // days while allowing that legitimate provider request.
+  const maximumRangeMsExclusive = 32 * 24 * 60 * 60 * 1000
   if (
     !parsedEventTypeId.success ||
     (parsedTimeZone && !parsedTimeZone.success) ||
     !Number.isFinite(start.getTime()) ||
     !Number.isFinite(end.getTime()) ||
     end <= start ||
-    end.getTime() - start.getTime() > maximumRangeMs
+    end.getTime() - start.getTime() >= maximumRangeMsExclusive
   ) {
     throw new BadRequestError('Invalid availability range')
   }
@@ -525,7 +528,9 @@ export const createStripeCheckoutSession = async (
               payment_method_save: 'enabled' as const,
             },
           }),
-          success_url: `${env.NEXT_PUBLIC_BASE_URL}/booking/success?session_id={CHECKOUT_SESSION_ID}`,
+          // Keep Stripe's Session ID out of browser-visible URLs. The durable
+          // attempt resolves its bound Session server-side on the result page.
+          success_url: `${env.NEXT_PUBLIC_BASE_URL}/booking/success?attempt=${bookingAttemptId}`,
           cancel_url: cancelUrl.toString(),
           expires_at: Math.floor(checkoutExpiresAt.getTime() / 1000),
           metadata: {

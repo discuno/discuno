@@ -1,5 +1,6 @@
 import { connection } from 'next/server'
 import { getMentorStripeStatus } from '~/app/(app)/(mentor)/settings/actions'
+import { env } from '~/env'
 import { SettingsHeaderClient } from './SettingsHeaderClient'
 
 export const SettingsHeader = async () => {
@@ -7,13 +8,14 @@ export const SettingsHeader = async () => {
 
   // Fetch Stripe status on the server
   const stripeStatus = await getMentorStripeStatus()
+  const stripeData = stripeStatus.success ? stripeStatus.data : undefined
 
   return (
     <SettingsHeaderClient
-      hasStripeAccount={stripeStatus.data?.hasAccount ?? false}
+      showPayoutAction={stripeData !== undefined && (stripeData.hasAccount || env.PAYMENTS_ENABLED)}
+      hasStripeAccount={stripeData?.hasAccount ?? false}
       payoutsReady={
-        (stripeStatus.data?.transfersEnabled ?? false) &&
-        (stripeStatus.data?.payoutsEnabled ?? false)
+        (stripeData?.transfersEnabled ?? false) && (stripeData?.payoutsEnabled ?? false)
       }
     />
   )

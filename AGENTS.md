@@ -513,6 +513,22 @@ Use `docs/positioning.md` as the source of truth for public-facing copy.
 - Describe the school-email check precisely. It supports institutional affiliation; it does not verify identity, background, expertise, or outcomes.
 - Never fabricate reviews or imply guaranteed admissions, jobs, grades, placements, or other results.
 
+## Visual Identity
+
+Use `docs/design-system.md` as the source of truth for visual work.
+
+- Discuno's owned direction is “decision field notes”: warm paper, deep ink, cobalt actions, one
+  chartreuse highlighter, Newsreader display type, Geist UI text, ruled fields, stamps, and question
+  slips.
+- Keep familiar interaction semantics. The shadcn/Base primitives supply behavior; Discuno tokens
+  and recurring editorial assets supply the identity.
+- Acquisition may be more expressive. Auth, booking, payments, and the mentor workspace must remain
+  calmer and keep decoration away from dense controls.
+- Do not reintroduce generic blue-purple gradients, blurred color orbs, glass cards, universal pill
+  geometry, or large soft floating shadows.
+- Add registry components only for a real user or business job. Do not add charts without
+  trustworthy actionable data or carousels that merely hide content.
+
 ## Development Notes
 
 ### Cache Components
@@ -531,7 +547,9 @@ Use `docs/positioning.md` as the source of truth for public-facing copy.
 
 ### Mentor Dashboard
 
-Consult `.cursor/rules/mentor-dashboard.md` for UI and data requirements: meeting management, payout visibility, Stripe onboarding state, analytics widgets, and notifications.
+The mentor workspace must cover booking management, availability, sessions, public profile,
+calendar connection, setup readiness, and payout state. Follow `docs/design-system.md`; only add
+analytics or notification widgets when backed by trustworthy data and a clear mentor action.
 
 ### Database Migrations
 

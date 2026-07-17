@@ -164,6 +164,9 @@ importers:
       '@dnd-kit/utilities':
         specifier: ^3.2.2
         version: 3.2.2(react@19.2.7)
+      '@fontsource-variable/newsreader':
+        specifier: ^5.2.10
+        version: 5.2.10
       '@opentelemetry/api':
         specifier: ^1.9.1
         version: 1.9.1
@@ -1495,6 +1498,12 @@ packages:
     resolution:
       {
         integrity: sha512-HpCo8tmWzLVad5s2d19EhAz5zqrrQ6s69qd6moPMQvkOuSwDT1YgRfWSVuc4ennqrgv3OHppiOGMQ7oC13yIww==,
+      }
+
+  '@fontsource-variable/newsreader@5.2.10':
+    resolution:
+      {
+        integrity: sha512-MdI2iRwrqWpMOU/2aV2BgfZ4dJNlj/XlYaY8Zb7t87mWqHskYW0XiUANkt1cyOCiEfW2VQ0bQ5vZgGPp6B2B4w==,
       }
 
   '@grpc/grpc-js@1.14.4':
@@ -13525,6 +13534,8 @@ snapshots:
       react-dom: 19.2.7(react@19.2.7)
 
   '@floating-ui/utils@0.2.12': {}
+
+  '@fontsource-variable/newsreader@5.2.10': {}
 
   '@grpc/grpc-js@1.14.4':
     dependencies:

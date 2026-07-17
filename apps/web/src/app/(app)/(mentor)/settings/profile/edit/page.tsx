@@ -1,31 +1,26 @@
 import type { Metadata } from 'next'
+import { notFound } from 'next/navigation'
 import { getFullProfile } from '~/server/queries/profiles'
-import { getMajors, getSchools } from '~/server/queries/reference-data'
+import { getMajors } from '~/server/queries/reference-data'
 import { EditProfileContent } from '../components/EditProfileContent'
 import { ProfileShell } from '../components/ProfileShell'
 
 const getEditProfileData = async () => {
-  const [profile, schools, majors] = await Promise.all([
-    getFullProfile(),
-    getSchools(),
-    getMajors(),
-  ])
-  return { profile, schools, majors }
+  const [profile, majors] = await Promise.all([getFullProfile(), getMajors()])
+  return { profile, majors }
 }
 
 const EditProfilePage = async () => {
-  const { profile, schools, majors } = await getEditProfileData()
+  const { profile, majors } = await getEditProfileData()
 
-  if (!profile) {
-    return <div>User not found</div>
-  }
+  if (!profile) notFound()
 
   return (
     <ProfileShell
-      title="Edit Profile"
-      description="Update your profile information and academic details"
+      title="Help students know when you’re the right person to ask."
+      description="Share the school, field, and decisions behind your perspective. Be specific about what you’ve lived through and what you can responsibly help someone think through."
     >
-      <EditProfileContent profile={profile} schools={schools} majors={majors} />
+      <EditProfileContent profile={profile} majors={majors} />
     </ProfileShell>
   )
 }
@@ -33,6 +28,6 @@ const EditProfilePage = async () => {
 export default EditProfilePage
 
 export const metadata: Metadata = {
-  title: 'Edit Profile | Discuno',
-  description: 'Update your profile information and academic details on Discuno',
+  title: 'Edit mentor profile | Discuno',
+  description: 'Update the experience and academic context shown on your public mentor profile.',
 }

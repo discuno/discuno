@@ -87,14 +87,12 @@ const AboutPage = () => {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(aboutJsonLd) }}
       />
 
-      <section className="border-border/70 border-b px-4 pt-36 pb-20 sm:px-6 sm:pt-40 sm:pb-24 lg:px-8">
+      <section className="field-notes border-foreground/20 border-b-2 px-4 pt-36 pb-20 sm:px-6 sm:pt-40 sm:pb-24 lg:px-8">
         <div className="mx-auto max-w-6xl">
-          <div className="text-primary mb-6 flex items-center gap-3 text-sm font-semibold tracking-wide uppercase">
-            <span className="bg-primary h-px w-8" aria-hidden="true" />
-            About Discuno
-          </div>
-          <h1 className="max-w-4xl text-4xl leading-[1.08] font-semibold tracking-[-0.035em] text-balance sm:text-6xl lg:text-7xl">
-            No one should have to figure out college entirely from scratch.
+          <p className="note-stamp mb-7">About Discuno</p>
+          <h1 className="display-title max-w-4xl">
+            No one should have to figure out college{' '}
+            <span className="marker-underline">entirely from scratch.</span>
           </h1>
           <p className="text-muted-foreground mt-8 max-w-2xl text-lg leading-8 sm:text-xl">
             Discuno exists so one student&apos;s hard-won experience can become another
@@ -128,7 +126,7 @@ const AboutPage = () => {
         </div>
       </section>
 
-      <section className="border-border/70 bg-muted/30 border-y px-4 py-20 sm:px-6 sm:py-24 lg:px-8">
+      <section className="field-notes border-foreground/15 border-y px-4 py-20 sm:px-6 sm:py-24 lg:px-8">
         <div className="mx-auto max-w-6xl">
           <div className="max-w-2xl">
             <p className="text-muted-foreground text-sm font-semibold tracking-wide uppercase">
@@ -139,7 +137,7 @@ const AboutPage = () => {
             </h2>
           </div>
 
-          <div className="bg-border mt-12 grid gap-px overflow-hidden rounded-2xl border md:grid-cols-3">
+          <div className="border-foreground/20 ink-shadow bg-foreground/20 mt-12 grid gap-px overflow-hidden rounded-xl border md:grid-cols-3">
             <div className="bg-card p-7 sm:p-8">
               <span className="text-primary text-sm font-semibold">01</span>
               <h3 className="mt-8 text-xl font-semibold">Make the invisible visible</h3>
@@ -189,8 +187,8 @@ const AboutPage = () => {
                 const Icon = principle.icon
 
                 return (
-                  <div key={principle.title} className="border-border rounded-2xl border p-6">
-                    <div className="bg-primary/10 text-primary flex size-10 items-center justify-center rounded-xl">
+                  <div key={principle.title} className="paper-panel corner-mark p-6">
+                    <div className="bg-accent text-foreground flex size-10 items-center justify-center rounded-md border">
                       <Icon className="size-5" aria-hidden="true" />
                     </div>
                     <h3 className="mt-5 text-lg font-semibold">{principle.title}</h3>
@@ -206,12 +204,10 @@ const AboutPage = () => {
       </section>
 
       <section className="px-4 pb-20 sm:px-6 sm:pb-24 lg:px-8">
-        <div className="bg-foreground text-background mx-auto max-w-6xl overflow-hidden rounded-3xl">
+        <div className="field-notes-ink on-ink border-background/15 ink-shadow mx-auto max-w-6xl overflow-hidden rounded-xl border">
           <div className="grid lg:grid-cols-[1.15fr_0.85fr]">
             <div className="p-8 sm:p-12 lg:p-14">
-              <p className="text-background/60 text-sm font-semibold tracking-wide uppercase">
-                Built from student experience
-              </p>
+              <p className="note-stamp">Built from student experience</p>
               <h2 className="mt-4 max-w-2xl text-3xl font-semibold tracking-tight sm:text-4xl">
                 The answer may exist. Finding the right person should not depend on luck.
               </h2>

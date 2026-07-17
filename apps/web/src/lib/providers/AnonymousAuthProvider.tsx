@@ -22,6 +22,12 @@ import { authClient, useSession } from '~/lib/auth-client'
 
 const requestWasAborted = (signal: AbortSignal) => signal.aborted
 
+const getPageViewProperties = () => {
+  const currentUrl = new URL(window.location.href)
+  if (currentUrl.pathname === '/booking/success') currentUrl.search = ''
+  return { $current_url: currentUrl.toString() }
+}
+
 /**
  * Ensure every visitor has a session without interrupting the experience.
  * Account conversion is always user initiated elsewhere in the product.
@@ -103,7 +109,7 @@ export const AnonymousAuthProvider = ({ children }: { children: React.ReactNode 
     // it once after consent resolves, after any permanent user identification.
     if (!hasCapturedResolvedPage.current) {
       hasCapturedResolvedPage.current = true
-      posthog.capture('$pageview')
+      posthog.capture('$pageview', getPageViewProperties())
     }
   }, [analyticsConsentState, isAnonymous, userId])
 

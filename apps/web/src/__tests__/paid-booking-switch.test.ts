@@ -186,6 +186,15 @@ describe('paid booking launch switch', () => {
 
     expect(mocks.getOrCreateStripeCustomerId).toHaveBeenCalledOnce()
     expect(mocks.createCheckoutSession).toHaveBeenCalledOnce()
+    expect(mocks.createCheckoutSession).toHaveBeenCalledWith(
+      expect.objectContaining({
+        success_url: `https://preview.discuno.test/booking/success?attempt=${input.bookingAttemptId}`,
+      }),
+      expect.anything()
+    )
+    expect(JSON.stringify(mocks.createCheckoutSession.mock.calls[0]?.[0])).not.toContain(
+      '{CHECKOUT_SESSION_ID}'
+    )
 
     const logs = JSON.stringify([
       ...vi.mocked(console.log).mock.calls,
@@ -349,6 +358,21 @@ describe('public Cal.com slot lookup boundary', () => {
 
     expect(mocks.headers).not.toHaveBeenCalled()
     expect(mocks.fetch).not.toHaveBeenCalled()
+  })
+
+  it('accepts a 31-day local month that includes a daylight-saving fall-back', async () => {
+    await expect(
+      fetchAvailableSlots(
+        42,
+        new Date('2026-10-01T00:00:00.000+01:00'),
+        new Date('2026-10-31T23:59:59.999+00:00'),
+        'Europe/London'
+      )
+    ).resolves.toEqual({
+      '2099-01-02': [{ time: '2099-01-02T15:00:00.000Z', available: true }],
+    })
+
+    expect(mocks.fetch).toHaveBeenCalledOnce()
   })
 
   it('stops abusive slot polling before the upstream request', async () => {

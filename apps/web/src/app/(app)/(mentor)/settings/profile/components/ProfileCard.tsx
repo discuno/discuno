@@ -11,10 +11,12 @@ interface ProfileCardProps {
 export const ProfileCard = ({ title, description, icon: Icon, children }: ProfileCardProps) => {
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <Icon className="text-muted-foreground h-5 w-5" />
-          <CardTitle className="text-lg font-semibold">{title}</CardTitle>
+      <CardHeader className="gap-2">
+        <div className="flex items-center gap-3">
+          <span className="bg-muted text-muted-foreground flex size-9 items-center justify-center rounded-md">
+            <Icon aria-hidden="true" className="size-4" />
+          </span>
+          <CardTitle>{title}</CardTitle>
         </div>
         {description && <CardDescription>{description}</CardDescription>}
       </CardHeader>

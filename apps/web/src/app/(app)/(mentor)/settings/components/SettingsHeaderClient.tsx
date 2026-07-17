@@ -1,6 +1,5 @@
 'use client'
 
-import { PanelLeft } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
@@ -11,9 +10,8 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '~/components/ui/breadcrumb'
-import { Button } from '~/components/ui/button'
 import { Separator } from '~/components/ui/separator'
-import { useSidebar } from '~/components/ui/sidebar'
+import { SidebarTrigger } from '~/components/ui/sidebar'
 import { StripeDashboardButton } from './StripeDashboardButton'
 
 const routeLabels: Record<string, string> = {
@@ -27,15 +25,16 @@ const routeLabels: Record<string, string> = {
 }
 
 interface SettingsHeaderClientProps {
+  showPayoutAction: boolean
   hasStripeAccount: boolean
   payoutsReady: boolean
 }
 
 export function SettingsHeaderClient({
+  showPayoutAction,
   hasStripeAccount,
   payoutsReady,
 }: SettingsHeaderClientProps) {
-  const { toggleSidebar } = useSidebar()
   const pathname = usePathname()
   const isWorkspaceRoot = pathname === '/settings'
   const fallbackSegment = pathname.split('/').filter(Boolean).at(-1) ?? 'settings'
@@ -47,18 +46,10 @@ export function SettingsHeaderClient({
       .join(' ')
 
   return (
-    <header className="bg-background/95 supports-backdrop-filter:bg-background/80 sticky top-0 z-40 flex w-full items-center border-b backdrop-blur">
+    <header className="bg-background sticky top-0 z-40 flex w-full items-center border-b">
       <div className="flex h-16 w-full items-center gap-2 px-4 sm:px-6">
-        <Button
-          className="h-8 w-8 md:hidden"
-          variant="ghost"
-          size="icon"
-          onClick={toggleSidebar}
-          aria-label="Open mentor navigation"
-        >
-          <PanelLeft className="h-4 w-4" />
-        </Button>
-        <Separator orientation="vertical" className="mr-2 h-4 md:hidden" />
+        <SidebarTrigger className="-ml-1" aria-label="Toggle mentor navigation" />
+        <Separator orientation="vertical" className="mr-2 h-4" />
         <Breadcrumb className="min-w-0 flex-1">
           <BreadcrumbList className="flex-nowrap">
             <BreadcrumbItem className="min-w-0">
@@ -80,7 +71,9 @@ export function SettingsHeaderClient({
             )}
           </BreadcrumbList>
         </Breadcrumb>
-        <StripeDashboardButton hasStripeAccount={hasStripeAccount} payoutsReady={payoutsReady} />
+        {showPayoutAction && (
+          <StripeDashboardButton hasStripeAccount={hasStripeAccount} payoutsReady={payoutsReady} />
+        )}
       </div>
     </header>
   )

@@ -1,14 +1,17 @@
 'use client'
 
+import { CalendarPlus, Plus } from 'lucide-react'
 import { useState } from 'react'
 import type { Availability, DateOverride } from '~/app/types/availability'
 import { Button } from '~/components/ui/button'
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '~/components/ui/empty'
+import { ItemGroup } from '~/components/ui/item'
 import { DeleteOverrideDialog } from './DeleteOverrideDialog'
 import { OverrideListItem } from './OverrideListItem'
 import { SaveOverrideModal } from './SaveOverrideModal'
 
 interface OverrideListProps {
-  availability: Availability | null
+  availability: Availability
   onOverridesChange: (newOverrides: DateOverride[]) => void
 }
 
@@ -18,62 +21,79 @@ export function OverrideList({ availability, onOverridesChange }: OverrideListPr
   const [selectedOverride, setSelectedOverride] = useState<DateOverride | null>(null)
   const [overrideToDelete, setOverrideToDelete] = useState<DateOverride | null>(null)
 
-  const handleCreate = () => {
-    setSelectedOverride(null)
-    setIsModalOpen(true)
-  }
-
-  const handleEdit = (override: DateOverride) => {
-    setSelectedOverride(override)
-    setIsModalOpen(true)
-  }
-
-  const handleDelete = (override: DateOverride) => {
-    setOverrideToDelete(override)
-    setIsDialogOpen(true)
-  }
-
-  const initialOverrides = availability?.dateOverrides ?? []
+  const overrides = [...availability.dateOverrides].sort((left, right) =>
+    left.date.localeCompare(right.date)
+  )
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-medium">Your Overrides</h3>
-        <Button onClick={handleCreate}>+ Create Override</Button>
-      </div>
-      <div className="rounded-md border">
-        {initialOverrides.length > 0 ? (
-          initialOverrides.map((override, index) => (
+    <div className="flex flex-col gap-4">
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full"
+        onClick={() => {
+          setSelectedOverride(null)
+          setIsModalOpen(true)
+        }}
+      >
+        <Plus data-icon="inline-start" />
+        Add dates
+      </Button>
+
+      {overrides.length > 0 ? (
+        <ItemGroup className="gap-2.5">
+          {overrides.map(override => (
             <OverrideListItem
-              key={`${override.date}-${index}`}
+              key={override.date}
               override={override}
-              onEdit={() => handleEdit(override)}
-              onDelete={() => handleDelete(override)}
+              onEdit={() => {
+                setSelectedOverride(override)
+                setIsModalOpen(true)
+              }}
+              onDelete={() => {
+                setOverrideToDelete(override)
+                setIsDialogOpen(true)
+              }}
             />
-          ))
-        ) : (
-          <div className="p-4 text-center text-sm text-gray-500">You have no date overrides.</div>
-        )}
-      </div>
-      <SaveOverrideModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        overrideToEdit={selectedOverride}
-        currentAvailability={availability}
-        onSave={(newOverrides: DateOverride[]) => {
-          onOverridesChange(newOverrides)
-          setIsModalOpen(false)
-        }}
-      />
-      <DeleteOverrideDialog
-        isOpen={isDialogOpen}
-        onClose={() => setIsDialogOpen(false)}
-        override={overrideToDelete}
-        onDelete={(newOverrides: DateOverride[]) => {
-          onOverridesChange(newOverrides)
-          setIsDialogOpen(false)
-        }}
-      />
+          ))}
+        </ItemGroup>
+      ) : (
+        <Empty className="bg-muted/25 border">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <CalendarPlus />
+            </EmptyMedia>
+            <EmptyTitle>No date exceptions</EmptyTitle>
+            <EmptyDescription>
+              Set different hours for a specific date without changing your usual week.
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
+      )}
+
+      {isModalOpen && (
+        <SaveOverrideModal
+          isOpen
+          onClose={() => {
+            setIsModalOpen(false)
+            setSelectedOverride(null)
+          }}
+          overrideToEdit={selectedOverride}
+          currentAvailability={availability}
+          onSave={onOverridesChange}
+        />
+      )}
+      {isDialogOpen && (
+        <DeleteOverrideDialog
+          isOpen
+          onClose={() => {
+            setIsDialogOpen(false)
+            setOverrideToDelete(null)
+          }}
+          override={overrideToDelete}
+          onDelete={date => onOverridesChange(overrides.filter(override => override.date !== date))}
+        />
+      )}
     </div>
   )
 }

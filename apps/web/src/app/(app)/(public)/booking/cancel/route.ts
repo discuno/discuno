@@ -61,7 +61,7 @@ export const GET = async (request: Request) => {
         const session = await stripe.checkout.sessions.retrieve(record.stripeCheckoutSessionId)
         if (session.status === 'complete') {
           const successUrl = new URL('/booking/success', requestUrl.origin)
-          successUrl.searchParams.set('session_id', session.id)
+          successUrl.searchParams.set('attempt', record.bookingAttemptId)
           return NextResponse.redirect(successUrl)
         }
         if (session.status === 'open') {

@@ -1008,23 +1008,28 @@ export const getMentorOnboardingStatus = async (): Promise<{
     !!scheduleResult.data &&
     Object.values(scheduleResult.data.weeklySchedule).some(day => day.length > 0)
 
-  // Check if any event types are enabled
+  // A paid type is not publicly bookable while the global launch switch is
+  // off, even if an older database row is still marked enabled. Onboarding
+  // must reflect the same inventory students can actually see.
   const eventTypesResult = await getMentorEventTypePreferences()
+  const isCurrentlyBookable = (eventType: NonNullable<typeof eventTypesResult.data>[number]) =>
+    eventType.isEnabled &&
+    eventType.bookingCompatible === true &&
+    (env.PAYMENTS_ENABLED || !eventType.customPrice || eventType.customPrice <= 0)
   const hasEnabledEventTypes =
     eventTypesResult.success &&
     !!eventTypesResult.data &&
-    eventTypesResult.data.some(et => et.isEnabled && et.bookingCompatible === true)
+    eventTypesResult.data.some(isCurrentlyBookable)
 
   // Check if pricing is set for enabled event types
   const hasPricing =
     eventTypesResult.success &&
     !!eventTypesResult.data &&
-    eventTypesResult.data.some(
-      et => et.isEnabled && et.bookingCompatible === true && et.customPrice !== null
-    )
+    eventTypesResult.data.some(et => isCurrentlyBookable(et) && et.customPrice !== null)
 
   // Check if mentor has any paid event types enabled
   const hasPaidEventTypes =
+    env.PAYMENTS_ENABLED &&
     eventTypesResult.success &&
     !!eventTypesResult.data &&
     eventTypesResult.data.some(

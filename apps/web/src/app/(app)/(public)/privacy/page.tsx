@@ -20,10 +20,10 @@ export default function PrivacyPage() {
   return (
     <div className="text-foreground min-h-screen">
       {/* Hero Section */}
-      <div className="from-primary/5 to-background border-b bg-gradient-to-b">
+      <div className="field-notes border-b">
         <div className="container mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
           <div className="text-center">
-            <div className="bg-primary/10 mx-auto flex h-16 w-16 items-center justify-center rounded-full">
+            <div className="bg-accent text-foreground mx-auto flex h-16 w-16 items-center justify-center rounded-md border">
               <Shield className="text-primary h-8 w-8" />
             </div>
             <h1 className="mt-6 text-4xl font-bold tracking-tight sm:text-5xl">Privacy Policy</h1>

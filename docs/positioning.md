@@ -49,7 +49,8 @@ in front of them.
 
 ## Trust Boundaries
 
-- Say **school email verified** only when that flag is true.
+- Say **school email confirmed** only when the school-email flag is true. “Confirmed” describes
+  access to the address without implying that Discuno verified the person more broadly.
 - Explain that the check confirms access to a supported institutional email address and supports a
   stated affiliation. It is not identity, background, expertise, credential, or outcome
   verification.

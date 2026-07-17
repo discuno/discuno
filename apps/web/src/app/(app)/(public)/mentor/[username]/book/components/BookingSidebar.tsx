@@ -5,7 +5,7 @@ import { format } from 'date-fns'
 import { Calendar, Check, Clock } from 'lucide-react'
 import Image from 'next/image'
 import type { EventType } from '~/app/(app)/(public)/mentor/[username]/book/actions'
-import type { BookingData } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingModal'
+import type { BookingData } from '~/app/(app)/(public)/mentor/[username]/book/types'
 import { Avatar, AvatarFallback } from '~/components/ui/avatar'
 import { Badge } from '~/components/ui/badge'
 import { formatCurrencyFromCents } from '~/lib/format-currency'
@@ -55,7 +55,7 @@ export const BookingSidebar = ({
       : null
 
   return (
-    <div className="bg-muted/30 flex h-full w-full flex-col p-6 lg:w-[380px] lg:border-r lg:p-8">
+    <div className="field-notes flex h-full w-full flex-col p-6 xl:border-r xl:p-8">
       {/* Mentor Profile */}
       <div className="mb-8 flex items-start gap-4">
         {bookingData.image ? (
@@ -64,17 +64,17 @@ export const BookingSidebar = ({
             alt={bookingData.name}
             width={64}
             height={64}
-            className="h-16 w-16 rounded-full border-2 border-white object-cover shadow-md dark:border-zinc-800"
+            className="border-foreground/20 h-16 w-16 rounded-lg border-2 object-cover shadow-[2px_2px_0_rgba(13,20,39,0.14)]"
           />
         ) : (
-          <Avatar className="h-16 w-16 border-2 border-white shadow-md dark:border-zinc-800">
+          <Avatar className="border-foreground/20 h-16 w-16 rounded-lg border-2 shadow-[2px_2px_0_rgba(13,20,39,0.14)]">
             <AvatarFallback>{bookingData.name.charAt(0)}</AvatarFallback>
           </Avatar>
         )}
         <div className="flex-1">
           <h2 className="text-lg font-bold">{bookingData.name}</h2>
           <div className="mt-1 flex flex-wrap gap-2">
-            <Badge variant="secondary" className="bg-background/80 text-xs backdrop-blur-sm">
+            <Badge variant="secondary" className="bg-card text-xs">
               {bookingData.school}
             </Badge>
             {bookingData.major && (
@@ -86,7 +86,7 @@ export const BookingSidebar = ({
 
       {/* Selected Session Details */}
       {selectedEventType && (
-        <div className="bg-background/50 mb-8 rounded-xl border p-4 shadow-sm backdrop-blur-sm">
+        <div className="paper-panel mb-8 p-4">
           <div className="mb-3 flex items-center justify-between">
             <h3 className="text-primary font-semibold">{selectedEventType.title}</h3>
             {selectedEventType.price && selectedEventType.price > 0 ? (
@@ -137,7 +137,7 @@ export const BookingSidebar = ({
           >
             <div
               className={cn(
-                'flex h-8 w-8 items-center justify-center rounded-full border text-xs font-semibold transition-all',
+                'flex h-8 w-8 items-center justify-center rounded-md border text-xs font-semibold transition-all',
                 step.isActive
                   ? 'border-primary bg-primary text-primary-foreground ring-primary/10 ring-4'
                   : step.isCompleted

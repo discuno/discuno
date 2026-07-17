@@ -6,8 +6,8 @@ import { useState, type FormEvent } from 'react'
 import type { EventType } from '~/app/(app)/(public)/mentor/[username]/book/actions'
 import type { BookingFormData } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingEmbed'
 import { Button } from '~/components/ui/button'
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '~/components/ui/field'
 import { Input } from '~/components/ui/input'
-import { Label } from '~/components/ui/label'
 import { Spinner } from '~/components/ui/spinner'
 import { formatCurrencyFromCents } from '~/lib/format-currency'
 import { validateEmail } from '~/lib/utils/validation'
@@ -22,6 +22,9 @@ interface AttendeeDetailsStepProps {
   createBookingMutation: UseMutationResult<void, Error, void>
   detailsLocked: boolean
 }
+
+const ATTENDEE_NAME_MAX_LENGTH = 100
+const ATTENDEE_EMAIL_MAX_LENGTH = 255
 
 export const AttendeeDetailsStep = ({
   selectedEventType,
@@ -41,8 +44,11 @@ export const AttendeeDetailsStep = ({
   })
   const [attemptedSubmit, setAttemptedSubmit] = useState(false)
 
-  const hasValidName = formData.name.trim().length >= 2
-  const hasValidEmail = validateEmail(formData.email)
+  const trimmedName = formData.name.trim()
+  const trimmedEmail = formData.email.trim()
+  const hasValidName = trimmedName.length >= 2 && trimmedName.length <= ATTENDEE_NAME_MAX_LENGTH
+  const hasValidEmail =
+    trimmedEmail.length <= ATTENDEE_EMAIL_MAX_LENGTH && validateEmail(trimmedEmail)
   const normalizedPhone = formData.phone.replace(/[\s\-().]/g, '')
   const hasValidPhone = /^\+[1-9]\d{7,14}$/.test(normalizedPhone)
   const hasValidTopic = formData.topic.trim().length >= 3 && formData.topic.trim().length <= 200
@@ -81,7 +87,7 @@ export const AttendeeDetailsStep = ({
           className="text-muted-foreground mb-5 -ml-3"
           onClick={() => setCurrentStep('calendar')}
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft data-icon="inline-start" />
           Change time
         </Button>
 
@@ -89,24 +95,30 @@ export const AttendeeDetailsStep = ({
           <p className="text-primary mb-2 text-xs font-semibold tracking-[0.14em] uppercase">
             Final step
           </p>
-          <h2 className="text-foreground text-2xl font-semibold tracking-tight">Your details</h2>
+          <h2
+            data-booking-step-heading
+            tabIndex={-1}
+            className="text-foreground text-2xl font-semibold tracking-tight outline-none"
+          >
+            Your details
+          </h2>
           <p className="text-muted-foreground mt-2 text-sm leading-6">
             No account required. We’ll email your confirmation and meeting details.
           </p>
         </div>
 
         {selectedEventType && selectedTimeSlot && (
-          <div className="bg-muted/40 mb-7 rounded-xl border px-4 py-3.5">
+          <div className="paper-panel bg-muted/35 mb-7 px-4 py-3.5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="text-foreground text-sm font-medium">{selectedEventType.title}</p>
                 <div className="text-muted-foreground mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
                   <span className="flex items-center gap-1.5">
-                    <CalendarDays className="h-3.5 w-3.5" />
+                    <CalendarDays className="size-3.5" />
                     {format(new TZDate(selectedTimeSlot, timeZone), 'EEE, MMM d')}
                   </span>
                   <span className="flex items-center gap-1.5">
-                    <Clock className="h-3.5 w-3.5" />
+                    <Clock className="size-3.5" />
                     {format(new TZDate(selectedTimeSlot, timeZone), 'h:mm a')} ·{' '}
                     {selectedEventType.length} min
                   </span>
@@ -122,15 +134,15 @@ export const AttendeeDetailsStep = ({
           </div>
         )}
 
-        <div className="space-y-5">
+        <FieldGroup className="gap-5">
           {detailsLocked && (
-            <p className="bg-muted/40 text-muted-foreground rounded-lg border px-3 py-2 text-xs leading-5">
+            <p className="bg-muted/40 text-muted-foreground rounded-xl border px-3 py-2 text-xs leading-5">
               These details are fixed for this payment attempt. To edit them, choose Change time and
               select a time again.
             </p>
           )}
-          <div className="space-y-2">
-            <Label htmlFor="booking-topic">What would you like to talk through?</Label>
+          <Field data-invalid={showTopicError}>
+            <FieldLabel htmlFor="booking-topic">What would you like to talk through?</FieldLabel>
             <Input
               id="booking-topic"
               name="topic"
@@ -147,17 +159,17 @@ export const AttendeeDetailsStep = ({
               required
             />
             {showTopicError ? (
-              <p id="booking-topic-error" className="text-destructive text-xs" role="alert">
+              <FieldError id="booking-topic-error">
                 Share a short question or decision for the conversation.
-              </p>
+              </FieldError>
             ) : (
-              <p id="booking-topic-help" className="text-muted-foreground text-xs">
+              <FieldDescription id="booking-topic-help">
                 A sentence is enough. It helps your mentor arrive ready for the decision at hand.
-              </p>
+              </FieldDescription>
             )}
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="booking-name">Full name</Label>
+          </Field>
+          <Field data-invalid={showNameError}>
+            <FieldLabel htmlFor="booking-name">Full name</FieldLabel>
             <Input
               id="booking-name"
               name="name"
@@ -167,6 +179,7 @@ export const AttendeeDetailsStep = ({
               onChange={event => setFormData({ ...formData, name: event.target.value })}
               onBlur={() => setTouched(current => ({ ...current, name: true }))}
               placeholder="Your full name"
+              maxLength={ATTENDEE_NAME_MAX_LENGTH}
               aria-invalid={showNameError}
               aria-describedby={showNameError ? 'booking-name-error' : undefined}
               className="h-11"
@@ -174,14 +187,16 @@ export const AttendeeDetailsStep = ({
               required
             />
             {showNameError && (
-              <p id="booking-name-error" className="text-destructive text-xs" role="alert">
-                Enter your full name.
-              </p>
+              <FieldError id="booking-name-error">
+                {trimmedName.length > ATTENDEE_NAME_MAX_LENGTH
+                  ? `Keep your name to ${ATTENDEE_NAME_MAX_LENGTH} characters or fewer.`
+                  : 'Enter your full name.'}
+              </FieldError>
             )}
-          </div>
+          </Field>
 
-          <div className="space-y-2">
-            <Label htmlFor="booking-email">Email address</Label>
+          <Field data-invalid={showEmailError}>
+            <FieldLabel htmlFor="booking-email">Email address</FieldLabel>
             <Input
               id="booking-email"
               name="email"
@@ -192,6 +207,7 @@ export const AttendeeDetailsStep = ({
               onChange={event => setFormData({ ...formData, email: event.target.value })}
               onBlur={() => setTouched(current => ({ ...current, email: true }))}
               placeholder="you@example.com"
+              maxLength={ATTENDEE_EMAIL_MAX_LENGTH}
               aria-invalid={showEmailError}
               aria-describedby={showEmailError ? 'booking-email-error' : 'booking-email-help'}
               className="h-11"
@@ -199,18 +215,22 @@ export const AttendeeDetailsStep = ({
               required
             />
             {showEmailError ? (
-              <p id="booking-email-error" className="text-destructive text-xs" role="alert">
-                Enter a valid email address.
-              </p>
+              <FieldError id="booking-email-error">
+                {trimmedEmail.length > ATTENDEE_EMAIL_MAX_LENGTH
+                  ? `Keep your email to ${ATTENDEE_EMAIL_MAX_LENGTH} characters or fewer.`
+                  : 'Enter a valid email address.'}
+              </FieldError>
             ) : (
-              <p id="booking-email-help" className="text-muted-foreground text-xs">
-                Your receipt and calendar invitation will be sent here.
-              </p>
+              <FieldDescription id="booking-email-help">
+                {(selectedEventType?.price ?? 0) > 0
+                  ? 'Your receipt and calendar invitation will be sent here.'
+                  : 'Your calendar invitation and meeting details will be sent here.'}
+              </FieldDescription>
             )}
-          </div>
+          </Field>
 
-          <div className="space-y-2">
-            <Label htmlFor="booking-phone">Mobile number</Label>
+          <Field data-invalid={showPhoneError}>
+            <FieldLabel htmlFor="booking-phone">Mobile number</FieldLabel>
             <Input
               id="booking-phone"
               name="phone"
@@ -228,16 +248,16 @@ export const AttendeeDetailsStep = ({
               required
             />
             {showPhoneError ? (
-              <p id="booking-phone-error" className="text-destructive text-xs" role="alert">
+              <FieldError id="booking-phone-error">
                 Include your country code, for example +1 555 123 4567.
-              </p>
+              </FieldError>
             ) : (
-              <p id="booking-phone-help" className="text-muted-foreground text-xs">
+              <FieldDescription id="booking-phone-help">
                 Used only for session coordination and any reminders the mentor has enabled.
-              </p>
+              </FieldDescription>
             )}
-          </div>
-        </div>
+          </Field>
+        </FieldGroup>
 
         <Button
           type="submit"
@@ -257,13 +277,13 @@ export const AttendeeDetailsStep = ({
               {(selectedEventType?.price ?? 0) > 0
                 ? 'Continue to secure checkout'
                 : 'Confirm session'}
-              <ArrowRight className="h-4 w-4" />
+              <ArrowRight data-icon="inline-end" />
             </>
           )}
         </Button>
 
         <p className="text-muted-foreground mt-4 flex items-center justify-center gap-1.5 text-center text-xs">
-          <LockKeyhole className="h-3.5 w-3.5" />
+          <LockKeyhole className="size-3.5" />
           Secure booking. Your details are used to coordinate this session.
         </p>
       </form>

@@ -89,6 +89,21 @@ describe('hosted Checkout cancellation return', () => {
     expect(response.headers.get('location')).toBe('https://discuno.com/?checkout=cancel_error')
   })
 
+  it('returns a completed Checkout through the opaque booking attempt', async () => {
+    mocks.retrieveSession.mockResolvedValueOnce({ id: 'cs_test_complete', status: 'complete' })
+
+    const response = await GET(
+      new Request(`https://discuno.com/booking/cancel?attempt=${bookingAttemptId}&generation=1`)
+    )
+
+    expect(mocks.expireSession).not.toHaveBeenCalled()
+    expect(mocks.releaseCheckoutSlotReservation).not.toHaveBeenCalled()
+    expect(response.headers.get('location')).toBe(
+      `https://discuno.com/booking/success?attempt=${bookingAttemptId}`
+    )
+    expect(response.headers.get('location')).not.toContain('cs_test_complete')
+  })
+
   it('retains the hold when Stripe returns an unknown nullable status', async () => {
     mocks.retrieveSession.mockResolvedValueOnce({ id: 'cs_test_open', status: null })
     vi.spyOn(console, 'error').mockImplementation(() => undefined)

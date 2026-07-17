@@ -57,15 +57,15 @@ export const NavUser = ({ user: data }: NavUserProps) => {
               />
             }
           >
-            <Avatar className="h-8 w-8 rounded-lg">
+            <Avatar>
               <AvatarImage src={user.avatar} alt={user.name} />
-              <AvatarFallback className="rounded-lg">{user.name[0] ?? 'U'}</AvatarFallback>
+              <AvatarFallback>{user.name[0] ?? 'U'}</AvatarFallback>
             </Avatar>
             <div className="grid flex-1 text-left text-sm leading-tight">
               <span className="truncate font-semibold">{user.name}</span>
               <span className="truncate text-xs">{user.email}</span>
             </div>
-            <ChevronsUpDown className="ml-auto size-4" />
+            <ChevronsUpDown className="ml-auto" />
           </DropdownMenuTrigger>
           <DropdownMenuContent
             className="w-(--anchor-width) min-w-56 rounded-lg"
@@ -75,9 +75,9 @@ export const NavUser = ({ user: data }: NavUserProps) => {
           >
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                <Avatar className="h-8 w-8 rounded-lg">
+                <Avatar>
                   <AvatarImage src={user.avatar} alt={user.name} />
-                  <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                  <AvatarFallback>{user.name[0] ?? 'U'}</AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-semibold">{user.name}</span>
@@ -95,17 +95,13 @@ export const NavUser = ({ user: data }: NavUserProps) => {
             <DropdownMenuSeparator /> */}
             <DropdownMenuGroup>
               <DropdownMenuItem render={<Link href="/support" onClick={handleClick} />}>
-                <HelpCircle className="mr-2 size-4" />
+                <HelpCircle />
                 Support
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
               >
-                {resolvedTheme === 'dark' ? (
-                  <Sun className="mr-2 size-4" />
-                ) : (
-                  <Moon className="mr-2 size-4" />
-                )}
+                {resolvedTheme === 'dark' ? <Sun /> : <Moon />}
                 <span>Theme</span>
               </DropdownMenuItem>
             </DropdownMenuGroup>

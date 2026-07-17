@@ -1,6 +1,7 @@
 import 'server-only'
 
 import { and, desc, eq, exists, gt, isNotNull, isNull, lt, or, sql } from 'drizzle-orm'
+import { env } from '~/env'
 import { db } from '~/server/db'
 import {
   calcomToken,
@@ -67,6 +68,7 @@ export const buildPostsQuery = () => {
               and(
                 eq(mentorEventType.mentorUserId, user.id),
                 eq(mentorEventType.isEnabled, true),
+                eq(mentorEventType.bookingCompatible, true),
                 or(eq(mentorEventType.customPrice, 0), isNull(mentorEventType.customPrice)),
                 isNull(mentorEventType.deletedAt)
               )
@@ -114,6 +116,25 @@ export const buildPostsQuery = () => {
  * Common WHERE conditions for active, visible posts
  */
 export const getActivePostConditions = () => {
+  const bookablePriceCondition = env.PAYMENTS_ENABLED
+    ? or(
+        eq(mentorEventType.customPrice, 0),
+        isNull(mentorEventType.customPrice),
+        and(
+          gt(mentorEventType.customPrice, 0),
+          eq(mentorStripeAccount.stripeAccountStatus, 'active'),
+          or(
+            eq(mentorStripeAccount.transfersEnabled, true),
+            and(
+              isNull(mentorStripeAccount.transfersEnabled),
+              eq(mentorStripeAccount.payoutsEnabled, true)
+            )
+          ),
+          eq(mentorStripeAccount.payoutsEnabled, true)
+        )
+      )
+    : or(eq(mentorEventType.customPrice, 0), isNull(mentorEventType.customPrice))
+
   return [
     eq(user.role, 'mentor'),
     eq(user.emailVerified, true),
@@ -140,24 +161,7 @@ export const getActivePostConditions = () => {
             eq(mentorEventType.isEnabled, true),
             eq(mentorEventType.bookingCompatible, true),
             isNull(mentorEventType.deletedAt),
-            or(
-              // Free event types (price is 0 or null)
-              eq(mentorEventType.customPrice, 0),
-              isNull(mentorEventType.customPrice),
-              // Paid event types with a fully active Stripe destination
-              and(
-                gt(mentorEventType.customPrice, 0),
-                eq(mentorStripeAccount.stripeAccountStatus, 'active'),
-                or(
-                  eq(mentorStripeAccount.transfersEnabled, true),
-                  and(
-                    isNull(mentorStripeAccount.transfersEnabled),
-                    eq(mentorStripeAccount.payoutsEnabled, true)
-                  )
-                ),
-                eq(mentorStripeAccount.payoutsEnabled, true)
-              )
-            )
+            bookablePriceCondition
           )
         )
     ),

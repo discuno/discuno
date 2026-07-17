@@ -1,15 +1,13 @@
 import { TZDate } from '@date-fns/tz'
 import { format } from 'date-fns'
 import Image from 'next/image'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo } from 'react'
 import type { EventType, TimeSlot } from '~/app/(app)/(public)/mentor/[username]/book/actions'
 import { EventTypeSelector } from '~/app/(app)/(public)/mentor/[username]/book/components/booking-calendar/EventTypeSelector'
 import { TimeSlotsList } from '~/app/(app)/(public)/mentor/[username]/book/components/booking-calendar/TimeSlotsList'
-import type { BookingData } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingModal'
-import { Button } from '~/components/ui/button'
+import type { BookingData } from '~/app/(app)/(public)/mentor/[username]/book/types'
 import { Calendar } from '~/components/ui/calendar'
 import { Label } from '~/components/ui/label'
-import { NativeSelect, NativeSelectOption } from '~/components/ui/native-select'
 
 interface BookingCalendarProps {
   selectedEventType: EventType | null
@@ -44,14 +42,6 @@ export const BookingCalendar = ({
   onSelectTimeSlot,
   timeZone,
 }: BookingCalendarProps) => {
-  const [mobileSelectedTimeSlot, setMobileSelectedTimeSlot] = useState<string | null>(null)
-
-  const [prevSelectedDate, setPrevSelectedDate] = useState(selectedDate)
-  if (selectedDate !== prevSelectedDate) {
-    setPrevSelectedDate(selectedDate)
-    setMobileSelectedTimeSlot(null)
-  }
-
   const slotsForSelectedDate = useMemo(() => {
     if (!selectedDate) return []
     const dateKey = format(new TZDate(selectedDate, timeZone), 'yyyy-MM-dd')
@@ -81,7 +71,8 @@ export const BookingCalendar = ({
   const isDateDisabled = useCallback(
     (date: Date) => {
       const dateKey = format(new TZDate(date, timeZone), 'yyyy-MM-dd')
-      return date < today || !monthlyAvailability[dateKey]?.length
+      const todayKey = format(new TZDate(today, timeZone), 'yyyy-MM-dd')
+      return dateKey < todayKey || !monthlyAvailability[dateKey]?.length
     },
     [today, monthlyAvailability, timeZone]
   )
@@ -90,7 +81,7 @@ export const BookingCalendar = ({
     <div className="flex h-full flex-col">
       {/* Header - Mobile Only (Sticky) */}
       {selectedEventType && (
-        <div className="bg-background/95 supports-backdrop-filter:bg-background/80 sticky top-0 z-30 border-b px-4 py-3 backdrop-blur md:hidden">
+        <div className="bg-background sticky top-0 z-30 border-b px-4 py-3 md:hidden">
           <div className="flex items-center gap-3">
             {bookingData.image && (
               <Image
@@ -117,8 +108,8 @@ export const BookingCalendar = ({
       {/* Main Content Area */}
       <div className="flex h-full flex-col overflow-hidden md:min-w-[700px] md:flex-row">
         {/* Left Side: Session Type & Calendar */}
-        <div className="flex-1 overflow-y-auto border-r-0 p-4 pb-32 md:border-r md:p-6 md:pb-6">
-          <div className="mx-auto max-w-sm space-y-8">
+        <div className="flex-1 overflow-y-auto border-r-0 p-4 pb-6 md:border-r md:p-6">
+          <div className="mx-auto flex max-w-sm flex-col gap-8">
             {/* Session Type Select (Desktop) */}
             <div className="hidden md:block">
               <Label className="text-foreground/80 mb-3 block text-sm font-medium">
@@ -151,47 +142,21 @@ export const BookingCalendar = ({
                   />
                 </div>
 
-                {/* Mobile: Native Time Select */}
                 <div className="mt-6 md:hidden">
                   <Label className="text-foreground/80 mb-3 block text-sm font-medium">
                     Choose a time
                   </Label>
-                  <NativeSelect
-                    disabled={!selectedDate || isFetchingSlots}
-                    onChange={e => {
-                      // Just set local state, don't trigger navigation yet
-                      setMobileSelectedTimeSlot(e.target.value)
-                    }}
-                    value={mobileSelectedTimeSlot ?? ''}
-                  >
-                    <NativeSelectOption value="" disabled>
-                      {!selectedDate
-                        ? 'Choose a date first'
-                        : isFetchingSlots
-                          ? 'Loading times…'
-                          : slotsForSelectedDate.length === 0
-                            ? 'No times available'
-                            : 'Choose a time'}
-                    </NativeSelectOption>
-                    {slotsForSelectedDate.map(slot => (
-                      <NativeSelectOption key={slot.time} value={slot.time}>
-                        {format(new TZDate(slot.time, timeZone), 'h:mm a')}
-                      </NativeSelectOption>
-                    ))}
-                  </NativeSelect>
-
-                  {/* Mobile Confirmation Button */}
-                  {mobileSelectedTimeSlot && (
-                    <div className="animate-in fade-in slide-in-from-top-2 mt-4">
-                      <Button
-                        className="w-full"
-                        size="lg"
-                        onClick={() => onSelectTimeSlot(mobileSelectedTimeSlot)}
-                      >
-                        Continue
-                      </Button>
-                    </div>
-                  )}
+                  <TimeSlotsList
+                    slots={slotsForSelectedDate}
+                    isFetchingSlots={Boolean(selectedDate) && isFetchingSlots}
+                    onSelectTimeSlot={onSelectTimeSlot}
+                    timeZone={timeZone}
+                    emptyMessage={
+                      selectedDate
+                        ? 'No times remain on this date. Try another day.'
+                        : 'Choose an available date to see times.'
+                    }
+                  />
 
                   {selectedDate && (
                     <p className="text-muted-foreground mt-2 text-xs">Time zone: {timeZone}</p>
@@ -220,6 +185,8 @@ export const BookingCalendar = ({
                     slots={slotsForSelectedDate}
                     isFetchingSlots={isFetchingSlots}
                     onSelectTimeSlot={onSelectTimeSlot}
+                    timeZone={timeZone}
+                    emptyMessage="No times remain on this date. Try another day."
                   />
                 ) : (
                   <div className="text-muted-foreground flex h-40 items-center justify-center text-center text-sm">

@@ -33,7 +33,7 @@ describe('fresh-session sign-in', () => {
     expect(screen.getByRole('heading', { name: 'Sign in again to continue' })).toBeTruthy()
     expect(screen.getByText(/extra check protects changes/i)).toBeTruthy()
 
-    await user.click(screen.getByRole('button', { name: 'Continue with Google school account' }))
+    await user.click(screen.getByRole('button', { name: 'Continue with Google' }))
 
     await waitFor(() =>
       expect(mocks.socialSignIn).toHaveBeenCalledWith({
@@ -56,7 +56,7 @@ describe('fresh-session sign-in', () => {
     expect(screen.getByRole('heading', { name: 'Share what you have learned' })).toBeTruthy()
     expect(screen.queryByRole('heading', { name: 'Sign in again to continue' })).toBeNull()
 
-    await user.click(screen.getByRole('button', { name: 'Continue with Google school account' }))
+    await user.click(screen.getByRole('button', { name: 'Continue with Google' }))
 
     await waitFor(() =>
       expect(mocks.socialSignIn).toHaveBeenCalledWith({
@@ -64,5 +64,30 @@ describe('fresh-session sign-in', () => {
         callbackURL: '/api/integrations/calcom/connect?returnTo=%2Fsettings%2Fcalendar',
       })
     )
+  })
+
+  it('frontloads school email for mentors while keeping both OAuth choices available', () => {
+    render(<LoginPage initialUserType="mentor" />)
+
+    const schoolEmail = screen.getByRole('textbox', { name: 'School email' })
+    const google = screen.getByRole('button', { name: 'Continue with Google' })
+
+    expect(screen.getByRole('button', { name: 'Email me a sign-in code' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Continue with Microsoft' })).toBeTruthy()
+    expect(
+      schoolEmail.compareDocumentPosition(google) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
+  })
+
+  it('makes account-free booking explicit for students', async () => {
+    const user = userEvent.setup()
+
+    render(<LoginPage initialUserType="mentor" />)
+
+    await user.click(screen.getByRole('tab', { name: 'Find guidance' }))
+
+    expect(screen.getByText('No account needed to book')).toBeTruthy()
+    expect(screen.getByText(/browse mentors and reserve a session as a guest/i)).toBeTruthy()
+    expect(screen.queryByRole('textbox', { name: 'School email' })).toBeNull()
   })
 })

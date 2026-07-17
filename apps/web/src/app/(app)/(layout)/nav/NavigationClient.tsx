@@ -1,6 +1,6 @@
 'use client'
 
-import { BookOpen, Compass, LayoutDashboard, LogIn, Menu, Search, UserRound, X } from 'lucide-react'
+import { ArrowRight, LayoutDashboard, Menu } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
@@ -9,12 +9,21 @@ import { Brand } from '~/components/shared/Brand'
 import { AvatarIcon } from '~/components/shared/UserAvatar'
 import { Button } from '~/components/ui/button'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '~/components/ui/dropdown-menu'
+  NavigationMenu,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  navigationMenuTriggerStyle,
+} from '~/components/ui/navigation-menu'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '~/components/ui/sheet'
 import { cn } from '~/lib/utils'
 
 interface OnboardingStatus {
@@ -43,10 +52,16 @@ type Audience = 'student' | 'mentor'
 
 const publicLinks = [
   { href: '/#mentors', label: 'Find a mentor' },
+  { href: '/#how-it-works', label: 'How it works' },
   { href: '/blog', label: 'College guides' },
-  { href: '/for-mentors', label: 'Become a mentor' },
-  { href: '/about', label: 'About' },
 ]
+
+const mobileLinks = [...publicLinks, { href: '/about', label: 'About Discuno' }]
+
+function isActiveLink(pathname: string, href: string) {
+  if (href.includes('#')) return false
+  return pathname === href || (href !== '/' && pathname.startsWith(`${href}/`))
+}
 
 export function NavBarBase({
   profilePic,
@@ -74,27 +89,31 @@ export function NavBarBase({
         defaultUserType={loginAudience}
       />
 
-      <header className="border-border/80 bg-background/95 supports-[backdrop-filter]:bg-background/88 sticky top-0 z-50 border-b backdrop-blur-md">
+      <header className="border-foreground/15 bg-background sticky top-0 z-50 border-b">
         <nav
-          className="page-container flex h-[68px] items-center justify-between gap-6"
+          className="page-container flex h-16 items-center justify-between gap-5"
           aria-label="Main navigation"
         >
           <Brand />
 
-          <div className="hidden flex-1 items-center justify-center gap-1 lg:flex">
-            {publicLinks.map(link => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={cn(
-                  'text-muted-foreground hover:bg-muted hover:text-foreground rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                  pathname === link.href && 'bg-muted text-foreground'
-                )}
-              >
-                {link.label}
-              </Link>
-            ))}
-          </div>
+          <NavigationMenu className="hidden flex-1 lg:flex">
+            <NavigationMenuList>
+              {publicLinks.map(link => (
+                <NavigationMenuItem key={link.href}>
+                  <NavigationMenuLink
+                    active={isActiveLink(pathname, link.href)}
+                    render={<Link href={link.href} />}
+                    className={cn(
+                      navigationMenuTriggerStyle(),
+                      'text-muted-foreground after:bg-highlight data-[active=true]:text-foreground relative after:absolute after:inset-x-3 after:bottom-0 after:h-1 after:origin-left after:scale-x-0 after:transition-transform data-[active=true]:bg-transparent data-[active=true]:after:scale-x-100'
+                    )}
+                  >
+                    {link.label}
+                  </NavigationMenuLink>
+                </NavigationMenuItem>
+              ))}
+            </NavigationMenuList>
+          </NavigationMenu>
 
           <div className="flex items-center gap-1.5 sm:gap-2">
             {!isAuthenticated ? (
@@ -112,12 +131,13 @@ export function NavBarBase({
                   className="hidden md:inline-flex"
                   onClick={() => openLoginModal('signup', 'mentor')}
                 >
-                  Become a mentor
+                  Share your experience
+                  <ArrowRight data-icon="inline-end" />
                 </Button>
               </>
             ) : (
               <>
-                {isMentor && (
+                {isMentor ? (
                   <Button
                     render={<Link href="/settings" />}
                     nativeButton={false}
@@ -125,8 +145,18 @@ export function NavBarBase({
                     size="sm"
                     className="hidden sm:inline-flex"
                   >
-                    <LayoutDashboard />
+                    <LayoutDashboard data-icon="inline-start" />
                     Dashboard
+                  </Button>
+                ) : (
+                  <Button
+                    render={<Link href="/for-mentors" />}
+                    nativeButton={false}
+                    variant="outline"
+                    size="sm"
+                    className="hidden sm:inline-flex"
+                  >
+                    Become a mentor
                   </Button>
                 )}
                 <AvatarIcon
@@ -158,98 +188,105 @@ function MobileMenu({
   isMentor: boolean
   onLoginClick: (mode: 'signin' | 'signup', audience: Audience) => void
 }) {
+  const pathname = usePathname()
   const [open, setOpen] = useState(false)
 
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
-      <DropdownMenuTrigger
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger
         render={
           <Button
             size="icon"
             variant="ghost"
             className="lg:hidden"
-            aria-label={open ? 'Close menu' : 'Open menu'}
+            aria-label="Open navigation menu"
           />
         }
       >
-        {open ? <X /> : <Menu />}
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" sideOffset={8} className="w-72 rounded-xl p-2">
-        <DropdownMenuItem
-          render={<Link href="/#mentors" className="gap-3 py-2.5" onClick={() => setOpen(false)} />}
-        >
-          <Search />
-          Find mentors
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          render={<Link href="/blog" className="gap-3 py-2.5" onClick={() => setOpen(false)} />}
-        >
-          <BookOpen />
-          College guides
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          render={
-            <Link href="/for-mentors" className="gap-3 py-2.5" onClick={() => setOpen(false)} />
-          }
-        >
-          <UserRound />
-          Become a mentor
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          render={<Link href="/about" className="gap-3 py-2.5" onClick={() => setOpen(false)} />}
-        >
-          <Compass />
-          About
-        </DropdownMenuItem>
+        <Menu />
+      </SheetTrigger>
+      <SheetContent className="w-[min(88vw,24rem)]">
+        <SheetHeader className="border-border/70 border-b pr-16">
+          <SheetTitle>Where can we help?</SheetTitle>
+          <SheetDescription>
+            Find someone who has faced the college decision in front of you.
+          </SheetDescription>
+        </SheetHeader>
 
-        {!isAuthenticated && <DropdownMenuSeparator />}
+        <nav className="flex flex-col gap-1 p-3" aria-label="Mobile navigation">
+          {mobileLinks.map(link => (
+            <Link
+              key={link.href}
+              href={link.href}
+              aria-current={isActiveLink(pathname, link.href) ? 'page' : undefined}
+              className={cn(
+                'hover:bg-muted focus-visible:ring-ring/30 flex min-h-12 items-center rounded-lg border-l-4 border-transparent px-4 text-base font-medium transition-colors outline-none focus-visible:ring-3',
+                isActiveLink(pathname, link.href)
+                  ? 'bg-accent/45 border-primary text-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+              onClick={() => setOpen(false)}
+            >
+              {link.label}
+            </Link>
+          ))}
+        </nav>
 
-        {!isAuthenticated ? (
-          <>
-            <DropdownMenuItem
-              className="gap-3 py-2.5"
-              onClick={() => {
-                onLoginClick('signin', 'student')
-                setOpen(false)
-              }}
+        <SheetFooter className="border-border/70 border-t">
+          {!isAuthenticated ? (
+            <>
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={() => {
+                  onLoginClick('signin', 'student')
+                  setOpen(false)
+                }}
+              >
+                Sign in
+              </Button>
+              <Button
+                size="lg"
+                onClick={() => {
+                  onLoginClick('signup', 'mentor')
+                  setOpen(false)
+                }}
+              >
+                Share your experience
+                <ArrowRight data-icon="inline-end" />
+              </Button>
+            </>
+          ) : isMentor ? (
+            <Button
+              render={<Link href="/settings" onClick={() => setOpen(false)} />}
+              nativeButton={false}
+              size="lg"
             >
-              <LogIn />
-              Sign in
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              className="text-primary gap-3 py-2.5 font-semibold"
-              onClick={() => {
-                onLoginClick('signup', 'mentor')
-                setOpen(false)
-              }}
+              <LayoutDashboard data-icon="inline-start" />
+              Open mentor dashboard
+            </Button>
+          ) : (
+            <Button
+              render={<Link href="/for-mentors" onClick={() => setOpen(false)} />}
+              nativeButton={false}
+              size="lg"
             >
-              <UserRound />
               Become a mentor
-            </DropdownMenuItem>
-          </>
-        ) : (
-          isMentor && (
-            <DropdownMenuItem
-              render={
-                <Link href="/settings" className="gap-3 py-2.5" onClick={() => setOpen(false)} />
-              }
-            >
-              <LayoutDashboard />
-              Mentor dashboard
-            </DropdownMenuItem>
-          )
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
+              <ArrowRight data-icon="inline-end" />
+            </Button>
+          )}
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   )
 }
 
 export function NavBarSkeleton() {
   return (
-    <div className="border-border/80 bg-background h-[68px] border-b">
+    <div className="border-border/70 bg-background h-16 border-b">
       <div className="page-container flex h-full items-center justify-between">
         <div className="bg-muted h-8 w-32 animate-pulse rounded-lg" />
-        <div className="bg-muted h-9 w-28 animate-pulse rounded-lg" />
+        <div className="bg-muted h-9 w-28 animate-pulse rounded-full" />
       </div>
     </div>
   )

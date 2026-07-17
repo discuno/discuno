@@ -247,7 +247,7 @@ export default function SupportPage() {
                 <div>
                   <h3 className="text-xl font-semibold">Trust and safety</h3>
                   <p className="text-muted-foreground mt-1 text-sm leading-6">
-                    What school-email verification means and how to protect yourself.
+                    What the school-email check means and how to protect yourself.
                   </p>
                 </div>
               </div>
@@ -255,13 +255,13 @@ export default function SupportPage() {
               <Accordion className="border-border border-t">
                 <AccordionItem value="verification">
                   <AccordionTrigger className="text-left text-base font-medium">
-                    What does mentor verification mean?
+                    What does “School email confirmed” mean?
                   </AccordionTrigger>
                   <AccordionContent className="text-muted-foreground text-base leading-relaxed">
-                    A school-email verification badge means the mentor demonstrated access to an
-                    eligible .edu email address, supporting their stated institutional affiliation
-                    at the time of verification. It is not an identity check, background check,
-                    credential validation, endorsement, or guarantee of session quality. Review the
+                    A “School email confirmed” badge means the mentor demonstrated access to a
+                    supported institutional email address, supporting their stated affiliation at
+                    the time of the check. It is not an identity check, background check, credential
+                    validation, endorsement, or guarantee of session quality. Review the
                     mentor&apos;s profile and session details before booking. For paid sessions,
                     Stripe separately collects the information needed to operate the mentor&apos;s
                     connected payment account.

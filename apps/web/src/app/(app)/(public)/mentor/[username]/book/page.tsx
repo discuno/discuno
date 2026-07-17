@@ -13,12 +13,11 @@ interface BookingPageProps {
   }>
   searchParams: Promise<{
     eventType?: string
-    bookingState?: string
   }>
 }
 
-const BookingPage = async ({ params }: BookingPageProps) => {
-  const { username } = await params
+const BookingPage = async ({ params, searchParams }: BookingPageProps) => {
+  const [{ username }, { eventType }] = await Promise.all([params, searchParams])
   const initialNowIso = new Date().toISOString()
 
   const profile = await getPublicProfileByUsername(username)
@@ -26,14 +25,17 @@ const BookingPage = async ({ params }: BookingPageProps) => {
 
   const eventTypes = await getMentorEnabledEventTypesWithStripeStatus(profile.userId)
   if (eventTypes.length === 0) notFound()
+  const requestedEventTypeId = Number(eventType)
+  const initialEventTypeId = eventTypes.some(
+    candidate => candidate.calcomEventTypeId === requestedEventTypeId
+  )
+    ? requestedEventTypeId
+    : undefined
 
   const bookingData = {
-    userId: profile.userId,
     username,
-    calcomUsername: profile.calcomUsername,
     name: profile.name ?? 'Mentor',
     image: profile.image ?? '',
-    bio: profile.bio ?? '',
     school: profile.school ?? '',
     major: profile.major ?? '',
     eventTypes: eventTypes.map(eventType => ({
@@ -47,7 +49,7 @@ const BookingPage = async ({ params }: BookingPageProps) => {
   }
 
   return (
-    <div className="page-container py-8 sm:py-10">
+    <div className="page-container py-8 sm:py-12">
       <header className="mb-7">
         <Button
           render={<Link href={`/mentor/${username}`} />}
@@ -59,16 +61,21 @@ const BookingPage = async ({ params }: BookingPageProps) => {
           <ArrowLeft />
           Back to profile
         </Button>
-        <p className="eyebrow mt-5">Choose your conversation</p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-[-0.035em] sm:text-4xl">
-          Find a time to talk with {profile.name ?? 'this mentor'}
+        <p className="note-stamp mt-5">Booking note · Choose your conversation</p>
+        <h1 className="mt-5 text-4xl leading-[1.02] font-semibold tracking-[-0.035em] sm:text-5xl">
+          Find a time to talk with{' '}
+          <span className="marker-underline">{profile.name ?? 'this mentor'}</span>
         </h1>
         <p className="text-muted-foreground mt-3 max-w-2xl leading-7">
           Pick the session and time that fit your question. You will see the details before you
           confirm.
         </p>
       </header>
-      <BookingInterface bookingData={bookingData} variant="inline" initialNowIso={initialNowIso} />
+      <BookingInterface
+        bookingData={bookingData}
+        initialNowIso={initialNowIso}
+        initialEventTypeId={initialEventTypeId}
+      />
     </div>
   )
 }

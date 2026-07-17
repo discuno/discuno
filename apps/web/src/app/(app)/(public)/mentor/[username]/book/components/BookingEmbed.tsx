@@ -3,7 +3,8 @@
 import { TZDate } from '@date-fns/tz'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { addDays, endOfMonth, format, startOfMonth } from 'date-fns'
-import { useCallback, useMemo, useState, useSyncExternalStore } from 'react'
+import { CircleAlert } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { toast } from 'sonner'
 import { BookingSidebar } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingSidebar'
 
@@ -17,11 +18,13 @@ import {
 import { AttendeeDetailsStep } from '~/app/(app)/(public)/mentor/[username]/book/components/AttendeeDetailsStep'
 import { BookingCalendar } from '~/app/(app)/(public)/mentor/[username]/book/components/booking-calendar/BookingCalendar'
 import { BookingConfirmationStep } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingConfirmationStep'
-import type { BookingData } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingModal'
+import type { BookingData } from '~/app/(app)/(public)/mentor/[username]/book/types'
 
 import { useSession } from '~/lib/auth-client'
 import { MINIMUM_PAID_BOOKING_LEAD_MINUTES } from '~/lib/constants'
-import { BadRequestError, ExternalApiError } from '~/lib/errors'
+import { BadRequestError } from '~/lib/errors'
+import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert'
+import { Button } from '~/components/ui/button'
 
 export interface BookingFormData {
   name: string
@@ -40,12 +43,12 @@ const getServerTimeZone = () => 'UTC'
 
 export const BookingEmbed = ({
   bookingData,
-  isFullPage = false,
   initialNowIso,
+  initialEventTypeId,
 }: {
   bookingData: BookingData
-  isFullPage?: boolean
   initialNowIso?: string
+  initialEventTypeId?: number
 }) => {
   // Hydrate with the same UTC snapshot the server rendered, then switch to the
   // browser's zone. Reading Intl directly during render makes the server's UTC
@@ -67,7 +70,9 @@ export const BookingEmbed = ({
   const { data: session } = useSession()
 
   // State management
-  const [selectedEventTypeOverride, setSelectedEventTypeOverride] = useState<EventType | null>(null)
+  const [selectedEventTypeOverride, setSelectedEventTypeOverride] = useState<EventType | null>(
+    () => bookingData.eventTypes.find(eventType => eventType.id === initialEventTypeId) ?? null
+  )
   const [selectedDate, setSelectedDate] = useState<Date | undefined>()
   const [currentMonthOverride, setCurrentMonthOverride] = useState<Date | undefined>()
   const currentMonth = currentMonthOverride ?? today
@@ -75,6 +80,10 @@ export const BookingEmbed = ({
   const [bookingAttemptId, setBookingAttemptId] = useState(() => crypto.randomUUID())
   const [paidAttemptSubmitted, setPaidAttemptSubmitted] = useState(false)
   const [currentStep, setCurrentStep] = useState<BookingStep>('calendar')
+  const [browserNowMs, setBrowserNowMs] = useState(() =>
+    initialNowIso ? Date.parse(initialNowIso) : 0
+  )
+  const bookingSurfaceRef = useRef<HTMLDivElement>(null)
   const [formData, setFormData] = useState<BookingFormData>({
     name: '',
     email: '',
@@ -111,16 +120,13 @@ export const BookingEmbed = ({
     dataUpdatedAt,
     isFetching,
     error,
+    refetch,
   } = useQuery({
     queryKey: ['available-slots', currentEventId, format(currentMonth, 'yyyy-MM'), timeZone],
     queryFn: () => {
       if (!currentEventId) throw new BadRequestError('No event type selected')
       const startDate = startOfMonth(currentMonth)
       const endDate = endOfMonth(currentMonth)
-
-      console.log('Client TimeZone:', timeZone)
-      console.log('Fetching slots from (client):', startDate.toISOString())
-      console.log('Fetching slots to (client):', endDate.toISOString())
 
       return fetchSlotsAction(currentEventId, startDate, endDate, timeZone)
     },
@@ -130,14 +136,15 @@ export const BookingEmbed = ({
 
   const displayedAvailability = useMemo(() => {
     if ((selectedEventType?.price ?? 0) <= 0) return monthlyAvailability
-    const earliestPaidStart = dataUpdatedAt + MINIMUM_PAID_BOOKING_LEAD_MINUTES * 60 * 1000
+    const earliestPaidStart =
+      Math.max(browserNowMs, dataUpdatedAt) + MINIMUM_PAID_BOOKING_LEAD_MINUTES * 60 * 1000
     return Object.fromEntries(
       Object.entries(monthlyAvailability).map(([date, slots]) => [
         date,
         slots.filter(slot => Date.parse(slot.time) >= earliestPaidStart),
       ])
     )
-  }, [dataUpdatedAt, monthlyAvailability, selectedEventType?.price])
+  }, [browserNowMs, dataUpdatedAt, monthlyAvailability, selectedEventType?.price])
 
   // Event handlers
   const handleEventTypeSelect = useCallback((eventType: EventType | null) => {
@@ -157,6 +164,21 @@ export const BookingEmbed = ({
     }
   }, [])
 
+  useEffect(() => {
+    const timer = window.setInterval(() => setBrowserNowMs(Date.now()), 30_000)
+    return () => window.clearInterval(timer)
+  }, [])
+
+  useEffect(() => {
+    if (currentStep === 'calendar') return
+    bookingSurfaceRef.current?.scrollIntoView({ block: 'start' })
+    requestAnimationFrame(() => {
+      bookingSurfaceRef.current
+        ?.querySelector<HTMLElement>('[data-booking-step-heading]')
+        ?.focus({ preventScroll: true })
+    })
+  }, [currentStep])
+
   // Mutations
   const createBookingMutation = useMutation({
     mutationFn: async () => {
@@ -165,8 +187,6 @@ export const BookingEmbed = ({
       }
 
       const startTime = new TZDate(selectedTimeSlot, timeZone)
-      console.log('Booking startTime:', startTime.toISOString())
-
       // For paid sessions, redirect to Stripe Hosted Checkout
       if ((selectedEventType.price ?? 0) > 0) {
         // An ambiguous Stripe response must replay this attempt's exact server
@@ -220,13 +240,20 @@ export const BookingEmbed = ({
     },
   })
 
-  // Error handling
-  if (error) {
-    throw new ExternalApiError(error.message)
-  }
-
   const renderContent = () => (
     <div className="bg-background flex min-h-full w-full flex-col">
+      {error && currentStep === 'calendar' && (
+        <Alert variant="destructive" className="m-4 w-auto sm:m-6">
+          <CircleAlert />
+          <AlertTitle>Available times did not load</AlertTitle>
+          <AlertDescription>
+            <p>Check your connection and try again. Nothing has been booked.</p>
+            <Button variant="outline" size="sm" className="mt-2" onClick={() => void refetch()}>
+              Try again
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
       {currentStep === 'calendar' ? (
         <BookingCalendar
           selectedEventType={selectedEventType}
@@ -261,23 +288,22 @@ export const BookingEmbed = ({
     </div>
   )
 
-  if (isFullPage) {
-    return (
-      <div className="bg-card flex h-[800px] w-full flex-col overflow-hidden rounded-2xl border shadow-sm lg:flex-row">
-        <div className="bg-muted/30 hidden w-full shrink-0 border-r lg:block lg:w-[320px] xl:w-[380px]">
-          <BookingSidebar
-            bookingData={bookingData}
-            selectedEventType={selectedEventType}
-            selectedDate={selectedDate}
-            selectedTimeSlot={selectedTimeSlot}
-            currentStep={currentStep}
-            timeZone={timeZone}
-          />
-        </div>
-        <div className="flex-1 overflow-y-auto">{renderContent()}</div>
+  return (
+    <div
+      ref={bookingSurfaceRef}
+      className="surface-panel corner-mark grid min-h-[640px] w-full scroll-mt-20 overflow-hidden xl:grid-cols-[320px_minmax(0,1fr)]"
+    >
+      <div className="bg-muted/25 hidden border-r xl:block">
+        <BookingSidebar
+          bookingData={bookingData}
+          selectedEventType={selectedEventType}
+          selectedDate={selectedDate}
+          selectedTimeSlot={selectedTimeSlot}
+          currentStep={currentStep}
+          timeZone={timeZone}
+        />
       </div>
-    )
-  }
-
-  return renderContent()
+      <div className="min-w-0">{renderContent()}</div>
+    </div>
+  )
 }

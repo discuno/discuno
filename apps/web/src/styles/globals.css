@@ -8,6 +8,7 @@
   --font-sans:
     var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
     sans-serif;
+  --font-display: 'Newsreader Variable', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
 
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
@@ -39,6 +40,8 @@
   --color-border: hsl(var(--border));
   --color-input: hsl(var(--input));
   --color-ring: hsl(var(--ring));
+  --color-highlight: hsl(var(--highlight));
+  --color-highlight-foreground: hsl(var(--highlight-foreground));
   --color-chart-1: hsl(var(--chart-1));
   --color-chart-2: hsl(var(--chart-2));
   --color-chart-3: hsl(var(--chart-3));
@@ -50,82 +53,86 @@
   :root {
     color-scheme: light;
 
-    /* Bright, human, and energetic without losing the trust required for booking. */
-    --background: 225 40% 98%;
-    --foreground: 228 42% 12%;
-    --card: 0 0% 100%;
-    --card-foreground: 228 42% 12%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 228 42% 12%;
-    --primary: 231 82% 58%;
+    /* Discuno field notes: warm paper, decisive ink, cobalt, and one highlighter. */
+    --background: 43 42% 96%;
+    --foreground: 225 47% 13%;
+    --card: 42 50% 99%;
+    --card-foreground: 225 47% 13%;
+    --popover: 42 50% 99%;
+    --popover-foreground: 225 47% 13%;
+    --primary: 232 76% 52%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 230 55% 95%;
-    --secondary-foreground: 231 58% 28%;
-    --muted: 225 28% 95%;
-    --muted-foreground: 224 15% 42%;
-    --accent: 252 68% 96%;
-    --accent-foreground: 249 62% 34%;
+    --secondary: 43 31% 91%;
+    --secondary-foreground: 225 40% 21%;
+    --muted: 42 24% 92%;
+    --muted-foreground: 224 16% 38%;
+    --accent: 70 83% 84%;
+    --accent-foreground: 225 47% 13%;
     --destructive: 0 72% 50%;
     --destructive-foreground: 0 0% 100%;
-    --success: 158 64% 34%;
+    --success: 154 54% 31%;
     --success-foreground: 0 0% 100%;
     --warning: 36 92% 49%;
     --warning-foreground: 28 75% 15%;
-    --border: 226 25% 88%;
-    --input: 226 22% 82%;
-    --ring: 231 82% 58%;
-    --radius: 1rem;
+    --border: 226 19% 79%;
+    --input: 225 18% 68%;
+    --ring: 232 76% 52%;
+    --highlight: 70 93% 65%;
+    --highlight-foreground: 225 47% 13%;
+    --radius: 0.625rem;
 
-    --chart-1: 231 82% 58%;
-    --chart-2: 158 64% 34%;
+    --chart-1: 232 76% 52%;
+    --chart-2: 154 54% 31%;
     --chart-3: 36 92% 49%;
     --chart-4: 270 72% 58%;
     --chart-5: 196 84% 46%;
 
-    --sidebar: 0 0% 100%;
-    --sidebar-foreground: 228 42% 12%;
-    --sidebar-primary: 231 82% 58%;
+    --sidebar: 42 50% 98%;
+    --sidebar-foreground: 225 47% 13%;
+    --sidebar-primary: 232 76% 52%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 230 55% 95%;
-    --sidebar-accent-foreground: 231 58% 28%;
-    --sidebar-border: 226 25% 88%;
-    --sidebar-ring: 231 82% 58%;
+    --sidebar-accent: 70 83% 84%;
+    --sidebar-accent-foreground: 225 47% 13%;
+    --sidebar-border: 226 19% 79%;
+    --sidebar-ring: 232 76% 52%;
   }
 
   .dark {
     color-scheme: dark;
 
-    --background: 229 35% 8%;
-    --foreground: 225 30% 97%;
-    --card: 229 30% 12%;
-    --card-foreground: 225 30% 97%;
-    --popover: 229 30% 12%;
-    --popover-foreground: 225 30% 97%;
+    --background: 225 42% 8%;
+    --foreground: 43 35% 95%;
+    --card: 225 34% 12%;
+    --card-foreground: 43 35% 95%;
+    --popover: 225 34% 12%;
+    --popover-foreground: 43 35% 95%;
     --primary: 230 92% 72%;
-    --primary-foreground: 230 45% 12%;
-    --secondary: 230 24% 19%;
-    --secondary-foreground: 225 30% 97%;
-    --muted: 229 24% 17%;
-    --muted-foreground: 224 15% 70%;
-    --accent: 251 30% 22%;
-    --accent-foreground: 250 70% 88%;
+    --primary-foreground: 225 47% 10%;
+    --secondary: 225 22% 18%;
+    --secondary-foreground: 43 35% 95%;
+    --muted: 225 22% 17%;
+    --muted-foreground: 42 12% 69%;
+    --accent: 70 38% 23%;
+    --accent-foreground: 69 85% 82%;
     --destructive: 0 72% 58%;
     --destructive-foreground: 0 0% 100%;
     --success: 155 49% 50%;
     --success-foreground: 222 47% 10%;
     --warning: 38 88% 58%;
     --warning-foreground: 28 75% 12%;
-    --border: 229 20% 24%;
-    --input: 229 18% 29%;
+    --border: 225 18% 28%;
+    --input: 225 17% 34%;
     --ring: 230 92% 72%;
+    --highlight: 70 87% 61%;
+    --highlight-foreground: 225 47% 10%;
 
-    --sidebar: 229 30% 11%;
-    --sidebar-foreground: 225 30% 97%;
+    --sidebar: 225 34% 11%;
+    --sidebar-foreground: 43 35% 95%;
     --sidebar-primary: 230 92% 72%;
     --sidebar-primary-foreground: 230 45% 12%;
-    --sidebar-accent: 229 24% 18%;
-    --sidebar-accent-foreground: 225 30% 97%;
-    --sidebar-border: 229 20% 24%;
+    --sidebar-accent: 70 38% 23%;
+    --sidebar-accent-foreground: 69 85% 82%;
+    --sidebar-border: 225 18% 28%;
     --sidebar-ring: 230 92% 72%;
   }
 
@@ -150,13 +157,22 @@
       'cv11' 1;
     text-rendering: optimizeLegibility;
     background-image:
-      radial-gradient(circle at 8% -10%, hsl(var(--primary) / 0.08), transparent 26rem),
-      radial-gradient(circle at 92% 0%, hsl(270 72% 58% / 0.055), transparent 24rem);
-    background-attachment: fixed;
+      linear-gradient(hsl(var(--foreground) / 0.018) 1px, transparent 1px),
+      radial-gradient(circle at 8% -8%, hsl(var(--primary) / 0.055), transparent 25rem);
+    background-size:
+      100% 32px,
+      auto;
+  }
+
+  h1,
+  h2 {
+    font-family: var(--font-display);
+    font-optical-sizing: auto;
+    font-variation-settings: 'opsz' 64;
   }
 
   ::selection {
-    @apply bg-primary/20 text-foreground;
+    @apply bg-highlight text-highlight-foreground;
   }
 
   a,
@@ -194,7 +210,17 @@
   }
 
   .eyebrow {
-    @apply text-primary text-xs font-bold tracking-[0.16em] uppercase;
+    @apply text-foreground inline-flex items-center gap-2.5 text-[0.7rem] font-bold tracking-[0.15em] uppercase;
+  }
+
+  .eyebrow::before {
+    display: block;
+    width: 1.25rem;
+    height: 0.34rem;
+    content: '';
+    background: hsl(var(--highlight));
+    border: 1px solid hsl(var(--foreground) / 0.18);
+    transform: rotate(-4deg);
   }
 
   .avatar-ring {
@@ -214,27 +240,206 @@
   }
 
   .display-title {
-    @apply text-4xl leading-[0.98] font-semibold tracking-[-0.055em] text-balance sm:text-5xl lg:text-6xl;
+    @apply font-display text-5xl leading-[0.92] font-semibold tracking-[-0.05em] text-balance sm:text-6xl lg:text-7xl;
+    font-optical-sizing: auto;
+    font-variation-settings: 'opsz' 72;
   }
 
   .surface-panel {
-    @apply bg-card/92 border-border/80 rounded-2xl border shadow-[0_18px_60px_rgba(28,39,94,0.08)] backdrop-blur-xl;
+    @apply bg-card rounded-xl border;
+    border-color: hsl(var(--foreground) / 0.2);
+    box-shadow: 4px 4px 0 hsl(var(--foreground) / 0.09);
   }
 
   .interactive-card {
-    @apply transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-primary/25 hover:shadow-[0_20px_50px_rgba(42,55,135,0.12)];
+    @apply transition-[transform,box-shadow,border-color] duration-200;
+  }
+
+  .interactive-card:hover {
+    border-color: hsl(var(--foreground) / 0.35);
+    box-shadow: 3px 3px 0 hsl(var(--foreground) / 0.11);
+    transform: translate(-1px, -1px);
   }
 
   .soft-grid {
     background-image:
-      linear-gradient(hsl(var(--border) / 0.35) 1px, transparent 1px),
-      linear-gradient(90deg, hsl(var(--border) / 0.35) 1px, transparent 1px);
-    background-size: 32px 32px;
-    mask-image: linear-gradient(to bottom, black, transparent 90%);
+      linear-gradient(
+        90deg,
+        transparent 0,
+        transparent clamp(1.75rem, 7vw, 5.5rem),
+        hsl(var(--primary) / 0.12) clamp(1.75rem, 7vw, 5.5rem),
+        hsl(var(--primary) / 0.12) calc(clamp(1.75rem, 7vw, 5.5rem) + 1px),
+        transparent calc(clamp(1.75rem, 7vw, 5.5rem) + 1px)
+      ),
+      repeating-linear-gradient(
+        to bottom,
+        transparent 0,
+        transparent 31px,
+        hsl(var(--foreground) / 0.045) 31px,
+        hsl(var(--foreground) / 0.045) 32px
+      );
+    background-color: hsl(var(--background));
   }
 
   .hero-orb {
-    @apply pointer-events-none absolute rounded-full blur-3xl;
+    @apply bg-highlight/65 pointer-events-none absolute;
+    border: 1px solid hsl(var(--foreground) / 0.08);
+    border-radius: 46% 54% 42% 58% / 58% 44% 56% 42%;
+    transform: rotate(-9deg);
+  }
+
+  .field-notes {
+    background-color: hsl(var(--background));
+    background-image:
+      linear-gradient(
+        90deg,
+        transparent 0,
+        transparent clamp(1.5rem, 5vw, 4.5rem),
+        hsl(var(--primary) / 0.14) clamp(1.5rem, 5vw, 4.5rem),
+        hsl(var(--primary) / 0.14) calc(clamp(1.5rem, 5vw, 4.5rem) + 1px),
+        transparent calc(clamp(1.5rem, 5vw, 4.5rem) + 1px)
+      ),
+      repeating-linear-gradient(
+        to bottom,
+        transparent 0,
+        transparent 31px,
+        hsl(var(--foreground) / 0.045) 31px,
+        hsl(var(--foreground) / 0.045) 32px
+      );
+  }
+
+  .field-notes-ink {
+    background-color: hsl(var(--foreground));
+    background-image:
+      linear-gradient(
+        90deg,
+        transparent 0,
+        transparent clamp(1.5rem, 5vw, 4.5rem),
+        hsl(var(--highlight) / 0.24) clamp(1.5rem, 5vw, 4.5rem),
+        hsl(var(--highlight) / 0.24) calc(clamp(1.5rem, 5vw, 4.5rem) + 1px),
+        transparent calc(clamp(1.5rem, 5vw, 4.5rem) + 1px)
+      ),
+      repeating-linear-gradient(
+        to bottom,
+        transparent 0,
+        transparent 31px,
+        hsl(var(--background) / 0.07) 31px,
+        hsl(var(--background) / 0.07) 32px
+      );
+  }
+
+  .paper-panel {
+    @apply bg-card rounded-xl border;
+    border-color: hsl(var(--foreground) / 0.22);
+  }
+
+  .ink-shadow {
+    box-shadow: 4px 4px 0 hsl(var(--foreground) / 0.12);
+  }
+
+  .note-stamp {
+    @apply bg-highlight text-highlight-foreground inline-flex w-fit items-center gap-2 rounded-sm px-2.5 py-1 text-[0.68rem] leading-none font-bold tracking-[0.13em] uppercase;
+    border: 1px solid hsl(var(--foreground) / 0.3);
+    box-shadow: 2px 2px 0 hsl(var(--foreground) / 0.12);
+    transform: rotate(-1deg);
+  }
+
+  .marker-underline {
+    background-image: linear-gradient(
+      transparent 61%,
+      hsl(var(--highlight) / 0.92) 61%,
+      hsl(var(--highlight) / 0.92) 91%,
+      transparent 91%
+    );
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+    padding-inline: 0.06em;
+  }
+
+  .question-slip {
+    @apply bg-card text-card-foreground relative rounded-lg border;
+    border-color: hsl(var(--foreground) / 0.22);
+    box-shadow: 3px 3px 0 hsl(var(--foreground) / 0.09);
+  }
+
+  .question-slip:nth-child(2n) {
+    transform: rotate(0.45deg) translateX(0.2rem);
+  }
+
+  .question-slip:nth-child(3n) {
+    transform: rotate(-0.35deg) translateX(-0.1rem);
+  }
+
+  .stacked-note {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .stacked-note::before,
+  .stacked-note::after {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    content: '';
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--foreground) / 0.16);
+    border-radius: inherit;
+  }
+
+  .stacked-note::before {
+    transform: rotate(1.15deg) translate(5px, 5px);
+  }
+
+  .stacked-note::after {
+    transform: rotate(-0.65deg) translate(-3px, 3px);
+  }
+
+  .corner-mark {
+    position: relative;
+  }
+
+  .corner-mark::after {
+    position: absolute;
+    top: -1px;
+    right: -1px;
+    width: 2.75rem;
+    height: 0.55rem;
+    pointer-events: none;
+    content: '';
+    background: hsl(var(--highlight) / 0.88);
+    border: 1px solid hsl(var(--foreground) / 0.13);
+    transform: rotate(3deg) translate(0.35rem, -0.15rem);
+  }
+
+  .ledger-rule {
+    border-top: 1px solid hsl(var(--foreground) / 0.18);
+  }
+
+  .on-ink {
+    color: hsl(var(--background));
+  }
+
+  .on-ink .eyebrow {
+    color: hsl(var(--background));
+  }
+
+  .on-ink .eyebrow::before {
+    border-color: hsl(var(--background) / 0.2);
+  }
+}
+
+@media (forced-colors: active) {
+  .field-notes,
+  .field-notes-ink,
+  .soft-grid {
+    background-image: none;
+  }
+
+  .marker-underline {
+    text-decoration: underline;
+    text-decoration-thickness: 0.12em;
+    background-image: none;
   }
 }
 
@@ -250,5 +455,9 @@
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
+  }
+
+  .interactive-card:hover {
+    transform: none;
   }
 }

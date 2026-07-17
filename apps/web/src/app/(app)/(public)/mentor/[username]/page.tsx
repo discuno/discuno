@@ -1,7 +1,9 @@
 import {
   ArrowLeft,
+  ArrowRight,
   BadgeCheck,
   CalendarDays,
+  CircleAlert,
   Clock3,
   GraduationCap,
   LockKeyhole,
@@ -11,10 +13,27 @@ import {
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { BookingModal } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingModal'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
+import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '~/components/ui/empty'
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemFooter,
+  ItemGroup,
+  ItemTitle,
+} from '~/components/ui/item'
 import { formatCurrencyFromCents } from '~/lib/format-currency'
 import { createMetadata, siteConfig } from '~/lib/metadata'
 import { getMentorEnabledEventTypesWithStripeStatus } from '~/server/queries/event-types'
@@ -22,37 +41,18 @@ import { getPublicProfileByUsername } from '~/server/queries/profiles'
 
 interface MentorProfilePageProps {
   params: Promise<{ username: string }>
+  searchParams: Promise<{ checkout?: string }>
 }
 
-export default async function MentorProfilePage({ params }: MentorProfilePageProps) {
-  const { username } = await params
+export default async function MentorProfilePage({ params, searchParams }: MentorProfilePageProps) {
+  const [{ username }, { checkout }] = await Promise.all([params, searchParams])
   const profile = await getPublicProfileByUsername(username)
 
   if (!profile) notFound()
 
   const eventTypes = await getMentorEnabledEventTypesWithStripeStatus(profile.userId)
   const hasBooking = eventTypes.length > 0 && Boolean(profile.calcomUsername)
-  const bookingData =
-    hasBooking && profile.calcomUsername
-      ? {
-          userId: profile.userId,
-          username,
-          calcomUsername: profile.calcomUsername,
-          name: profile.name ?? 'Student mentor',
-          image: profile.image ?? '',
-          bio: profile.bio ?? '',
-          school: profile.school ?? '',
-          major: profile.major ?? '',
-          eventTypes: eventTypes.map(eventType => ({
-            id: eventType.calcomEventTypeId,
-            title: eventType.title,
-            length: eventType.duration,
-            description: eventType.description ?? undefined,
-            price: eventType.customPrice ?? undefined,
-            currency: eventType.currency,
-          })),
-        }
-      : null
+  const firstName = profile.name?.split(' ')[0] ?? 'this mentor'
 
   const profileJsonLd = {
     '@context': 'https://schema.org',
@@ -83,8 +83,12 @@ export default async function MentorProfilePage({ params }: MentorProfilePagePro
         }}
       />
 
-      <div className="bg-card border-b">
-        <div className="page-container py-5">
+      <section className="soft-grid border-foreground/20 relative overflow-hidden border-b-2">
+        <div
+          className="bg-highlight/80 pointer-events-none absolute top-16 right-[8%] hidden h-3 w-28 rotate-2 border lg:block"
+          aria-hidden
+        />
+        <div className="page-container relative py-6 sm:py-10">
           <Button
             render={<Link href="/#mentors" />}
             nativeButton={false}
@@ -92,65 +96,100 @@ export default async function MentorProfilePage({ params }: MentorProfilePagePro
             size="sm"
             className="-ml-3"
           >
-            <ArrowLeft />
+            <ArrowLeft data-icon="inline-start" />
             Back to mentors
           </Button>
+          <header className="mt-6 grid gap-6 md:grid-cols-[auto_1fr] md:items-center lg:mt-8">
+            <Avatar className="border-foreground/20 size-28 rounded-xl border-2 shadow-[4px_4px_0_rgba(13,20,39,0.14)] sm:size-36">
+              <AvatarImage
+                src={profile.image ?? ''}
+                alt={`${profile.name ?? 'Mentor'} profile photo`}
+                className="rounded-[calc(var(--radius)+2px)]"
+              />
+              <AvatarFallback className="bg-secondary text-primary rounded-[calc(var(--radius)+2px)] text-4xl font-semibold">
+                {profile.name?.charAt(0).toUpperCase() ?? 'M'}
+              </AvatarFallback>
+            </Avatar>
+
+            <div className="max-w-3xl">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="secondary">Student mentor</Badge>
+                {profile.schoolEmailVerified && (
+                  <Badge variant="outline" className="badge-success-muted">
+                    <BadgeCheck className="size-3.5" />
+                    School email confirmed
+                  </Badge>
+                )}
+              </div>
+              <h1 className="display-title mt-4 text-4xl sm:text-5xl lg:text-6xl">
+                {profile.name ?? 'Student mentor'}
+              </h1>
+              <div className="paper-panel text-muted-foreground mt-5 flex w-fit max-w-full flex-col gap-2 px-3.5 py-3 text-sm sm:flex-row sm:flex-wrap sm:gap-x-6">
+                {profile.school && (
+                  <span className="text-foreground flex items-center gap-2 font-medium">
+                    <School className="text-primary size-4" />
+                    {profile.school}
+                  </span>
+                )}
+                {profile.major && (
+                  <span className="flex items-center gap-2">
+                    <GraduationCap className="size-4" />
+                    {profile.major}
+                  </span>
+                )}
+                {profile.graduationYear && (
+                  <span>
+                    {profile.schoolYear} · Class of {profile.graduationYear}
+                  </span>
+                )}
+              </div>
+
+              {hasBooking && (
+                <Button
+                  render={<Link href={`/mentor/${username}/book`} />}
+                  nativeButton={false}
+                  size="lg"
+                  className="mt-6 w-full sm:w-auto lg:hidden"
+                >
+                  See available times
+                  <ArrowRight data-icon="inline-end" />
+                </Button>
+              )}
+            </div>
+          </header>
         </div>
-      </div>
+      </section>
+
+      {(checkout === 'cancelled' || checkout === 'cancel_error') && (
+        <div className="page-container pt-6">
+          <Alert variant={checkout === 'cancel_error' ? 'destructive' : 'default'}>
+            <CircleAlert />
+            <AlertTitle>
+              {checkout === 'cancel_error'
+                ? 'We could not confirm checkout was closed'
+                : 'Checkout cancelled'}
+            </AlertTitle>
+            <AlertDescription>
+              {checkout === 'cancel_error' ? (
+                <p>
+                  Do not start another payment for the same time yet.{' '}
+                  <Link href="/support">Contact support</Link> so we can check the checkout safely.
+                </p>
+              ) : (
+                <p>No session was confirmed. You can choose a time again whenever you’re ready.</p>
+              )}
+            </AlertDescription>
+          </Alert>
+        </div>
+      )}
 
       <div className="page-container py-10 sm:py-14">
-        <header className="grid gap-7 border-b pb-10 md:grid-cols-[auto_1fr] md:items-center">
-          <Avatar className="border-card h-28 w-28 border-4 shadow-[0_8px_24px_rgba(15,23,42,0.12)] sm:h-32 sm:w-32">
-            <AvatarImage
-              src={profile.image ?? ''}
-              alt={`${profile.name ?? 'Mentor'} profile photo`}
-            />
-            <AvatarFallback className="bg-secondary text-primary text-4xl font-semibold">
-              {profile.name?.charAt(0).toUpperCase() ?? 'M'}
-            </AvatarFallback>
-          </Avatar>
-
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="secondary">Student mentor</Badge>
-              {profile.schoolEmailVerified && (
-                <Badge className="badge-success-muted">
-                  <BadgeCheck className="mr-1 h-3.5 w-3.5" />
-                  School email verified
-                </Badge>
-              )}
-            </div>
-            <h1 className="mt-4 text-4xl font-semibold tracking-[-0.045em] sm:text-5xl">
-              {profile.name ?? 'Student mentor'}
-            </h1>
-            <div className="text-muted-foreground mt-4 flex flex-col gap-2 text-sm sm:flex-row sm:flex-wrap sm:gap-x-6">
-              {profile.school && (
-                <span className="text-foreground flex items-center gap-2 font-medium">
-                  <School className="text-primary h-4 w-4" />
-                  {profile.school}
-                </span>
-              )}
-              {profile.major && (
-                <span className="flex items-center gap-2">
-                  <GraduationCap className="h-4 w-4" />
-                  {profile.major}
-                </span>
-              )}
-              {profile.graduationYear && (
-                <span>
-                  {profile.schoolYear} · Class of {profile.graduationYear}
-                </span>
-              )}
-            </div>
-          </div>
-        </header>
-
-        <div className="mt-10 grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-16">
-          <div className="min-w-0 space-y-12">
+        <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-16">
+          <div className="flex min-w-0 flex-col gap-12">
             <section aria-labelledby="about-mentor">
               <p className="eyebrow">About</p>
               <h2 id="about-mentor" className="mt-3 text-2xl font-semibold tracking-[-0.03em]">
-                Meet {profile.name?.split(' ')[0] ?? 'this mentor'}
+                The perspective {firstName} brings
               </h2>
               {profile.bio ? (
                 <p className="text-muted-foreground mt-4 max-w-3xl text-base leading-8 whitespace-pre-wrap">
@@ -175,51 +214,80 @@ export default async function MentorProfilePage({ params }: MentorProfilePagePro
                     What you can talk through together
                   </h2>
                 </div>
-                {eventTypes.length > 0 && (
+                {hasBooking && (
                   <p className="text-muted-foreground text-sm">Start with the question you have</p>
                 )}
               </div>
 
-              {eventTypes.length > 0 ? (
-                <div className="mt-6 grid gap-4 sm:grid-cols-2">
+              {hasBooking ? (
+                <ItemGroup className="mt-6 grid gap-4 sm:grid-cols-2">
                   {eventTypes.map(eventType => (
-                    <div
-                      key={eventType.calcomEventTypeId}
-                      className="bg-card rounded-xl border p-5"
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <h3 className="font-semibold">{eventType.title}</h3>
-                        <span className="text-primary shrink-0 text-sm font-semibold">
-                          {formatSessionPrice(eventType.customPrice, eventType.currency)}
-                        </span>
-                      </div>
-                      {eventType.description && (
-                        <p className="text-muted-foreground mt-2 text-sm leading-6">
-                          {eventType.description}
-                        </p>
-                      )}
-                      <div className="text-muted-foreground mt-4 flex items-center gap-4 border-t pt-4 text-xs">
-                        <span className="flex items-center gap-1.5">
-                          <Clock3 className="h-3.5 w-3.5" />
-                          {eventType.duration} minutes
-                        </span>
-                      </div>
+                    <div key={eventType.calcomEventTypeId} role="listitem">
+                      <Item
+                        render={
+                          <Link
+                            href={`/mentor/${username}/book?eventType=${eventType.calcomEventTypeId}`}
+                          />
+                        }
+                        variant="outline"
+                        className="question-slip interactive-card h-full items-stretch p-5"
+                      >
+                        <ItemContent>
+                          <ItemTitle className="line-clamp-none text-base">
+                            {eventType.title}
+                          </ItemTitle>
+                          {eventType.description && (
+                            <ItemDescription className="mt-1 line-clamp-3 leading-6">
+                              {eventType.description}
+                            </ItemDescription>
+                          )}
+                        </ItemContent>
+                        <ItemActions className="ml-auto self-start">
+                          <span className="text-primary text-sm font-semibold">
+                            {formatSessionPrice(eventType.customPrice, eventType.currency)}
+                          </span>
+                        </ItemActions>
+                        <ItemFooter className="border-foreground/15 text-muted-foreground mt-2 border-t pt-4 text-xs">
+                          <span className="flex items-center gap-1.5">
+                            <Clock3 className="size-3.5" />
+                            {eventType.duration} minutes
+                          </span>
+                          <span className="text-primary flex items-center gap-1 font-semibold">
+                            Choose
+                            <ArrowRight className="size-3.5" />
+                          </span>
+                        </ItemFooter>
+                      </Item>
                     </div>
                   ))}
-                </div>
+                </ItemGroup>
               ) : (
-                <div className="bg-card mt-6 rounded-xl border border-dashed p-6">
-                  <p className="font-medium">No sessions are available right now.</p>
-                  <p className="text-muted-foreground mt-1 text-sm">
-                    This mentor may be updating their availability. Check back later or browse
-                    another profile.
-                  </p>
-                </div>
+                <Empty className="bg-card mt-6 border">
+                  <EmptyHeader>
+                    <EmptyMedia variant="icon">
+                      <CalendarDays />
+                    </EmptyMedia>
+                    <EmptyTitle>No sessions are available right now</EmptyTitle>
+                    <EmptyDescription>
+                      This mentor may be updating their availability. You can check back later or
+                      find another student with relevant experience.
+                    </EmptyDescription>
+                  </EmptyHeader>
+                  <EmptyContent>
+                    <Button
+                      render={<Link href="/#mentors" />}
+                      nativeButton={false}
+                      variant="outline"
+                    >
+                      Browse other mentors
+                    </Button>
+                  </EmptyContent>
+                </Empty>
               )}
             </section>
 
             <section
-              className="bg-secondary rounded-xl p-6 sm:p-8"
+              className="field-notes paper-panel corner-mark p-6 sm:p-8"
               aria-labelledby="prepare-session"
             >
               <p className="eyebrow">Make it useful</p>
@@ -234,8 +302,8 @@ export default async function MentorProfilePage({ params }: MentorProfilePagePro
           </div>
 
           <aside className="lg:sticky lg:top-24">
-            <div className="bg-card rounded-xl border p-6 shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
-              <p className="eyebrow">Book with {profile.name?.split(' ')[0] ?? 'this mentor'}</p>
+            <div className="surface-panel stacked-note corner-mark p-6">
+              <p className="eyebrow">Talk with {firstName}</p>
               <h2 className="mt-3 text-2xl font-semibold tracking-[-0.03em]">
                 Ready to talk it through?
               </h2>
@@ -243,18 +311,23 @@ export default async function MentorProfilePage({ params }: MentorProfilePagePro
                 Choose the conversation that fits your question, then find a time that works.
               </p>
 
-              {bookingData ? (
-                <BookingModal bookingData={bookingData} className="mt-6 w-full">
-                  <CalendarDays />
+              {hasBooking ? (
+                <Button
+                  render={<Link href={`/mentor/${username}/book`} />}
+                  nativeButton={false}
+                  size="lg"
+                  className="mt-6 w-full"
+                >
+                  <CalendarDays data-icon="inline-start" />
                   See available times
-                </BookingModal>
+                </Button>
               ) : (
-                <Button className="mt-6 w-full" disabled>
+                <Button size="lg" className="mt-6 w-full" disabled>
                   Booking unavailable
                 </Button>
               )}
 
-              <div className="text-muted-foreground mt-6 space-y-3 border-t pt-5 text-xs leading-5">
+              <div className="text-muted-foreground border-foreground/15 mt-6 flex flex-col gap-3 border-t pt-5 text-xs leading-5">
                 <p className="flex items-start gap-2">
                   <CalendarDays className="text-primary mt-0.5 h-3.5 w-3.5 shrink-0" />
                   See the session length, price, and available times before you confirm.
@@ -267,6 +340,12 @@ export default async function MentorProfilePage({ params }: MentorProfilePagePro
                   <ShieldCheck className="text-primary mt-0.5 h-3.5 w-3.5 shrink-0" />
                   For paid sessions, card details are handled securely at checkout.
                 </p>
+                {profile.schoolEmailVerified && (
+                  <p className="border-foreground/15 mt-1 border-t pt-4">
+                    “School email confirmed” means this mentor accessed a supported institutional
+                    email address. It does not verify identity, background, expertise, or outcomes.
+                  </p>
+                )}
               </div>
             </div>
           </aside>
@@ -285,7 +364,7 @@ export async function generateMetadata({ params }: MentorProfilePageProps): Prom
 
   const role = profile.major ? `${profile.major} student mentor` : 'student mentor'
   const location = profile.school ? ` at ${profile.school}` : ''
-  const fallbackDescription = `Meet ${profile.name ?? 'a student mentor'}, a ${role}${location}, and view available mentorship sessions.`
+  const fallbackDescription = `Meet ${profile.name ?? 'a student mentor'}, a ${role}${location}, and view their available conversation options.`
   const description = profile.bio?.trim() ? profile.bio.trim().slice(0, 155) : fallbackDescription
   const canonical = `${siteConfig.url}/mentor/${username}`
 

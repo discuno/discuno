@@ -14,21 +14,16 @@ import {
   SidebarHeader,
   SidebarMenu,
   SidebarMenuItem,
+  SidebarRail,
 } from '~/components/ui/sidebar'
 import { Skeleton } from '~/components/ui/skeleton'
 
-// Static navigation items that don't depend on user data
-const staticNavItems: NavMainProps['items'] = [
+const workspaceNavItems: NavMainProps['items'] = [
   {
-    title: 'Back to Discuno',
-    url: '/',
-    icon: 'ArrowLeft',
-  },
-  {
-    title: 'Mentoring',
+    title: 'Workspace',
     url: '#',
     icon: 'Settings2',
-    sectionLabel: 'Mentoring',
+    sectionLabel: 'Workspace',
     items: [
       {
         title: 'Bookings',
@@ -36,28 +31,15 @@ const staticNavItems: NavMainProps['items'] = [
         icon: 'CalendarCheck',
       },
       {
-        title: 'Calendar connection',
-        url: '/settings/calendar',
-        icon: 'Calendar',
-      },
-      {
         title: 'Availability',
         url: '/settings/availability',
-        icon: 'Calendar',
+        icon: 'CalendarDays',
       },
       {
-        title: 'Session types',
+        title: 'Sessions',
         url: '/settings/event-types',
         icon: 'BookOpen',
       },
-    ],
-  },
-  {
-    title: 'Profile',
-    url: '#',
-    icon: 'User',
-    sectionLabel: 'Profile',
-    items: [
       {
         title: 'Public profile',
         url: '/settings/profile/edit',
@@ -65,7 +47,26 @@ const staticNavItems: NavMainProps['items'] = [
       },
     ],
   },
+  {
+    title: 'Connections',
+    url: '#',
+    icon: 'Settings2',
+    sectionLabel: 'Connections',
+    items: [
+      {
+        title: 'Calendar',
+        url: '/settings/calendar',
+        icon: 'Calendar',
+      },
+    ],
+  },
 ]
+
+const backToDiscunoItem: NavMainProps['items'][number] = {
+  title: 'Back to Discuno',
+  url: '/',
+  icon: 'ArrowLeft',
+}
 
 // Dynamic component that fetches user-specific data
 const DynamicSidebarContent = async () => {
@@ -74,10 +75,9 @@ const DynamicSidebarContent = async () => {
   const user = await getFullProfileAction()
   const onboardingStatus = await getMentorOnboardingStatus()
 
-  const homeItem = staticNavItems[0]
   const navMain: NavMainProps['items'] = [
     {
-      title: onboardingStatus.isComplete ? 'Overview' : 'Setup checklist',
+      title: 'Overview',
       url: '/settings',
       icon: 'Rocket',
       badge: onboardingStatus.isComplete
@@ -86,8 +86,7 @@ const DynamicSidebarContent = async () => {
       badgeVariant: 'secondary',
       isOnboarding: !onboardingStatus.isComplete,
     },
-    ...(homeItem ? [homeItem] : []),
-    ...staticNavItems.slice(1), // Rest of the static items
+    ...workspaceNavItems,
   ]
 
   return (
@@ -96,6 +95,7 @@ const DynamicSidebarContent = async () => {
         <NavMain items={navMain} />
       </SidebarContent>
       <SidebarFooter>
+        <NavMain items={[backToDiscunoItem]} />
         <NavUser user={user} />
       </SidebarFooter>
     </>
@@ -107,7 +107,7 @@ const SidebarContentSkeleton = () => {
   return (
     <>
       <SidebarContent>
-        <div className="space-y-2 p-2">
+        <div className="flex flex-col gap-2 p-2">
           <Skeleton className="h-10 w-full" />
           <Skeleton className="h-10 w-full" />
           <Skeleton className="h-10 w-full" />
@@ -123,7 +123,7 @@ const SidebarContentSkeleton = () => {
 // Main sidebar component using PPR
 export const AppSidebar = ({ ...props }: React.ComponentProps<typeof Sidebar>) => {
   return (
-    <Sidebar variant="inset" {...props}>
+    <Sidebar variant="inset" collapsible="icon" {...props}>
       {/* Static header - prerendered */}
       <SidebarHeader>
         <SidebarMenu>
@@ -137,6 +137,7 @@ export const AppSidebar = ({ ...props }: React.ComponentProps<typeof Sidebar>) =
       <Suspense fallback={<SidebarContentSkeleton />}>
         <DynamicSidebarContent />
       </Suspense>
+      <SidebarRail />
     </Sidebar>
   )
 }

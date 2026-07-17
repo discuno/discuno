@@ -1,9 +1,7 @@
 echo "🔍 Validating commit message..."
 
-# Lint commit messages with commitlint
-npx --no -- commitlint --edit "${1}"
-
-if [ $? -eq 0 ]; then
+# Lint commit messages with the package manager pinned by the repository.
+if pnpm exec commitlint --edit "${1}"; then
   echo "✅ Commit message is valid!"
 else
   echo "❌ Commit message validation failed. Please follow conventional commit format."

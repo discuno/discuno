@@ -38,7 +38,7 @@ export const EventTypeSelector = ({
       onSelectTimeSlot(null)
     }}
   >
-    <SelectTrigger className={cn('w-full', className)}>
+    <SelectTrigger aria-label="Session type" className={cn('w-full', className)}>
       <div className="flex w-full items-center justify-between">
         {selectedEventType ? (
           <div className="flex flex-col items-start">

@@ -11,7 +11,16 @@ import {
 } from '~/app/(app)/(public)/(feed)/(post)/actions'
 import type { Card } from '~/app/types'
 import { Button } from '~/components/ui/button'
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '~/components/ui/empty'
 import { Spinner } from '~/components/ui/spinner'
+import { cn } from '~/lib/utils'
 
 const MENTOR_PAGE_SIZE = 6
 
@@ -45,6 +54,7 @@ export const PostGrid = ({ schoolId, majorId, graduationYear, initialPage }: Pos
         pages: [initialPage],
         pageParams: [undefined],
       },
+      staleTime: 60_000,
       getNextPageParam: lastPage => lastPage.nextCursor,
     })
 
@@ -58,45 +68,60 @@ export const PostGrid = ({ schoolId, majorId, graduationYear, initialPage }: Pos
 
   if (isError) {
     return (
-      <div className="bg-card flex flex-col items-center rounded-xl border border-dashed px-6 py-14 text-center">
-        <RefreshCw className="text-muted-foreground h-7 w-7" />
-        <h3 className="mt-4 text-lg font-semibold">We could not load mentors</h3>
-        <p className="text-muted-foreground mt-1 max-w-sm text-sm">
-          Check your connection and try once more.
-        </p>
-        <Button variant="outline" className="mt-5" onClick={() => void refetch()}>
-          Try again
-        </Button>
-      </div>
+      <Empty className="paper-panel rounded-xl">
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <RefreshCw />
+          </EmptyMedia>
+          <EmptyTitle>We could not load mentors</EmptyTitle>
+          <EmptyDescription>Check your connection and try once more.</EmptyDescription>
+        </EmptyHeader>
+        <EmptyContent>
+          <Button variant="outline" onClick={() => void refetch()}>
+            Try again
+          </Button>
+        </EmptyContent>
+      </Empty>
     )
   }
 
   if (allPosts.length === 0) {
     return (
-      <div className="bg-card flex flex-col items-center rounded-xl border border-dashed px-6 py-14 text-center">
-        <SearchX className="text-muted-foreground h-8 w-8" />
-        <h3 className="mt-4 text-lg font-semibold">No exact matches yet</h3>
-        <p className="text-muted-foreground mt-1 max-w-md text-sm leading-6">
-          Try removing one filter. A mentor from a related major or school may still have the
-          perspective you need.
-        </p>
-        <Button
-          render={<Link href="/#mentors" />}
-          nativeButton={false}
-          variant="outline"
-          className="mt-5"
-        >
-          Clear all filters
-        </Button>
-      </div>
+      <Empty className="paper-panel rounded-xl">
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <SearchX />
+          </EmptyMedia>
+          <EmptyTitle>No exact matches yet</EmptyTitle>
+          <EmptyDescription>
+            Try removing one filter. A mentor from a related major or school may still have the
+            perspective you need.
+          </EmptyDescription>
+        </EmptyHeader>
+        <EmptyContent>
+          <Button render={<Link href="/#mentors" />} nativeButton={false} variant="outline">
+            Clear all filters
+          </Button>
+        </EmptyContent>
+      </Empty>
     )
   }
 
+  const layout = allPosts.length === 1 ? 'featured' : allPosts.length === 2 ? 'pair' : 'grid'
+
   return (
     <>
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      <div
+        data-mentor-layout={layout}
+        className={cn(
+          'grid grid-cols-1 gap-5',
+          layout === 'featured' && 'max-w-4xl',
+          layout === 'pair' && 'max-w-5xl sm:grid-cols-2',
+          layout === 'grid' && 'sm:grid-cols-2 lg:grid-cols-3'
+        )}
+      >
         {allPosts.map(card => (
-          <PostCard key={card.id} card={card} />
+          <PostCard key={card.id} card={card} featured={layout === 'featured'} />
         ))}
       </div>
 

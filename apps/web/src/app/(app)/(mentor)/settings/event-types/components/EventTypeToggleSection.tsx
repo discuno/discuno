@@ -12,7 +12,8 @@ import {
 } from '~/app/(app)/(mentor)/settings/actions'
 import { EventTypeSettingsContent } from '~/app/(app)/(mentor)/settings/event-types/components/EventTypeSettingsContent'
 import { Alert, AlertDescription } from '~/components/ui/alert'
-import { Card, CardContent } from '~/components/ui/card'
+import { Button } from '~/components/ui/button'
+import { Card, CardContent, CardHeader } from '~/components/ui/card'
 import { Skeleton } from '~/components/ui/skeleton'
 import { type UpdateMentorEventType } from '~/lib/schemas/db'
 
@@ -28,17 +29,20 @@ interface EventTypePreference {
   bookingCompatibilityReasons: string[]
 }
 
-export const EventTypeToggleSection = () => {
+export const EventTypeToggleSection = ({ paymentsEnabled }: { paymentsEnabled: boolean }) => {
   const searchParams = useSearchParams()
   const [selectedEventType, setSelectedEventType] = useState<EventTypePreference | null>(null)
   const [showPricingDialog, setShowPricingDialog] = useState(false)
   const [tempPrice, setTempPrice] = useState<string>('')
   const hasHandledStripeReturn = useRef(false)
+  const hasStripeReturn =
+    searchParams.get('stripe_setup') === 'success' || searchParams.get('stripe_refresh') === 'true'
 
   // Fetch mentor's event type preferences
   const {
     data: eventTypesData,
     isLoading: eventTypesLoading,
+    isFetching: eventTypesFetching,
     error: eventTypesError,
     refetch: refetchEventTypes,
   } = useQuery({
@@ -51,11 +55,14 @@ export const EventTypeToggleSection = () => {
   const {
     data: stripeStatusData,
     isLoading: stripeStatusLoading,
+    isFetching: stripeStatusFetching,
+    error: stripeStatusError,
     refetch: refetchStripeStatus,
   } = useQuery({
     queryKey: ['mentor-stripe-status'],
     queryFn: getMentorStripeStatus,
     staleTime: 5 * 60 * 1000,
+    enabled: paymentsEnabled || hasStripeReturn,
   })
 
   // A Stripe return URL only proves that the mentor came back. Reconcile the
@@ -84,7 +91,9 @@ export const EventTypeToggleSection = () => {
         if (statusResult?.success && status?.onboardingCompleted) {
           toast.success('Payout setup is ready', {
             id: toastId,
-            description: 'You can now offer paid sessions.',
+            description: paymentsEnabled
+              ? 'You can now offer paid sessions.'
+              : 'Your account is ready. Paid sessions remain paused until launch.',
           })
           return
         }
@@ -110,18 +119,24 @@ export const EventTypeToggleSection = () => {
         })
       })
       .finally(() => window.history.replaceState({}, '', '/settings/event-types'))
-  }, [refetchStripeStatus, searchParams])
+  }, [paymentsEnabled, refetchStripeStatus, searchParams])
 
   // Update event type preferences
   const updateEventTypeMutation = useMutation({
     mutationFn: ({ eventTypeId, data }: { eventTypeId: number; data: UpdateMentorEventType }) =>
       updateMentorEventTypePreferences(eventTypeId, data),
-    onSuccess: result => {
+    onSuccess: (result, variables) => {
       if (!result.success) {
         toast.error(result.error ?? 'Could not update this session type')
         return
       }
-      toast.success('Session type updated')
+      toast.success(
+        variables.data.customPrice !== undefined
+          ? 'Price saved'
+          : variables.data.isEnabled
+            ? 'Session type enabled'
+            : 'Session type hidden'
+      )
       void refetchEventTypes()
     },
     onError: () => toast.error('Could not update this session type'),
@@ -142,6 +157,11 @@ export const EventTypeToggleSection = () => {
 
   const eventTypes = eventTypesData?.data ?? []
   const stripeStatus = stripeStatusData?.data
+  const eventTypesUnavailable =
+    Boolean(eventTypesError) || eventTypesData?.success !== true || !eventTypesData.data
+  const stripeStatusUnavailable =
+    (paymentsEnabled || hasStripeReturn) &&
+    (Boolean(stripeStatusError) || stripeStatusData?.success !== true || !stripeStatusData.data)
 
   const handleToggleEventType = async (eventType: EventTypePreference, checked: boolean) => {
     if (checked && !eventType.bookingCompatible) {
@@ -150,6 +170,12 @@ export const EventTypeToggleSection = () => {
     }
     // Prevent enabling paid event types without Stripe
     if (checked && eventType.customPrice && eventType.customPrice > 0) {
+      if (!paymentsEnabled) {
+        toast.info(
+          'Paid sessions are not available yet. Set this session to free before publishing it.'
+        )
+        return
+      }
       if (!stripeStatus?.transfersEnabled || !stripeStatus.payoutsEnabled) {
         toast.error('Complete Stripe setup to enable paid event types')
         return
@@ -175,7 +201,7 @@ export const EventTypeToggleSection = () => {
 
     const priceInCents = tempPrice ? Math.round(parseFloat(tempPrice) * 100) : 0
 
-    await updateEventTypeMutation.mutateAsync({
+    const result = await updateEventTypeMutation.mutateAsync({
       eventTypeId: selectedEventType.id,
       data: {
         customPrice: priceInCents,
@@ -183,18 +209,39 @@ export const EventTypeToggleSection = () => {
       },
     })
 
-    setShowPricingDialog(false)
-    setSelectedEventType(null)
+    if (result.success) {
+      setShowPricingDialog(false)
+      setSelectedEventType(null)
+    }
   }
 
-  if (eventTypesLoading || stripeStatusLoading) {
+  const handlePricingDialogOpenChange = (open: boolean) => {
+    setShowPricingDialog(open)
+    if (!open) {
+      setSelectedEventType(null)
+      setTempPrice('')
+    }
+  }
+
+  if (eventTypesLoading || ((paymentsEnabled || hasStripeReturn) && stripeStatusLoading)) {
     return <EventTypeToggleSkeleton />
   }
 
-  if (eventTypesError) {
+  if (eventTypesUnavailable) {
     return (
-      <Alert>
-        <AlertDescription>Failed to load event types. Please try again later.</AlertDescription>
+      <Alert variant="destructive">
+        <AlertDescription>
+          <p>{eventTypesData?.error ?? 'Session types could not be loaded. Please try again.'}</p>
+          <Button
+            type="button"
+            size="xs"
+            variant="outline"
+            onClick={() => void refetchEventTypes()}
+            disabled={eventTypesFetching}
+          >
+            {eventTypesFetching ? 'Trying again…' : 'Try again'}
+          </Button>
+        </AlertDescription>
       </Alert>
     )
   }
@@ -203,6 +250,8 @@ export const EventTypeToggleSection = () => {
     <EventTypeSettingsContent
       eventTypes={eventTypes}
       stripeStatus={stripeStatus}
+      stripeStatusUnavailable={stripeStatusUnavailable}
+      paymentsEnabled={paymentsEnabled}
       selectedEventType={selectedEventType}
       showPricingDialog={showPricingDialog}
       tempPrice={tempPrice}
@@ -212,7 +261,9 @@ export const EventTypeToggleSection = () => {
       onPricingChange={handlePricingChange}
       onSavePricing={handleSavePricing}
       onRefresh={() => refreshEventTypesMutation.mutate()}
-      setShowPricingDialog={setShowPricingDialog}
+      onRetryStripeStatus={() => void refetchStripeStatus()}
+      isRetryingStripeStatus={stripeStatusFetching}
+      setShowPricingDialog={handlePricingDialogOpenChange}
       setTempPrice={setTempPrice}
     />
   )
@@ -220,25 +271,25 @@ export const EventTypeToggleSection = () => {
 
 const EventTypeToggleSkeleton = () => {
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6">
       <Card>
-        <div className="border-b p-6">
-          <div className="flex items-center justify-between">
-            <div className="space-y-2">
-              <Skeleton className="h-6 w-48" />
-              <Skeleton className="h-4 w-96" />
+        <CardHeader className="border-b">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-2">
+              <Skeleton className="h-6 w-48 max-w-full" />
+              <Skeleton className="h-4 w-80 max-w-full" />
             </div>
             <Skeleton className="h-8 w-32" />
           </div>
-        </div>
+        </CardHeader>
 
         <CardContent className="p-0">
           <div className="divide-y">
             {Array.from({ length: 3 }).map((_, i) => (
               <div key={i} className="p-6">
-                <div className="flex items-start justify-between gap-6">
-                  <div className="flex-1 space-y-3">
-                    <div className="flex items-center gap-3">
+                <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="flex flex-1 flex-col gap-3">
+                    <div className="flex flex-wrap items-center gap-3">
                       <Skeleton className="h-5 w-10" />
                       <Skeleton className="h-6 w-40" />
                       <Skeleton className="h-5 w-16" />
@@ -246,7 +297,7 @@ const EventTypeToggleSkeleton = () => {
                     <Skeleton className="h-4 w-80" />
                     <Skeleton className="h-4 w-20" />
                   </div>
-                  <Skeleton className="h-9 w-24" />
+                  <Skeleton className="h-9 w-full sm:w-24" />
                 </div>
               </div>
             ))}

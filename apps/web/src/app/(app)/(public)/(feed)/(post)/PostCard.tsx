@@ -8,9 +8,11 @@ import { logAnalyticsEvent } from '~/app/(app)/(public)/(feed)/(post)/actions'
 import type { Card } from '~/app/types'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
+import { Item, ItemContent, ItemMedia, ItemTitle } from '~/components/ui/item'
 import { getClientAnalyticsConsentSnapshot } from '~/lib/analytics/client-consent'
+import { cn } from '~/lib/utils'
 
-export const PostCard = ({ card }: { card: Card }) => {
+export const PostCard = ({ card, featured = false }: { card: Card; featured?: boolean }) => {
   const [imageFailed, setImageFailed] = useState(false)
 
   const handleProfileView = () => {
@@ -36,77 +38,90 @@ export const PostCard = ({ card }: { card: Card }) => {
   const initial = card.name?.trim().charAt(0).toUpperCase() ?? 'M'
 
   return (
-    <article className="bg-card hover:border-primary/30 group flex h-full flex-col overflow-hidden rounded-xl border transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgba(15,23,42,0.08)]">
-      <div
-        className="h-1 w-full"
-        style={{ backgroundColor: card.schoolPrimaryColor ?? 'hsl(var(--primary))' }}
-        aria-hidden="true"
-      />
-
-      <div className="bg-secondary relative flex h-40 items-center justify-center overflow-hidden">
-        <div className="border-card relative h-24 w-24 overflow-hidden rounded-full border-4 shadow-[0_6px_18px_rgba(15,23,42,0.12)]">
-          <div
-            className="bg-card text-primary absolute inset-0 flex items-center justify-center"
-            aria-hidden="true"
-          >
-            <span className="text-4xl font-semibold tracking-[-0.06em] opacity-35">{initial}</span>
-          </div>
-          {card.userImage && !imageFailed && (
-            <Image
-              src={card.userImage}
-              alt={`${card.name ?? 'Mentor'} profile photo`}
-              fill
-              className="z-10 object-cover object-top transition-transform duration-300 group-hover:scale-[1.03]"
-              sizes="96px"
-              onError={() => setImageFailed(true)}
-            />
-          )}
-        </div>
-
-        <div className="absolute top-3 left-3 flex flex-wrap gap-2">
-          {card.verifiedSchoolEmail && (
-            <Badge className="border-white/70 bg-white/95 text-slate-800 shadow-sm hover:bg-white">
-              <BadgeCheck className="text-success mr-1 h-3.5 w-3.5" />
-              School email verified
-            </Badge>
-          )}
-        </div>
-
+    <article
+      className={cn(
+        'paper-panel interactive-card corner-mark group flex h-full flex-col p-5',
+        featured && 'p-6 sm:p-8'
+      )}
+    >
+      <div className="flex flex-wrap items-center gap-2">
+        {card.verifiedSchoolEmail && (
+          <Badge variant="outline" className="bg-background gap-1.5">
+            <BadgeCheck className="text-success size-3.5" aria-hidden="true" />
+            School email confirmed
+          </Badge>
+        )}
         {card.hasFreeSessions && (
-          <Badge className="bg-success text-success-foreground hover:bg-success absolute right-3 bottom-3 border-transparent shadow-sm">
+          <Badge className="bg-success text-success-foreground hover:bg-success">
             Free session available
           </Badge>
         )}
       </div>
 
-      <div className="flex flex-1 flex-col p-5">
-        <div>
-          <h2 className="text-foreground text-xl font-semibold tracking-[-0.025em]">
-            {profileHref ? (
-              <Link href={profileHref} onClick={handleProfileView} className="hover:text-primary">
-                {card.name ?? 'Student mentor'}
-              </Link>
-            ) : (
-              (card.name ?? 'Student mentor')
-            )}
-          </h2>
+      <Item className="mt-5 flex-nowrap items-start rounded-none border-0 p-0">
+        <ItemMedia
+          variant="image"
+          className={cn(
+            'bg-secondary border-foreground/20 relative size-16 rounded-lg border shadow-[2px_2px_0_rgba(13,20,39,0.12)]',
+            featured && 'size-20 sm:size-24'
+          )}
+        >
+          <span
+            className="text-primary flex size-full items-center justify-center text-2xl font-semibold"
+            aria-hidden="true"
+          >
+            {initial}
+          </span>
+          {card.userImage && !imageFailed && (
+            <Image
+              src={card.userImage}
+              alt={`${card.name ?? 'Mentor'} profile photo`}
+              fill
+              className="object-cover object-top transition-transform duration-300 group-hover:scale-[1.03]"
+              sizes={featured ? '96px' : '64px'}
+              onError={() => setImageFailed(true)}
+            />
+          )}
+        </ItemMedia>
 
-          <div className="text-muted-foreground mt-3 space-y-2 text-sm">
-            {card.school && (
-              <div className="flex items-center gap-2">
-                <Building2 className="text-primary h-4 w-4 shrink-0" />
-                <Link
-                  href={`/?school=${encodeURIComponent(card.schoolDomainPrefix ?? '')}#mentors`}
-                  className="text-foreground truncate font-medium hover:underline"
-                  title={card.school}
-                >
-                  {card.school}
+        <ItemContent className="min-w-0 gap-2">
+          <ItemTitle className="max-w-full">
+            <h3
+              className={cn(
+                'font-display text-foreground line-clamp-1 text-2xl leading-none font-semibold tracking-[-0.025em]',
+                featured && 'text-2xl sm:text-3xl'
+              )}
+            >
+              {profileHref ? (
+                <Link href={profileHref} onClick={handleProfileView} className="hover:text-primary">
+                  {card.name ?? 'Student mentor'}
                 </Link>
+              ) : (
+                (card.name ?? 'Student mentor')
+              )}
+            </h3>
+          </ItemTitle>
+
+          <div className="text-muted-foreground flex min-w-0 flex-col gap-1.5 text-sm">
+            {card.school && (
+              <div className="flex min-w-0 items-center gap-2">
+                <Building2 className="text-primary size-4 shrink-0" aria-hidden="true" />
+                {card.schoolDomainPrefix ? (
+                  <Link
+                    href={`/?school=${encodeURIComponent(card.schoolDomainPrefix)}#mentors`}
+                    className="text-foreground truncate font-medium hover:underline"
+                    title={card.school}
+                  >
+                    {card.school}
+                  </Link>
+                ) : (
+                  <span className="text-foreground truncate font-medium">{card.school}</span>
+                )}
               </div>
             )}
             {card.major && (
-              <div className="flex items-center gap-2">
-                <BookOpen className="h-4 w-4 shrink-0" />
+              <div className="flex min-w-0 items-center gap-2">
+                <BookOpen className="size-4 shrink-0" aria-hidden="true" />
                 <Link
                   href={`/?major=${encodeURIComponent(card.major.toLowerCase())}#mentors`}
                   className="truncate hover:underline"
@@ -117,40 +132,48 @@ export const PostCard = ({ card }: { card: Card }) => {
               </div>
             )}
           </div>
+        </ItemContent>
+      </Item>
 
-          {card.description && (
-            <p className="text-muted-foreground mt-4 line-clamp-2 text-sm leading-6">
-              {card.description}
-            </p>
+      {card.description && (
+        <p
+          className={cn(
+            'text-muted-foreground mt-5 line-clamp-3 text-sm leading-6',
+            featured && 'max-w-2xl text-base leading-7'
           )}
-        </div>
+        >
+          {card.description}
+        </p>
+      )}
 
-        <div className="mt-auto pt-5">
-          <div className="text-muted-foreground mb-4 flex flex-wrap items-center gap-x-3 gap-y-1 border-t pt-4 text-xs">
+      <div className="mt-auto pt-6">
+        {Boolean(card.schoolYear ?? card.graduationYear) && (
+          <div className="text-muted-foreground border-foreground/15 mb-4 flex flex-wrap items-center gap-x-3 gap-y-1 border-t pt-4 text-xs">
             {card.schoolYear && (
               <span className="flex items-center gap-1.5">
-                <GraduationCap className="h-3.5 w-3.5" />
+                <GraduationCap className="size-3.5" aria-hidden="true" />
                 {card.schoolYear}
               </span>
             )}
             {card.graduationYear && <span>Class of {card.graduationYear}</span>}
           </div>
+        )}
 
-          {profileHref ? (
-            <Button
-              render={<Link href={profileHref} onClick={handleProfileView} />}
-              nativeButton={false}
-              className="w-full"
-            >
-              See how they can help
-              <ArrowUpRight />
-            </Button>
-          ) : (
-            <Button variant="outline" className="w-full" disabled>
-              Profile unavailable
-            </Button>
-          )}
-        </div>
+        {profileHref ? (
+          <Button
+            render={<Link href={profileHref} onClick={handleProfileView} />}
+            nativeButton={false}
+            className={cn('w-full', featured && 'sm:w-auto')}
+            size={featured ? 'lg' : 'default'}
+          >
+            See how they can help
+            <ArrowUpRight />
+          </Button>
+        ) : (
+          <Button variant="outline" className="w-full" disabled>
+            Profile unavailable
+          </Button>
+        )}
       </div>
     </article>
   )

@@ -5,12 +5,14 @@ import {
   BookOpen,
   Calendar,
   CalendarCheck,
+  CalendarDays,
   CreditCard,
   Rocket,
   Settings2,
   User,
 } from 'lucide-react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { Badge } from '~/components/ui/badge'
 import {
   SidebarGroup,
@@ -21,12 +23,14 @@ import {
   useSidebar,
 } from '~/components/ui/sidebar'
 import { StatusDot } from '~/components/ui/status-dot'
+import { cn } from '~/lib/utils'
 
 const iconMap = {
   ArrowLeft,
   Settings2,
   User,
   Calendar,
+  CalendarDays,
   BookOpen,
   CreditCard,
   CalendarCheck,
@@ -57,12 +61,16 @@ export type NavMainProps = {
 
 export function NavMain({ items }: NavMainProps) {
   const { isMobile, setOpenMobile } = useSidebar()
+  const pathname = usePathname()
 
   const handleClick = () => {
     if (isMobile) {
       setOpenMobile(false)
     }
   }
+
+  const isCurrentPath = (url: string) =>
+    pathname === url || (url !== '/settings' && url !== '/' && pathname.startsWith(`${url}/`))
 
   return (
     <>
@@ -71,6 +79,7 @@ export function NavMain({ items }: NavMainProps) {
           .filter(item => !item.items)
           .map(item => {
             const Icon = iconMap[item.icon]
+            const isActive = isCurrentPath(item.url)
             return (
               <SidebarMenuItem key={item.title}>
                 <SidebarMenuButton
@@ -79,10 +88,12 @@ export function NavMain({ items }: NavMainProps) {
                       href={item.url}
                       className="flex items-center justify-between"
                       onClick={handleClick}
+                      aria-current={isActive ? 'page' : undefined}
                     />
                   }
                   tooltip={item.title}
-                  className={item.isOnboarding && item.badge ? 'font-semibold' : ''}
+                  isActive={isActive}
+                  className={cn(item.isOnboarding && item.badge && 'font-semibold')}
                 >
                   <div className="flex items-center gap-2">
                     <Icon />
@@ -112,6 +123,7 @@ export function NavMain({ items }: NavMainProps) {
             <SidebarMenu>
               {parentItem.items?.map(subItem => {
                 const SubIcon = iconMap[subItem.icon]
+                const isActive = isCurrentPath(subItem.url)
                 return (
                   <SidebarMenuItem key={subItem.title}>
                     {subItem.disabled ? (
@@ -132,8 +144,15 @@ export function NavMain({ items }: NavMainProps) {
                       </SidebarMenuButton>
                     ) : (
                       <SidebarMenuButton
-                        render={<Link href={subItem.url} onClick={handleClick} />}
+                        render={
+                          <Link
+                            href={subItem.url}
+                            onClick={handleClick}
+                            aria-current={isActive ? 'page' : undefined}
+                          />
+                        }
                         tooltip={subItem.title}
+                        isActive={isActive}
                       >
                         <SubIcon />
                         <div className="flex flex-col items-start">

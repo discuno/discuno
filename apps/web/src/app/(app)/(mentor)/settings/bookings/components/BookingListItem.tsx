@@ -1,11 +1,10 @@
 'use client'
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { format } from 'date-fns'
-import { Ban } from 'lucide-react'
+import { Ban, CalendarClock, ExternalLink } from 'lucide-react'
+import { useState } from 'react'
 import { toast } from 'sonner'
 import { cancelBooking } from '~/app/(app)/(mentor)/settings/actions'
-import { type Booking } from '~/app/(app)/(mentor)/settings/bookings/components/BookingsPage'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,101 +16,192 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '~/components/ui/alert-dialog'
+import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
+import { ButtonGroup } from '~/components/ui/button-group'
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemHeader,
+  ItemMedia,
+  ItemTitle,
+} from '~/components/ui/item'
+import type { Booking } from './booking-types'
 
 type BookingListItemProps = {
   booking: Booking
+  timeZone: string
 }
 
-export const BookingListItem = ({ booking }: BookingListItemProps) => {
-  const isCancelled = booking.status === 'CANCELLED'
+const statusPresentation: Record<Booking['status'], { label: string; className: string }> = {
+  ACCEPTED: {
+    label: 'Accepted',
+    className: 'border-success/20 bg-success/10 text-success',
+  },
+  PENDING: {
+    label: 'Pending',
+    className: 'border-warning/25 bg-warning/10 text-warning-foreground',
+  },
+  CANCELLED: {
+    label: 'Cancelled',
+    className: 'border-destructive/20 bg-destructive/10 text-destructive',
+  },
+  REJECTED: {
+    label: 'Rejected',
+    className: 'border-destructive/20 bg-destructive/10 text-destructive',
+  },
+  COMPLETED: {
+    label: 'Completed',
+    className: 'border-success/20 bg-success/10 text-success',
+  },
+  NO_SHOW: {
+    label: 'No-show',
+    className: 'border-warning/25 bg-warning/10 text-warning-foreground',
+  },
+}
+
+const formatDate = (date: Date, timeZone: string) =>
+  new Intl.DateTimeFormat(undefined, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone,
+  }).format(date)
+
+const formatTime = (date: Date, timeZone: string) =>
+  new Intl.DateTimeFormat(undefined, {
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZone,
+  }).format(date)
+
+export const BookingListItem = ({ booking, timeZone }: BookingListItemProps) => {
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
+  const queryClient = useQueryClient()
   const startDate = new Date(booking.startTime)
   const endDate = new Date(booking.endTime)
-  const queryClient = useQueryClient()
+  const now = new Date()
+  const activeStatus = booking.status === 'ACCEPTED' || booking.status === 'PENDING'
+  const hasEnded = endDate <= now
+  const canJoin = booking.status === 'ACCEPTED' && !hasEnded && Boolean(booking.meetingUrl)
+  const canCancel = activeStatus && !hasEnded
+  const status = statusPresentation[booking.status]
 
   const cancelBookingMutation = useMutation({
-    mutationFn: () =>
-      cancelBooking({
+    mutationFn: async () => {
+      const result = await cancelBooking({
         bookingUid: booking.calcomUid,
         cancellationReason: 'Cancelled by mentor',
-      }),
+      })
+
+      if (!result.success) {
+        throw new Error(result.error ?? 'The session could not be cancelled.')
+      }
+
+      return result
+    },
     onSuccess: () => {
-      toast.success('Booking cancelled successfully')
+      setCancelDialogOpen(false)
+      toast.success('Session cancelled')
       void queryClient.invalidateQueries({ queryKey: ['bookings'] })
     },
     onError: error => {
-      toast.error(error.message)
+      toast.error("Couldn't cancel the session", { description: error.message })
     },
   })
 
   return (
-    <div className="border-b py-4">
-      <div className="flex items-center justify-between">
-        <div className="flex-1">
-          <div className={`text-muted-foreground text-sm ${isCancelled ? 'line-through' : ''}`}>
-            {format(startDate, 'EEE, d MMM')}
-          </div>
-          <div className={`font-medium ${isCancelled ? 'line-through' : ''}`}>
-            {format(startDate, 'p')} - {format(endDate, 'p')}
-          </div>
+    <Item role="listitem" variant="outline" className="items-start sm:flex-nowrap">
+      <ItemMedia
+        variant="icon"
+        className="bg-muted text-muted-foreground hidden size-10 rounded-md sm:flex"
+      >
+        <CalendarClock aria-hidden="true" />
+      </ItemMedia>
+
+      <ItemContent className="min-w-0 gap-2">
+        <ItemHeader className="items-start">
+          <ItemTitle className="line-clamp-none text-base">{booking.title}</ItemTitle>
+          <Badge
+            variant="outline"
+            className={status.className}
+            aria-label={`Booking status: ${status.label}`}
+          >
+            {status.label}
+          </Badge>
+        </ItemHeader>
+        <ItemDescription className="line-clamp-none">
+          Session with <span className="text-foreground font-medium">{booking.attendeeName}</span>
+        </ItemDescription>
+        <div className="text-muted-foreground flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+          <time dateTime={startDate.toISOString()}>
+            {formatDate(startDate, timeZone)} · {formatTime(startDate, timeZone)}–
+            {formatTime(endDate, timeZone)}
+          </time>
+          <span aria-hidden="true">·</span>
+          <span>{timeZone.replaceAll('_', ' ')}</span>
         </div>
-        <div className="flex-1">
-          <div className={`font-semibold ${isCancelled ? 'line-through' : ''}`}>
-            {booking.title}
-          </div>
-          <div className="text-muted-foreground text-sm">{booking.attendeeName}</div>
-        </div>
-        <div className="flex flex-1 items-center justify-end gap-4">
-          {isCancelled ? (
-            <span className="text-muted-foreground font-medium">Cancelled</span>
-          ) : (
-            <>
-              {booking.meetingUrl && (
-                <a
-                  href={booking.meetingUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-500 hover:underline"
-                >
-                  Join Video Call
-                </a>
-              )}
-              <AlertDialog>
+      </ItemContent>
+
+      {(canJoin || canCancel) && (
+        <ItemActions className="basis-full sm:basis-auto sm:self-center">
+          <ButtonGroup className="w-full sm:w-fit">
+            {canJoin && booking.meetingUrl && (
+              <Button
+                render={<a href={booking.meetingUrl} target="_blank" rel="noopener noreferrer" />}
+                nativeButton={false}
+                variant="outline"
+                size="sm"
+                className="flex-1 sm:flex-none"
+              >
+                Join
+                <ExternalLink aria-hidden="true" data-icon="inline-end" />
+              </Button>
+            )}
+            {canCancel && (
+              <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
                 <AlertDialogTrigger
                   render={
                     <Button
                       variant="destructive"
                       size="sm"
+                      className="flex-1 sm:flex-none"
                       disabled={cancelBookingMutation.isPending}
                     />
                   }
                 >
-                  <Ban className="mr-1 h-4 w-4" />
+                  <Ban aria-hidden="true" data-icon="inline-start" />
                   Cancel
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                    <AlertDialogTitle>Cancel this session?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      This will cancel the meeting and may result in a penalty to your reputation.
-                      This action cannot be undone.
+                      Cancelling as the mentor ends this session for everyone. If it was paid, the
+                      student receives a full refund. This cannot be undone.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>Back</AlertDialogCancel>
+                    <AlertDialogCancel disabled={cancelBookingMutation.isPending}>
+                      Keep session
+                    </AlertDialogCancel>
                     <AlertDialogAction
-                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      variant="destructive"
+                      disabled={cancelBookingMutation.isPending}
                       onClick={() => cancelBookingMutation.mutate()}
                     >
-                      Continue
+                      {cancelBookingMutation.isPending ? 'Cancelling…' : 'Cancel session'}
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
-            </>
-          )}
-        </div>
-      </div>
-    </div>
+            )}
+          </ButtonGroup>
+        </ItemActions>
+      )}
+    </Item>
   )
 }

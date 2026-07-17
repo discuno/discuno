@@ -1,6 +1,6 @@
 'use client'
 
-import { Check, ChevronsUpDown, X } from 'lucide-react'
+import { Check, ChevronsUpDown, X, type LucideIcon } from 'lucide-react'
 import { startTransition, useOptimistic, useState } from 'react'
 
 import { useRouter } from 'next/navigation'
@@ -16,7 +16,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '~/components/ui/popover'
 import { cn, decodeUrlParam } from '~/lib/utils'
 
-interface FilterValue {
+export interface FilterValue {
   value: string
   label: string
   id: number
@@ -28,6 +28,7 @@ interface FilterProps {
   startValue: string
   label?: string
   className?: string
+  icon?: LucideIcon
 }
 
 export const FilterButton = ({
@@ -36,6 +37,7 @@ export const FilterButton = ({
   startValue,
   label,
   className,
+  icon: Icon,
 }: FilterProps) => {
   const decodedStartValue = decodeUrlParam(startValue)
   const foundItem = filterItems.find(item => item.value === decodedStartValue)
@@ -93,10 +95,13 @@ export const FilterButton = ({
             />
           }
         >
-          <span className={cn('truncate', !value && 'text-muted-foreground')}>
-            {value
-              ? filterItems.find(item => item.value === value)?.label
-              : (label ?? `Select ${queryName}...`)}
+          <span className="flex min-w-0 items-center gap-2">
+            {Icon && <Icon className="text-primary size-4 shrink-0" aria-hidden="true" />}
+            <span className={cn('truncate', !value && 'text-muted-foreground')}>
+              {value
+                ? filterItems.find(item => item.value === value)?.label
+                : (label ?? `Select ${queryName}...`)}
+            </span>
           </span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </PopoverTrigger>

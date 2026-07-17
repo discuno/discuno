@@ -1,10 +1,11 @@
 'use client'
 
 import { useCallback, useMemo } from 'react'
+import { CalendarClock, WandSparkles } from 'lucide-react'
 import type { WeeklySchedule } from '~/app/types/availability'
+import { Badge } from '~/components/ui/badge'
+import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
-import { Label } from '~/components/ui/label'
-import { Switch } from '~/components/ui/switch'
 import { DaySchedule } from './DaySchedule'
 
 interface WeeklySchedulerProps {
@@ -23,13 +24,10 @@ const daysOfWeek = [
 ] as const
 
 export function WeeklyScheduler({ schedule, onScheduleChange }: WeeklySchedulerProps) {
-  // Check if schedule is empty to determine disabled state
-  const hasAnyAvailability = useMemo(
-    () => daysOfWeek.some(day => schedule[day].length > 0),
+  const availableDayCount = useMemo(
+    () => daysOfWeek.filter(day => schedule[day].length > 0).length,
     [schedule]
   )
-
-  const isAvailabilityDisabled = !hasAnyAvailability
 
   const handleDayToggle = useCallback(
     (day: (typeof daysOfWeek)[number], isEnabled: boolean) => {
@@ -44,32 +42,16 @@ export function WeeklyScheduler({ schedule, onScheduleChange }: WeeklySchedulerP
     [schedule, onScheduleChange]
   )
 
-  const handleDisableAllToggle = (disabled: boolean) => {
-    if (disabled) {
-      // Turn off all days (clear all availability)
-      const emptySchedule: WeeklySchedule = {
-        sunday: [],
-        monday: [],
-        tuesday: [],
-        wednesday: [],
-        thursday: [],
-        friday: [],
-        saturday: [],
-      }
-      onScheduleChange(emptySchedule)
-    } else {
-      // Populate weekdays with default 9-5 hours
-      const defaultSchedule: WeeklySchedule = {
-        sunday: [],
-        monday: [{ start: '09:00', end: '17:00' }],
-        tuesday: [{ start: '09:00', end: '17:00' }],
-        wednesday: [{ start: '09:00', end: '17:00' }],
-        thursday: [{ start: '09:00', end: '17:00' }],
-        friday: [{ start: '09:00', end: '17:00' }],
-        saturday: [],
-      }
-      onScheduleChange(defaultSchedule)
-    }
+  const applyWeekdayTemplate = () => {
+    onScheduleChange({
+      sunday: [],
+      monday: [{ start: '09:00', end: '17:00' }],
+      tuesday: [{ start: '09:00', end: '17:00' }],
+      wednesday: [{ start: '09:00', end: '17:00' }],
+      thursday: [{ start: '09:00', end: '17:00' }],
+      friday: [{ start: '09:00', end: '17:00' }],
+      saturday: [],
+    })
   }
 
   const renderDaySchedules = useMemo(() => {
@@ -88,32 +70,41 @@ export function WeeklyScheduler({ schedule, onScheduleChange }: WeeklySchedulerP
   }, [schedule, onScheduleChange, handleDayToggle])
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="overflow-hidden">
+      <CardHeader className="border-border/70 border-b">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="space-y-1.5">
-            <CardTitle>Weekly Availability</CardTitle>
-            <CardDescription>
-              Set your regular weekly hours when you&apos;re available for sessions
-            </CardDescription>
+          <div className="flex gap-3">
+            <div className="bg-primary/10 text-primary flex size-10 shrink-0 items-center justify-center rounded-xl">
+              <CalendarClock className="size-5" />
+            </div>
+            <div>
+              <CardTitle>Usual week</CardTitle>
+              <CardDescription className="mt-1">
+                Turn on a day and add every window when you can meet. Times use the timezone set in
+                your connected calendar.
+              </CardDescription>
+            </div>
           </div>
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="disable-availability"
-              checked={isAvailabilityDisabled}
-              onCheckedChange={handleDisableAllToggle}
-            />
-            <Label
-              htmlFor="disable-availability"
-              className="cursor-pointer font-normal whitespace-nowrap"
-            >
-              Disable all
-            </Label>
-          </div>
+          <Badge variant="secondary">
+            {availableDayCount === 0
+              ? 'No weekly hours'
+              : `${availableDayCount} day${availableDayCount === 1 ? '' : 's'} open`}
+          </Badge>
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-3">{renderDaySchedules}</div>
+      <CardContent className="flex flex-col gap-3 p-4 sm:p-6">
+        {availableDayCount === 0 && (
+          <div className="paper-panel bg-muted/40 flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-muted-foreground text-sm leading-6">
+              Start with Monday–Friday, 9:00 AM–5:00 PM, then tailor it to your schedule.
+            </p>
+            <Button type="button" variant="outline" size="sm" onClick={applyWeekdayTemplate}>
+              <WandSparkles data-icon="inline-start" />
+              Use weekday hours
+            </Button>
+          </div>
+        )}
+        {renderDaySchedules}
       </CardContent>
     </Card>
   )

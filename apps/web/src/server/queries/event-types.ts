@@ -1,6 +1,7 @@
 import 'server-only'
 
 import { cache } from 'react'
+import { env } from '~/env'
 import { requirePermission } from '~/lib/auth/auth-utils'
 import { BadRequestError, NotFoundError } from '~/lib/errors'
 import type { MentorEventType, UpdateMentorEventType } from '~/lib/schemas/db'
@@ -76,6 +77,12 @@ export const updateMentorEventType = async (
   }
 
   if (willBeEnabled && resultingPrice > 0) {
+    if (!env.PAYMENTS_ENABLED) {
+      throw new BadRequestError(
+        'Paid sessions are not available yet. Keep this session type paused or set it to free.'
+      )
+    }
+
     const stripeAccount = await getStripeAccountByUserId(user.id)
     const transfersEnabled =
       stripeAccount?.transfersEnabled ?? stripeAccount?.payoutsEnabled ?? false
@@ -113,6 +120,8 @@ export const getMentorEnabledEventTypesWithStripeStatus = cache(
     return result
       .filter(item => {
         if (item.customPrice && item.customPrice > 0) {
+          if (!env.PAYMENTS_ENABLED) return false
+
           return (
             (item.transfersEnabled === true ||
               (item.transfersEnabled === null && item.payoutsEnabled === true)) &&
