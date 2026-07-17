@@ -33,26 +33,22 @@ export const StatusDot = ({ status, animated = true, size = 'sm', className }: S
   }
 
   return (
-    <TooltipProvider delayDuration={0}>
+    <TooltipProvider delay={0}>
       <Tooltip>
-        <TooltipTrigger asChild>
-          <span className={cn('relative inline-flex', sizeClasses[size], className)}>
-            {animated && (
-              <span
-                className={cn(
-                  'absolute inline-flex h-full w-full animate-ping rounded-full opacity-75',
-                  pingColor[status]
-                )}
-              />
-            )}
+        <TooltipTrigger
+          render={<span className={cn('relative inline-flex', sizeClasses[size], className)} />}
+        >
+          {animated && (
             <span
               className={cn(
-                'relative inline-flex rounded-full',
-                sizeClasses[size],
-                bgColor[status]
+                'absolute inline-flex h-full w-full animate-ping rounded-full opacity-75',
+                pingColor[status]
               )}
             />
-          </span>
+          )}
+          <span
+            className={cn('relative inline-flex rounded-full', sizeClasses[size], bgColor[status])}
+          />
         </TooltipTrigger>
         <TooltipContent>
           <p>{tooltipText[status]}</p>

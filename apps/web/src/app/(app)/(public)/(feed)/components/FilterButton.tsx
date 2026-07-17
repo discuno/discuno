@@ -79,27 +79,29 @@ export const FilterButton = ({
   return (
     <div className={cn('flex min-w-0 items-center gap-1', className)}>
       <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            aria-label={label ?? `Select ${queryName}`}
-            className={cn(
-              'bg-card h-11 min-w-0 flex-1 justify-between px-3.5 font-medium',
-              value && 'border-primary/30 text-foreground'
-            )}
-          >
-            <span className={cn('truncate', !value && 'text-muted-foreground')}>
-              {value
-                ? filterItems.find(item => item.value === value)?.label
-                : (label ?? `Select ${queryName}...`)}
-            </span>
-            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
+        <PopoverTrigger
+          render={
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={open}
+              aria-label={label ?? `Select ${queryName}`}
+              className={cn(
+                'bg-card h-11 min-w-0 flex-1 justify-between px-3.5 font-medium',
+                value && 'border-primary/30 text-foreground'
+              )}
+            />
+          }
+        >
+          <span className={cn('truncate', !value && 'text-muted-foreground')}>
+            {value
+              ? filterItems.find(item => item.value === value)?.label
+              : (label ?? `Select ${queryName}...`)}
+          </span>
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </PopoverTrigger>
         <PopoverContent
-          className="w-[var(--radix-popover-trigger-width)] min-w-[260px] p-0"
+          className="w-(--anchor-width) min-w-[260px] p-0"
           align="start"
           sideOffset={6}
         >

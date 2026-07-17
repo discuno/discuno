@@ -27,17 +27,13 @@ const NotFound = () => {
           </p>
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <Button asChild size="lg">
-              <Link href="/#mentors">
-                <Search aria-hidden="true" />
-                Browse mentors
-              </Link>
+            <Button render={<Link href="/#mentors" />} nativeButton={false} size="lg">
+              <Search aria-hidden="true" />
+              Browse mentors
             </Button>
-            <Button asChild size="lg" variant="outline">
-              <Link href="/">
-                <ArrowLeft aria-hidden="true" />
-                Return home
-              </Link>
+            <Button render={<Link href="/" />} nativeButton={false} size="lg" variant="outline">
+              <ArrowLeft aria-hidden="true" />
+              Return home
             </Button>
           </div>
         </section>

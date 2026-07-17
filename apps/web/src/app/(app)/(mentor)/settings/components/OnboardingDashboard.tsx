@@ -127,11 +127,15 @@ const SetupStepCard = ({ step, isNext, isRequired }: SetupStepCardProps) => {
             <p className="text-muted-foreground mt-1.5 text-sm leading-6">{step.description}</p>
 
             {!step.completed && (
-              <Button asChild size="sm" variant={isNext ? 'default' : 'outline'} className="mt-4">
-                <Link href={step.actionUrl}>
-                  {step.actionLabel}
-                  <ArrowRight aria-hidden="true" />
-                </Link>
+              <Button
+                render={<Link href={step.actionUrl} />}
+                nativeButton={false}
+                size="sm"
+                variant={isNext ? 'default' : 'outline'}
+                className="mt-4"
+              >
+                {step.actionLabel}
+                <ArrowRight aria-hidden="true" />
               </Button>
             )}
           </div>
@@ -160,11 +164,13 @@ const CompleteDashboard = () => {
                 workspace to keep them current and manage bookings.
               </p>
             </div>
-            <Button asChild className="w-full sm:w-auto">
-              <Link href="/settings/bookings">
-                View bookings
-                <ArrowRight aria-hidden="true" />
-              </Link>
+            <Button
+              render={<Link href="/settings/bookings" />}
+              nativeButton={false}
+              className="w-full sm:w-auto"
+            >
+              View bookings
+              <ArrowRight aria-hidden="true" />
             </Button>
           </div>
         </CardContent>
@@ -276,11 +282,14 @@ export const OnboardingDashboard = ({ initialStatus }: OnboardingDashboardProps)
                 </p>
                 <p className="mt-1 font-medium">{nextRequiredStep.title}</p>
               </div>
-              <Button asChild size="sm" className="w-full sm:w-auto">
-                <Link href={nextRequiredStep.actionUrl}>
-                  {nextRequiredStep.actionLabel}
-                  <ArrowRight aria-hidden="true" />
-                </Link>
+              <Button
+                render={<Link href={nextRequiredStep.actionUrl} />}
+                nativeButton={false}
+                size="sm"
+                className="w-full sm:w-auto"
+              >
+                {nextRequiredStep.actionLabel}
+                <ArrowRight aria-hidden="true" />
               </Button>
             </div>
           )}
@@ -350,8 +359,14 @@ export const OnboardingDashboard = ({ initialStatus }: OnboardingDashboardProps)
               </p>
             </div>
           </div>
-          <Button asChild variant="outline" size="sm" className="w-full sm:w-auto">
-            <a href="mailto:support@discuno.com">Email support</a>
+          <Button
+            render={<a href="mailto:support@discuno.com" />}
+            nativeButton={false}
+            variant="outline"
+            size="sm"
+            className="w-full sm:w-auto"
+          >
+            Email support
           </Button>
         </CardContent>
       </Card>

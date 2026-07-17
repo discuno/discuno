@@ -24,6 +24,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '~/components/ui/popover
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -43,6 +44,8 @@ type Major = {
   id: number
 }
 
+const ACADEMIC_LEVELS = ['Freshman', 'Sophomore', 'Junior', 'Senior', 'Graduate'] as const
+
 interface EditProfileContentProps {
   profile: FullUserProfile
   schools: School[]
@@ -52,6 +55,18 @@ interface EditProfileContentProps {
 export const EditProfileContent = ({ profile, schools, majors }: EditProfileContentProps) => {
   const currentYear = new Date().getFullYear()
   const graduationYears = Array.from({ length: 6 }, (_, i) => currentYear + i)
+  const schoolItems = [
+    { label: 'Select your school', value: null },
+    ...schools.map(school => ({ label: school.label, value: school.label })),
+  ]
+  const academicLevelItems = [
+    { label: 'Select level', value: null },
+    ...ACADEMIC_LEVELS.map(level => ({ label: level, value: level })),
+  ]
+  const graduationYearItems = [
+    { label: 'Select year', value: null },
+    ...graduationYears.map(year => ({ label: year.toString(), value: year.toString() })),
+  ]
   const router = useRouter()
   const queryClient = useQueryClient()
 
@@ -165,16 +180,23 @@ export const EditProfileContent = ({ profile, schools, majors }: EditProfileCont
             <FieldGroup>
               <Field>
                 <FieldLabel htmlFor="school">School</FieldLabel>
-                <Select name="school" disabled defaultValue={profile.school ?? ''}>
+                <Select
+                  items={schoolItems}
+                  name="school"
+                  disabled
+                  defaultValue={profile.school ?? null}
+                >
                   <SelectTrigger className="text-base">
                     <SelectValue placeholder="Select your school" />
                   </SelectTrigger>
                   <SelectContent>
-                    {schools.map(school => (
-                      <SelectItem key={school.id} value={school.label}>
-                        {school.label}
-                      </SelectItem>
-                    ))}
+                    <SelectGroup>
+                      {schools.map(school => (
+                        <SelectItem key={school.id} value={school.label}>
+                          {school.label}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
                   </SelectContent>
                 </Select>
               </Field>
@@ -185,18 +207,20 @@ export const EditProfileContent = ({ profile, schools, majors }: EditProfileCont
                 </FieldLabel>
                 <input type="hidden" name="major" value={majorValue} required />
                 <Popover open={majorOpen} onOpenChange={setMajorOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={majorOpen}
-                      className="w-full justify-between text-base"
-                    >
-                      {majorValue
-                        ? majors.find(major => major.label === majorValue)?.label
-                        : 'Select your major'}
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
+                  <PopoverTrigger
+                    render={
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={majorOpen}
+                        className="w-full justify-between text-base"
+                      />
+                    }
+                  >
+                    {majorValue
+                      ? majors.find(major => major.label === majorValue)?.label
+                      : 'Select your major'}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </PopoverTrigger>
                   <PopoverContent className="w-full p-0" align="start">
                     <Command>
@@ -232,32 +256,44 @@ export const EditProfileContent = ({ profile, schools, majors }: EditProfileCont
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field>
                   <FieldLabel htmlFor="schoolYear">Academic Level</FieldLabel>
-                  <Select name="schoolYear" defaultValue={profile.schoolYear}>
+                  <Select
+                    items={academicLevelItems}
+                    name="schoolYear"
+                    defaultValue={profile.schoolYear}
+                  >
                     <SelectTrigger className="text-base">
                       <SelectValue placeholder="Select level" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Freshman">Freshman</SelectItem>
-                      <SelectItem value="Sophomore">Sophomore</SelectItem>
-                      <SelectItem value="Junior">Junior</SelectItem>
-                      <SelectItem value="Senior">Senior</SelectItem>
-                      <SelectItem value="Graduate">Graduate</SelectItem>
+                      <SelectGroup>
+                        {ACADEMIC_LEVELS.map(level => (
+                          <SelectItem key={level} value={level}>
+                            {level}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
                     </SelectContent>
                   </Select>
                 </Field>
 
                 <Field>
                   <FieldLabel htmlFor="graduationYear">Expected Graduation</FieldLabel>
-                  <Select name="graduationYear" defaultValue={profile.graduationYear.toString()}>
+                  <Select
+                    items={graduationYearItems}
+                    name="graduationYear"
+                    defaultValue={profile.graduationYear.toString()}
+                  >
                     <SelectTrigger className="text-base">
                       <SelectValue placeholder="Select year" />
                     </SelectTrigger>
                     <SelectContent>
-                      {graduationYears.map(year => (
-                        <SelectItem key={year} value={year.toString()}>
-                          {year}
-                        </SelectItem>
-                      ))}
+                      <SelectGroup>
+                        {graduationYears.map(year => (
+                          <SelectItem key={year} value={year.toString()}>
+                            {year}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
                     </SelectContent>
                   </Select>
                 </Field>

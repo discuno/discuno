@@ -85,11 +85,15 @@ export default async function MentorProfilePage({ params }: MentorProfilePagePro
 
       <div className="bg-card border-b">
         <div className="page-container py-5">
-          <Button asChild variant="ghost" size="sm" className="-ml-3">
-            <Link href="/#mentors">
-              <ArrowLeft />
-              Back to mentors
-            </Link>
+          <Button
+            render={<Link href="/#mentors" />}
+            nativeButton={false}
+            variant="ghost"
+            size="sm"
+            className="-ml-3"
+          >
+            <ArrowLeft />
+            Back to mentors
           </Button>
         </div>
       </div>

@@ -1,33 +1,14 @@
-import * as SelectPrimitive from '@radix-ui/react-select'
-import { Check } from 'lucide-react'
-import { type ComponentPropsWithoutRef, type ComponentRef, forwardRef } from 'react'
 import type { EventType } from '~/app/(app)/(public)/mentor/[username]/book/actions'
 import { Badge } from '~/components/ui/badge'
-import { Select, SelectContent, SelectTrigger, SelectValue } from '~/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+} from '~/components/ui/select'
 import { formatCurrencyFromCents } from '~/lib/format-currency'
 import { cn } from '~/lib/utils'
-
-const SelectItem = forwardRef<
-  ComponentRef<typeof SelectPrimitive.Item>,
-  ComponentPropsWithoutRef<typeof SelectPrimitive.Item>
->(({ className, children, ...props }, ref) => (
-  <SelectPrimitive.Item
-    ref={ref}
-    className={cn(
-      'focus:bg-primary/10 focus:text-primary relative flex w-full cursor-default items-center rounded-sm py-1.5 pr-8 pl-2 text-sm outline-hidden select-none data-disabled:pointer-events-none data-disabled:opacity-50',
-      className
-    )}
-    {...props}
-  >
-    <span className="absolute right-2 flex h-3.5 w-3.5 items-center justify-center">
-      <SelectPrimitive.ItemIndicator>
-        <Check className="h-4 w-4" />
-      </SelectPrimitive.ItemIndicator>
-    </span>
-    {children}
-  </SelectPrimitive.Item>
-))
-SelectItem.displayName = SelectPrimitive.Item.displayName
 
 export const EventTypeSelector = ({
   selectedEventType,
@@ -43,7 +24,14 @@ export const EventTypeSelector = ({
   className?: string
 }) => (
   <Select
-    value={selectedEventType?.id.toString() ?? ''}
+    items={[
+      { label: 'Select a session type', value: null },
+      ...eventTypes.map(eventType => ({
+        label: eventType.title,
+        value: eventType.id.toString(),
+      })),
+    ]}
+    value={selectedEventType?.id.toString() ?? null}
     onValueChange={value => {
       const eventType = eventTypes.find(et => et.id.toString() === value)
       onSelectEventType(eventType ?? null)
@@ -60,9 +48,9 @@ export const EventTypeSelector = ({
             </span>
           </div>
         ) : (
-          <SelectValue
-            placeholder={className.includes('h-10') ? 'Session Type' : 'Select a session type'}
-          />
+          <span className="text-muted-foreground">
+            {className.includes('h-10') ? 'Session Type' : 'Select a session type'}
+          </span>
         )}
 
         <div className="pr-2">
@@ -80,24 +68,26 @@ export const EventTypeSelector = ({
       </div>
     </SelectTrigger>
     <SelectContent>
-      {eventTypes.map(eventType => (
-        <SelectItem key={eventType.id} value={eventType.id.toString()}>
-          <div className="flex w-full items-center">
-            <div className="flex flex-col items-start">
-              <span className="font-medium">{eventType.title}</span>
-              <span className="text-muted-foreground text-xs">{eventType.length} minutes</span>
+      <SelectGroup>
+        {eventTypes.map(eventType => (
+          <SelectItem key={eventType.id} value={eventType.id.toString()}>
+            <div className="flex w-full items-center">
+              <div className="flex flex-col items-start">
+                <span className="font-medium">{eventType.title}</span>
+                <span className="text-muted-foreground text-xs">{eventType.length} minutes</span>
+              </div>
+              <div className="flex-grow" />
+              {eventType.price && eventType.price > 0 ? (
+                <Badge variant="secondary" className="badge-success-muted">
+                  {formatCurrencyFromCents(eventType.price, eventType.currency ?? 'USD')}
+                </Badge>
+              ) : (
+                <Badge variant="outline">Free</Badge>
+              )}
             </div>
-            <div className="flex-grow" />
-            {eventType.price && eventType.price > 0 ? (
-              <Badge variant="secondary" className="badge-success-muted">
-                {formatCurrencyFromCents(eventType.price, eventType.currency ?? 'USD')}
-              </Badge>
-            ) : (
-              <Badge variant="outline">Free</Badge>
-            )}
-          </div>
-        </SelectItem>
-      ))}
+          </SelectItem>
+        ))}
+      </SelectGroup>
     </SelectContent>
   </Select>
 )

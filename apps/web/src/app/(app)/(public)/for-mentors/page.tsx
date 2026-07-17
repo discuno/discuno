@@ -223,14 +223,23 @@ const ForMentorsPage = async ({
               price you set.
             </p>
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-              <Button asChild size="lg" className="h-12 px-6 text-base">
-                <Link href="/auth?intent=mentor">
-                  Start mentoring
-                  <ArrowRight className="size-4" aria-hidden="true" />
-                </Link>
+              <Button
+                render={<Link href="/auth?intent=mentor" />}
+                nativeButton={false}
+                size="lg"
+                className="h-12 px-6 text-base"
+              >
+                Start mentoring
+                <ArrowRight className="size-4" aria-hidden="true" />
               </Button>
-              <Button asChild size="lg" variant="outline" className="h-12 px-6 text-base">
-                <Link href="#student-questions">See where you can help</Link>
+              <Button
+                render={<Link href="#student-questions" />}
+                nativeButton={false}
+                size="lg"
+                variant="outline"
+                className="h-12 px-6 text-base"
+              >
+                See where you can help
               </Button>
             </div>
             <div className="text-muted-foreground mt-7 flex flex-wrap gap-x-6 gap-y-3 text-sm">
@@ -533,14 +542,23 @@ const ForMentorsPage = async ({
             </p>
           </div>
           <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
-            <Button asChild size="lg" className="h-12 px-6 text-base">
-              <Link href="/auth?intent=mentor">
-                Start mentoring
-                <ArrowRight className="size-4" aria-hidden="true" />
-              </Link>
+            <Button
+              render={<Link href="/auth?intent=mentor" />}
+              nativeButton={false}
+              size="lg"
+              className="h-12 px-6 text-base"
+            >
+              Start mentoring
+              <ArrowRight className="size-4" aria-hidden="true" />
             </Button>
-            <Button asChild size="lg" variant="outline" className="h-12 px-6 text-base">
-              <Link href="/support">Questions? Contact support</Link>
+            <Button
+              render={<Link href="/support" />}
+              nativeButton={false}
+              size="lg"
+              variant="outline"
+              className="h-12 px-6 text-base"
+            >
+              Questions? Contact support
             </Button>
           </div>
         </div>

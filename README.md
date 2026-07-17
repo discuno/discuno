@@ -25,11 +25,11 @@ A professional monorepo built with Next.js, Cal.com scheduling, and Stripe Conne
 - 📅 **Reliable Scheduling** - Standard Cal.com OAuth, fail-closed booking contracts, and durable lifecycle processing
 - 👥 **Mentorship Platform** - Connect mentors and mentees with advanced matching
 - 🔐 **Secure Authentication** - Better Auth with email OTP, Google/Microsoft OAuth, and durable guest-account linking
-- 📱 **Mobile-First Design** - Responsive UI built with Tailwind CSS & Radix UI
+- 📱 **Mobile-First Design** - Responsive UI built with Tailwind CSS & shadcn Base UI
 - 💳 **Mentor Payments** - Server-authoritative Stripe Checkout with delayed Connect payouts
 - 🧪 **Guarded Testing** - Fast unit tests plus isolated Railway database integration tests
 - 🚀 **Performance Optimized** - Turbopack builds, Server Components, and Cache Components
-- 🎨 **Modern UI** - Beautiful and responsive interface with Tailwind CSS & Radix UI
+- 🎨 **Modern UI** - Beautiful and responsive interface with Tailwind CSS & shadcn Base UI
 - 📊 **Database Integration** - Type-safe queries with Drizzle ORM
 - 🧭 **Privacy Controls** - Persistent analytics consent with session replay disabled
 
@@ -109,7 +109,7 @@ pnpm db:guard:local # One-time reset-guard provisioning; prints its required con
 - 📅 Cal.com scheduling integration
 - 💳 Stripe Checkout and Connect marketplace payments
 - ⚙️ Inngest durable booking fulfillment and payout recovery
-- 🎨 Tailwind CSS + Radix UI
+- 🎨 Tailwind CSS + shadcn/ui on Base UI
 - 📱 Responsive design system
 - 🔍 Advanced search & filtering
 
@@ -134,7 +134,7 @@ pnpm db:guard:local # One-time reset-guard provisioning; prints its required con
 - **Monorepo**: pnpm workspaces + Turborepo
 - **Frontend**: Next.js 16 (App Router + Turbopack), React 19
 - **Language**: TypeScript (strict mode)
-- **Styling**: Tailwind CSS 4, Radix UI primitives
+- **Styling**: Tailwind CSS 4, shadcn/ui Base UI primitives
 - **Database**: Drizzle ORM, PostgreSQL (Railway)
 - **Authentication**: better-auth (Drizzle adapter, email OTP, OAuth)
 - **Build System**: Turbo

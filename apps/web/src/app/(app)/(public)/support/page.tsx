@@ -140,7 +140,7 @@ export default function SupportPage() {
                 </div>
               </div>
 
-              <Accordion type="single" collapsible className="border-border border-t">
+              <Accordion className="border-border border-t">
                 <AccordionItem value="what-is-discuno">
                   <AccordionTrigger className="text-left text-base font-medium">
                     What is Discuno and how does it work?
@@ -191,7 +191,7 @@ export default function SupportPage() {
                 </div>
               </div>
 
-              <Accordion type="single" collapsible className="border-border border-t">
+              <Accordion className="border-border border-t">
                 <AccordionItem value="payment-security">
                   <AccordionTrigger className="text-left text-base font-medium">
                     How are payments processed? Is it secure?
@@ -252,7 +252,7 @@ export default function SupportPage() {
                 </div>
               </div>
 
-              <Accordion type="single" collapsible className="border-border border-t">
+              <Accordion className="border-border border-t">
                 <AccordionItem value="verification">
                   <AccordionTrigger className="text-left text-base font-medium">
                     What does mentor verification mean?
@@ -294,7 +294,7 @@ export default function SupportPage() {
                 </div>
               </div>
 
-              <Accordion type="single" collapsible className="border-border border-t">
+              <Accordion className="border-border border-t">
                 <AccordionItem value="missing-school">
                   <AccordionTrigger className="text-left text-base font-medium">
                     My school isn&apos;t listed. What should I do?

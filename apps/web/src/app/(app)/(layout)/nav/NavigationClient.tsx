@@ -118,11 +118,15 @@ export function NavBarBase({
             ) : (
               <>
                 {isMentor && (
-                  <Button asChild variant="outline" size="sm" className="hidden sm:inline-flex">
-                    <Link href="/settings">
-                      <LayoutDashboard />
-                      Dashboard
-                    </Link>
+                  <Button
+                    render={<Link href="/settings" />}
+                    nativeButton={false}
+                    variant="outline"
+                    size="sm"
+                    className="hidden sm:inline-flex"
+                  >
+                    <LayoutDashboard />
+                    Dashboard
                   </Button>
                 )}
                 <AvatarIcon
@@ -158,35 +162,44 @@ function MobileMenu({
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
-      <DropdownMenuTrigger asChild className="lg:hidden">
-        <Button size="icon" variant="ghost" aria-label={open ? 'Close menu' : 'Open menu'}>
-          {open ? <X /> : <Menu />}
-        </Button>
+      <DropdownMenuTrigger
+        render={
+          <Button
+            size="icon"
+            variant="ghost"
+            className="lg:hidden"
+            aria-label={open ? 'Close menu' : 'Open menu'}
+          />
+        }
+      >
+        {open ? <X /> : <Menu />}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" sideOffset={8} className="w-72 rounded-xl p-2">
-        <DropdownMenuItem asChild>
-          <Link href="/#mentors" className="gap-3 py-2.5" onClick={() => setOpen(false)}>
-            <Search />
-            Find mentors
-          </Link>
+        <DropdownMenuItem
+          render={<Link href="/#mentors" className="gap-3 py-2.5" onClick={() => setOpen(false)} />}
+        >
+          <Search />
+          Find mentors
         </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link href="/blog" className="gap-3 py-2.5" onClick={() => setOpen(false)}>
-            <BookOpen />
-            College guides
-          </Link>
+        <DropdownMenuItem
+          render={<Link href="/blog" className="gap-3 py-2.5" onClick={() => setOpen(false)} />}
+        >
+          <BookOpen />
+          College guides
         </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link href="/for-mentors" className="gap-3 py-2.5" onClick={() => setOpen(false)}>
-            <UserRound />
-            Become a mentor
-          </Link>
+        <DropdownMenuItem
+          render={
+            <Link href="/for-mentors" className="gap-3 py-2.5" onClick={() => setOpen(false)} />
+          }
+        >
+          <UserRound />
+          Become a mentor
         </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link href="/about" className="gap-3 py-2.5" onClick={() => setOpen(false)}>
-            <Compass />
-            About
-          </Link>
+        <DropdownMenuItem
+          render={<Link href="/about" className="gap-3 py-2.5" onClick={() => setOpen(false)} />}
+        >
+          <Compass />
+          About
         </DropdownMenuItem>
 
         {!isAuthenticated && <DropdownMenuSeparator />}
@@ -195,7 +208,7 @@ function MobileMenu({
           <>
             <DropdownMenuItem
               className="gap-3 py-2.5"
-              onSelect={() => {
+              onClick={() => {
                 onLoginClick('signin', 'student')
                 setOpen(false)
               }}
@@ -205,7 +218,7 @@ function MobileMenu({
             </DropdownMenuItem>
             <DropdownMenuItem
               className="text-primary gap-3 py-2.5 font-semibold"
-              onSelect={() => {
+              onClick={() => {
                 onLoginClick('signup', 'mentor')
                 setOpen(false)
               }}
@@ -216,11 +229,13 @@ function MobileMenu({
           </>
         ) : (
           isMentor && (
-            <DropdownMenuItem asChild>
-              <Link href="/settings" className="gap-3 py-2.5" onClick={() => setOpen(false)}>
-                <LayoutDashboard />
-                Mentor dashboard
-              </Link>
+            <DropdownMenuItem
+              render={
+                <Link href="/settings" className="gap-3 py-2.5" onClick={() => setOpen(false)} />
+              }
+            >
+              <LayoutDashboard />
+              Mentor dashboard
             </DropdownMenuItem>
           )
         )}

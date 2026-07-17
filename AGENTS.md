@@ -237,7 +237,7 @@ apps/web/
 │   │   │   └── cron/      # Scheduled tasks
 │   │   └── types/         # Route-specific types
 │   ├── components/
-│   │   ├── ui/            # Base Radix UI primitives
+│   │   ├── ui/            # shadcn Base UI primitives and owned wrappers
 │   │   └── shared/        # Shared business components
 │   ├── server/            # Server-side code
 │   │   ├── __tests__/     # Test setup & global configuration
@@ -264,7 +264,7 @@ apps/web/
 - **React**: v19 with Server Components
 - **Database**: PostgreSQL (Railway) with Drizzle ORM
 - **Authentication**: better-auth with Drizzle adapter
-- **Styling**: Tailwind CSS 4 + Radix UI primitives
+- **Styling**: Tailwind CSS 4 + shadcn/ui Base UI primitives (`base-luma`)
 - **Testing**: Vitest + Testing Library + jsdom + Playwright Chromium smoke tests
 - **Type Safety**: TypeScript 6 strict mode + Zod validation
 - **Package Manager**: pnpm
@@ -520,6 +520,15 @@ Use `docs/positioning.md` as the source of truth for public-facing copy.
 - Next.js Cache Components are enabled with `cacheComponents: true` in `apps/web/next.config.js`
 - Opt into caching explicitly with the `'use cache'` directive; dynamic code still runs at request time by default
 
+### UI Foundation
+
+- shadcn/ui is configured as `base-luma` in `apps/web/components.json`, and its interactive
+  primitives use `@base-ui/react`. Keep future shadcn additions on the Base UI registry.
+- Base UI composes elements with `render`, not Radix `asChild`; non-button render targets must
+  preserve native semantics. Do not reintroduce `@radix-ui/*` packages.
+- Third-party wrappers remain third party where appropriate: Drawer uses Vaul, Command uses cmdk,
+  Sonner handles toasts, Input OTP uses input-otp, and Calendar uses react-day-picker.
+
 ### Mentor Dashboard
 
 Consult `.cursor/rules/mentor-dashboard.md` for UI and data requirements: meeting management, payout visibility, Stripe onboarding state, analytics widgets, and notifications.
@@ -617,7 +626,7 @@ Note: The admin plugin is still enabled for permission checking via `auth.api.us
 
 ### Form Handling
 
-- Use Radix UI primitives and shadcn/ui components
+- Use the shadcn/ui Base UI components and their `render` composition API
 - Validate with Zod schemas in `apps/web/src/lib/schemas/`
 - Surface errors with Sonner toasts
 - Prefer optimistic updates when feasible

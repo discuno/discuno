@@ -98,19 +98,22 @@ export default async function CalendarSettingsPage({ searchParams }: CalendarSet
           </div>
 
           <div className="flex flex-col gap-3 sm:flex-row">
-            <Button asChild>
-              <Link href="/api/integrations/calcom/connect?returnTo=/settings/calendar">
-                {isConnected ? 'Reconnect Cal.com' : 'Continue with Cal.com'}
-                <ExternalLink aria-hidden="true" />
-              </Link>
+            <Button
+              render={<Link href="/api/integrations/calcom/connect?returnTo=/settings/calendar" />}
+              nativeButton={false}
+            >
+              {isConnected ? 'Reconnect Cal.com' : 'Continue with Cal.com'}
+              <ExternalLink aria-hidden="true" />
             </Button>
             {isConnected && (
               <>
-                <Button asChild variant="outline">
-                  <a href="https://app.cal.com" target="_blank" rel="noreferrer">
-                    Open Cal.com
-                    <ExternalLink aria-hidden="true" />
-                  </a>
+                <Button
+                  render={<a href="https://app.cal.com" target="_blank" rel="noreferrer" />}
+                  nativeButton={false}
+                  variant="outline"
+                >
+                  Open Cal.com
+                  <ExternalLink aria-hidden="true" />
                 </Button>
                 <form action={disconnectCalcomAccount}>
                   <Button

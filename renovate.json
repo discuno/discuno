@@ -29,7 +29,7 @@
     {
       "description": "Group UI component libraries",
       "groupName": "UI components",
-      "matchPackagePatterns": ["^@radix-ui/", "^tailwind", "^@tailwindcss/"],
+      "matchPackagePatterns": ["^@base-ui/", "^tailwind", "^@tailwindcss/"],
       "matchPackageNames": ["lucide-react", "class-variance-authority", "clsx", "tailwind-merge"]
     },
     {

@@ -18,7 +18,7 @@ firsthand context. This is the Next.js application behind [discuno.com](https://
 | ---------- | ------------------------------------------------------------ |
 | Framework  | Next.js 16, React 19, Turbopack, Cache Components            |
 | Language   | TypeScript 6 in strict mode                                  |
-| UI         | Tailwind CSS 4, Radix UI                                     |
+| UI         | Tailwind CSS 4, shadcn/ui Base UI                            |
 | Data       | PostgreSQL, Drizzle ORM, Zod                                 |
 | Auth       | Better Auth 1.6                                              |
 | Scheduling | Cal.com API v2 with per-mentor confidential OAuth            |
@@ -140,7 +140,7 @@ the repository does not imply that its current worktree has been deployed.
 ```text
 src/
 ├── app/                 App Router pages, Server Actions, API routes, webhooks
-├── components/          Shared and Radix-based UI components
+├── components/          Shared and shadcn Base UI components
 ├── inngest/             Durable background functions
 ├── lib/                 Auth, Cal.com, Stripe, email, analytics, and utilities
 └── server/              Drizzle schema, DAL, protected queries, ranking, tests

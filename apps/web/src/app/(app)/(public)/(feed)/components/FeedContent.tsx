@@ -146,11 +146,14 @@ export const FeedContent = async ({ searchParams }: FeedContentProps) => {
               ))}
             </div>
 
-            <Button asChild size="lg" className="mt-9 bg-white text-[#10254a] hover:bg-blue-50">
-              <Link href="#mentors">
-                Find someone who&apos;s been there
-                <ArrowDown />
-              </Link>
+            <Button
+              render={<Link href="#mentors" />}
+              nativeButton={false}
+              size="lg"
+              className="mt-9 bg-white text-[#10254a] hover:bg-blue-50"
+            >
+              Find someone who&apos;s been there
+              <ArrowDown />
             </Button>
           </div>
 
@@ -286,8 +289,8 @@ export const FeedContent = async ({ searchParams }: FeedContentProps) => {
               </p>
             </div>
             {hasFilters && (
-              <Button asChild variant="ghost">
-                <Link href="/#mentors">Clear all filters</Link>
+              <Button render={<Link href="/#mentors" />} nativeButton={false} variant="ghost">
+                Clear all filters
               </Button>
             )}
           </div>
@@ -378,11 +381,14 @@ export const FeedContent = async ({ searchParams }: FeedContentProps) => {
               Help someone else skip a few dead ends.
             </h2>
           </div>
-          <Button asChild size="lg" className="shrink-0 bg-white text-[#10254a] hover:bg-blue-50">
-            <Link href="/for-mentors">
-              See how mentoring works
-              <ArrowRight />
-            </Link>
+          <Button
+            render={<Link href="/for-mentors" />}
+            nativeButton={false}
+            size="lg"
+            className="shrink-0 bg-white text-[#10254a] hover:bg-blue-50"
+          >
+            See how mentoring works
+            <ArrowRight />
           </Button>
         </div>
       </section>

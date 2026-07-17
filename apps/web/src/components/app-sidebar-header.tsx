@@ -14,16 +14,14 @@ export const AppSidebarHeader = () => {
   }
 
   return (
-    <SidebarMenuButton size="lg" asChild>
-      <Link href="/" onClick={handleClick}>
-        <div className="bg-background text-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-          <ThemeAwareIconLogo />
-        </div>
-        <div className="grid flex-1 text-left text-sm leading-tight">
-          <span className="truncate font-semibold">Discuno</span>
-          <span className="truncate text-xs">Mentor workspace</span>
-        </div>
-      </Link>
+    <SidebarMenuButton size="lg" render={<Link href="/" onClick={handleClick} />}>
+      <div className="bg-background text-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
+        <ThemeAwareIconLogo />
+      </div>
+      <div className="grid flex-1 text-left text-sm leading-tight">
+        <span className="truncate font-semibold">Discuno</span>
+        <span className="truncate text-xs">Mentor workspace</span>
+      </div>
     </SidebarMenuButton>
   )
 }

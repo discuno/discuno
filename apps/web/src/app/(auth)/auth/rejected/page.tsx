@@ -43,14 +43,12 @@ const AuthRejectedPage = () => {
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
-              <Button asChild>
-                <Link href="/auth?intent=mentor">Try a school email</Link>
+              <Button render={<Link href="/auth?intent=mentor" />} nativeButton={false}>
+                Try a school email
               </Button>
-              <Button asChild variant="outline">
-                <Link href="/#mentors">
-                  <ArrowLeft />
-                  Continue browsing
-                </Link>
+              <Button render={<Link href="/#mentors" />} nativeButton={false} variant="outline">
+                <ArrowLeft />
+                Continue browsing
               </Button>
             </div>
 

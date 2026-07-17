@@ -243,14 +243,18 @@ const AboutPage = () => {
             </h2>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row">
-            <Button asChild size="lg" className="h-12 px-6">
-              <Link href="/">
-                Find someone to talk to
-                <ArrowRight className="size-4" aria-hidden="true" />
-              </Link>
+            <Button render={<Link href="/" />} nativeButton={false} size="lg" className="h-12 px-6">
+              Find someone to talk to
+              <ArrowRight className="size-4" aria-hidden="true" />
             </Button>
-            <Button asChild size="lg" variant="outline" className="h-12 px-6">
-              <Link href="/for-mentors">Share your experience</Link>
+            <Button
+              render={<Link href="/for-mentors" />}
+              nativeButton={false}
+              size="lg"
+              variant="outline"
+              className="h-12 px-6"
+            >
+              Share your experience
             </Button>
           </div>
         </div>

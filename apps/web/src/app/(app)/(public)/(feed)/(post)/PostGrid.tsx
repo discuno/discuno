@@ -80,8 +80,13 @@ export const PostGrid = ({ schoolId, majorId, graduationYear, initialPage }: Pos
           Try removing one filter. A mentor from a related major or school may still have the
           perspective you need.
         </p>
-        <Button asChild variant="outline" className="mt-5">
-          <Link href="/#mentors">Clear all filters</Link>
+        <Button
+          render={<Link href="/#mentors" />}
+          nativeButton={false}
+          variant="outline"
+          className="mt-5"
+        >
+          Clear all filters
         </Button>
       </div>
     )

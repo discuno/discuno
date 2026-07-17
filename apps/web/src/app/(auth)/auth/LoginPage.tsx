@@ -131,11 +131,15 @@ export function LoginPage({
       <main className="flex min-h-screen flex-col px-5 py-6 sm:px-8 lg:px-12 lg:py-10 xl:px-20">
         <div className="flex items-center justify-between">
           <Brand className="lg:hidden" />
-          <Button asChild variant="ghost" size="sm" className="ml-auto">
-            <Link href="/">
-              <ArrowLeft />
-              Back to Discuno
-            </Link>
+          <Button
+            render={<Link href="/" />}
+            nativeButton={false}
+            variant="ghost"
+            size="sm"
+            className="ml-auto"
+          >
+            <ArrowLeft />
+            Back to Discuno
           </Button>
         </div>
 

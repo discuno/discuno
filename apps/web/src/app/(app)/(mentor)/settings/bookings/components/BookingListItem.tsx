@@ -77,15 +77,17 @@ export const BookingListItem = ({ booking }: BookingListItemProps) => {
                 </a>
               )}
               <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    variant="destructive-ghost"
-                    size="sm"
-                    disabled={cancelBookingMutation.isPending}
-                  >
-                    <Ban className="mr-1 h-4 w-4" />
-                    Cancel
-                  </Button>
+                <AlertDialogTrigger
+                  render={
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      disabled={cancelBookingMutation.isPending}
+                    />
+                  }
+                >
+                  <Ban className="mr-1 h-4 w-4" />
+                  Cancel
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>

@@ -18,11 +18,9 @@ const BookingSuccessPage = () => {
             We sent your calendar invitation and session details by email. Before you meet, write
             down the one decision you want to leave clearer about.
           </p>
-          <Button asChild>
-            <Link href="/">
-              <Home className="mr-2 h-4 w-4" />
-              Find another mentor
-            </Link>
+          <Button render={<Link href="/" />} nativeButton={false}>
+            <Home className="mr-2 h-4 w-4" />
+            Find another mentor
           </Button>
         </CardContent>
       </Card>

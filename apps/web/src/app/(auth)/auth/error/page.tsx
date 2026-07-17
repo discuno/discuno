@@ -198,21 +198,25 @@ const ErrorContent = ({ searchParams }: { searchParams: { type?: string; error?:
 
               {/* Actions */}
               <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
-                <Button asChild variant="default">
-                  <Link href="/auth" className="flex items-center gap-2">
-                    <RefreshCw className="h-4 w-4" />
-                    {isOAuthAccountNotLinked
-                      ? 'Try Different Sign-In'
-                      : isVerificationError
-                        ? 'Request New Link'
-                        : 'Try Again'}
-                  </Link>
+                <Button
+                  render={<Link href="/auth" className="flex items-center gap-2" />}
+                  nativeButton={false}
+                  variant="default"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  {isOAuthAccountNotLinked
+                    ? 'Try Different Sign-In'
+                    : isVerificationError
+                      ? 'Request New Link'
+                      : 'Try Again'}
                 </Button>
-                <Button asChild variant="outline">
-                  <Link href="/" className="flex items-center gap-2">
-                    <ArrowLeft className="h-4 w-4" />
-                    Back to Home
-                  </Link>
+                <Button
+                  render={<Link href="/" className="flex items-center gap-2" />}
+                  nativeButton={false}
+                  variant="outline"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Back to Home
                 </Button>
               </div>
 

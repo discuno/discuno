@@ -74,31 +74,31 @@ export function NavMain({ items }: NavMainProps) {
             return (
               <SidebarMenuItem key={item.title}>
                 <SidebarMenuButton
-                  asChild
+                  render={
+                    <Link
+                      href={item.url}
+                      className="flex items-center justify-between"
+                      onClick={handleClick}
+                    />
+                  }
                   tooltip={item.title}
                   className={item.isOnboarding && item.badge ? 'font-semibold' : ''}
                 >
-                  <Link
-                    href={item.url}
-                    className="flex items-center justify-between"
-                    onClick={handleClick}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Icon />
-                      <span>{item.title}</span>
-                    </div>
-                    {item.statusDot ? (
-                      <span className="ml-auto p-1">
-                        <StatusDot status={item.statusDot} size="sm" />
-                      </span>
-                    ) : (
-                      item.badge && (
-                        <Badge variant={item.badgeVariant ?? 'default'} className="ml-auto">
-                          {item.badge}
-                        </Badge>
-                      )
-                    )}
-                  </Link>
+                  <div className="flex items-center gap-2">
+                    <Icon />
+                    <span>{item.title}</span>
+                  </div>
+                  {item.statusDot ? (
+                    <span className="ml-auto p-1">
+                      <StatusDot status={item.statusDot} size="sm" />
+                    </span>
+                  ) : (
+                    item.badge && (
+                      <Badge variant={item.badgeVariant ?? 'default'} className="ml-auto">
+                        {item.badge}
+                      </Badge>
+                    )
+                  )}
                 </SidebarMenuButton>
               </SidebarMenuItem>
             )
@@ -131,18 +131,19 @@ export function NavMain({ items }: NavMainProps) {
                         </div>
                       </SidebarMenuButton>
                     ) : (
-                      <SidebarMenuButton asChild tooltip={subItem.title}>
-                        <Link href={subItem.url} onClick={handleClick}>
-                          <SubIcon />
-                          <div className="flex flex-col items-start">
-                            <span>{subItem.title}</span>
-                            {subItem.description && (
-                              <span className="text-muted-foreground text-xs">
-                                {subItem.description}
-                              </span>
-                            )}
-                          </div>
-                        </Link>
+                      <SidebarMenuButton
+                        render={<Link href={subItem.url} onClick={handleClick} />}
+                        tooltip={subItem.title}
+                      >
+                        <SubIcon />
+                        <div className="flex flex-col items-start">
+                          <span>{subItem.title}</span>
+                          {subItem.description && (
+                            <span className="text-muted-foreground text-xs">
+                              {subItem.description}
+                            </span>
+                          )}
+                        </div>
                       </SidebarMenuButton>
                     )}
                   </SidebarMenuItem>

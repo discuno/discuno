@@ -49,11 +49,15 @@ const BookingPage = async ({ params }: BookingPageProps) => {
   return (
     <div className="page-container py-8 sm:py-10">
       <header className="mb-7">
-        <Button asChild variant="ghost" size="sm" className="-ml-3">
-          <Link href={`/mentor/${username}`}>
-            <ArrowLeft />
-            Back to profile
-          </Link>
+        <Button
+          render={<Link href={`/mentor/${username}`} />}
+          nativeButton={false}
+          variant="ghost"
+          size="sm"
+          className="-ml-3"
+        >
+          <ArrowLeft />
+          Back to profile
         </Button>
         <p className="eyebrow mt-5">Choose your conversation</p>
         <h1 className="mt-2 text-3xl font-semibold tracking-[-0.035em] sm:text-4xl">

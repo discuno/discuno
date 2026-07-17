@@ -65,8 +65,8 @@ export function SettingsHeaderClient({
               {isWorkspaceRoot ? (
                 <BreadcrumbPage className="truncate font-medium">Mentor workspace</BreadcrumbPage>
               ) : (
-                <BreadcrumbLink asChild className="truncate">
-                  <Link href="/settings">Mentor workspace</Link>
+                <BreadcrumbLink render={<Link href="/settings" />} className="truncate">
+                  Mentor workspace
                 </BreadcrumbLink>
               )}
             </BreadcrumbItem>

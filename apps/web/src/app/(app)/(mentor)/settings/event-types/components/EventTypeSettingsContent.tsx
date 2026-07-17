@@ -178,11 +178,14 @@ export const EventTypeSettingsContent = ({
                 price and publish it on Discuno.
               </p>
               <div className="mt-5 flex flex-wrap justify-center gap-2">
-                <Button asChild>
-                  <a href="https://app.cal.com/event-types" target="_blank" rel="noreferrer">
-                    Create a session type
-                    <ExternalLink aria-hidden="true" />
-                  </a>
+                <Button
+                  render={
+                    <a href="https://app.cal.com/event-types" target="_blank" rel="noreferrer" />
+                  }
+                  nativeButton={false}
+                >
+                  Create a session type
+                  <ExternalLink aria-hidden="true" />
                 </Button>
                 <Button variant="outline" onClick={onRefresh} disabled={isRefreshing}>
                   <RefreshCw className={isRefreshing ? 'animate-spin' : undefined} />
@@ -203,11 +206,9 @@ export const EventTypeSettingsContent = ({
                       <div className="pt-0.5">
                         {!eventType.bookingCompatible && !eventType.isEnabled ? (
                           <TooltipProvider>
-                            <Tooltip delayDuration={0}>
-                              <TooltipTrigger asChild>
-                                <div>
-                                  <Switch checked={false} disabled />
-                                </div>
+                            <Tooltip>
+                              <TooltipTrigger render={<div />}>
+                                <Switch checked={false} disabled />
                               </TooltipTrigger>
                               <TooltipContent>
                                 <p>Update this session type in Cal.com, then refresh</p>
@@ -218,17 +219,13 @@ export const EventTypeSettingsContent = ({
                           eventType.customPrice > 0 &&
                           !isStripeActive ? (
                           <TooltipProvider>
-                            <Tooltip delayDuration={0}>
-                              <TooltipTrigger asChild>
-                                <div>
-                                  <Switch
-                                    checked={eventType.isEnabled}
-                                    onCheckedChange={checked =>
-                                      onToggleEventType(eventType, checked)
-                                    }
-                                    disabled={updateEventTypeMutation.isPending}
-                                  />
-                                </div>
+                            <Tooltip>
+                              <TooltipTrigger render={<div />}>
+                                <Switch
+                                  checked={eventType.isEnabled}
+                                  onCheckedChange={checked => onToggleEventType(eventType, checked)}
+                                  disabled={updateEventTypeMutation.isPending}
+                                />
                               </TooltipTrigger>
                               <TooltipContent>
                                 <p>Complete Stripe setup to enable paid event types</p>

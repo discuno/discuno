@@ -137,11 +137,13 @@ export const PostCard = ({ card }: { card: Card }) => {
           </div>
 
           {profileHref ? (
-            <Button asChild className="w-full">
-              <Link href={profileHref} onClick={handleProfileView}>
-                See how they can help
-                <ArrowUpRight />
-              </Link>
+            <Button
+              render={<Link href={profileHref} onClick={handleProfileView} />}
+              nativeButton={false}
+              className="w-full"
+            >
+              See how they can help
+              <ArrowUpRight />
             </Button>
           ) : (
             <Button variant="outline" className="w-full" disabled>
