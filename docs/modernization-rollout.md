@@ -10,7 +10,7 @@ Keep `PAYMENTS_ENABLED=false` in every environment until its schema, secrets, we
 jobs, and end-to-end refund path have been verified. Do not enable paid Checkout in production as
 part of the schema deployment.
 
-## Current rollout status (verified July 16, 2026 ET)
+## Current rollout status (verified July 17, 2026 ET)
 
 ### Completed away from production
 
@@ -37,10 +37,11 @@ part of the schema deployment.
   `https://preview.discuno.com`, which is the stable Better Auth OAuth callback/proxy hub for
   generated Vercel Preview hosts. Those hosts share the Preview-scoped `OAUTH_PROXY_SECRET`;
   Production has independent proxy state and does not participate in the Preview OAuth round trip.
-- The Git-backed application deployment for the current booking-page repair commit `0a7aead` is
-  Ready as `dpl_4L8ntspEzuCr32YxRhfU79rkTccu` at
-  `https://discuno-1jx3n00gz-brad-mcnews-projects.vercel.app`. `preview.discuno.com` tracks the
-  modernization branch and was verified against that immutable application deployment.
+- The Git-backed Preview deployment contains the fixed-duration Cal.com booking repair from commit
+  `97929d3`. `preview.discuno.com` tracks the modernization branch and was verified against that
+  branch deployment. Deploy paid-lifecycle changes through the connected Git branch and confirm
+  the matching Inngest branch environment registration; a standalone Vercel CLI deployment can be
+  Ready without updating the Git-linked Inngest application registration.
 - Vercel project SSO Protection is disabled because Cal.com must reach the OAuth callback and
   webhook without an interactive Vercel login. On the Hobby plan this makes all preview and
   generated deployment URLs public; Discuno's own authentication and route authorization remain
@@ -84,6 +85,21 @@ part of the schema deployment.
   `BOOKING_CANCELLED` webhook was processed and scrubbed, and both Cal.com and Discuno lifecycle
   state report cancellation. No payment was created. The free Preview session remains enabled for
   future validation.
+- The core paid Preview lifecycle passed in a tightly scoped sandbox window using a temporary
+  $5.00 price. The first paid attempt exposed a current Cal.com contract mismatch: Discuno verified
+  the fixed 20-minute duration correctly but also sent `lengthInMinutes`, which Cal.com accepts only
+  for event types configured with selectable durations. The durable create-attempt boundary and
+  locked reconciliation prevented a duplicate booking POST; authenticated reconciliation proved
+  that no booking existed, Stripe issued a full refund, and no mentor transfer was created.
+- After Discuno stopped sending the variable-duration field for fixed event types (while retaining
+  the before-Checkout and immediately-before-create duration checks), a second paid Checkout
+  reserved the provider slot, collected $5.00 in Stripe sandbox, created exactly one accepted
+  20-minute Cal.com booking, consumed the durable reservation bridge, and processed and scrubbed
+  the signed `BOOKING_CREATED` webhook. An authenticated cancellation of that exact booking then
+  processed and scrubbed `BOOKING_CANCELLED`, marked the booking ineligible for mentor payout,
+  issued a successful full $5.00 refund, and left zero transfers, disputes, or manual-review holds.
+  The event type was restored to free and Preview `PAYMENTS_ENABLED` was returned to `false` before
+  the final safe-state deployment.
 - Browser QA also found and removed a server-UTC/browser-time-zone hydration mismatch on the
   booking calendar. The server now supplies one stable render-time instant, the client hydrates
   against the server snapshot, and availability waits for the student's browser time zone before
@@ -92,8 +108,11 @@ part of the schema deployment.
 
 ### Still pending
 
-- `PAYMENTS_ENABLED` remains `false`. No paid-provider lifecycle validation or launch decision has
-  been made.
+- `PAYMENTS_ENABLED` remains `false`. The core paid booking, early-cancellation refund, and
+  no-transfer path is verified in Preview, but enabling paid sessions remains a separate business
+  launch decision. The broader live failure matrix (expiry, delayed payment, dispute,
+  manual-review, reschedule, no-show, and delayed payout timing) remains a pre-launch gate alongside
+  its automated coverage.
 - Production database schema, deployment, and environment configuration are untouched. Two legacy
   Cal.com variables remain intentionally preserved in Production for the old production
   deployment. Production still contains legacy Cal.com connections that will require a deliberate
