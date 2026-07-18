@@ -43,7 +43,7 @@ export function DecisionComposer() {
       id="decision-composer"
       role="form"
       aria-labelledby="home-decision-label"
-      className="border-foreground/20 mt-8 border-y py-5"
+      className="border-foreground/20 mt-8 scroll-mt-24 border-y py-5"
     >
       <Field data-invalid={showError || storageUnavailable}>
         <FieldLabel id="home-decision-label" htmlFor="home-decision-question" className="text-base">

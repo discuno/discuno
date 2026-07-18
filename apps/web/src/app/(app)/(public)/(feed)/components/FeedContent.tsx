@@ -180,13 +180,10 @@ export function FeedContent() {
           <h2 className="display-heading max-w-3xl">
             Start with the question already on your mind.
           </h2>
-          <Link
-            href="#decision-composer"
-            className={cn(buttonVariants({ size: 'lg' }), 'shrink-0')}
-          >
+          <a href="#decision-composer" className={cn(buttonVariants({ size: 'lg' }), 'shrink-0')}>
             Start with your question
             <ArrowDown data-icon="inline-end" />
-          </Link>
+          </a>
         </div>
       </section>
     </>

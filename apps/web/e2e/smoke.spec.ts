@@ -52,6 +52,19 @@ test('question-first path reaches clean discovery without exposing the question'
   await expect(page.getByRole('paragraph').filter({ hasText: question })).toBeVisible()
 })
 
+test('final homepage prompt returns to the question composer', async ({ page }) => {
+  const response = await page.goto('/')
+
+  expect(response?.ok()).toBe(true)
+
+  const prompt = page.getByRole('link', { name: 'Start with your question' })
+  await prompt.scrollIntoViewIfNeeded()
+  await prompt.click()
+
+  await expect(page).toHaveURL(/#decision-composer$/)
+  await expect(page.locator('#decision-composer')).toBeInViewport()
+})
+
 test('public about page renders without mutating application state', async ({ page }) => {
   const response = await page.goto('/about')
 
