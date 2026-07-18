@@ -16,12 +16,13 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '~/components/ui/accordion'
+import { buttonVariants } from '~/components/ui/button'
 import { createMetadata } from '~/lib/metadata'
 
 export const metadata: Metadata = createMetadata({
   title: 'Support & Help Center',
   description:
-    'Get clear answers about finding a mentor, booking a session, payments, mentor verification, and account safety on Discuno.',
+    'Get clear answers about finding a mentor, booking a session, payments, school-email confirmation, and account safety on Discuno.',
   alternates: { canonical: '/support' },
   openGraph: {
     title: 'Discuno Support & Help Center',
@@ -40,37 +41,20 @@ const supportTopics = [
 export default function SupportPage() {
   return (
     <div className="min-h-screen">
-      <section className="bg-card border-b">
-        <div className="page-container grid gap-10 py-14 sm:py-16 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-end lg:gap-16 lg:py-20">
+      <section className="border-b">
+        <div className="page-shell py-14 sm:py-20 lg:py-24">
           <div className="max-w-3xl">
-            <p className="eyebrow">Discuno support</p>
-            <h1 className="mt-4 max-w-2xl text-4xl font-semibold tracking-tight text-balance sm:text-5xl">
-              Straight answers when you need a hand
+            <h1 className="display-heading max-w-2xl">
+              Find the answer. Then get back to your decision.
             </h1>
             <p className="text-muted-foreground mt-5 max-w-2xl text-lg leading-8">
-              Learn how mentor discovery, guest booking, scheduling, and paid sessions work. If
-              something still is not clear, contact us directly.
+              Practical guidance for finding a mentor, booking a session, and managing your account.
             </p>
-          </div>
-
-          <div className="border-border border-t pt-6 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-8">
-            <p className="text-sm font-semibold">Need personal help?</p>
-            <p className="text-muted-foreground mt-2 text-sm leading-6">
-              Include the email used for your booking and, when relevant, the session date. Never
-              send payment card details.
-            </p>
-            <a
-              href="mailto:support@discuno.com"
-              className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring mt-5 inline-flex h-11 items-center justify-center gap-2 rounded-md px-5 text-sm font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
-            >
-              <Mail className="h-4 w-4" aria-hidden="true" />
-              Email support
-            </a>
           </div>
         </div>
       </section>
 
-      <div className="page-container py-12 sm:py-16">
+      <div className="page-shell py-12 sm:py-16">
         <nav aria-label="Support topics" className="border-border border-b pb-7 lg:hidden">
           <p className="text-muted-foreground mb-3 text-xs font-semibold tracking-[0.14em] uppercase">
             Jump to a topic
@@ -120,10 +104,7 @@ export default function SupportPage() {
 
           <div className="min-w-0">
             <div className="mb-10">
-              <p className="eyebrow">Help center</p>
-              <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
-                Frequently asked questions
-              </h2>
+              <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">Help center</h2>
               <p className="text-muted-foreground mt-3 max-w-2xl leading-7">
                 Practical guidance for students, mentors, and anyone booking a session.
               </p>
@@ -148,7 +129,7 @@ export default function SupportPage() {
                   <AccordionContent className="text-muted-foreground text-base leading-relaxed">
                     Discuno connects students with mentors for one-on-one guidance. Browse public
                     mentor profiles, compare session options and availability, then book with your
-                    name and email—no account is required. Free sessions are confirmed directly;
+                    name and email. No account is required. Free sessions are confirmed directly;
                     paid sessions are processed securely through Stripe. Scheduling and meeting
                     details are provided through the booking flow.
                   </AccordionContent>
@@ -171,7 +152,7 @@ export default function SupportPage() {
                     How do I become a mentor?
                   </AccordionTrigger>
                   <AccordionContent className="text-muted-foreground text-base leading-relaxed">
-                    Choose &quot;Become a mentor&quot; and verify an eligible .edu email address.
+                    Choose &quot;Start mentoring&quot; and confirm an eligible .edu email address.
                     You will then create a public profile, connect your calendar, set availability,
                     and publish session options. Connecting Stripe is optional for free sessions and
                     is required before accepting paid bookings.
@@ -334,7 +315,7 @@ export default function SupportPage() {
               </Accordion>
             </section>
 
-            <section className="border-border bg-card mt-16 border p-6 sm:p-8">
+            <section className="border-foreground/20 mt-16 border-y py-7 sm:py-8">
               <div className="grid gap-7 sm:grid-cols-[1fr_auto] sm:items-center">
                 <div>
                   <div className="flex items-center gap-2">
@@ -347,10 +328,7 @@ export default function SupportPage() {
                   </p>
                 </div>
                 <div className="flex flex-col gap-3 sm:items-end">
-                  <a
-                    href="mailto:support@discuno.com"
-                    className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring inline-flex h-11 items-center justify-center gap-2 rounded-md px-5 text-sm font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
-                  >
+                  <a href="mailto:support@discuno.com" className={buttonVariants({ size: 'lg' })}>
                     <Mail className="h-4 w-4" aria-hidden="true" />
                     Email support
                   </a>

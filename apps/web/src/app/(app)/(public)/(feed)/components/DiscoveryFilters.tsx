@@ -1,10 +1,10 @@
 'use client'
 
-import { BookOpen, CalendarDays, GraduationCap, SlidersHorizontal } from 'lucide-react'
 import Link from 'next/link'
+import { BookOpen, CalendarDays, GraduationCap } from 'lucide-react'
+import { buttonVariants } from '~/components/ui/button'
+import { cn } from '~/lib/utils'
 import { FilterButton, type FilterValue } from './FilterButton'
-import { Button } from '~/components/ui/button'
-import { Card } from '~/components/ui/card'
 
 interface DiscoveryFiltersProps {
   schools: FilterValue[]
@@ -26,65 +26,72 @@ export function DiscoveryFilters({
   hasFilters,
 }: DiscoveryFiltersProps) {
   return (
-    <Card className="stacked-note corner-mark paper-panel ink-shadow p-5 sm:p-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="note-stamp gap-1.5">
-            <SlidersHorizontal className="size-3.5" aria-hidden="true" />
-            Decision worksheet
+    <section className="border-b" aria-labelledby="discovery-filters-title">
+      <div className="mx-auto w-full max-w-[76rem] px-4 py-6 sm:px-6 lg:px-8 lg:py-7">
+        <div className="grid gap-5 lg:grid-cols-[minmax(14rem,0.7fr)_minmax(0,1.3fr)] lg:items-end lg:gap-10">
+          <div>
+            <h2 id="discovery-filters-title" className="text-lg font-semibold">
+              Find the closest overlap
+            </h2>
+            <p className="text-muted-foreground mt-1 text-sm leading-6">
+              Choose a school, field, or graduation year.
+            </p>
+          </div>
+
+          <div
+            className="grid gap-3 sm:grid-cols-3"
+            role="group"
+            aria-label="Mentor search filters"
+          >
+            <div className="flex min-w-0 flex-col gap-2">
+              <p className="text-sm font-medium">School</p>
+              <FilterButton
+                filterItems={schools}
+                startValue={searchParams.school ?? ''}
+                queryName="school"
+                label="School or university"
+                icon={GraduationCap}
+              />
+            </div>
+            <div className="flex min-w-0 flex-col gap-2">
+              <p className="text-sm font-medium">Field</p>
+              <FilterButton
+                filterItems={majors}
+                startValue={searchParams.major ?? ''}
+                queryName="major"
+                label="Major or field of study"
+                icon={BookOpen}
+              />
+            </div>
+            <div className="flex min-w-0 flex-col gap-2">
+              <p className="text-sm font-medium">Graduation year</p>
+              <FilterButton
+                filterItems={gradYears}
+                startValue={searchParams.gradYear ?? ''}
+                queryName="gradYear"
+                label="Graduation year"
+                icon={CalendarDays}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-4 flex min-h-9 items-center justify-between gap-4">
+          <p className="text-muted-foreground text-xs leading-5">
+            {hasFilters
+              ? 'Results below reflect your current filters.'
+              : 'No account is needed to browse or book.'}
           </p>
-          <h2 className="mt-5 text-3xl leading-[1.05] font-semibold tracking-tight">
-            Start with what matters to your decision
-          </h2>
-          <p className="text-muted-foreground mt-2 text-sm leading-6">
-            School and field usually matter most. Add a graduation year only when the stage of the
-            journey matters too.
-          </p>
+          {hasFilters && (
+            <Link
+              href="/#mentors"
+              className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'shrink-0')}
+            >
+              Clear filters
+            </Link>
+          )}
         </div>
       </div>
-
-      <div className="mt-6 grid gap-3">
-        <FilterButton
-          filterItems={schools}
-          startValue={searchParams.school ?? ''}
-          queryName="school"
-          label="School or university"
-          icon={GraduationCap}
-        />
-        <FilterButton
-          filterItems={majors}
-          startValue={searchParams.major ?? ''}
-          queryName="major"
-          label="Major or field of study"
-          icon={BookOpen}
-        />
-        <FilterButton
-          filterItems={gradYears}
-          startValue={searchParams.gradYear ?? ''}
-          queryName="gradYear"
-          label="Graduation year (optional)"
-          icon={CalendarDays}
-        />
-      </div>
-
-      <div className="ledger-rule mt-5 flex min-h-9 items-center justify-between gap-4 pt-4">
-        <p className="text-muted-foreground text-xs leading-5">
-          {hasFilters
-            ? 'Your choices are reflected in the results below.'
-            : 'No account needed to browse profiles or book.'}
-        </p>
-        {hasFilters && (
-          <Button
-            render={<Link href="/#mentors" />}
-            nativeButton={false}
-            variant="ghost"
-            size="sm"
-            className="shrink-0"
-          >
-            Clear all
-          </Button>
-        )}
-      </div>
-    </Card>
+    </section>
   )
 }

@@ -80,6 +80,7 @@ export const BookingEmbed = ({
   const [bookingAttemptId, setBookingAttemptId] = useState(() => crypto.randomUUID())
   const [paidAttemptSubmitted, setPaidAttemptSubmitted] = useState(false)
   const [currentStep, setCurrentStep] = useState<BookingStep>('calendar')
+  const [detailsStage, setDetailsStage] = useState<'details' | 'review'>('details')
   const [browserNowMs, setBrowserNowMs] = useState(() =>
     initialNowIso ? Date.parse(initialNowIso) : 0
   )
@@ -90,6 +91,7 @@ export const BookingEmbed = ({
     phone: '',
     topic: '',
   })
+  const previousStepRef = useRef<BookingStep>(currentStep)
 
   // Date range for calendar
   const { startMonth, endMonth } = useMemo(
@@ -153,6 +155,7 @@ export const BookingEmbed = ({
     setSelectedTimeSlot(null)
     setBookingAttemptId(crypto.randomUUID())
     setPaidAttemptSubmitted(false)
+    setDetailsStage('details')
   }, [])
 
   const handleTimeSlotSelect = useCallback((timeSlot: string | null) => {
@@ -160,6 +163,7 @@ export const BookingEmbed = ({
     if (timeSlot) {
       setBookingAttemptId(crypto.randomUUID())
       setPaidAttemptSubmitted(false)
+      setDetailsStage('details')
       setCurrentStep('booking')
     }
   }, [])
@@ -170,13 +174,15 @@ export const BookingEmbed = ({
   }, [])
 
   useEffect(() => {
-    if (currentStep === 'calendar') return
+    if (previousStepRef.current === currentStep) return
+    previousStepRef.current = currentStep
     bookingSurfaceRef.current?.scrollIntoView({ block: 'start' })
-    requestAnimationFrame(() => {
+    const frame = requestAnimationFrame(() => {
       bookingSurfaceRef.current
         ?.querySelector<HTMLElement>('[data-booking-step-heading]')
         ?.focus({ preventScroll: true })
     })
+    return () => cancelAnimationFrame(frame)
   }, [currentStep])
 
   // Mutations
@@ -241,7 +247,7 @@ export const BookingEmbed = ({
   })
 
   const renderContent = () => (
-    <div className="bg-background flex min-h-full w-full flex-col">
+    <div className="flex min-h-[32rem] w-full flex-col">
       {error && currentStep === 'calendar' && (
         <Alert variant="destructive" className="m-4 w-auto sm:m-6">
           <CircleAlert />
@@ -279,6 +285,7 @@ export const BookingEmbed = ({
           formData={displayedFormData}
           setFormData={setFormData}
           setCurrentStep={setCurrentStep}
+          onReviewChange={isReviewing => setDetailsStage(isReviewing ? 'review' : 'details')}
           createBookingMutation={createBookingMutation}
           detailsLocked={paidAttemptSubmitted}
         />
@@ -291,19 +298,20 @@ export const BookingEmbed = ({
   return (
     <div
       ref={bookingSurfaceRef}
-      className="surface-panel corner-mark grid min-h-[640px] w-full scroll-mt-20 overflow-hidden xl:grid-cols-[320px_minmax(0,1fr)]"
+      className="grid w-full scroll-mt-20 grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start"
     >
-      <div className="bg-muted/25 hidden border-r xl:block">
-        <BookingSidebar
-          bookingData={bookingData}
-          selectedEventType={selectedEventType}
-          selectedDate={selectedDate}
-          selectedTimeSlot={selectedTimeSlot}
-          currentStep={currentStep}
-          timeZone={timeZone}
-        />
-      </div>
-      <div className="min-w-0">{renderContent()}</div>
+      <section className="bg-card min-w-0 overflow-hidden rounded-xl border">
+        {renderContent()}
+      </section>
+      <BookingSidebar
+        bookingData={bookingData}
+        selectedEventType={selectedEventType}
+        selectedDate={selectedDate}
+        selectedTimeSlot={selectedTimeSlot}
+        currentStep={currentStep}
+        detailsStage={detailsStage}
+        timeZone={timeZone}
+      />
     </div>
   )
 }

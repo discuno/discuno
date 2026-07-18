@@ -4,7 +4,7 @@ import { Trash2 } from 'lucide-react'
 import { useId } from 'react'
 import type { TimeInterval } from '~/app/types/availability'
 import { Button } from '~/components/ui/button'
-import { Field, FieldError, FieldLabel } from '~/components/ui/field'
+import { Field, FieldError, FieldGroup, FieldLabel } from '~/components/ui/field'
 import { Input } from '~/components/ui/input'
 import { getIntervalValidation } from './availability-utils'
 
@@ -41,8 +41,12 @@ export const TimeIntervalRow = ({
   }
 
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-end gap-2">
-      <Field className="min-w-0 gap-1.5" data-invalid={isInvalid}>
+    <FieldGroup className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-end gap-2">
+      <Field
+        className="min-w-0 gap-1.5"
+        data-invalid={isInvalid}
+        data-disabled={disabled || undefined}
+      >
         <FieldLabel htmlFor={startId}>
           Start <span className="sr-only">for {label}</span>
         </FieldLabel>
@@ -58,7 +62,11 @@ export const TimeIntervalRow = ({
         />
       </Field>
 
-      <Field className="min-w-0 gap-1.5" data-invalid={isInvalid}>
+      <Field
+        className="min-w-0 gap-1.5"
+        data-invalid={isInvalid}
+        data-disabled={disabled || undefined}
+      >
         <FieldLabel htmlFor={endId}>
           End <span className="sr-only">for {label}</span>
         </FieldLabel>
@@ -82,7 +90,6 @@ export const TimeIntervalRow = ({
           onClick={onRemove}
           disabled={disabled}
           aria-label={`Remove ${label}`}
-          className="text-muted-foreground hover:text-destructive"
         >
           <Trash2 />
         </Button>
@@ -93,6 +100,6 @@ export const TimeIntervalRow = ({
           {localValidation.message}
         </FieldError>
       )}
-    </div>
+    </FieldGroup>
   )
 }

@@ -1,15 +1,20 @@
 import { AlertCircle, ArrowLeft, CalendarDays, RefreshCw, Users } from 'lucide-react'
 import Link from 'next/link'
 import { Brand } from '~/components/shared/Brand'
-import { Badge } from '~/components/ui/badge'
-import { Button } from '~/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
+import { buttonVariants } from '~/components/ui/button'
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '~/components/ui/empty'
+import { cn } from '~/lib/utils'
 
 type ErrorDetails = {
-  eyebrow: string
   title: string
   description: string
-  nextStep: string
   action: string
   icon: typeof AlertCircle
   destructive?: boolean
@@ -18,12 +23,9 @@ type ErrorDetails = {
 function getErrorDetails(searchParams: { type?: string; error?: string }): ErrorDetails {
   if (searchParams.error === 'OAuthAccountNotLinked') {
     return {
-      eyebrow: 'Sign-in method mismatch',
       title: 'This email already has an account',
       description:
-        'It was created with a different sign-in method. Return to sign-in and choose the Google, Microsoft, or school-email option you used before.',
-      nextStep:
-        'Trying the original method protects your account from being linked to the wrong provider.',
+        'Return to sign-in and choose the Google, Microsoft, or school-email method you used before. If you no longer have access to it, contact support.',
       action: 'Choose another sign-in method',
       icon: Users,
     }
@@ -31,12 +33,9 @@ function getErrorDetails(searchParams: { type?: string; error?: string }): Error
 
   if (searchParams.error === 'Verification') {
     return {
-      eyebrow: 'Code expired',
       title: 'That sign-in code is no longer valid',
       description:
-        'School-email codes expire after a short time and can only be used once. Request a fresh code from the sign-in page.',
-      nextStep:
-        'Use the newest code in your inbox. Older codes stop working when a new one is sent.',
+        'Return to sign-in, request a fresh code, and use the newest message in your inbox. Codes expire and can only be used once.',
       action: 'Request a new code',
       icon: RefreshCw,
     }
@@ -44,12 +43,9 @@ function getErrorDetails(searchParams: { type?: string; error?: string }): Error
 
   if (searchParams.type === 'calcom') {
     return {
-      eyebrow: 'Mentor setup paused',
       title: 'Your booking setup is not finished yet',
       description:
-        'We could not prepare your availability. Your profile will remain unavailable for bookings until setup succeeds.',
-      nextStep:
-        'Try again from mentor settings. If the problem continues, contact support and your profile will stay protected in the meantime.',
+        'Your profile remains unavailable for bookings until setup succeeds. Try again from mentor settings, then contact support if the problem continues.',
       action: 'Return to mentor sign-in',
       icon: CalendarDays,
       destructive: true,
@@ -57,12 +53,9 @@ function getErrorDetails(searchParams: { type?: string; error?: string }): Error
   }
 
   return {
-    eyebrow: 'Sign-in interrupted',
     title: 'We could not finish signing you in',
     description:
-      'This may be a temporary issue. Return to sign-in and use the same method you started with.',
-    nextStep:
-      'If another attempt fails, contact support and tell us which sign-in method you used.',
+      'Return to sign-in and use the same method you started with. If the next attempt fails, contact support and name the sign-in method.',
     action: 'Try sign-in again',
     icon: AlertCircle,
     destructive: true,
@@ -78,53 +71,56 @@ const AuthErrorPage = async ({
   const Icon = details.icon
 
   return (
-    <div className="field-notes min-h-screen px-4 py-6 sm:px-6 sm:py-10">
-      <div className="mx-auto flex max-w-5xl items-center justify-between">
+    <div className="bg-background flex min-h-screen flex-col">
+      <header className="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-5 sm:px-6">
         <Brand />
-        <Button render={<Link href="/" />} nativeButton={false} variant="ghost" size="sm">
-          <ArrowLeft aria-hidden="true" />
+        <Link href="/" className={buttonVariants({ variant: 'ghost', size: 'sm' })}>
+          <ArrowLeft data-icon="inline-start" aria-hidden="true" />
           Back to Discuno
-        </Button>
-      </div>
+        </Link>
+      </header>
 
-      <main className="mx-auto flex max-w-xl items-center py-14 sm:min-h-[calc(100vh-7rem)] sm:py-20">
-        <Card className="stacked-note paper-panel ink-shadow corner-mark w-full">
-          <CardHeader className="items-center px-6 pt-8 text-center sm:px-10 sm:pt-10">
-            <span
+      <main className="mx-auto flex w-full max-w-lg flex-1 items-center px-4 py-12 sm:px-6 sm:py-16">
+        <Empty className="w-full py-0 md:py-0" aria-labelledby="auth-error-title">
+          <EmptyHeader className="max-w-md gap-3">
+            <EmptyMedia
+              variant="icon"
               className={
                 details.destructive
-                  ? 'bg-destructive/10 text-destructive flex size-14 items-center justify-center rounded-md border'
-                  : 'bg-accent text-foreground flex size-14 items-center justify-center rounded-md border'
+                  ? 'bg-destructive/10 text-destructive'
+                  : 'bg-accent text-accent-foreground'
               }
             >
-              <Icon className="size-6" aria-hidden="true" />
-            </span>
-            <Badge variant={details.destructive ? 'destructive' : 'secondary'} className="mt-5">
-              {details.eyebrow}
-            </Badge>
-            <CardTitle className="pt-3 text-2xl leading-8 sm:text-3xl">{details.title}</CardTitle>
-            <CardDescription className="max-w-md pt-2 text-base leading-7">
+              <Icon aria-hidden="true" />
+            </EmptyMedia>
+            <EmptyTitle
+              id="auth-error-title"
+              role="heading"
+              aria-level={1}
+              className="font-display text-3xl leading-tight font-semibold tracking-tight sm:text-4xl"
+            >
+              {details.title}
+            </EmptyTitle>
+            <EmptyDescription className="text-base leading-7">
               {details.description}
-            </CardDescription>
-          </CardHeader>
+            </EmptyDescription>
+          </EmptyHeader>
 
-          <CardContent className="space-y-6 px-6 pb-8 sm:px-10 sm:pb-10">
-            <div className="paper-panel bg-accent/25 p-4 text-sm leading-6">
-              <p className="font-semibold">What to do next</p>
-              <p className="text-muted-foreground mt-1">{details.nextStep}</p>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Button render={<Link href="/auth" />} nativeButton={false}>
-                <RefreshCw aria-hidden="true" />
+          <EmptyContent className="max-w-md">
+            <div className="flex w-full flex-col gap-2 sm:flex-row sm:justify-center">
+              <Link href="/auth" className={buttonVariants({ size: 'lg' })}>
+                <RefreshCw data-icon="inline-start" aria-hidden="true" />
                 {details.action}
-              </Button>
-              <Button render={<Link href="/support" />} nativeButton={false} variant="outline">
+              </Link>
+              <Link
+                href="/support"
+                className={cn(buttonVariants({ variant: 'outline', size: 'lg' }))}
+              >
                 Contact support
-              </Button>
+              </Link>
             </div>
-          </CardContent>
-        </Card>
+          </EmptyContent>
+        </Empty>
       </main>
     </div>
   )

@@ -136,33 +136,30 @@ export function SaveOverrideModal({
             <DialogTitle>{isEditMode ? 'Edit date exception' : 'Add date exceptions'}</DialogTitle>
             <DialogDescription>
               {overrideToEdit
-                ? `Change the hours students can book on ${fromDateKey(overrideToEdit.date)?.toLocaleDateString(undefined, { dateStyle: 'full' }) ?? overrideToEdit.date}.`
-                : 'Choose one or more dates, then set the hours students can book.'}{' '}
-              Dates and hours follow the timezone set in your connected calendar.
+                ? `Set bookable hours for ${fromDateKey(overrideToEdit.date)?.toLocaleDateString(undefined, { dateStyle: 'full' }) ?? overrideToEdit.date}.`
+                : 'Choose dates and set their bookable hours.'}{' '}
+              Times use the timezone in your connected calendar.
             </DialogDescription>
           </DialogHeader>
 
           <div className="scroll-fade min-h-0 overflow-y-auto pr-1">
-            <div className="grid items-start gap-8 py-2 md:grid-cols-2">
+            <div className="grid items-start gap-6 py-2 md:grid-cols-2">
               {!isEditMode && (
                 <FieldSet>
                   <FieldLegend variant="label">Choose dates</FieldLegend>
-                  <FieldDescription>
-                    Dates that already have an exception are unavailable here.
-                  </FieldDescription>
-                  <div className="flex justify-center rounded-xl border p-2">
-                    <Calendar
-                      aria-label="Dates for availability exceptions"
-                      mode="multiple"
-                      required={false}
-                      selected={selectedDates}
-                      onSelect={dates => setSelectedDates(dates ?? [])}
-                      disabled={date =>
-                        date < today ||
-                        disabledDates.some(disabled => disabled.getTime() === date.getTime())
-                      }
-                    />
-                  </div>
+                  <FieldDescription>Dates with exceptions are unavailable.</FieldDescription>
+                  <Calendar
+                    aria-label="Dates for availability exceptions"
+                    mode="multiple"
+                    required={false}
+                    selected={selectedDates}
+                    onSelect={dates => setSelectedDates(dates ?? [])}
+                    disabled={date =>
+                      date < today ||
+                      disabledDates.some(disabled => disabled.getTime() === date.getTime())
+                    }
+                    className="mx-auto rounded-lg border"
+                  />
                   <p className="text-muted-foreground text-sm" role="status" aria-live="polite">
                     {selectedDates.length === 0
                       ? 'No dates selected.'
@@ -171,10 +168,12 @@ export function SaveOverrideModal({
                 </FieldSet>
               )}
 
-              <FieldSet className={cn(isEditMode && 'md:col-span-2')}>
+              <FieldSet className={cn('min-w-0', isEditMode && 'md:col-span-2 md:max-w-lg')}>
                 <FieldLegend variant="label">Available hours</FieldLegend>
                 <FieldDescription>
-                  These hours replace your usual weekly hours on the selected date.
+                  {isEditMode
+                    ? 'These replace your usual week on this date.'
+                    : 'These replace your usual week on the selected dates.'}
                 </FieldDescription>
                 <FieldGroup className="gap-3">
                   {intervals.map((interval, index) => (
@@ -238,12 +237,11 @@ export function SaveOverrideModal({
       </Dialog>
 
       <AlertDialog open={isDiscardDialogOpen} onOpenChange={setIsDiscardDialogOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent size="sm">
           <AlertDialogHeader>
             <AlertDialogTitle>Discard this date exception draft?</AlertDialogTitle>
             <AlertDialogDescription>
-              The dates and hours you changed in this dialog will be lost. Your saved availability
-              will not change.
+              Changes in this dialog will be lost. Saved availability will not change.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -1,4 +1,3 @@
-import { Scale } from 'lucide-react'
 import type { Metadata } from 'next'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
 import { createMetadata } from '~/lib/metadata'
@@ -9,32 +8,25 @@ export const metadata: Metadata = createMetadata({
     "Read Discuno's terms of service covering user agreements, platform guidelines, mentor policies, payment terms, and user responsibilities.",
   alternates: { canonical: '/terms' },
   openGraph: {
-    title: 'Terms of Service - Discuno',
-    description: 'Platform guidelines and user agreements for our mentorship community.',
+    title: 'Terms of Service | Discuno',
+    description: 'The agreement governing accounts, sessions, payments, and use of Discuno.',
   },
 })
 
 export default function TermsPage() {
   return (
-    <div className="text-foreground min-h-screen">
-      {/* Hero Section */}
-      <div className="field-notes border-b">
-        <div className="container mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <div className="bg-accent text-foreground mx-auto flex h-16 w-16 items-center justify-center rounded-md border">
-              <Scale className="text-primary h-8 w-8" />
-            </div>
-            <h1 className="mt-6 text-4xl font-bold tracking-tight sm:text-5xl">Terms of Service</h1>
-            <p className="text-muted-foreground mx-auto mt-4 max-w-2xl text-lg">
-              Effective Date: July 14, 2026
-            </p>
-          </div>
+    <div className="min-h-screen">
+      <header className="border-border border-b">
+        <div className="page-shell max-w-5xl py-14 sm:py-20">
+          <h1 className="font-display text-5xl leading-none font-medium tracking-[-0.045em] sm:text-6xl">
+            Terms of Service
+          </h1>
+          <p className="text-muted-foreground mt-4 text-sm">Effective July 14, 2026</p>
         </div>
-      </div>
+      </header>
 
-      {/* Content */}
-      <div className="container mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
-        <div className="prose prose-slate dark:prose-invert max-w-none space-y-8">
+      <div className="page-shell max-w-5xl py-10 sm:py-16">
+        <div className="legal-document">
           <Card>
             <CardHeader>
               <CardTitle>Definitions</CardTitle>

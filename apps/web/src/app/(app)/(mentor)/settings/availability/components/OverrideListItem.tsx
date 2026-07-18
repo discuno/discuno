@@ -1,10 +1,11 @@
 'use client'
 
-import { CalendarDays, Pencil, Trash2 } from 'lucide-react'
+import { Pencil, Trash2 } from 'lucide-react'
 import type { DateOverride } from '~/app/types/availability'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
-import { Item, ItemActions, ItemContent, ItemMedia, ItemTitle } from '~/components/ui/item'
+import { Item, ItemActions, ItemContent, ItemDescription, ItemTitle } from '~/components/ui/item'
+
 import { formatDateKey } from './availability-utils'
 
 interface OverrideListItemProps {
@@ -31,21 +32,18 @@ export function OverrideListItem({ override, onEdit, onDelete }: OverrideListIte
     .join(', ')
 
   return (
-    <Item variant="muted" className="flex-nowrap">
-      <ItemMedia variant="icon" className="bg-background size-9 rounded-xl border">
-        <CalendarDays />
-      </ItemMedia>
+    <Item size="sm" className="flex-nowrap" role="listitem">
       <ItemContent className="min-w-0">
         <ItemTitle>{displayDate}</ItemTitle>
         {override.intervals.length > 0 ? (
-          <p className="text-muted-foreground truncate text-xs">{displayIntervals}</p>
+          <ItemDescription>{displayIntervals}</ItemDescription>
         ) : (
           <Badge variant="destructive" className="w-fit">
             Needs hours
           </Badge>
         )}
       </ItemContent>
-      <ItemActions>
+      <ItemActions className="shrink-0">
         <Button
           type="button"
           variant="ghost"
@@ -61,7 +59,6 @@ export function OverrideListItem({ override, onEdit, onDelete }: OverrideListIte
           size="icon-sm"
           onClick={onDelete}
           aria-label={`Remove ${displayDate}`}
-          className="text-muted-foreground hover:text-destructive"
         >
           <Trash2 />
         </Button>

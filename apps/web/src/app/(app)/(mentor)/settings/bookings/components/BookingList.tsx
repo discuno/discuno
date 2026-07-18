@@ -19,12 +19,14 @@ export const BookingList = ({
 }: BookingListProps) => {
   if (bookings.length === 0) {
     return (
-      <Empty className="min-h-64 border">
+      <Empty className="border-border min-h-64 border-y">
         <EmptyHeader>
           <EmptyMedia variant="icon">
-            <CalendarIcon />
+            <CalendarIcon aria-hidden="true" />
           </EmptyMedia>
-          <EmptyTitle>{emptyTitle}</EmptyTitle>
+          <EmptyTitle role="heading" aria-level={2}>
+            {emptyTitle}
+          </EmptyTitle>
           <EmptyDescription>{emptyDescription}</EmptyDescription>
         </EmptyHeader>
       </Empty>
@@ -32,7 +34,7 @@ export const BookingList = ({
   }
 
   return (
-    <ItemGroup className="gap-3">
+    <ItemGroup className="border-border divide-border gap-0 divide-y border-y">
       {bookings.map(booking => (
         <BookingListItem key={booking.id} booking={booking} timeZone={timeZone} />
       ))}

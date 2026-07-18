@@ -5,6 +5,14 @@ import { useRouter } from 'next/navigation'
 import type { ReactNode } from 'react'
 import { Brand } from '~/components/shared/Brand'
 import { Button } from '~/components/ui/button'
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '~/components/ui/empty'
 
 interface ErrorProps {
   error: Error & { digest?: string; statusCode?: number; code?: string }
@@ -12,7 +20,6 @@ interface ErrorProps {
 }
 
 interface ErrorStateProps {
-  eyebrow: string
   title: string
   description: ReactNode
   primaryLabel: string
@@ -22,7 +29,6 @@ interface ErrorStateProps {
 }
 
 const ErrorState = ({
-  eyebrow,
   title,
   description,
   primaryLabel,
@@ -33,44 +39,47 @@ const ErrorState = ({
   return (
     <div className="bg-background flex min-h-screen flex-col">
       <header className="border-border/80 border-b">
-        <div className="page-container flex h-16 items-center">
+        <div className="mx-auto flex h-16 w-full max-w-5xl items-center px-4 sm:px-6">
           <Brand />
         </div>
       </header>
 
-      <main className="page-container flex flex-1 items-center py-16 sm:py-24">
-        <section className="mx-auto w-full max-w-2xl" aria-labelledby="error-title">
-          <div className="border-primary/15 bg-primary/8 text-primary flex size-11 items-center justify-center rounded-lg border">
-            <AlertCircle className="size-5" aria-hidden="true" />
-          </div>
-          <p className="eyebrow mt-6">{eyebrow}</p>
-          <h1
-            id="error-title"
-            className="mt-3 text-3xl font-bold tracking-[-0.035em] text-balance sm:text-4xl"
-          >
-            {title}
-          </h1>
-          <div className="text-muted-foreground mt-4 max-w-xl text-base leading-7">
-            {description}
-          </div>
+      <main className="mx-auto flex w-full max-w-lg flex-1 items-center px-4 py-12 sm:px-6 sm:py-16">
+        <Empty className="w-full py-0 md:py-0" aria-labelledby="error-title" role="alert">
+          <EmptyHeader className="max-w-md gap-3">
+            <EmptyMedia variant="icon" className="bg-destructive/10 text-destructive">
+              <AlertCircle aria-hidden="true" />
+            </EmptyMedia>
+            <EmptyTitle
+              id="error-title"
+              role="heading"
+              aria-level={1}
+              className="font-display text-3xl leading-tight font-semibold tracking-tight sm:text-4xl"
+            >
+              {title}
+            </EmptyTitle>
+            <EmptyDescription className="text-base leading-7">{description}</EmptyDescription>
+          </EmptyHeader>
 
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <Button size="lg" onClick={onPrimary}>
-              {primaryIcon}
-              {primaryLabel}
-            </Button>
-            <Button size="lg" variant="outline" onClick={onHome}>
-              <ArrowLeft aria-hidden="true" />
-              Return home
-            </Button>
-          </div>
-        </section>
+          <EmptyContent className="max-w-md">
+            <div className="flex w-full flex-col gap-2 sm:flex-row sm:justify-center">
+              <Button size="lg" onClick={onPrimary}>
+                {primaryIcon}
+                {primaryLabel}
+              </Button>
+              <Button size="lg" variant="outline" onClick={onHome}>
+                <ArrowLeft data-icon="inline-start" aria-hidden="true" />
+                Return home
+              </Button>
+            </div>
+          </EmptyContent>
+        </Empty>
       </main>
     </div>
   )
 }
 
-const retryIcon = <RefreshCw aria-hidden="true" />
+const retryIcon = <RefreshCw data-icon="inline-start" aria-hidden="true" />
 
 export default function DefaultError({ error, reset }: ErrorProps) {
   const router = useRouter()
@@ -79,7 +88,6 @@ export default function DefaultError({ error, reset }: ErrorProps) {
   if (error.name === 'UnauthenticatedError') {
     return (
       <ErrorState
-        eyebrow="Sign-in required"
         title="Sign in to continue"
         description="This page is linked to your Discuno account. Sign in to access it securely."
         primaryLabel="Sign in"
@@ -92,7 +100,6 @@ export default function DefaultError({ error, reset }: ErrorProps) {
   if (error.name === 'NotFoundError') {
     return (
       <ErrorState
-        eyebrow="Not found"
         title="We couldn’t find that resource"
         description="It may have moved or may no longer be available. Try loading it once more, or return to Discuno."
         primaryLabel="Try again"
@@ -106,7 +113,6 @@ export default function DefaultError({ error, reset }: ErrorProps) {
   if (error.name === 'UnauthorizedError') {
     return (
       <ErrorState
-        eyebrow="Access restricted"
         title="You don’t have access to this page"
         description="Your account does not have permission to view this resource. If your access recently changed, try again."
         primaryLabel="Try again"
@@ -120,7 +126,6 @@ export default function DefaultError({ error, reset }: ErrorProps) {
   if (error.name === 'BadRequestError') {
     return (
       <ErrorState
-        eyebrow="Invalid request"
         title="We couldn’t complete that request"
         description={error.message}
         primaryLabel="Try again"
@@ -134,9 +139,8 @@ export default function DefaultError({ error, reset }: ErrorProps) {
   if (error.name === 'ExternalApiError') {
     return (
       <ErrorState
-        eyebrow="Service unavailable"
         title="A connected service is temporarily unavailable"
-        description="Your information is safe. Please wait a moment and try the request again."
+        description="The connected service did not complete the request. Wait a moment and try again."
         primaryLabel="Try again"
         onPrimary={reset}
         primaryIcon={retryIcon}
@@ -169,7 +173,6 @@ export default function DefaultError({ error, reset }: ErrorProps) {
 
     return (
       <ErrorState
-        eyebrow={`Error ${error.statusCode}`}
         title={getErrorTitle(error.statusCode)}
         description={error.message}
         primaryLabel="Try again"
@@ -182,7 +185,6 @@ export default function DefaultError({ error, reset }: ErrorProps) {
 
   return (
     <ErrorState
-      eyebrow="Unexpected error"
       title="Something went wrong"
       description="We couldn’t finish loading this page. Try again, or return home if the problem continues."
       primaryLabel="Try again"

@@ -68,27 +68,35 @@ const renderGrid = (posts: Card[]) =>
 describe('public mentor discovery grid', () => {
   beforeEach(() => vi.clearAllMocks())
 
-  it('turns a single mentor into a prominent, actionable result', () => {
+  it('renders a single mentor as an actionable list row', () => {
     const { container } = renderGrid([makeCard(1)])
 
     expect(container.querySelector('[data-mentor-layout]')).toHaveAttribute(
       'data-mentor-layout',
-      'featured'
+      'list'
+    )
+    expect(container.querySelector('[data-mentor-layout]')).toHaveAttribute(
+      'data-mentor-count',
+      '1'
     )
     expect(screen.getByRole('heading', { name: 'Mentor 1' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /see how they can help/i })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: /see how they can help/i })).toHaveAttribute(
       'href',
       '/mentor/mentor-1'
     )
     expect(mocks.fetchPostsAction).not.toHaveBeenCalled()
   })
 
-  it('uses the balanced pair layout when exactly two mentors match', () => {
+  it('keeps multiple mentors in the same flat list', () => {
     const { container } = renderGrid([makeCard(1), makeCard(2)])
 
     expect(container.querySelector('[data-mentor-layout]')).toHaveAttribute(
       'data-mentor-layout',
-      'pair'
+      'list'
+    )
+    expect(container.querySelector('[data-mentor-layout]')).toHaveAttribute(
+      'data-mentor-count',
+      '2'
     )
   })
 
@@ -96,7 +104,7 @@ describe('public mentor discovery grid', () => {
     renderGrid([])
 
     expect(screen.getByText('No exact matches yet')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /clear all filters/i })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: /clear all filters/i })).toHaveAttribute(
       'href',
       '/#mentors'
     )
@@ -106,7 +114,7 @@ describe('public mentor discovery grid', () => {
     const card = makeCard(1)
     renderGrid([card])
 
-    const callToAction = screen.getByRole('button', { name: /see how they can help/i })
+    const callToAction = screen.getByRole('link', { name: /see how they can help/i })
     callToAction.addEventListener('click', event => event.preventDefault())
     fireEvent.click(callToAction)
 

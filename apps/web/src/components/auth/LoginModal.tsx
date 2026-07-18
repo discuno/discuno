@@ -1,11 +1,9 @@
 'use client'
 
-import { BriefcaseBusiness, GraduationCap } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { SignInMethods, type AuthAudience } from '~/components/auth/SignInMethods'
-import { Brand } from '~/components/shared/Brand'
 import {
   Dialog,
   DialogContent,
@@ -72,36 +70,29 @@ function LoginModalContent({
       : userType === 'mentor'
         ? 'Share what you have learned'
         : 'Keep your details handy'
+  const description =
+    userType === 'mentor'
+      ? 'New and returning mentors use the same sign-in; mentor tools require a supported school account.'
+      : 'No account is needed to browse or book; sign in only to prefill your details.'
 
   return (
     <DialogContent className="max-h-[calc(100vh-2rem)] overflow-y-auto sm:max-w-[440px]">
-      <DialogHeader className="items-center text-center">
-        <Brand compact className="mb-3" />
-        <DialogTitle className="text-2xl tracking-[-0.025em]">{title}</DialogTitle>
-        <DialogDescription className="max-w-sm leading-relaxed">
-          {userType === 'mentor'
-            ? 'Use a supported school email to start helping students with decisions you have already lived through.'
-            : 'Sign in only if you want your details prefilled. Browsing and booking do not require an account.'}
-        </DialogDescription>
+      <DialogHeader className="pr-10">
+        <DialogTitle>{title}</DialogTitle>
+        <DialogDescription>{description}</DialogDescription>
       </DialogHeader>
 
       <Tabs
         value={userType}
         onValueChange={value => setUserType(value as UserType)}
-        className="mt-2 w-full"
+        className="w-full"
       >
-        <TabsList variant="line" className="grid h-11 w-full grid-cols-2">
-          <TabsTrigger value="student" className="gap-2 rounded-md">
-            <GraduationCap />
-            Find guidance
-          </TabsTrigger>
-          <TabsTrigger value="mentor" className="gap-2 rounded-md">
-            <BriefcaseBusiness />
-            Start mentoring
-          </TabsTrigger>
+        <TabsList variant="line" className="grid w-full grid-cols-2">
+          <TabsTrigger value="student">Find guidance</TabsTrigger>
+          <TabsTrigger value="mentor">Start mentoring</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="student" className="mt-5">
+        <TabsContent value="student" className="mt-6">
           <SignInMethods
             audience="student"
             isLoading={isLoading}
@@ -109,7 +100,7 @@ function LoginModalContent({
           />
         </TabsContent>
 
-        <TabsContent value="mentor" className="mt-5">
+        <TabsContent value="mentor" className="mt-6">
           <SignInMethods
             audience="mentor"
             isLoading={isLoading}
@@ -118,8 +109,8 @@ function LoginModalContent({
         </TabsContent>
       </Tabs>
 
-      <p className="text-muted-foreground mt-1 text-center text-xs leading-relaxed">
-        By continuing, you agree to our{' '}
+      <p className="text-muted-foreground text-xs leading-5">
+        By continuing, you agree to the{' '}
         <Link href="/terms" className="text-foreground underline underline-offset-4">
           Terms
         </Link>{' '}

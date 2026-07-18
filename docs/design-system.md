@@ -1,91 +1,122 @@
 # Discuno visual system
 
-Discuno should feel like a thoughtful set of field notes passed from one student to another: useful,
-specific, optimistic, and candid. The interface must remain recognizable even when the logo is not
-visible.
+Discuno should make a difficult college decision feel easier to name and act on. The interface is
+warm, direct, and editorial, with familiar product behavior and little visual noise.
 
 ## Brand idea
 
-**Decision field notes** combines familiar product patterns with a small set of repeatable Discuno
-assets:
+**Warm editorial clarity** is the owned direction:
 
-- warm paper surfaces;
+- a warm paper canvas;
 - deep ink text;
-- cobalt actions and navigation;
+- cobalt for the dominant action;
 - one chartreuse highlighter accent;
-- Newsreader for display headings and Geist for UI/body text;
-- ruled fields, margin lines, note stamps, question slips, and restrained offset shadows.
+- Newsreader for short display headings and Geist for body and UI text;
+- real student photography and real mentor content;
+- open margins and measured rules instead of stacked containers.
 
-This is an editorial system, not a scrapbook treatment. Do not add handwritten fonts, fake tape to
-every card, loud rotations, faux testimonials, or decorative clutter.
+The identity comes from this combination, not from simulated stationery. Do not add fake tape,
+rotated notes, stamps, doodles, handwriting, paper stacks, or decorative notebook textures.
 
 ## Experience principles
 
-1. **Familiar flow, distinctive expression.** Navigation, forms, calendars, and checkout should work
-   like recognizable software. Identity comes from typography, color, hierarchy, rules, and a few
-   repeated brand assets—not novel interaction semantics.
-2. **The question is the hero.** Acquisition pages lead with the decision a student is trying to
-   make. Real mentor context follows. Mechanics appear when they reduce uncertainty.
-3. **Expression follows consequence.** Marketing pages may use several field-note assets together.
-   Profiles use fewer. Booking, authentication, payment, and mentor settings are calmer and keep
-   decoration away from dense controls.
-4. **One dominant action.** Cobalt identifies the primary next step. Chartreuse highlights context,
-   selection, or a secondary moment of delight; it does not compete with every action.
-5. **Earn trust with clarity.** Never invent social proof. Keep school-email, payment, cancellation,
-   and availability language precise.
+1. **The decision comes first.** Acquisition starts with the question a student is trying to answer.
+   Product mechanics appear only when they remove uncertainty.
+2. **Content carries the interface.** Real photos, mentor context, session details, and availability
+   should provide the visual interest. Chrome should stay quiet.
+3. **One dominant action.** Cobalt identifies the primary next step. Chartreuse highlights context or
+   selection and never competes as a second CTA color.
+4. **Containment must have a job.** Use a panel for forms, calendars, summaries, warnings, and
+   overlays. Do not wrap every heading, metric, or row in a card.
+5. **Expression follows consequence.** Public acquisition may use an asymmetric editorial layout.
+   Profiles are more restrained. Auth, booking, payment, and mentor work use calm application
+   patterns.
+6. **Trust comes from precision.** Never invent proof, outcomes, urgency, mentor inventory, or
+   verification claims.
 
-## Implementation
+## Layout
 
-The source tokens and reusable signature classes live in `apps/web/src/styles/globals.css`.
+- Public pages use a 76rem maximum canvas and a 42rem maximum reading measure.
+- Public heroes are asymmetric on desktop and single-column on mobile. They fit in the initial
+  viewport with one headline, one short paragraph, and one primary action.
+- Section boundaries use space or one separator rule. Do not invert the page theme between
+  sections.
+- Application pages use a stable task rail, a compact page heading, and rows or grouped fields.
+- Navigation remains one line and no taller than 4.5rem on desktop.
+- Mobile layouts below 768px collapse to a strict single column with 1rem gutters.
 
-- Use semantic colors (`background`, `foreground`, `card`, `primary`, `accent`, `highlight`) instead
-  of introducing page-specific hex values.
-- Use shadcn/ui on Base UI for behavior and accessibility. Base UI is the interaction foundation,
-  not the visual identity.
-- Keep controls around 8–12px corner radii. Pills are reserved for intrinsically pill-shaped status,
-  avatar, progress, radio, and switch patterns.
-- Use `.display-title`, `.field-notes`, `.field-notes-ink`, `.note-stamp`, `.marker-underline`,
-  `.question-slip`, `.paper-panel`, `.surface-panel`, `.stacked-note`, `.corner-mark`, and
-  `.ink-shadow` rather than recreating the motifs per page.
-- Primary buttons may use the small offset press shadow. Outline, ghost, and dense dashboard
-  controls remain flat.
-- Overlays use a solid paper surface, visible border, compact radius, and restrained shadow. Avoid
-  glass cards, blurred color orbs, generic blue-purple gradients, and large floating shadows.
-- Add registry components only for a real job. For example, a chart requires trustworthy time-series
-  data and an actionable mentor question; do not add one as dashboard decoration. A carousel should
-  not hide mentor inventory merely to create motion.
+## Typography and copy
+
+- Use Newsreader only for display headings. Body copy, controls, labels, and data use Geist.
+- A hero headline should fit in two lines. Hero supporting copy should stay at 20 words or fewer.
+- Use sentence case and natural language.
+- Do not put an eyebrow above every heading. One small contextual label per three sections is the
+  maximum on acquisition pages.
+- Do not add ornamental section numbers, version labels, fake field-note metadata, or repeated
+  explainer copy.
+- Public interface copy does not use em dashes.
+- Follow `docs/positioning.md` for vocabulary and trust boundaries.
+
+## Color
+
+All product colors are semantic tokens in `apps/web/src/styles/globals.css`.
+
+- `background` and `card` are warm paper surfaces.
+- `foreground` is deep ink.
+- `primary` is cobalt and belongs to the dominant action, active navigation, links, and focus.
+- `highlight` and `accent` are chartreuse-derived context colors with ink foreground text.
+- Status tokens are used only for actual success, warning, or destructive states.
+- Dark mode keeps the same hierarchy through semantic variables. Pages must not add manual
+  per-section dark palettes.
+
+## Shape, borders, and elevation
+
+- Controls and panels use a 10px radius.
+- Media uses a 12px radius.
+- Pills are reserved for statuses, avatars, switches, and compact tokens that are intrinsically
+  pill-shaped.
+- Use one quiet border. Avoid nested outlines and decorative corner marks.
+- Shadows are reserved for overlays. Hover and press feedback use color, border weight, or a 1px
+  transform.
+- Interactive elements are never rotated.
+
+## Components
+
+- shadcn/ui on Base UI supplies behavior, semantics, keyboard support, and accessible state.
+- Use semantic tokens and built-in component variants before adding page-specific styles.
+- Forms use `FieldGroup` and `Field`; labels sit above controls and errors sit below them.
+- Lists use rows and separators. Cards are not the default list item.
+- Use the shared Empty, Alert, Skeleton, Spinner, and Sonner patterns for feedback.
+- Overlays have a title, a solid surface, a visible border, and a compact radius.
+- Add a registry component only for a real user or business job. Do not add decorative charts or
+  carousels.
+
+## Motion
+
+- Acquisition motion may establish hierarchy through a single load-in and restrained reveal.
+- Product motion communicates feedback or a state transition.
+- Animate only opacity and transform.
+- Buttons may translate by 1px on press.
+- Respect `prefers-reduced-motion` for every nonessential animation.
+- Never add scroll listeners that drive React state.
+
+## Imagery
+
+- Prefer commissioned or generated editorial photography showing a believable student decision
+  moment.
+- Avoid generic corporate stock poses, graduation-cap clichés, school logos, or fabricated UI
+  screenshots.
+- Generated images must not contain readable fake handwriting, fake brands, or watermarks.
+- Reserve image dimensions to prevent layout shift and use `next/image` for delivery.
 
 ## Accessibility guardrails
 
-- Preserve Base UI semantics, labels, keyboard behavior, focus rings, and hit areas.
-- Body and muted token pairs must meet WCAG AA contrast. Chartreuse is a background/highlight with
-  ink text; never use it as low-contrast text or the only status signal.
-- Keep serif type to display headings. Body copy and controls remain Geist with readable line length
-  and leading.
-- Static rotations are limited to non-interactive decorative notes. Reading order never follows the
-  visual rotation.
-- Keep notebook rules low contrast and out of dense form interiors. Forced-colors mode removes the
-  textures; reduced-motion mode removes nonessential interaction movement.
-- Validate light/dark themes and mobile/desktop layouts after changes.
+- Preserve native and Base UI semantics, labels, keyboard behavior, focus rings, and hit areas.
+- Body, muted text, controls, placeholders, and status text must meet WCAG AA contrast.
+- Chartreuse is a background or highlight with ink text and is never the only status signal.
+- Reading order never depends on visual position.
+- Test mobile and desktop layouts plus light and dark themes.
+- Design loading, empty, error, unavailable, dirty, saved, and payment-processing states alongside
+  the successful state.
 
-## Research basis
-
-The system deliberately balances processing fluency and prototypicality with a few unique,
-repeatable brand assets. It also follows research showing that expressive shape, color, size, and
-containment can improve preference and direct attention when functionality stays clear.
-
-- [Google Research, “The role of visual complexity and prototypicality regarding first impression
-  of websites”](https://research.google/pubs/the-role-of-visual-complexity-and-prototypicality-regarding-first-impression-of-websites-working-towards-understanding-aesthetic-judgments/)
-- [Google Design, “Expressive Design: Google's UX
-  Research”](https://design.google/library/expressive-material-design-google-research)
-- [Ehrenberg-Bass Institute, “Brands of
-  Distinction”](https://marketingscience.info/brands-of-distinction/)
-- [W3C WAI, “Designing for Web Accessibility”](https://www.w3.org/WAI/tips/designing/)
-
-Established brands informed the discipline, not the surface treatment: Mailchimp's confident color
-asset, Dropbox's flexible editorial system, Duolingo's repeated shape language, and Headspace's calm
-progressive disclosure all demonstrate how a small number of consistent choices can carry identity.
-Discuno's notebook rules, question slips, cobalt actions, and chartreuse marks are its own system;
-do not reproduce another company's illustrations, voice, or layouts.
-
-Public language remains governed by `docs/positioning.md`.
+The implementation plan and page blueprints live in `docs/ui-reset.md`.

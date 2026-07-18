@@ -1,8 +1,9 @@
 'use client'
 
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { useEffect, useRef, useState } from 'react'
+import { CircleAlert, CreditCard, RefreshCw } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
+import { Fragment, type ReactNode, useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import {
   getMentorEventTypePreferences,
@@ -11,10 +12,12 @@ import {
   updateMentorEventTypePreferences,
 } from '~/app/(app)/(mentor)/settings/actions'
 import { EventTypeSettingsContent } from '~/app/(app)/(mentor)/settings/event-types/components/EventTypeSettingsContent'
-import { Alert, AlertDescription } from '~/components/ui/alert'
+import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert'
+import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
-import { Card, CardContent, CardHeader } from '~/components/ui/card'
+import { Item, ItemContent, ItemFooter, ItemGroup, ItemSeparator } from '~/components/ui/item'
 import { Skeleton } from '~/components/ui/skeleton'
+import { Spinner } from '~/components/ui/spinner'
 import { type UpdateMentorEventType } from '~/lib/schemas/db'
 
 interface EventTypePreference {
@@ -27,6 +30,22 @@ interface EventTypePreference {
   currency: string
   bookingCompatible: boolean
   bookingCompatibilityReasons: string[]
+}
+
+const SessionTypesHeader = ({ actions }: { actions?: ReactNode }) => {
+  return (
+    <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div className="flex max-w-2xl flex-col gap-1.5">
+        <h1 className="font-display text-3xl leading-tight font-semibold tracking-tight">
+          Session types
+        </h1>
+        <p className="text-muted-foreground text-sm leading-6">
+          Choose which sessions students can book and set each price.
+        </p>
+      </div>
+      {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
+    </header>
+  )
 }
 
 export const EventTypeToggleSection = ({ paymentsEnabled }: { paymentsEnabled: boolean }) => {
@@ -162,6 +181,8 @@ export const EventTypeToggleSection = ({ paymentsEnabled }: { paymentsEnabled: b
   const stripeStatusUnavailable =
     (paymentsEnabled || hasStripeReturn) &&
     (Boolean(stripeStatusError) || stripeStatusData?.success !== true || !stripeStatusData.data)
+  const payoutsReady =
+    stripeStatus?.transfersEnabled === true && stripeStatus.payoutsEnabled === true
 
   const handleToggleEventType = async (eventType: EventTypePreference, checked: boolean) => {
     if (checked && !eventType.bookingCompatible) {
@@ -224,86 +245,119 @@ export const EventTypeToggleSection = ({ paymentsEnabled }: { paymentsEnabled: b
   }
 
   if (eventTypesLoading || ((paymentsEnabled || hasStripeReturn) && stripeStatusLoading)) {
-    return <EventTypeToggleSkeleton />
+    return (
+      <div className="mx-auto flex w-full max-w-4xl flex-col gap-6" aria-busy="true">
+        <SessionTypesHeader />
+        <EventTypeToggleSkeleton />
+      </div>
+    )
   }
 
   if (eventTypesUnavailable) {
     return (
-      <Alert variant="destructive">
-        <AlertDescription>
-          <p>{eventTypesData?.error ?? 'Session types could not be loaded. Please try again.'}</p>
-          <Button
-            type="button"
-            size="xs"
-            variant="outline"
-            onClick={() => void refetchEventTypes()}
-            disabled={eventTypesFetching}
-          >
-            {eventTypesFetching ? 'Trying again…' : 'Try again'}
-          </Button>
-        </AlertDescription>
-      </Alert>
+      <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
+        <SessionTypesHeader />
+        <Alert variant="destructive">
+          <CircleAlert aria-hidden="true" />
+          <AlertTitle>Session types could not be loaded</AlertTitle>
+          <AlertDescription>
+            <p>{eventTypesData?.error ?? 'Please try again.'}</p>
+            <Button
+              type="button"
+              size="xs"
+              variant="outline"
+              onClick={() => void refetchEventTypes()}
+              disabled={eventTypesFetching}
+            >
+              {eventTypesFetching ? (
+                <Spinner data-icon="inline-start" />
+              ) : (
+                <RefreshCw data-icon="inline-start" aria-hidden="true" />
+              )}
+              {eventTypesFetching ? 'Trying again…' : 'Try again'}
+            </Button>
+          </AlertDescription>
+        </Alert>
+      </div>
     )
   }
 
   return (
-    <EventTypeSettingsContent
-      eventTypes={eventTypes}
-      stripeStatus={stripeStatus}
-      stripeStatusUnavailable={stripeStatusUnavailable}
-      paymentsEnabled={paymentsEnabled}
-      selectedEventType={selectedEventType}
-      showPricingDialog={showPricingDialog}
-      tempPrice={tempPrice}
-      updateEventTypeMutation={updateEventTypeMutation}
-      isRefreshing={refreshEventTypesMutation.isPending}
-      onToggleEventType={handleToggleEventType}
-      onPricingChange={handlePricingChange}
-      onSavePricing={handleSavePricing}
-      onRefresh={() => refreshEventTypesMutation.mutate()}
-      onRetryStripeStatus={() => void refetchStripeStatus()}
-      isRetryingStripeStatus={stripeStatusFetching}
-      setShowPricingDialog={handlePricingDialogOpenChange}
-      setTempPrice={setTempPrice}
-    />
+    <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
+      <SessionTypesHeader
+        actions={
+          <>
+            {eventTypes.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => refreshEventTypesMutation.mutate()}
+                disabled={refreshEventTypesMutation.isPending}
+              >
+                {refreshEventTypesMutation.isPending ? (
+                  <Spinner data-icon="inline-start" />
+                ) : (
+                  <RefreshCw data-icon="inline-start" aria-hidden="true" />
+                )}
+                {refreshEventTypesMutation.isPending ? 'Refreshing…' : 'Refresh'}
+              </Button>
+            )}
+            {paymentsEnabled && payoutsReady && (
+              <Badge variant="success">
+                <CreditCard data-icon="inline-start" aria-hidden="true" />
+                Payouts ready
+              </Badge>
+            )}
+          </>
+        }
+      />
+      <EventTypeSettingsContent
+        eventTypes={eventTypes}
+        stripeStatus={stripeStatus}
+        stripeStatusUnavailable={stripeStatusUnavailable}
+        paymentsEnabled={paymentsEnabled}
+        selectedEventType={selectedEventType}
+        showPricingDialog={showPricingDialog}
+        tempPrice={tempPrice}
+        updateEventTypeMutation={updateEventTypeMutation}
+        isRefreshing={refreshEventTypesMutation.isPending}
+        onToggleEventType={handleToggleEventType}
+        onPricingChange={handlePricingChange}
+        onSavePricing={handleSavePricing}
+        onRefresh={() => refreshEventTypesMutation.mutate()}
+        onRetryStripeStatus={() => void refetchStripeStatus()}
+        isRetryingStripeStatus={stripeStatusFetching}
+        setShowPricingDialog={handlePricingDialogOpenChange}
+        setTempPrice={setTempPrice}
+      />
+    </div>
   )
 }
 
 const EventTypeToggleSkeleton = () => {
   return (
-    <div className="flex flex-col gap-6">
-      <Card>
-        <CardHeader className="border-b">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-col gap-2">
-              <Skeleton className="h-6 w-48 max-w-full" />
-              <Skeleton className="h-4 w-80 max-w-full" />
-            </div>
-            <Skeleton className="h-8 w-32" />
-          </div>
-        </CardHeader>
-
-        <CardContent className="p-0">
-          <div className="divide-y">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="p-6">
-                <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="flex flex-1 flex-col gap-3">
-                    <div className="flex flex-wrap items-center gap-3">
-                      <Skeleton className="h-5 w-10" />
-                      <Skeleton className="h-6 w-40" />
-                      <Skeleton className="h-5 w-16" />
-                    </div>
-                    <Skeleton className="h-4 w-80" />
-                    <Skeleton className="h-4 w-20" />
-                  </div>
-                  <Skeleton className="h-9 w-full sm:w-24" />
-                </div>
+    <ItemGroup className="border-border gap-0 border-y" aria-hidden="true">
+      {Array.from({ length: 3 }).map((_, index) => (
+        <Fragment key={index}>
+          <Item className="px-0 py-5">
+            <ItemContent className="gap-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <Skeleton className="h-5 w-40" />
+                <Skeleton className="h-5 w-16" />
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+              <Skeleton className="h-4 w-full max-w-md" />
+            </ItemContent>
+            <ItemFooter className="mt-2 flex-col items-stretch gap-3 sm:flex-row sm:items-center">
+              <Skeleton className="h-4 w-20" />
+              <div className="flex items-center gap-3">
+                <Skeleton className="h-5 w-32" />
+                <Skeleton className="h-9 w-20" />
+              </div>
+            </ItemFooter>
+          </Item>
+          {index < 2 && <ItemSeparator className="my-0" />}
+        </Fragment>
+      ))}
+    </ItemGroup>
   )
 }

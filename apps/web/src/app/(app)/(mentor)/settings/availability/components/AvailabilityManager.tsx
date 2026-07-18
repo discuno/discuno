@@ -109,29 +109,30 @@ export function AvailabilityManager({ initialAvailability }: AvailabilityManager
   }, [isDirty])
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-4xl flex-col gap-8">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h2 className="text-xl font-semibold tracking-tight">When students can book you</h2>
-          <p className="text-muted-foreground mt-1 max-w-2xl text-sm leading-6">
-            Set your usual week, then adjust specific dates when your hours change. Nothing changes
-            publicly until you save.
+        <div className="flex max-w-2xl flex-col gap-1.5">
+          <h1 className="font-display text-3xl leading-tight font-semibold tracking-tight">
+            Availability
+          </h1>
+          <p className="text-muted-foreground text-sm leading-6">
+            Set recurring hours and date exceptions. Changes appear after you save.
           </p>
         </div>
-        <Badge variant={isDirty ? 'default' : 'secondary'} role="status" aria-live="polite">
+        <Badge variant={isDirty ? 'warning' : 'secondary'}>
           {isDirty ? 'Unsaved changes' : 'Up to date'}
         </Badge>
       </div>
 
       {validationMessage && (
         <Alert variant="destructive">
-          <CircleAlert />
+          <CircleAlert aria-hidden="true" />
           <AlertTitle>One or more time ranges need attention</AlertTitle>
           <AlertDescription>{validationMessage}</AlertDescription>
         </Alert>
       )}
 
-      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(22rem,0.9fr)]">
+      <div className="flex flex-col gap-10">
         <WeeklyScheduler
           schedule={availability.weeklySchedule}
           onScheduleChange={newSchedule => {
@@ -144,9 +145,23 @@ export function AvailabilityManager({ initialAvailability }: AvailabilityManager
         />
       </div>
 
-      <div className="paper-panel ink-shadow sticky bottom-4 z-20 flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-muted-foreground px-1 text-sm">
-          {isDirty ? 'Save to publish these hours.' : 'Your published availability is up to date.'}
+      <div
+        className="bg-background sticky bottom-4 z-20 flex flex-col gap-3 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between"
+        role="region"
+        aria-label="Save availability changes"
+        aria-busy={isPending}
+      >
+        <p
+          id="availability-save-status"
+          className="text-muted-foreground px-1 text-sm"
+          role="status"
+          aria-live="polite"
+        >
+          {isPending
+            ? 'Saving availability…'
+            : isDirty
+              ? 'Save to publish these hours.'
+              : 'Your published availability is up to date.'}
         </p>
         <div className="flex gap-2">
           <Button
@@ -164,6 +179,7 @@ export function AvailabilityManager({ initialAvailability }: AvailabilityManager
             onClick={handleSave}
             disabled={!isDirty || isPending || Boolean(validationMessage)}
             className="flex-1 sm:flex-none"
+            aria-describedby="availability-save-status"
           >
             {isPending ? <Spinner data-icon="inline-start" /> : <Save data-icon="inline-start" />}
             {isPending ? 'Saving…' : 'Save availability'}

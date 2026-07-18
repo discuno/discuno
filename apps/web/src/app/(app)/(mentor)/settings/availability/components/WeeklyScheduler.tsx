@@ -1,11 +1,11 @@
 'use client'
 
-import { useCallback, useMemo } from 'react'
-import { CalendarClock, WandSparkles } from 'lucide-react'
+import { Fragment, useCallback, useMemo } from 'react'
+
 import type { WeeklySchedule } from '~/app/types/availability'
-import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
+import { Separator } from '~/components/ui/separator'
+
 import { DaySchedule } from './DaySchedule'
 
 interface WeeklySchedulerProps {
@@ -54,58 +54,69 @@ export function WeeklyScheduler({ schedule, onScheduleChange }: WeeklySchedulerP
     })
   }
 
-  const renderDaySchedules = useMemo(() => {
-    return daysOfWeek.map(day => (
-      <DaySchedule
-        key={day}
-        day={day}
-        intervals={schedule[day]}
-        isEnabled={!!schedule[day].length}
-        onIntervalsChange={newIntervals => {
-          onScheduleChange({ ...schedule, [day]: newIntervals })
-        }}
-        onDayToggle={isEnabled => handleDayToggle(day, isEnabled)}
-      />
-    ))
-  }, [schedule, onScheduleChange, handleDayToggle])
+  const renderDaySchedules = useMemo(
+    () =>
+      daysOfWeek.map((day, index) => (
+        <Fragment key={day}>
+          <DaySchedule
+            day={day}
+            intervals={schedule[day]}
+            isEnabled={!!schedule[day].length}
+            onIntervalsChange={newIntervals => {
+              onScheduleChange({ ...schedule, [day]: newIntervals })
+            }}
+            onDayToggle={isEnabled => handleDayToggle(day, isEnabled)}
+          />
+          {index < daysOfWeek.length - 1 && <Separator />}
+        </Fragment>
+      )),
+    [schedule, onScheduleChange, handleDayToggle]
+  )
 
   return (
-    <Card className="overflow-hidden">
-      <CardHeader className="border-border/70 border-b">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="flex gap-3">
-            <div className="bg-primary/10 text-primary flex size-10 shrink-0 items-center justify-center rounded-xl">
-              <CalendarClock className="size-5" />
-            </div>
-            <div>
-              <CardTitle>Usual week</CardTitle>
-              <CardDescription className="mt-1">
-                Turn on a day and add every window when you can meet. Times use the timezone set in
-                your connected calendar.
-              </CardDescription>
-            </div>
-          </div>
-          <Badge variant="secondary">
-            {availableDayCount === 0
-              ? 'No weekly hours'
-              : `${availableDayCount} day${availableDayCount === 1 ? '' : 's'} open`}
-          </Badge>
+    <section
+      className="border-border flex flex-col gap-5 border-y py-6"
+      aria-labelledby="usual-week-heading"
+    >
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex max-w-2xl flex-col gap-1">
+          <h2 id="usual-week-heading" className="text-lg font-semibold">
+            Usual week
+          </h2>
+          <p className="text-muted-foreground text-sm leading-6">
+            Set recurring bookable hours. Times use the timezone in your connected calendar.
+          </p>
         </div>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-3 p-4 sm:p-6">
-        {availableDayCount === 0 && (
-          <div className="paper-panel bg-muted/40 flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-muted-foreground text-sm leading-6">
-              Start with Monday–Friday, 9:00 AM–5:00 PM, then tailor it to your schedule.
-            </p>
-            <Button type="button" variant="outline" size="sm" onClick={applyWeekdayTemplate}>
-              <WandSparkles data-icon="inline-start" />
+        <div className="flex flex-col items-start gap-2 sm:items-end">
+          <p className="text-muted-foreground text-sm">
+            {availableDayCount === 0
+              ? 'No days open'
+              : `${availableDayCount} day${availableDayCount === 1 ? '' : 's'} open`}
+          </p>
+          {availableDayCount === 0 && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="w-full sm:w-auto"
+              onClick={applyWeekdayTemplate}
+              aria-describedby="weekday-template-description"
+            >
               Use weekday hours
             </Button>
-          </div>
-        )}
+          )}
+        </div>
+      </header>
+
+      <Separator />
+      <div>
         {renderDaySchedules}
-      </CardContent>
-    </Card>
+        {availableDayCount === 0 && (
+          <p id="weekday-template-description" className="text-muted-foreground sr-only">
+            The weekday template sets Monday through Friday from 9:00 AM to 5:00 PM.
+          </p>
+        )}
+      </div>
+    </section>
   )
 }

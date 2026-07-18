@@ -1,7 +1,7 @@
 'use client'
 
 import { upload } from '@vercel/blob/client'
-import { Trash2, Upload, User } from 'lucide-react'
+import { Trash2, Upload } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { removeUserProfileImage, updateUserProfileImage } from '../actions'
@@ -19,14 +19,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '~/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
 import { Field, FieldDescription, FieldLabel } from '~/components/ui/field'
 import { Spinner } from '~/components/ui/spinner'
 import { compressFile } from '~/lib/blob/client-utils'
@@ -167,103 +160,106 @@ export const ProfileImageUpload = ({
     <Card>
       <CardHeader className="gap-2">
         <div className="flex items-center justify-between gap-3">
-          <CardTitle>Profile photo</CardTitle>
+          <CardTitle role="heading" aria-level={2}>
+            Profile photo
+          </CardTitle>
           <Badge variant="outline">Required</Badge>
         </div>
-        <CardDescription>
-          Use a clear, recent photo so a student knows who they are meeting.
-        </CardDescription>
+        <CardDescription>Use a clear, recent photo of yourself.</CardDescription>
       </CardHeader>
-      <CardContent className="flex justify-center">
-        <Avatar className="size-32 sm:size-36">
+      <CardContent className="flex flex-col gap-5 sm:flex-row sm:items-center">
+        <Avatar className="size-24">
           <AvatarImage
             src={previewUrl ?? ''}
             alt={userName?.trim() ? `${userName.trim()}'s profile photo` : 'Profile photo preview'}
           />
           <AvatarFallback>
-            {userName?.trim() ? (
-              <span className="text-2xl font-semibold">{getInitials(userName)}</span>
-            ) : (
-              <User aria-hidden="true" className="size-10" />
-            )}
+            <span className="text-xl font-semibold">{getInitials(userName)}</span>
           </AvatarFallback>
         </Avatar>
-      </CardContent>
-      <CardFooter className="flex-col items-stretch gap-3">
-        <Field>
-          <FieldLabel htmlFor="profile-photo-file" className="sr-only">
-            Choose a profile photo
-          </FieldLabel>
-          <input
-            ref={fileInputRef}
-            id="profile-photo-file"
-            type="file"
-            accept="image/jpeg,image/png,image/gif,image/webp"
-            onChange={handleFileSelect}
-            disabled={isBusy}
-            aria-describedby="profile-photo-help profile-photo-status"
-            className="sr-only"
-            tabIndex={-1}
-          />
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isBusy}
-            aria-controls="profile-photo-file"
-          >
-            {activeAction === 'upload' ? (
-              <Spinner data-icon="inline-start" />
-            ) : (
-              <Upload data-icon="inline-start" aria-hidden="true" />
-            )}
-            {activeAction === 'upload'
-              ? 'Uploading photo…'
-              : previewUrl
-                ? 'Choose a different photo'
-                : 'Choose a photo'}
-          </Button>
-          <FieldDescription id="profile-photo-help" className="text-center">
-            JPG, PNG, GIF, or WebP. Up to 5 MB.
-          </FieldDescription>
-        </Field>
+        <div className="flex min-w-0 flex-1 flex-col gap-3">
+          <Field data-disabled={isBusy}>
+            <FieldLabel htmlFor="profile-photo-file" className="sr-only">
+              Choose a profile photo
+            </FieldLabel>
+            <input
+              ref={fileInputRef}
+              id="profile-photo-file"
+              type="file"
+              accept="image/jpeg,image/png,image/gif,image/webp"
+              onChange={handleFileSelect}
+              disabled={isBusy}
+              aria-describedby="profile-photo-help profile-photo-status"
+              className="sr-only"
+              tabIndex={-1}
+            />
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isBusy}
+                aria-controls="profile-photo-file"
+              >
+                {activeAction === 'upload' ? (
+                  <Spinner data-icon="inline-start" />
+                ) : (
+                  <Upload data-icon="inline-start" aria-hidden="true" />
+                )}
+                {activeAction === 'upload'
+                  ? 'Uploading photo…'
+                  : previewUrl
+                    ? 'Replace photo'
+                    : 'Choose a photo'}
+              </Button>
 
-        {persistedUrl && (
-          <AlertDialog open={removeDialogOpen} onOpenChange={setRemoveDialogOpen}>
-            <AlertDialogTrigger render={<Button type="button" variant="ghost" disabled={isBusy} />}>
-              {activeAction === 'remove' ? (
-                <Spinner data-icon="inline-start" />
-              ) : (
-                <Trash2 data-icon="inline-start" aria-hidden="true" />
+              {persistedUrl && (
+                <AlertDialog open={removeDialogOpen} onOpenChange={setRemoveDialogOpen}>
+                  <AlertDialogTrigger
+                    render={<Button type="button" variant="ghost" disabled={isBusy} />}
+                  >
+                    {activeAction === 'remove' ? (
+                      <Spinner data-icon="inline-start" />
+                    ) : (
+                      <Trash2 data-icon="inline-start" aria-hidden="true" />
+                    )}
+                    {activeAction === 'remove' ? 'Removing photo…' : 'Remove photo'}
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Remove your profile photo?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Your profile setup will be incomplete until you add another photo.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Keep photo</AlertDialogCancel>
+                      <AlertDialogAction
+                        variant="destructive"
+                        onClick={() => void handleRemoveImage()}
+                      >
+                        Remove photo
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               )}
-              {activeAction === 'remove' ? 'Removing photo…' : 'Remove photo'}
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Remove your profile photo?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Your profile setup will be incomplete until you add another photo.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Keep photo</AlertDialogCancel>
-                <AlertDialogAction variant="destructive" onClick={() => void handleRemoveImage()}>
-                  Remove photo
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        )}
+            </div>
+            <FieldDescription id="profile-photo-help">
+              JPG, PNG, GIF, or WebP. Up to 5 MB. Photo changes save immediately.
+            </FieldDescription>
+          </Field>
 
-        <p
-          id="profile-photo-status"
-          className="text-muted-foreground min-h-5 text-center text-xs"
-          role="status"
-          aria-live="polite"
-        >
-          {statusMessage}
-        </p>
-      </CardFooter>
+          <p
+            id="profile-photo-status"
+            className="text-muted-foreground min-h-5 text-xs"
+            role="status"
+            aria-live="polite"
+          >
+            {statusMessage}
+          </p>
+        </div>
+      </CardContent>
     </Card>
   )
 }

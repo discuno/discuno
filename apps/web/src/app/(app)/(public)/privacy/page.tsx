@@ -1,4 +1,3 @@
-import { Shield } from 'lucide-react'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
@@ -11,32 +10,25 @@ export const metadata: Metadata = createMetadata({
     'Learn how Discuno protects your privacy and data. Read our privacy policy covering data collection, usage, security, and your rights.',
   alternates: { canonical: '/privacy' },
   openGraph: {
-    title: 'Privacy Policy - Discuno',
-    description: 'How we protect your privacy and secure your data on our mentorship platform.',
+    title: 'Privacy Policy | Discuno',
+    description: 'How Discuno collects, uses, protects, and shares personal information.',
   },
 })
 
 export default function PrivacyPage() {
   return (
-    <div className="text-foreground min-h-screen">
-      {/* Hero Section */}
-      <div className="field-notes border-b">
-        <div className="container mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <div className="bg-accent text-foreground mx-auto flex h-16 w-16 items-center justify-center rounded-md border">
-              <Shield className="text-primary h-8 w-8" />
-            </div>
-            <h1 className="mt-6 text-4xl font-bold tracking-tight sm:text-5xl">Privacy Policy</h1>
-            <p className="text-muted-foreground mx-auto mt-4 max-w-2xl text-lg">
-              Effective Date: July 14, 2026
-            </p>
-          </div>
+    <div className="min-h-screen">
+      <header className="border-border border-b">
+        <div className="page-shell max-w-5xl py-14 sm:py-20">
+          <h1 className="font-display text-5xl leading-none font-medium tracking-[-0.045em] sm:text-6xl">
+            Privacy Policy
+          </h1>
+          <p className="text-muted-foreground mt-4 text-sm">Effective July 14, 2026</p>
         </div>
-      </div>
+      </header>
 
-      {/* Content */}
-      <div className="container mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
-        <div className="prose prose-slate dark:prose-invert max-w-none space-y-8">
+      <div className="page-shell max-w-5xl py-10 sm:py-16">
+        <div className="legal-document">
           <Card>
             <CardHeader>
               <CardTitle>Introduction</CardTitle>

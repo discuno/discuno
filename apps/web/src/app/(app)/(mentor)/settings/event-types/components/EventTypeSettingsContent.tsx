@@ -1,29 +1,20 @@
 'use client'
 
 import type { UseMutationResult } from '@tanstack/react-query'
+import { Fragment } from 'react'
 import {
   CalendarPlus,
   CircleAlert,
   CirclePause,
   CreditCard,
-  DollarSign,
   ExternalLink,
   RefreshCw,
-  Settings,
   Timer,
 } from 'lucide-react'
 import { type updateMentorEventTypePreferences } from '~/app/(app)/(mentor)/settings/actions'
 import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert'
 import { Badge } from '~/components/ui/badge'
-import { Button } from '~/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '~/components/ui/card'
+import { Button, buttonVariants } from '~/components/ui/button'
 import {
   Dialog,
   DialogContent,
@@ -42,7 +33,15 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '~/components/ui/empty'
-import { Separator } from '~/components/ui/separator'
+import {
+  Item,
+  ItemContent,
+  ItemDescription,
+  ItemFooter,
+  ItemGroup,
+  ItemSeparator,
+  ItemTitle,
+} from '~/components/ui/item'
 import { Spinner } from '~/components/ui/spinner'
 import { Switch } from '~/components/ui/switch'
 import { MAXIMUM_PAID_BOOKING_PRICE, MINIMUM_PAID_BOOKING_PRICE } from '~/lib/constants'
@@ -148,181 +147,147 @@ export const EventTypeSettingsContent = ({
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      {!paymentsEnabled && (
-        <Alert>
-          <CirclePause />
-          <AlertTitle>Paid sessions are paused</AlertTitle>
-          <AlertDescription>
-            You can publish free sessions now. Paid sessions will stay unavailable until Discuno
-            enables payments as a separate launch step.
-          </AlertDescription>
-        </Alert>
-      )}
+    <>
+      <div className="flex flex-col gap-4">
+        {!paymentsEnabled && (
+          <Alert>
+            <CirclePause aria-hidden="true" />
+            <AlertTitle>Paid sessions are paused</AlertTitle>
+            <AlertDescription>
+              You can publish free sessions now. Paid sessions will stay unavailable until Discuno
+              enables payments as a separate launch step.
+            </AlertDescription>
+          </Alert>
+        )}
 
-      {paymentsEnabled && stripeStatusUnavailable && (
-        <Alert variant="destructive">
-          <CircleAlert />
-          <AlertTitle>Payout status could not be checked</AlertTitle>
-          <AlertDescription>
-            <p>Paid-session controls stay paused until the status loads successfully.</p>
-            <Button
-              type="button"
-              size="xs"
-              variant="outline"
-              onClick={onRetryStripeStatus}
-              disabled={isRetryingStripeStatus}
-            >
-              <RefreshCw
-                data-icon="inline-start"
-                className={isRetryingStripeStatus ? 'animate-spin' : undefined}
-              />
-              {isRetryingStripeStatus ? 'Checking…' : 'Try again'}
-            </Button>
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {/* Stripe Connection Banner - Only shown when setup needed */}
-      {needsStripeSetup && (
-        <Alert>
-          <CreditCard />
-          <AlertTitle>
-            {hasStripeAccount ? 'Finish payout setup' : 'Connect payouts to offer paid sessions'}
-          </AlertTitle>
-          <AlertDescription>
-            {hasStripeAccount ? (
-              <p>
-                Your payout account needs more information or verification. Use the payout action in
-                the header to finish any remaining steps.
-              </p>
-            ) : (
-              <p>
-                Connect a payout account before making a paid session visible to students. Free
-                sessions do not require payout setup.
-              </p>
-            )}
-          </AlertDescription>
-        </Alert>
-      )}
-
-      <Card>
-        <CardHeader className="border-b">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <CardTitle>Session types</CardTitle>
-              <CardDescription className="mt-1.5">
-                Choose what students can book and what each session costs
-              </CardDescription>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <Button variant="outline" size="sm" onClick={onRefresh} disabled={isRefreshing}>
-                <RefreshCw
-                  data-icon="inline-start"
-                  className={isRefreshing ? 'animate-spin' : undefined}
-                />
-                {isRefreshing ? 'Refreshing' : 'Refresh session types'}
+        {paymentsEnabled && stripeStatusUnavailable && (
+          <Alert variant="destructive">
+            <CircleAlert aria-hidden="true" />
+            <AlertTitle>Payout status could not be checked</AlertTitle>
+            <AlertDescription>
+              <p>Paid-session controls stay paused until the status loads successfully.</p>
+              <Button
+                type="button"
+                size="xs"
+                variant="outline"
+                onClick={onRetryStripeStatus}
+                disabled={isRetryingStripeStatus}
+              >
+                {isRetryingStripeStatus ? (
+                  <Spinner data-icon="inline-start" />
+                ) : (
+                  <RefreshCw data-icon="inline-start" aria-hidden="true" />
+                )}
+                {isRetryingStripeStatus ? 'Checking…' : 'Try again'}
               </Button>
-              {paymentsEnabled && isStripeActive && (
-                <Badge variant="default">
-                  <CreditCard aria-hidden="true" />
-                  Payouts ready
-                </Badge>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {needsStripeSetup && (
+          <Alert>
+            <CreditCard aria-hidden="true" />
+            <AlertTitle>
+              {hasStripeAccount ? 'Finish payout setup' : 'Connect payouts to offer paid sessions'}
+            </AlertTitle>
+            <AlertDescription>
+              {hasStripeAccount ? (
+                <p>
+                  Your payout account needs more information or verification. Use the payout action
+                  in the header to finish any remaining steps.
+                </p>
+              ) : (
+                <p>
+                  Connect a payout account before making a paid session visible to students. Free
+                  sessions do not require payout setup.
+                </p>
               )}
-            </div>
-          </div>
-        </CardHeader>
+            </AlertDescription>
+          </Alert>
+        )}
 
-        {/* Event Types List */}
-        <CardContent className="p-6">
-          {eventTypes.length === 0 ? (
-            <Empty>
-              <EmptyHeader>
-                <EmptyMedia variant="icon">
-                  <CalendarPlus />
-                </EmptyMedia>
-                <EmptyTitle>Create the first session students can book</EmptyTitle>
-                <EmptyDescription>
-                  Set the duration and meeting location in Cal.com, then refresh this page to choose
-                  a price and publish it on Discuno.
-                </EmptyDescription>
-              </EmptyHeader>
-              <EmptyContent className="flex-row flex-wrap justify-center gap-2">
-                <Button
-                  render={
-                    <a href="https://app.cal.com/event-types" target="_blank" rel="noreferrer" />
-                  }
-                  nativeButton={false}
-                >
-                  Create a session type
-                  <ExternalLink data-icon="inline-end" />
-                </Button>
-                <Button variant="outline" onClick={onRefresh} disabled={isRefreshing}>
-                  <RefreshCw
-                    data-icon="inline-start"
-                    className={isRefreshing ? 'animate-spin' : undefined}
-                  />
-                  Refresh
-                </Button>
-              </EmptyContent>
-            </Empty>
-          ) : (
-            <div className="flex flex-col gap-4">
-              {eventTypes.map(eventType => {
-                const isPaid = (eventType.customPrice ?? 0) > 0
-                const paymentAvailabilityBlocked =
-                  isPaid && (!paymentsEnabled || stripeStatusUnavailable || !isStripeActive)
-                const currentlyUnavailable =
-                  !eventType.bookingCompatible || paymentAvailabilityBlocked
-                const cannotEnable = !eventType.isEnabled && currentlyUnavailable
-                const switchId = `event-type-${eventType.id}-enabled`
-                const availabilityDescriptionId = currentlyUnavailable
-                  ? `event-type-${eventType.id}-availability`
-                  : undefined
-                const visibilityLabel = eventType.isEnabled
-                  ? currentlyUnavailable
-                    ? 'On, but unavailable'
-                    : 'Visible to students'
-                  : 'Hidden from students'
+        {eventTypes.length === 0 ? (
+          <Empty className="border-border border-y">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <CalendarPlus aria-hidden="true" />
+              </EmptyMedia>
+              <EmptyTitle>Create the first session students can book</EmptyTitle>
+              <EmptyDescription>
+                Set its duration and meeting location in Cal.com, then refresh to publish it here.
+              </EmptyDescription>
+            </EmptyHeader>
+            <EmptyContent className="flex-row flex-wrap justify-center gap-2">
+              <a
+                href="https://app.cal.com/event-types"
+                target="_blank"
+                rel="noreferrer"
+                className={buttonVariants()}
+              >
+                Create a session type
+                <ExternalLink data-icon="inline-end" aria-hidden="true" />
+              </a>
+              <Button variant="outline" onClick={onRefresh} disabled={isRefreshing}>
+                {isRefreshing ? (
+                  <Spinner data-icon="inline-start" />
+                ) : (
+                  <RefreshCw data-icon="inline-start" aria-hidden="true" />
+                )}
+                {isRefreshing ? 'Refreshing…' : 'Refresh'}
+              </Button>
+            </EmptyContent>
+          </Empty>
+        ) : (
+          <ItemGroup className="border-border gap-0 border-y">
+            {eventTypes.map((eventType, index) => {
+              const isPaid = (eventType.customPrice ?? 0) > 0
+              const paymentAvailabilityBlocked =
+                isPaid && (!paymentsEnabled || stripeStatusUnavailable || !isStripeActive)
+              const currentlyUnavailable =
+                !eventType.bookingCompatible || paymentAvailabilityBlocked
+              const cannotEnable = !eventType.isEnabled && currentlyUnavailable
+              const switchId = `event-type-${eventType.id}-enabled`
+              const availabilityDescriptionId = currentlyUnavailable
+                ? `event-type-${eventType.id}-availability`
+                : undefined
+              const visibilityLabel = eventType.isEnabled
+                ? currentlyUnavailable
+                  ? 'On, but unavailable'
+                  : 'Visible to students'
+                : 'Hidden from students'
 
-                return (
-                  <Card
-                    key={eventType.id}
-                    className="rounded-xl shadow-none transition-colors hover:border-current/20"
-                  >
-                    <CardHeader className="gap-3 p-4 sm:flex-row sm:items-start sm:justify-between">
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <CardTitle className="text-base">{eventType.title}</CardTitle>
-                          <Badge variant="secondary">
-                            <Timer aria-hidden="true" />
-                            {eventType.length} min
-                          </Badge>
-                          {!eventType.bookingCompatible && (
-                            <Badge variant="destructive">Needs scheduling update</Badge>
-                          )}
-                          {paymentAvailabilityBlocked && (
-                            <Badge variant="outline">Paid bookings paused</Badge>
-                          )}
-                        </div>
-                        {eventType.description && (
-                          <CardDescription className="mt-2 leading-6">
-                            {eventType.description}
-                          </CardDescription>
+              return (
+                <Fragment key={eventType.id}>
+                  <Item role="listitem" className="px-0 py-5">
+                    <ItemContent className="min-w-0 gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <ItemTitle role="heading" aria-level={2} className="text-base">
+                          {eventType.title}
+                        </ItemTitle>
+                        <Badge variant="secondary">
+                          <Timer data-icon="inline-start" aria-hidden="true" />
+                          {eventType.length} min
+                        </Badge>
+                        {!eventType.bookingCompatible && (
+                          <Badge variant="destructive">Needs scheduling update</Badge>
+                        )}
+                        {paymentAvailabilityBlocked && (
+                          <Badge variant="warning">Paid bookings paused</Badge>
                         )}
                       </div>
-                    </CardHeader>
 
-                    {currentlyUnavailable && (
-                      <CardContent className="px-4 pb-0">
-                        <p
+                      {eventType.description && (
+                        <ItemDescription className="line-clamp-none leading-6">
+                          {eventType.description}
+                        </ItemDescription>
+                      )}
+
+                      {currentlyUnavailable && (
+                        <ItemDescription
                           id={availabilityDescriptionId}
                           className={cn(
-                            'text-sm leading-6',
-                            eventType.bookingCompatible
-                              ? 'text-muted-foreground'
-                              : 'text-destructive'
+                            'line-clamp-none leading-6',
+                            !eventType.bookingCompatible && 'text-destructive'
                           )}
                         >
                           {!eventType.bookingCompatible
@@ -332,12 +297,21 @@ export const EventTypeSettingsContent = ({
                               : stripeStatusUnavailable
                                 ? 'This paid session stays unavailable until payout status can be checked again.'
                                 : 'Finish payout setup before making this paid session visible to students.'}
-                        </p>
-                      </CardContent>
-                    )}
+                        </ItemDescription>
+                      )}
+                    </ItemContent>
 
-                    <CardFooter className="flex flex-col items-stretch gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+                    <ItemFooter className="mt-2 flex-col items-stretch gap-3 sm:flex-row sm:items-center">
+                      <p className="flex items-baseline gap-2 text-sm">
+                        <span className="text-muted-foreground">Price</span>
+                        <span className="font-semibold">
+                          {eventType.customPrice
+                            ? `$${(eventType.customPrice / 100).toFixed(2)}`
+                            : 'Free'}
+                        </span>
+                      </p>
+
+                      <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
                         <Field
                           orientation="horizontal"
                           data-disabled={cannotEnable || updateEventTypeMutation.isPending}
@@ -352,43 +326,31 @@ export const EventTypeSettingsContent = ({
                           />
                           <FieldLabel htmlFor={switchId}>{visibilityLabel}</FieldLabel>
                         </Field>
-                        <Separator orientation="vertical" className="hidden h-4 sm:block" />
-                        <div className="flex items-center gap-1.5">
-                          <DollarSign className="text-muted-foreground size-4" aria-hidden="true" />
-                          <span className="text-sm font-medium">
-                            {eventType.customPrice
-                              ? `$${(eventType.customPrice / 100).toFixed(2)}`
-                              : 'Free'}
-                          </span>
-                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => onPricingChange(eventType)}
+                          disabled={updateEventTypeMutation.isPending}
+                          className="w-full sm:w-auto"
+                        >
+                          Set price
+                        </Button>
                       </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onPricingChange(eventType)}
-                        disabled={updateEventTypeMutation.isPending}
-                        className="w-full sm:w-auto"
-                      >
-                        <Settings data-icon="inline-start" />
-                        Set price
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                )
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                    </ItemFooter>
+                  </Item>
+                  {index < eventTypes.length - 1 && <ItemSeparator className="my-0" />}
+                </Fragment>
+              )
+            })}
+          </ItemGroup>
+        )}
+      </div>
 
-      {/* Pricing Dialog */}
       <Dialog open={showPricingDialog} onOpenChange={setShowPricingDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Set price for {selectedEventType?.title}</DialogTitle>
-            <DialogDescription>
-              Keep it free or set a price that reflects the time and context you bring.
-            </DialogDescription>
+            <DialogDescription>Choose free or enter a session price.</DialogDescription>
           </DialogHeader>
 
           <form
@@ -426,17 +388,16 @@ export const EventTypeSettingsContent = ({
                   />
                 </InputGroup>
                 <FieldDescription>
-                  Leave empty or enter 0 for a free session. Paid sessions range from $5 to $10,000.
-                  Discuno retains 15%; you receive 85%. Discuno covers standard payment processing
-                  costs.
+                  Leave empty or enter 0 for free. Paid sessions range from $5 to $10,000. Discuno
+                  retains 15% and you receive 85%; Discuno covers standard payment processing costs.
                 </FieldDescription>
                 <FieldError>{priceError}</FieldError>
               </Field>
             </FieldGroup>
 
             {isPaidPrice && (!paymentsEnabled || stripeStatusUnavailable || !isStripeActive) && (
-              <Alert className="border-warning/40 bg-warning/10">
-                <CirclePause />
+              <Alert>
+                <CirclePause aria-hidden="true" />
                 <AlertTitle>
                   {selectedSessionIsVisible
                     ? 'Hide this session before saving'
@@ -477,6 +438,6 @@ export const EventTypeSettingsContent = ({
           </form>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   )
 }

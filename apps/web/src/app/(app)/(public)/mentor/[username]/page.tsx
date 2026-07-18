@@ -1,22 +1,11 @@
-import {
-  ArrowLeft,
-  ArrowRight,
-  BadgeCheck,
-  CalendarDays,
-  CircleAlert,
-  Clock3,
-  GraduationCap,
-  LockKeyhole,
-  School,
-  ShieldCheck,
-} from 'lucide-react'
+import { ArrowLeft, ArrowRight, CalendarDays, CircleAlert, Clock3 } from 'lucide-react'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert'
 import { Badge } from '~/components/ui/badge'
-import { Button } from '~/components/ui/button'
+import { Button, buttonVariants } from '~/components/ui/button'
 import {
   Empty,
   EmptyContent,
@@ -25,17 +14,10 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '~/components/ui/empty'
-import {
-  Item,
-  ItemActions,
-  ItemContent,
-  ItemDescription,
-  ItemFooter,
-  ItemGroup,
-  ItemTitle,
-} from '~/components/ui/item'
+import { Separator } from '~/components/ui/separator'
 import { formatCurrencyFromCents } from '~/lib/format-currency'
 import { createMetadata, siteConfig } from '~/lib/metadata'
+import { cn } from '~/lib/utils'
 import { getMentorEnabledEventTypesWithStripeStatus } from '~/server/queries/event-types'
 import { getPublicProfileByUsername } from '~/server/queries/profiles'
 
@@ -83,85 +65,63 @@ export default async function MentorProfilePage({ params, searchParams }: Mentor
         }}
       />
 
-      <section className="soft-grid border-foreground/20 relative overflow-hidden border-b-2">
-        <div
-          className="bg-highlight/80 pointer-events-none absolute top-16 right-[8%] hidden h-3 w-28 rotate-2 border lg:block"
-          aria-hidden
-        />
-        <div className="page-container relative py-6 sm:py-10">
-          <Button
-            render={<Link href="/#mentors" />}
-            nativeButton={false}
-            variant="ghost"
-            size="sm"
-            className="-ml-3"
-          >
-            <ArrowLeft data-icon="inline-start" />
-            Back to mentors
-          </Button>
-          <header className="mt-6 grid gap-6 md:grid-cols-[auto_1fr] md:items-center lg:mt-8">
-            <Avatar className="border-foreground/20 size-28 rounded-xl border-2 shadow-[4px_4px_0_rgba(13,20,39,0.14)] sm:size-36">
-              <AvatarImage
-                src={profile.image ?? ''}
-                alt={`${profile.name ?? 'Mentor'} profile photo`}
-                className="rounded-[calc(var(--radius)+2px)]"
-              />
-              <AvatarFallback className="bg-secondary text-primary rounded-[calc(var(--radius)+2px)] text-4xl font-semibold">
-                {profile.name?.charAt(0).toUpperCase() ?? 'M'}
-              </AvatarFallback>
-            </Avatar>
+      <header className="mx-auto w-full max-w-[76rem] px-4 py-8 sm:px-6 sm:py-12 lg:px-8 lg:py-14">
+        <Link
+          href="/#mentors"
+          className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), '-ml-3')}
+        >
+          <ArrowLeft data-icon="inline-start" />
+          Back to mentors
+        </Link>
 
-            <div className="max-w-3xl">
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge variant="secondary">Student mentor</Badge>
-                {profile.schoolEmailVerified && (
-                  <Badge variant="outline" className="badge-success-muted">
-                    <BadgeCheck className="size-3.5" />
-                    School email confirmed
-                  </Badge>
-                )}
-              </div>
-              <h1 className="display-title mt-4 text-4xl sm:text-5xl lg:text-6xl">
-                {profile.name ?? 'Student mentor'}
-              </h1>
-              <div className="paper-panel text-muted-foreground mt-5 flex w-fit max-w-full flex-col gap-2 px-3.5 py-3 text-sm sm:flex-row sm:flex-wrap sm:gap-x-6">
-                {profile.school && (
-                  <span className="text-foreground flex items-center gap-2 font-medium">
-                    <School className="text-primary size-4" />
-                    {profile.school}
-                  </span>
-                )}
-                {profile.major && (
-                  <span className="flex items-center gap-2">
-                    <GraduationCap className="size-4" />
-                    {profile.major}
-                  </span>
-                )}
-                {profile.graduationYear && (
-                  <span>
-                    {profile.schoolYear} · Class of {profile.graduationYear}
-                  </span>
-                )}
-              </div>
+        <div className="mt-8 grid gap-8 md:grid-cols-[12rem_minmax(0,1fr)] md:items-center lg:mt-10 lg:grid-cols-[15rem_minmax(0,1fr)] lg:gap-12">
+          <Avatar className="size-32 rounded-xl after:rounded-xl sm:size-40 md:size-48 lg:size-60">
+            <AvatarImage
+              src={profile.image ?? ''}
+              alt={`${profile.name ?? 'Mentor'} profile photo`}
+              className="rounded-xl object-top"
+            />
+            <AvatarFallback className="rounded-xl text-4xl font-semibold sm:text-5xl">
+              {profile.name?.charAt(0).toUpperCase() ?? 'M'}
+            </AvatarFallback>
+          </Avatar>
 
-              {hasBooking && (
-                <Button
-                  render={<Link href={`/mentor/${username}/book`} />}
-                  nativeButton={false}
-                  size="lg"
-                  className="mt-6 w-full sm:w-auto lg:hidden"
-                >
-                  See available times
-                  <ArrowRight data-icon="inline-end" />
-                </Button>
+          <div className="max-w-3xl min-w-0">
+            {profile.schoolEmailVerified && <Badge variant="outline">School email confirmed</Badge>}
+            <h1 className="font-display mt-4 text-4xl leading-[0.95] font-semibold tracking-[-0.045em] text-balance sm:text-5xl lg:text-6xl">
+              {profile.name ?? 'Student mentor'}
+            </h1>
+
+            <dl className="mt-7 flex flex-wrap gap-x-10 gap-y-4">
+              {profile.school && (
+                <div className="flex max-w-full min-w-0 flex-col gap-1">
+                  <dt className="text-muted-foreground text-xs font-medium">School</dt>
+                  <dd className="font-medium break-words">{profile.school}</dd>
+                </div>
               )}
-            </div>
-          </header>
+              {profile.major && (
+                <div className="flex max-w-full min-w-0 flex-col gap-1">
+                  <dt className="text-muted-foreground text-xs font-medium">Field of study</dt>
+                  <dd className="break-words">{profile.major}</dd>
+                </div>
+              )}
+              {profile.graduationYear && (
+                <div className="flex min-w-0 flex-col gap-1">
+                  <dt className="text-muted-foreground text-xs font-medium">Year</dt>
+                  <dd>
+                    {profile.schoolYear} · Class of {profile.graduationYear}
+                  </dd>
+                </div>
+              )}
+            </dl>
+          </div>
         </div>
-      </section>
+      </header>
+
+      <Separator />
 
       {(checkout === 'cancelled' || checkout === 'cancel_error') && (
-        <div className="page-container pt-6">
+        <div className="mx-auto w-full max-w-[76rem] px-4 pt-6 sm:px-6 lg:px-8">
           <Alert variant={checkout === 'cancel_error' ? 'destructive' : 'default'}>
             <CircleAlert />
             <AlertTitle>
@@ -183,173 +143,137 @@ export default async function MentorProfilePage({ params, searchParams }: Mentor
         </div>
       )}
 
-      <div className="page-container py-10 sm:py-14">
-        <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-16">
-          <div className="flex min-w-0 flex-col gap-12">
-            <section aria-labelledby="about-mentor">
-              <p className="eyebrow">About</p>
-              <h2 id="about-mentor" className="mt-3 text-2xl font-semibold tracking-[-0.03em]">
-                The perspective {firstName} brings
-              </h2>
-              {profile.bio ? (
-                <p className="text-muted-foreground mt-4 max-w-3xl text-base leading-8 whitespace-pre-wrap">
-                  {profile.bio}
-                </p>
-              ) : (
-                <p className="text-muted-foreground mt-4 leading-7">
-                  This mentor has not added an introduction yet. Review their academic background
-                  and session options before booking.
-                </p>
-              )}
-            </section>
+      <div className="mx-auto grid w-full max-w-[76rem] items-start gap-12 px-4 py-10 sm:px-6 sm:py-14 lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-16 lg:px-8 lg:py-16">
+        <div className="flex min-w-0 flex-col gap-10 sm:gap-12">
+          <section aria-labelledby="about-mentor">
+            <h2 id="about-mentor" className="font-sans text-2xl font-semibold tracking-tight">
+              About {firstName}
+            </h2>
+            {profile.bio ? (
+              <p className="text-muted-foreground mt-4 max-w-[42rem] text-base leading-8 whitespace-pre-wrap">
+                {profile.bio}
+              </p>
+            ) : (
+              <p className="text-muted-foreground mt-4 max-w-[42rem] leading-7">
+                This mentor has not added an introduction yet. Review their academic background and
+                session options before booking.
+              </p>
+            )}
+          </section>
 
-            <section aria-labelledby="session-options">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                  <p className="eyebrow">Session options</p>
-                  <h2
-                    id="session-options"
-                    className="mt-3 text-2xl font-semibold tracking-[-0.03em]"
-                  >
-                    What you can talk through together
-                  </h2>
-                </div>
-                {hasBooking && (
-                  <p className="text-muted-foreground text-sm">Start with the question you have</p>
-                )}
-              </div>
+          <Separator />
 
-              {hasBooking ? (
-                <ItemGroup className="mt-6 grid gap-4 sm:grid-cols-2">
-                  {eventTypes.map(eventType => (
-                    <div key={eventType.calcomEventTypeId} role="listitem">
-                      <Item
-                        render={
-                          <Link
-                            href={`/mentor/${username}/book?eventType=${eventType.calcomEventTypeId}`}
-                          />
-                        }
-                        variant="outline"
-                        className="question-slip interactive-card h-full items-stretch p-5"
-                      >
-                        <ItemContent>
-                          <ItemTitle className="line-clamp-none text-base">
-                            {eventType.title}
-                          </ItemTitle>
-                          {eventType.description && (
-                            <ItemDescription className="mt-1 line-clamp-3 leading-6">
-                              {eventType.description}
-                            </ItemDescription>
-                          )}
-                        </ItemContent>
-                        <ItemActions className="ml-auto self-start">
-                          <span className="text-primary text-sm font-semibold">
-                            {formatSessionPrice(eventType.customPrice, eventType.currency)}
-                          </span>
-                        </ItemActions>
-                        <ItemFooter className="border-foreground/15 text-muted-foreground mt-2 border-t pt-4 text-xs">
-                          <span className="flex items-center gap-1.5">
-                            <Clock3 className="size-3.5" />
-                            {eventType.duration} minutes
-                          </span>
-                          <span className="text-primary flex items-center gap-1 font-semibold">
-                            Choose
-                            <ArrowRight className="size-3.5" />
-                          </span>
-                        </ItemFooter>
-                      </Item>
-                    </div>
-                  ))}
-                </ItemGroup>
-              ) : (
-                <Empty className="bg-card mt-6 border">
-                  <EmptyHeader>
-                    <EmptyMedia variant="icon">
-                      <CalendarDays />
-                    </EmptyMedia>
-                    <EmptyTitle>No sessions are available right now</EmptyTitle>
-                    <EmptyDescription>
-                      This mentor may be updating their availability. You can check back later or
-                      find another student with relevant experience.
-                    </EmptyDescription>
-                  </EmptyHeader>
-                  <EmptyContent>
-                    <Button
-                      render={<Link href="/#mentors" />}
-                      nativeButton={false}
-                      variant="outline"
+          <section aria-labelledby="session-options">
+            <h2 id="session-options" className="font-sans text-2xl font-semibold tracking-tight">
+              Sessions with {firstName}
+            </h2>
+            {hasBooking && (
+              <p className="text-muted-foreground mt-2 text-sm">
+                Choose a session to see available times.
+              </p>
+            )}
+
+            {hasBooking ? (
+              <ul className="mt-5">
+                {eventTypes.map((eventType, index) => (
+                  <li key={eventType.calcomEventTypeId}>
+                    <Link
+                      href={`/mentor/${username}/book?eventType=${eventType.calcomEventTypeId}`}
+                      className="hover:bg-muted/60 focus-visible:bg-muted/60 group -mx-3 grid gap-4 rounded-lg px-3 py-5 transition-colors sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-8"
                     >
-                      Browse other mentors
-                    </Button>
-                  </EmptyContent>
-                </Empty>
-              )}
-            </section>
+                      <div className="min-w-0">
+                        <h3 className="group-hover:text-primary text-base font-semibold transition-colors">
+                          {eventType.title}
+                        </h3>
+                        {eventType.description && (
+                          <p className="text-muted-foreground mt-1.5 line-clamp-2 max-w-2xl text-sm leading-6">
+                            {eventType.description}
+                          </p>
+                        )}
+                      </div>
 
-            <section
-              className="field-notes paper-panel corner-mark p-6 sm:p-8"
-              aria-labelledby="prepare-session"
-            >
-              <p className="eyebrow">Make it useful</p>
-              <h2 id="prepare-session" className="mt-3 text-2xl font-semibold tracking-[-0.03em]">
-                Bring one decision, not a perfect agenda.
-              </h2>
-              <p className="text-muted-foreground mt-3 max-w-2xl leading-7">
-                Share the context, what you have already tried, and the choice you are weighing. A
-                specific question gives your mentor something concrete to work through with you.
-              </p>
-            </section>
-          </div>
+                      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 sm:min-w-44 sm:justify-end">
+                        <span className="font-semibold">
+                          {formatSessionPrice(eventType.customPrice, eventType.currency)}
+                        </span>
+                        <span className="text-muted-foreground flex items-center gap-1.5 text-sm">
+                          <Clock3 className="size-4" aria-hidden="true" />
+                          {eventType.duration} minutes
+                        </span>
+                        <span className="text-primary flex items-center gap-1.5 text-sm font-semibold sm:basis-full sm:justify-end">
+                          See times
+                          <ArrowRight className="size-4" aria-hidden="true" />
+                        </span>
+                      </div>
+                    </Link>
+                    {index < eventTypes.length - 1 && <Separator />}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <Empty className="mt-6 border">
+                <EmptyHeader>
+                  <EmptyMedia variant="icon">
+                    <CalendarDays />
+                  </EmptyMedia>
+                  <EmptyTitle>No sessions are available right now</EmptyTitle>
+                  <EmptyDescription>
+                    This mentor may be updating their availability. You can check back later or find
+                    another student with relevant experience.
+                  </EmptyDescription>
+                </EmptyHeader>
+                <EmptyContent>
+                  <Link href="/#mentors" className={buttonVariants({ variant: 'outline' })}>
+                    Browse other mentors
+                  </Link>
+                </EmptyContent>
+              </Empty>
+            )}
+          </section>
+        </div>
 
-          <aside className="lg:sticky lg:top-24">
-            <div className="surface-panel stacked-note corner-mark p-6">
-              <p className="eyebrow">Talk with {firstName}</p>
-              <h2 className="mt-3 text-2xl font-semibold tracking-[-0.03em]">
-                Ready to talk it through?
-              </h2>
-              <p className="text-muted-foreground mt-3 text-sm leading-6">
-                Choose the conversation that fits your question, then find a time that works.
-              </p>
+        <aside aria-labelledby="booking-decision" className="lg:sticky lg:top-24">
+          <div className="bg-card rounded-lg border p-5 sm:p-6">
+            <h2 id="booking-decision" className="font-sans text-xl font-semibold tracking-tight">
+              Book with {firstName}
+            </h2>
+            <p className="text-muted-foreground mt-2 text-sm leading-6">
+              {hasBooking
+                ? `${eventTypes.length} ${eventTypes.length === 1 ? 'session is' : 'sessions are'} available.`
+                : 'This mentor is not accepting bookings right now.'}
+            </p>
 
-              {hasBooking ? (
-                <Button
-                  render={<Link href={`/mentor/${username}/book`} />}
-                  nativeButton={false}
-                  size="lg"
-                  className="mt-6 w-full"
-                >
-                  <CalendarDays data-icon="inline-start" />
-                  See available times
-                </Button>
-              ) : (
-                <Button size="lg" className="mt-6 w-full" disabled>
-                  Booking unavailable
-                </Button>
-              )}
+            {hasBooking ? (
+              <Link
+                href={`/mentor/${username}/book`}
+                className={cn(buttonVariants({ size: 'lg' }), 'mt-5 w-full')}
+              >
+                See available times
+                <ArrowRight data-icon="inline-end" />
+              </Link>
+            ) : (
+              <Button size="lg" className="mt-5 w-full" disabled>
+                Booking unavailable
+              </Button>
+            )}
 
-              <div className="text-muted-foreground border-foreground/15 mt-6 flex flex-col gap-3 border-t pt-5 text-xs leading-5">
-                <p className="flex items-start gap-2">
-                  <CalendarDays className="text-primary mt-0.5 h-3.5 w-3.5 shrink-0" />
-                  See the session length, price, and available times before you confirm.
-                </p>
-                <p className="flex items-start gap-2">
-                  <LockKeyhole className="text-primary mt-0.5 h-3.5 w-3.5 shrink-0" />
-                  Bring one real question; you do not need a perfect agenda.
-                </p>
-                <p className="flex items-start gap-2">
-                  <ShieldCheck className="text-primary mt-0.5 h-3.5 w-3.5 shrink-0" />
-                  For paid sessions, card details are handled securely at checkout.
-                </p>
-                {profile.schoolEmailVerified && (
-                  <p className="border-foreground/15 mt-1 border-t pt-4">
+            <Separator className="my-5" />
+
+            <div className="text-muted-foreground flex flex-col gap-3 text-xs leading-5">
+              <p>See the session length, price, and available times before you confirm.</p>
+              <p>For paid sessions, card details are handled securely at checkout.</p>
+              {profile.schoolEmailVerified && (
+                <>
+                  <Separator />
+                  <p>
                     “School email confirmed” means this mentor accessed a supported institutional
                     email address. It does not verify identity, background, expertise, or outcomes.
                   </p>
-                )}
-              </div>
+                </>
+              )}
             </div>
-          </aside>
-        </div>
+          </div>
+        </aside>
       </div>
     </>
   )
@@ -369,7 +293,7 @@ export async function generateMetadata({ params }: MentorProfilePageProps): Prom
   const canonical = `${siteConfig.url}/mentor/${username}`
 
   return createMetadata({
-    title: `${profile.name ?? 'Student mentor'} — ${role}${location}`,
+    title: `${profile.name ?? 'Student mentor'} | ${role}${location}`,
     description,
     alternates: { canonical },
     openGraph: {

@@ -33,14 +33,14 @@ export function DeleteOverrideDialog({
         if (!open) onClose()
       }}
     >
-      <AlertDialogContent>
+      <AlertDialogContent size="sm">
         <AlertDialogHeader>
           <AlertDialogTitle>Remove this date exception?</AlertDialogTitle>
           <AlertDialogDescription>
             {override
               ? `${formatDateKey(override.date, { dateStyle: 'full' })} will return to your usual weekly hours.`
               : 'This date will return to your usual weekly hours.'}{' '}
-            Save availability afterward to publish the change.
+            Save afterward to publish the change.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

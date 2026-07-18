@@ -1,7 +1,7 @@
 'use client'
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Ban, CalendarClock, ExternalLink } from 'lucide-react'
+import { Ban, ExternalLink } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { cancelBooking } from '~/app/(app)/(mentor)/settings/actions'
@@ -16,18 +16,18 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '~/components/ui/alert-dialog'
-import { Badge } from '~/components/ui/badge'
-import { Button } from '~/components/ui/button'
-import { ButtonGroup } from '~/components/ui/button-group'
+import { Badge, type BadgeProps } from '~/components/ui/badge'
+import { Button, buttonVariants } from '~/components/ui/button'
 import {
   Item,
   ItemActions,
   ItemContent,
   ItemDescription,
   ItemHeader,
-  ItemMedia,
   ItemTitle,
 } from '~/components/ui/item'
+import { Spinner } from '~/components/ui/spinner'
+import { cn } from '~/lib/utils'
 import type { Booking } from './booking-types'
 
 type BookingListItemProps = {
@@ -35,30 +35,33 @@ type BookingListItemProps = {
   timeZone: string
 }
 
-const statusPresentation: Record<Booking['status'], { label: string; className: string }> = {
+const statusPresentation: Record<
+  Booking['status'],
+  { label: string; variant: BadgeProps['variant'] }
+> = {
   ACCEPTED: {
     label: 'Accepted',
-    className: 'border-success/20 bg-success/10 text-success',
+    variant: 'success',
   },
   PENDING: {
     label: 'Pending',
-    className: 'border-warning/25 bg-warning/10 text-warning-foreground',
+    variant: 'warning',
   },
   CANCELLED: {
     label: 'Cancelled',
-    className: 'border-destructive/20 bg-destructive/10 text-destructive',
+    variant: 'destructive',
   },
   REJECTED: {
     label: 'Rejected',
-    className: 'border-destructive/20 bg-destructive/10 text-destructive',
+    variant: 'destructive',
   },
   COMPLETED: {
     label: 'Completed',
-    className: 'border-success/20 bg-success/10 text-success',
+    variant: 'success',
   },
   NO_SHOW: {
     label: 'No-show',
-    className: 'border-warning/25 bg-warning/10 text-warning-foreground',
+    variant: 'warning',
   },
 }
 
@@ -114,22 +117,13 @@ export const BookingListItem = ({ booking, timeZone }: BookingListItemProps) => 
   })
 
   return (
-    <Item role="listitem" variant="outline" className="items-start sm:flex-nowrap">
-      <ItemMedia
-        variant="icon"
-        className="bg-muted text-muted-foreground hidden size-10 rounded-md sm:flex"
-      >
-        <CalendarClock aria-hidden="true" />
-      </ItemMedia>
-
+    <Item role="listitem" className="items-start rounded-none border-0 px-0 py-5 sm:flex-nowrap">
       <ItemContent className="min-w-0 gap-2">
         <ItemHeader className="items-start">
-          <ItemTitle className="line-clamp-none text-base">{booking.title}</ItemTitle>
-          <Badge
-            variant="outline"
-            className={status.className}
-            aria-label={`Booking status: ${status.label}`}
-          >
+          <ItemTitle role="heading" aria-level={2} className="line-clamp-none text-base">
+            {booking.title}
+          </ItemTitle>
+          <Badge variant={status.variant} aria-label={`Booking status: ${status.label}`}>
             {status.label}
           </Badge>
         </ItemHeader>
@@ -147,59 +141,60 @@ export const BookingListItem = ({ booking, timeZone }: BookingListItemProps) => 
       </ItemContent>
 
       {(canJoin || canCancel) && (
-        <ItemActions className="basis-full sm:basis-auto sm:self-center">
-          <ButtonGroup className="w-full sm:w-fit">
-            {canJoin && booking.meetingUrl && (
-              <Button
-                render={<a href={booking.meetingUrl} target="_blank" rel="noopener noreferrer" />}
-                nativeButton={false}
-                variant="outline"
-                size="sm"
-                className="flex-1 sm:flex-none"
+        <ItemActions className="basis-full gap-2 sm:basis-auto sm:self-center">
+          {canJoin && booking.meetingUrl && (
+            <a
+              href={booking.meetingUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={cn(
+                buttonVariants({ variant: 'outline', size: 'sm' }),
+                'flex-1 sm:flex-none'
+              )}
+            >
+              Join
+              <ExternalLink aria-hidden="true" data-icon="inline-end" />
+            </a>
+          )}
+          {canCancel && (
+            <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+              <AlertDialogTrigger
+                render={
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 sm:flex-none"
+                    disabled={cancelBookingMutation.isPending}
+                  />
+                }
               >
-                Join
-                <ExternalLink aria-hidden="true" data-icon="inline-end" />
-              </Button>
-            )}
-            {canCancel && (
-              <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
-                <AlertDialogTrigger
-                  render={
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      className="flex-1 sm:flex-none"
-                      disabled={cancelBookingMutation.isPending}
-                    />
-                  }
-                >
-                  <Ban aria-hidden="true" data-icon="inline-start" />
-                  Cancel
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Cancel this session?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Cancelling as the mentor ends this session for everyone. If it was paid, the
-                      student receives a full refund. This cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel disabled={cancelBookingMutation.isPending}>
-                      Keep session
-                    </AlertDialogCancel>
-                    <AlertDialogAction
-                      variant="destructive"
-                      disabled={cancelBookingMutation.isPending}
-                      onClick={() => cancelBookingMutation.mutate()}
-                    >
-                      {cancelBookingMutation.isPending ? 'Cancelling…' : 'Cancel session'}
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            )}
-          </ButtonGroup>
+                <Ban aria-hidden="true" data-icon="inline-start" />
+                Cancel
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Cancel this session?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Cancelling as the mentor ends this session for everyone. If it was paid, the
+                    student receives a full refund. This cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel disabled={cancelBookingMutation.isPending}>
+                    Keep session
+                  </AlertDialogCancel>
+                  <AlertDialogAction
+                    variant="destructive"
+                    disabled={cancelBookingMutation.isPending}
+                    onClick={() => cancelBookingMutation.mutate()}
+                  >
+                    {cancelBookingMutation.isPending && <Spinner data-icon="inline-start" />}
+                    {cancelBookingMutation.isPending ? 'Cancelling…' : 'Cancel session'}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
         </ItemActions>
       )}
     </Item>

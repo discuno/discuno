@@ -22,7 +22,9 @@ const SettingsLayout = async ({ children }: { children: React.ReactNode }) => {
       <AppSidebar />
       <SidebarInset className="min-w-0 overflow-hidden">
         <SettingsHeader />
-        <div className="flex flex-1 flex-col px-4 py-6 sm:px-6 sm:py-8 lg:px-10">{children}</div>
+        <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-4 py-6 sm:px-6 sm:py-8 lg:px-10">
+          {children}
+        </div>
       </SidebarInset>
     </SidebarProvider>
   )

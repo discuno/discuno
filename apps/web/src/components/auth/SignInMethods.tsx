@@ -1,6 +1,5 @@
 'use client'
 
-import { GraduationCap, LockKeyhole, Mail } from 'lucide-react'
 import { EmailSignInForm } from '~/components/auth/EmailSignInForm'
 import { Button } from '~/components/ui/button'
 import { FieldSeparator } from '~/components/ui/field'
@@ -19,52 +18,16 @@ export function SignInMethods({
   onOAuthSignIn: (provider: 'google' | 'microsoft') => Promise<void>
   returnTo?: string
 }) {
-  if (audience === 'student') {
-    return (
-      <div className="space-y-4">
-        <ProviderButtons isLoading={isLoading} onSignIn={onOAuthSignIn} />
-        <div className="paper-panel bg-accent/30 flex items-start gap-3 p-4">
-          <span className="bg-highlight text-highlight-foreground flex size-9 shrink-0 items-center justify-center rounded-md border">
-            <LockKeyhole className="size-4" aria-hidden="true" />
-          </span>
-          <div>
-            <p className="text-sm font-semibold">No account needed to book</p>
-            <p className="text-muted-foreground mt-1 text-xs leading-5">
-              Browse mentors and reserve a session as a guest. Sign in only if you want Discuno to
-              remember your details.
-            </p>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   return (
-    <div className="space-y-5">
-      <div className="paper-panel corner-mark p-4 sm:p-5">
-        <div className="mb-5 flex items-start gap-3">
-          <span className="bg-primary text-primary-foreground flex size-10 shrink-0 items-center justify-center rounded-md border">
-            <Mail className="size-4" aria-hidden="true" />
-          </span>
-          <div>
-            <p className="text-sm font-semibold">Start with your school email</p>
-            <p className="text-muted-foreground mt-1 text-xs leading-5">
-              The clearest path to mentor access. No password required.
-            </p>
-          </div>
-        </div>
-        <EmailSignInForm returnTo={returnTo} />
-      </div>
-
-      <FieldSeparator>Or continue with</FieldSeparator>
-
+    <div className="flex flex-col gap-6">
       <ProviderButtons isLoading={isLoading} onSignIn={onOAuthSignIn} />
 
-      <p className="text-muted-foreground flex items-start gap-2 text-xs leading-5">
-        <GraduationCap className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
-        Google and Microsoft remain available. Choose the school-managed account with your .edu
-        address; personal accounts can browse and book but do not open mentor tools.
-      </p>
+      {audience === 'mentor' && (
+        <>
+          <FieldSeparator>Or get a one-time code</FieldSeparator>
+          <EmailSignInForm returnTo={returnTo} />
+        </>
+      )}
     </div>
   )
 }
@@ -77,13 +40,15 @@ function ProviderButtons({
   onSignIn: (provider: 'google' | 'microsoft') => Promise<void>
 }) {
   return (
-    <div className="grid gap-3 sm:grid-cols-2">
+    <div className="flex flex-col gap-3">
       <Button
         type="button"
         variant="outline"
-        className="h-11 w-full font-medium"
+        size="lg"
+        className="w-full"
         onClick={() => onSignIn('google')}
         disabled={Boolean(isLoading)}
+        aria-busy={isLoading === 'google'}
       >
         {isLoading === 'google' ? <Spinner data-icon="inline-start" /> : <GoogleIcon />}
         Continue with Google
@@ -91,9 +56,11 @@ function ProviderButtons({
       <Button
         type="button"
         variant="outline"
-        className="h-11 w-full font-medium"
+        size="lg"
+        className="w-full"
         onClick={() => onSignIn('microsoft')}
         disabled={Boolean(isLoading)}
+        aria-busy={isLoading === 'microsoft'}
       >
         {isLoading === 'microsoft' ? <Spinner data-icon="inline-start" /> : <MicrosoftIcon />}
         Continue with Microsoft
@@ -104,7 +71,7 @@ function ProviderButtons({
 
 function GoogleIcon() {
   return (
-    <svg viewBox="0 0 24 24" className="size-4" data-icon="inline-start" aria-hidden="true">
+    <svg viewBox="0 0 24 24" data-icon="inline-start" aria-hidden="true">
       <path
         d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.31v2.77h3.56c2.08-1.92 3.28-4.74 3.28-8.09Z"
         fill="#4285F4"
@@ -127,7 +94,7 @@ function GoogleIcon() {
 
 function MicrosoftIcon() {
   return (
-    <svg viewBox="0 0 23 23" className="size-4" data-icon="inline-start" aria-hidden="true">
+    <svg viewBox="0 0 23 23" data-icon="inline-start" aria-hidden="true">
       <path fill="#f35325" d="M1 1h10v10H1z" />
       <path fill="#81bc06" d="M12 1h10v10H12z" />
       <path fill="#05a6f0" d="M1 12h10v10H1z" />

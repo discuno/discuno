@@ -1,10 +1,11 @@
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { Button } from '~/components/ui/button'
+import { buttonVariants } from '~/components/ui/button'
 import { createMetadata, siteConfig } from '~/lib/metadata'
 import { getMentorEnabledEventTypesWithStripeStatus } from '~/server/queries/event-types'
 import { getPublicProfileByUsername } from '~/server/queries/profiles'
+import { cn } from '~/lib/utils'
 import { BookingInterface } from './components/BookingInterface'
 
 interface BookingPageProps {
@@ -49,26 +50,20 @@ const BookingPage = async ({ params, searchParams }: BookingPageProps) => {
   }
 
   return (
-    <div className="page-container py-8 sm:py-12">
-      <header className="mb-7">
-        <Button
-          render={<Link href={`/mentor/${username}`} />}
-          nativeButton={false}
-          variant="ghost"
-          size="sm"
-          className="-ml-3"
+    <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
+      <header className="mb-6 max-w-2xl sm:mb-8">
+        <Link
+          href={`/mentor/${username}`}
+          className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), '-ml-3')}
         >
           <ArrowLeft />
           Back to profile
-        </Button>
-        <p className="note-stamp mt-5">Booking note · Choose your conversation</p>
-        <h1 className="mt-5 text-4xl leading-[1.02] font-semibold tracking-[-0.035em] sm:text-5xl">
-          Find a time to talk with{' '}
-          <span className="marker-underline">{profile.name ?? 'this mentor'}</span>
+        </Link>
+        <h1 className="font-display mt-6 text-3xl leading-tight font-medium tracking-tight sm:text-4xl">
+          Book a session with {profile.name ?? 'this mentor'}
         </h1>
-        <p className="text-muted-foreground mt-3 max-w-2xl leading-7">
-          Pick the session and time that fit your question. You will see the details before you
-          confirm.
+        <p className="text-muted-foreground mt-2 text-sm leading-6 sm:text-base">
+          Choose a session and an available time. Review everything before you confirm.
         </p>
       </header>
       <BookingInterface
@@ -89,7 +84,7 @@ export async function generateMetadata({ params }: BookingPageProps) {
 
   return createMetadata({
     title: `Book a session with ${mentorName}`,
-    description: `Choose a focused conversation and available time with ${mentorName}. Review the session details before you confirm.`,
+    description: `Choose a session and available time with ${mentorName}.`,
     alternates: { canonical: `${siteConfig.url}/mentor/${username}` },
     robots: { index: false, follow: true },
   })

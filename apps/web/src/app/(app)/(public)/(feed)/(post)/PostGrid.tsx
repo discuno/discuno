@@ -10,7 +10,7 @@ import {
   fetchPostsByFilterAction,
 } from '~/app/(app)/(public)/(feed)/(post)/actions'
 import type { Card } from '~/app/types'
-import { Button } from '~/components/ui/button'
+import { Button, buttonVariants } from '~/components/ui/button'
 import {
   Empty,
   EmptyContent,
@@ -68,7 +68,7 @@ export const PostGrid = ({ schoolId, majorId, graduationYear, initialPage }: Pos
 
   if (isError) {
     return (
-      <Empty className="paper-panel rounded-xl">
+      <Empty className="border-y">
         <EmptyHeader>
           <EmptyMedia variant="icon">
             <RefreshCw />
@@ -87,41 +87,37 @@ export const PostGrid = ({ schoolId, majorId, graduationYear, initialPage }: Pos
 
   if (allPosts.length === 0) {
     return (
-      <Empty className="paper-panel rounded-xl">
+      <Empty className="border-y">
         <EmptyHeader>
           <EmptyMedia variant="icon">
             <SearchX />
           </EmptyMedia>
           <EmptyTitle>No exact matches yet</EmptyTitle>
           <EmptyDescription>
-            Try removing one filter. A mentor from a related major or school may still have the
-            perspective you need.
+            Remove one filter. Someone from a related school or field may still have useful
+            firsthand context.
           </EmptyDescription>
         </EmptyHeader>
         <EmptyContent>
-          <Button render={<Link href="/#mentors" />} nativeButton={false} variant="outline">
+          <Link href="/#mentors" className={cn(buttonVariants({ variant: 'outline' }))}>
             Clear all filters
-          </Button>
+          </Link>
         </EmptyContent>
       </Empty>
     )
   }
 
-  const layout = allPosts.length === 1 ? 'featured' : allPosts.length === 2 ? 'pair' : 'grid'
-
   return (
     <>
       <div
-        data-mentor-layout={layout}
-        className={cn(
-          'grid grid-cols-1 gap-5',
-          layout === 'featured' && 'max-w-4xl',
-          layout === 'pair' && 'max-w-5xl sm:grid-cols-2',
-          layout === 'grid' && 'sm:grid-cols-2 lg:grid-cols-3'
-        )}
+        role="list"
+        aria-label="Student mentors"
+        data-mentor-layout="list"
+        data-mentor-count={allPosts.length}
+        className="divide-border divide-y border-y"
       >
         {allPosts.map(card => (
-          <PostCard key={card.id} card={card} featured={layout === 'featured'} />
+          <PostCard key={card.id} card={card} />
         ))}
       </div>
 
@@ -133,8 +129,8 @@ export const PostGrid = ({ schoolId, majorId, graduationYear, initialPage }: Pos
             onClick={() => void fetchNextPage()}
             disabled={isFetchingNextPage}
           >
-            {isFetchingNextPage ? <Spinner /> : null}
-            {isFetchingNextPage ? 'Loading mentors…' : 'Show more mentors'}
+            {isFetchingNextPage && <Spinner data-icon="inline-start" />}
+            {isFetchingNextPage ? 'Loading mentors' : 'Show more mentors'}
           </Button>
         </div>
       )}

@@ -8,8 +8,8 @@
   "id": "/",
   "display": "standalone",
   "display_override": ["standalone", "fullscreen"],
-  "background_color": "#ffffff",
-  "theme_color": "#1c4c92",
+  "background_color": "#f9f7f1",
+  "theme_color": "#2840e2",
   "orientation": "portrait-primary",
   "icons": [
     {
@@ -34,17 +34,17 @@
   "screenshots": [],
   "shortcuts": [
     {
-      "name": "Find Mentors",
+      "name": "Find a mentor",
       "short_name": "Mentors",
       "description": "Browse and connect with student mentors",
       "url": "/",
       "icons": []
     },
     {
-      "name": "Become a Mentor",
-      "short_name": "Sign In",
-      "description": "Join as a mentor and help students",
-      "url": "/auth",
+      "name": "Start mentoring",
+      "short_name": "Mentor",
+      "description": "Share firsthand experience with another student",
+      "url": "/for-mentors",
       "icons": []
     },
     {

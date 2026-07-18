@@ -6,7 +6,7 @@ export const siteConfig = {
   description:
     'Talk one-to-one with a student who has firsthand context on the course, major, internship, campus, or college decision in front of you.',
   url: 'https://discuno.com',
-  ogImage: '/og-image.png',
+  ogImage: '/og-image-v2.png',
   links: {
     twitter: 'https://x.com/discuno',
     linkedin: 'https://linkedin.com/company/discuno',
@@ -16,7 +16,7 @@ export const siteConfig = {
   keywords: [
     'college mentor',
     'student mentor',
-    'college mentorship platform',
+    'peer college guidance',
     'peer mentorship for college students',
     'college course advice',
     'internship mentorship',
@@ -33,7 +33,7 @@ export const defaultMetadata: Metadata = {
   // including when a preview deployment renders the metadata.
   metadataBase: new URL(siteConfig.url),
   title: {
-    default: `${siteConfig.name} — ${siteConfig.tagline}`,
+    default: `${siteConfig.name} | ${siteConfig.tagline}`,
     template: `%s | ${siteConfig.name}`,
   },
   description: siteConfig.description,
@@ -53,7 +53,7 @@ export const defaultMetadata: Metadata = {
     locale: 'en_US',
     url: '/',
     siteName: siteConfig.name,
-    title: `${siteConfig.name} — ${siteConfig.tagline}`,
+    title: `${siteConfig.name} | ${siteConfig.tagline}`,
     description: siteConfig.description,
     images: [
       {
@@ -66,7 +66,7 @@ export const defaultMetadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: `${siteConfig.name} — ${siteConfig.tagline}`,
+    title: `${siteConfig.name} | ${siteConfig.tagline}`,
     description: siteConfig.description,
     images: [siteConfig.ogImage],
     site: '@discuno',

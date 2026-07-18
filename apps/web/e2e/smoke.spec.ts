@@ -34,10 +34,10 @@ test('public discovery page renders its primary path', async ({ page }) => {
   await expect(
     page.getByRole('heading', {
       level: 1,
-      name: /what college decision are you trying to make/i,
+      name: /what are you trying to decide/i,
     })
   ).toBeVisible()
-  await expect(page.getByRole('button', { name: /find someone who's been there/i })).toBeVisible()
+  await expect(page.getByRole('main').getByRole('link', { name: /find a mentor/i })).toBeVisible()
 })
 
 test('public about page renders without mutating application state', async ({ page }) => {
@@ -47,7 +47,7 @@ test('public about page renders without mutating application state', async ({ pa
   await expect(
     page.getByRole('heading', {
       level: 1,
-      name: /no one should have to figure out college entirely from scratch/i,
+      name: /college should not be figured out from scratch/i,
     })
   ).toBeVisible()
 })

@@ -66,7 +66,7 @@ describe('fresh-session sign-in', () => {
     )
   })
 
-  it('frontloads school email for mentors while keeping both OAuth choices available', () => {
+  it('shows OAuth providers before the school email option for mentors', () => {
     render(<LoginPage initialUserType="mentor" />)
 
     const schoolEmail = screen.getByRole('textbox', { name: 'School email' })
@@ -75,7 +75,7 @@ describe('fresh-session sign-in', () => {
     expect(screen.getByRole('button', { name: 'Email me a sign-in code' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Continue with Microsoft' })).toBeTruthy()
     expect(
-      schoolEmail.compareDocumentPosition(google) & Node.DOCUMENT_POSITION_FOLLOWING
+      google.compareDocumentPosition(schoolEmail) & Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy()
   })
 
@@ -86,8 +86,7 @@ describe('fresh-session sign-in', () => {
 
     await user.click(screen.getByRole('tab', { name: 'Find guidance' }))
 
-    expect(screen.getByText('No account needed to book')).toBeTruthy()
-    expect(screen.getByText(/browse mentors and reserve a session as a guest/i)).toBeTruthy()
+    expect(screen.getByText(/no account is needed to browse or book/i)).toBeTruthy()
     expect(screen.queryByRole('textbox', { name: 'School email' })).toBeNull()
   })
 })

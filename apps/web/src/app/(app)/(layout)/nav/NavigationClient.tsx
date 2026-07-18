@@ -1,29 +1,22 @@
 'use client'
 
-import { ArrowRight, LayoutDashboard, Menu } from 'lucide-react'
+import { LayoutDashboard, Menu, MoveRight } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
 import { LoginModal } from '~/components/auth/LoginModal'
 import { Brand } from '~/components/shared/Brand'
 import { AvatarIcon } from '~/components/shared/UserAvatar'
-import { Button } from '~/components/ui/button'
-import {
-  NavigationMenu,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  navigationMenuTriggerStyle,
-} from '~/components/ui/navigation-menu'
+import { Button, buttonVariants } from '~/components/ui/button'
 import {
   Sheet,
   SheetContent,
-  SheetDescription,
   SheetFooter,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
 } from '~/components/ui/sheet'
+import { Skeleton } from '~/components/ui/skeleton'
 import { cn } from '~/lib/utils'
 
 interface OnboardingStatus {
@@ -89,33 +82,30 @@ export function NavBarBase({
         defaultUserType={loginAudience}
       />
 
-      <header className="border-foreground/15 bg-background sticky top-0 z-50 border-b">
+      <header className="border-foreground/15 bg-background sticky top-0 z-40 border-b">
         <nav
-          className="page-container flex h-16 items-center justify-between gap-5"
+          className="page-shell flex h-[4.25rem] items-center gap-6"
           aria-label="Main navigation"
         >
-          <Brand />
+          <Brand className="shrink-0" />
 
-          <NavigationMenu className="hidden flex-1 lg:flex">
-            <NavigationMenuList>
-              {publicLinks.map(link => (
-                <NavigationMenuItem key={link.href}>
-                  <NavigationMenuLink
-                    active={isActiveLink(pathname, link.href)}
-                    render={<Link href={link.href} />}
-                    className={cn(
-                      navigationMenuTriggerStyle(),
-                      'text-muted-foreground after:bg-highlight data-[active=true]:text-foreground relative after:absolute after:inset-x-3 after:bottom-0 after:h-1 after:origin-left after:scale-x-0 after:transition-transform data-[active=true]:bg-transparent data-[active=true]:after:scale-x-100'
-                    )}
-                  >
-                    {link.label}
-                  </NavigationMenuLink>
-                </NavigationMenuItem>
-              ))}
-            </NavigationMenuList>
-          </NavigationMenu>
+          <div className="hidden flex-1 items-center justify-center gap-7 lg:flex">
+            {publicLinks.map(link => (
+              <Link
+                key={link.href}
+                href={link.href}
+                aria-current={isActiveLink(pathname, link.href) ? 'page' : undefined}
+                className={cn(
+                  'hover:text-foreground focus-visible:ring-ring/30 rounded-sm text-sm font-medium transition-colors focus-visible:ring-3 focus-visible:outline-none',
+                  isActiveLink(pathname, link.href) ? 'text-foreground' : 'text-muted-foreground'
+                )}
+              >
+                {link.label}
+              </Link>
+            ))}
+          </div>
 
-          <div className="flex items-center gap-1.5 sm:gap-2">
+          <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
             {!isAuthenticated ? (
               <>
                 <Button
@@ -131,33 +121,33 @@ export function NavBarBase({
                   className="hidden md:inline-flex"
                   onClick={() => openLoginModal('signup', 'mentor')}
                 >
-                  Share your experience
-                  <ArrowRight data-icon="inline-end" />
+                  Start mentoring
+                  <MoveRight data-icon="inline-end" />
                 </Button>
               </>
             ) : (
               <>
                 {isMentor ? (
-                  <Button
-                    render={<Link href="/settings" />}
-                    nativeButton={false}
-                    variant="outline"
-                    size="sm"
-                    className="hidden sm:inline-flex"
+                  <Link
+                    href="/settings"
+                    className={cn(
+                      buttonVariants({ variant: 'outline', size: 'sm' }),
+                      'hidden sm:inline-flex'
+                    )}
                   >
                     <LayoutDashboard data-icon="inline-start" />
                     Dashboard
-                  </Button>
+                  </Link>
                 ) : (
-                  <Button
-                    render={<Link href="/for-mentors" />}
-                    nativeButton={false}
-                    variant="outline"
-                    size="sm"
-                    className="hidden sm:inline-flex"
+                  <Link
+                    href="/for-mentors"
+                    className={cn(
+                      buttonVariants({ variant: 'outline', size: 'sm' }),
+                      'hidden sm:inline-flex'
+                    )}
                   >
-                    Become a mentor
-                  </Button>
+                    Start mentoring
+                  </Link>
                 )}
                 <AvatarIcon
                   profilePic={profilePic}
@@ -196,7 +186,7 @@ function MobileMenu({
       <SheetTrigger
         render={
           <Button
-            size="icon"
+            size="icon-sm"
             variant="ghost"
             className="lg:hidden"
             aria-label="Open navigation menu"
@@ -206,24 +196,21 @@ function MobileMenu({
         <Menu />
       </SheetTrigger>
       <SheetContent className="w-[min(88vw,24rem)]">
-        <SheetHeader className="border-border/70 border-b pr-16">
-          <SheetTitle>Where can we help?</SheetTitle>
-          <SheetDescription>
-            Find someone who has faced the college decision in front of you.
-          </SheetDescription>
+        <SheetHeader>
+          <SheetTitle>Menu</SheetTitle>
         </SheetHeader>
 
-        <nav className="flex flex-col gap-1 p-3" aria-label="Mobile navigation">
+        <nav className="flex flex-col px-5" aria-label="Mobile navigation">
           {mobileLinks.map(link => (
             <Link
               key={link.href}
               href={link.href}
               aria-current={isActiveLink(pathname, link.href) ? 'page' : undefined}
               className={cn(
-                'hover:bg-muted focus-visible:ring-ring/30 flex min-h-12 items-center rounded-lg border-l-4 border-transparent px-4 text-base font-medium transition-colors outline-none focus-visible:ring-3',
+                'border-foreground/15 focus-visible:ring-ring/30 flex min-h-14 items-center border-b text-lg font-medium transition-colors outline-none focus-visible:ring-3',
                 isActiveLink(pathname, link.href)
-                  ? 'bg-accent/45 border-primary text-foreground'
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? 'text-primary'
+                  : 'text-foreground hover:text-primary'
               )}
               onClick={() => setOpen(false)}
             >
@@ -232,7 +219,7 @@ function MobileMenu({
           ))}
         </nav>
 
-        <SheetFooter className="border-border/70 border-t">
+        <SheetFooter>
           {!isAuthenticated ? (
             <>
               <Button
@@ -252,28 +239,28 @@ function MobileMenu({
                   setOpen(false)
                 }}
               >
-                Share your experience
-                <ArrowRight data-icon="inline-end" />
+                Start mentoring
+                <MoveRight data-icon="inline-end" />
               </Button>
             </>
           ) : isMentor ? (
-            <Button
-              render={<Link href="/settings" onClick={() => setOpen(false)} />}
-              nativeButton={false}
-              size="lg"
+            <Link
+              href="/settings"
+              className={buttonVariants({ size: 'lg' })}
+              onClick={() => setOpen(false)}
             >
               <LayoutDashboard data-icon="inline-start" />
-              Open mentor dashboard
-            </Button>
+              Open dashboard
+            </Link>
           ) : (
-            <Button
-              render={<Link href="/for-mentors" onClick={() => setOpen(false)} />}
-              nativeButton={false}
-              size="lg"
+            <Link
+              href="/for-mentors"
+              className={buttonVariants({ size: 'lg' })}
+              onClick={() => setOpen(false)}
             >
-              Become a mentor
-              <ArrowRight data-icon="inline-end" />
-            </Button>
+              Start mentoring
+              <MoveRight data-icon="inline-end" />
+            </Link>
           )}
         </SheetFooter>
       </SheetContent>
@@ -283,10 +270,10 @@ function MobileMenu({
 
 export function NavBarSkeleton() {
   return (
-    <div className="border-border/70 bg-background h-16 border-b">
-      <div className="page-container flex h-full items-center justify-between">
-        <div className="bg-muted h-8 w-32 animate-pulse rounded-lg" />
-        <div className="bg-muted h-9 w-28 animate-pulse rounded-full" />
+    <div className="border-foreground/15 bg-background h-[4.25rem] border-b">
+      <div className="page-shell flex h-full items-center justify-between">
+        <Skeleton className="h-6 w-28" />
+        <Skeleton className="h-9 w-24" />
       </div>
     </div>
   )

@@ -4,7 +4,14 @@ import { Mail } from 'lucide-react'
 import { useId, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '~/components/ui/button'
-import { Field, FieldDescription, FieldError, FieldLabel } from '~/components/ui/field'
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+  FieldTitle,
+} from '~/components/ui/field'
 import { InputGroup, InputGroupAddon, InputGroupInput } from '~/components/ui/input-group'
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '~/components/ui/input-otp'
 import { Spinner } from '~/components/ui/spinner'
@@ -114,14 +121,14 @@ export function EmailSignInForm({ returnTo = '/settings' }: { returnTo?: string 
 
   if (showOtpInput) {
     return (
-      <div className="space-y-5">
-        <div className="space-y-1.5">
-          <p className="text-base font-semibold">Check your school inbox</p>
-          <p id={otpDescriptionId} className="text-muted-foreground text-sm leading-6">
+      <FieldGroup className="gap-5">
+        <Field>
+          <FieldTitle>Check your school inbox</FieldTitle>
+          <FieldDescription id={otpDescriptionId}>
             Enter the six-digit code sent to{' '}
             <span className="text-foreground font-medium break-all">{email}</span>.
-          </p>
-        </div>
+          </FieldDescription>
+        </Field>
 
         <Field data-invalid={Boolean(otpError)}>
           <FieldLabel htmlFor={otpInputId} className="sr-only">
@@ -143,83 +150,89 @@ export function EmailSignInForm({ returnTo = '/settings' }: { returnTo?: string 
             inputMode="numeric"
             aria-describedby={otpDescriptionId}
             aria-invalid={Boolean(otpError)}
-            containerClassName="justify-center"
+            containerClassName="w-full justify-center"
           >
             <InputOTPGroup>
               {Array.from({ length: 6 }, (_, index) => (
-                <InputOTPSlot key={index} index={index} className="size-11 text-base sm:size-12" />
+                <InputOTPSlot key={index} index={index} />
               ))}
             </InputOTPGroup>
           </InputOTP>
-          <FieldError className="text-center">{otpError || requestError}</FieldError>
+          <FieldError>{otpError || requestError}</FieldError>
+          <FieldDescription role="status" aria-live="polite">
+            {isLoading ? 'Working…' : 'Each code can be used once.'}
+          </FieldDescription>
         </Field>
 
-        <p
-          className="text-muted-foreground min-h-5 text-center text-xs"
-          role="status"
-          aria-live="polite"
-        >
-          {isLoading ? 'Working…' : 'The code can only be used once.'}
-        </p>
-
-        <div className="grid gap-2 sm:grid-cols-2">
-          <Button type="button" variant="outline" onClick={requestCode} disabled={isLoading}>
-            Send another code
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => {
-              setShowOtpInput(false)
-              setOtp('')
-              setOtpError('')
-              setRequestError('')
-            }}
-            disabled={isLoading}
-          >
-            Use a different email
-          </Button>
-        </div>
-      </div>
+        <Field>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <Button type="button" variant="outline" onClick={requestCode} disabled={isLoading}>
+              Send another code
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                setShowOtpInput(false)
+                setOtp('')
+                setOtpError('')
+                setRequestError('')
+              }}
+              disabled={isLoading}
+            >
+              Use a different email
+            </Button>
+          </div>
+        </Field>
+      </FieldGroup>
     )
   }
 
   return (
-    <form onSubmit={handleEmailSubmit} className="space-y-4" noValidate>
-      <Field data-invalid={Boolean(emailError || requestError)}>
-        <FieldLabel htmlFor={emailInputId}>School email</FieldLabel>
-        <InputGroup>
-          <InputGroupInput
-            id={emailInputId}
-            type="email"
-            inputMode="email"
-            autoComplete="email"
-            spellCheck={false}
-            placeholder="you@school.edu"
-            value={email}
-            onChange={event => handleEmailChange(event.target.value)}
-            aria-invalid={Boolean(emailError || requestError)}
-            required
-          />
-          <InputGroupAddon align="inline-start">
-            <Mail aria-hidden="true" />
-          </InputGroupAddon>
-          {isLoading && (
-            <InputGroupAddon align="inline-end">
-              <Spinner />
-              <span className="sr-only">Sending code</span>
+    <form onSubmit={handleEmailSubmit} noValidate>
+      <FieldGroup className="gap-4">
+        <Field data-invalid={Boolean(emailError || requestError)}>
+          <FieldLabel htmlFor={emailInputId}>School email</FieldLabel>
+          <InputGroup>
+            <InputGroupInput
+              id={emailInputId}
+              type="email"
+              inputMode="email"
+              autoComplete="email"
+              spellCheck={false}
+              placeholder="you@school.edu"
+              value={email}
+              onChange={event => handleEmailChange(event.target.value)}
+              aria-invalid={Boolean(emailError || requestError)}
+              required
+            />
+            <InputGroupAddon align="inline-start">
+              <Mail aria-hidden="true" />
             </InputGroupAddon>
-          )}
-        </InputGroup>
-        <FieldDescription>
-          We will email you a one-time code. Mentor access opens only for supported school domains.
-        </FieldDescription>
-        <FieldError>{emailError || requestError}</FieldError>
-      </Field>
-      <Button type="submit" disabled={isLoading || Boolean(emailError)} className="w-full">
-        {isLoading && <Spinner data-icon="inline-start" />}
-        {isLoading ? 'Sending code…' : 'Email me a sign-in code'}
-      </Button>
+            {isLoading && (
+              <InputGroupAddon align="inline-end">
+                <Spinner />
+                <span className="sr-only">Sending code</span>
+              </InputGroupAddon>
+            )}
+          </InputGroup>
+          <FieldDescription>
+            We will send a one-time code. Mentor tools require a supported .edu address.
+          </FieldDescription>
+          <FieldError>{emailError || requestError}</FieldError>
+        </Field>
+        <Field>
+          <Button
+            type="submit"
+            size="lg"
+            disabled={isLoading || Boolean(emailError)}
+            className="w-full"
+          >
+            {isLoading && <Spinner data-icon="inline-start" />}
+            {isLoading ? 'Sending code…' : 'Email me a sign-in code'}
+          </Button>
+        </Field>
+      </FieldGroup>
     </form>
   )
 }

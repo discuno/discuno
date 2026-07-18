@@ -1,15 +1,7 @@
 'use client'
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import {
-  Check,
-  CheckCircle2,
-  ChevronsUpDown,
-  CircleAlert,
-  GraduationCap,
-  Save,
-  User,
-} from 'lucide-react'
+import { Check, CheckCircle2, ChevronsUpDown, CircleAlert } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
@@ -51,6 +43,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '~/components/ui/select'
+import { Separator } from '~/components/ui/separator'
 import { Spinner } from '~/components/ui/spinner'
 import { Textarea } from '~/components/ui/textarea'
 import { cn } from '~/lib/utils'
@@ -257,36 +250,23 @@ export const EditProfileContent = ({ profile, majors }: EditProfileContentProps)
         </Alert>
       )}
 
-      <div className="grid items-start gap-6 lg:grid-cols-[19rem_minmax(0,1fr)]">
-        <aside className="flex flex-col gap-6 lg:sticky lg:top-24">
+      <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <div className="flex min-w-0 flex-col gap-10">
           <ProfileImageUpload
             currentImageUrl={profile.image}
             userName={draft.name}
             userId={profile.userId}
             onImageChange={setProfileImageUrl}
           />
-          <ProfilePreviewCard
-            draft={draft}
-            imageUrl={profileImageUrl}
-            school={profile.school}
-            savedUsername={savedUsername}
-            requirements={readiness.requirements}
-            readinessPercent={readiness.percent}
-            isReady={readiness.isComplete}
-            isDirty={isDirty}
-          />
-        </aside>
 
-        <div className="flex min-w-0 flex-col gap-6">
           <ProfileCard
-            title="Your public introduction"
-            description="Give a student enough context to know whether your experience fits the decision they are facing."
-            icon={User}
+            title="Introduction"
+            description="Explain the firsthand experience you can help a student think through."
           >
             <FieldGroup>
               <Field data-invalid={Boolean(fieldErrors.name)}>
                 <FieldLabel htmlFor="name">
-                  Name students will see <RequiredText />
+                  Public name <RequiredText />
                 </FieldLabel>
                 <Input
                   id="name"
@@ -328,22 +308,22 @@ export const EditProfileContent = ({ profile, majors }: EditProfileContentProps)
                   }
                 />
                 <FieldDescription id="username-help">
-                  This becomes discuno.com/mentor/{draft.username || 'your-name'}. Use lowercase
-                  letters, numbers, hyphens, or underscores.
+                  discuno.com/mentor/{draft.username || 'your-name'}. Use lowercase letters,
+                  numbers, hyphens, or underscores.
                 </FieldDescription>
                 <FieldError id="username-error">{fieldErrors.username}</FieldError>
               </Field>
 
               <Field data-invalid={Boolean(fieldErrors.bio)}>
                 <FieldLabel htmlFor="bio">
-                  What perspective can you share? <RequiredText />
+                  What can you help a student think through? <RequiredText />
                 </FieldLabel>
                 <Textarea
                   id="bio"
                   name="bio"
                   value={draft.bio}
                   onChange={event => updateField('bio', event.target.value)}
-                  placeholder="Share a decision you have faced, the tradeoffs you learned from, and the questions you can responsibly help another student think through."
+                  placeholder="Describe a decision you have faced and what you learned from it."
                   rows={8}
                   maxLength={BIO_MAX_LENGTH}
                   required
@@ -355,8 +335,7 @@ export const EditProfileContent = ({ profile, majors }: EditProfileContentProps)
                 />
                 <div className="flex items-start justify-between gap-4">
                   <FieldDescription id="bio-help">
-                    Be specific about classes, majors, internships, campus life, or choices you have
-                    actually navigated.
+                    Mention the classes, work, campus life, or choices you have experienced.
                   </FieldDescription>
                   <span
                     id="bio-count"
@@ -371,17 +350,18 @@ export const EditProfileContent = ({ profile, majors }: EditProfileContentProps)
             </FieldGroup>
           </ProfileCard>
 
+          <Separator />
+
           <ProfileCard
-            title="Where your perspective comes from"
-            description="These details help a student understand the context behind your experience."
-            icon={GraduationCap}
+            title="Academic context"
+            description="Add the school and field students will use to understand your perspective."
           >
             <FieldGroup>
               <Field data-disabled>
                 <FieldLabel htmlFor="school">School</FieldLabel>
                 <Input id="school" value={profile.school ?? 'No school linked'} disabled readOnly />
                 <FieldDescription>
-                  Linked to your supported school email. Contact support if this is incorrect.
+                  Set from your supported school email. Contact support if it is incorrect.
                 </FieldDescription>
               </Field>
 
@@ -442,12 +422,12 @@ export const EditProfileContent = ({ profile, majors }: EditProfileContentProps)
                   </PopoverContent>
                 </Popover>
                 <FieldDescription id="major-help">
-                  Choose the field that best matches the experience you want students to find.
+                  Choose the field closest to your experience.
                 </FieldDescription>
                 <FieldError id="major-error">{fieldErrors.major}</FieldError>
               </Field>
 
-              <div className="grid gap-5 sm:grid-cols-2">
+              <FieldGroup className="grid gap-5 sm:grid-cols-2">
                 <Field data-invalid={Boolean(fieldErrors.schoolYear)}>
                   <FieldLabel htmlFor="schoolYear">
                     Academic level <RequiredText />
@@ -515,36 +495,50 @@ export const EditProfileContent = ({ profile, majors }: EditProfileContentProps)
                   </Select>
                   <FieldError id="graduation-year-error">{fieldErrors.graduationYear}</FieldError>
                 </Field>
-              </div>
+              </FieldGroup>
             </FieldGroup>
           </ProfileCard>
-        </div>
-      </div>
 
-      <footer className="paper-panel ink-shadow sticky bottom-4 flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-h-5 text-sm" role="status" aria-live="polite">
-          {mutation.isPending ? (
-            <span className="text-muted-foreground">Saving your profile…</span>
-          ) : saveMessage ? (
-            <span className="flex items-center gap-2">
-              <CheckCircle2 aria-hidden="true" className="text-primary size-4" />
-              {saveMessage}
-            </span>
-          ) : isDirty ? (
-            <span className="font-medium">You have unsaved changes.</span>
-          ) : (
-            <span className="text-muted-foreground">Your profile details are up to date.</span>
-          )}
+          <footer className="bg-background sticky bottom-0 flex flex-col gap-3 border-t py-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-h-5 text-sm" role="status" aria-live="polite">
+              {mutation.isPending ? (
+                <span className="text-muted-foreground">Saving your profile…</span>
+              ) : saveMessage ? (
+                <span className="flex items-center gap-2">
+                  <CheckCircle2 aria-hidden="true" className="text-primary size-4" />
+                  {saveMessage}
+                </span>
+              ) : isDirty ? (
+                <span className="font-medium">You have unsaved changes.</span>
+              ) : (
+                <span className="text-muted-foreground">Your profile details are up to date.</span>
+              )}
+            </div>
+            <Button
+              type="submit"
+              size="lg"
+              className="w-full sm:w-auto"
+              disabled={mutation.isPending || !isDirty}
+            >
+              {mutation.isPending && <Spinner data-icon="inline-start" />}
+              {mutation.isPending ? 'Saving…' : 'Save profile'}
+            </Button>
+          </footer>
         </div>
-        <Button type="submit" size="lg" disabled={mutation.isPending || !isDirty}>
-          {mutation.isPending ? (
-            <Spinner data-icon="inline-start" />
-          ) : (
-            <Save data-icon="inline-start" aria-hidden="true" />
-          )}
-          {mutation.isPending ? 'Saving…' : 'Save profile'}
-        </Button>
-      </footer>
+
+        <aside className="min-w-0 lg:sticky lg:top-24" aria-label="Public profile preview">
+          <ProfilePreviewCard
+            draft={draft}
+            imageUrl={profileImageUrl}
+            school={profile.school}
+            savedUsername={savedUsername}
+            requirements={readiness.requirements}
+            readinessPercent={readiness.percent}
+            isReady={readiness.isComplete}
+            isDirty={isDirty}
+          />
+        </aside>
+      </div>
     </form>
   )
 }

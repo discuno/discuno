@@ -2,12 +2,10 @@
 
 import { TZDate } from '@date-fns/tz'
 import { format } from 'date-fns'
-import { Calendar, Check, Clock } from 'lucide-react'
-import Image from 'next/image'
+import { Check } from 'lucide-react'
 import type { EventType } from '~/app/(app)/(public)/mentor/[username]/book/actions'
 import type { BookingData } from '~/app/(app)/(public)/mentor/[username]/book/types'
-import { Avatar, AvatarFallback } from '~/components/ui/avatar'
-import { Badge } from '~/components/ui/badge'
+import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { formatCurrencyFromCents } from '~/lib/format-currency'
 import { cn } from '~/lib/utils'
 
@@ -17,8 +15,11 @@ interface BookingSidebarProps {
   selectedDate?: Date
   selectedTimeSlot: string | null
   currentStep: 'calendar' | 'booking' | 'confirmation'
+  detailsStage: 'details' | 'review'
   timeZone: string
 }
+
+type StepStatus = 'current' | 'complete' | 'upcoming'
 
 export const BookingSidebar = ({
   bookingData,
@@ -26,133 +27,124 @@ export const BookingSidebar = ({
   selectedDate,
   selectedTimeSlot,
   currentStep,
+  detailsStage,
   timeZone,
 }: BookingSidebarProps) => {
-  const steps = [
+  const hasTime = Boolean(selectedDate && selectedTimeSlot)
+  const isComplete = currentStep === 'confirmation'
+  const isDetails = currentStep === 'booking' && detailsStage === 'details'
+  const isReview = currentStep === 'booking' && detailsStage === 'review'
+
+  const steps: Array<{ label: string; status: StepStatus }> = [
     {
-      id: 'calendar',
-      label: 'Date & time',
-      isActive: currentStep === 'calendar',
-      isCompleted:
-        currentStep !== 'calendar' && !!selectedEventType && !!selectedDate && !!selectedTimeSlot,
+      label: 'Session',
+      status: selectedEventType ? 'complete' : 'current',
     },
     {
-      id: 'userDetails',
-      label: (selectedEventType?.price ?? 0) > 0 ? 'Details & checkout' : 'Your details',
-      isActive: currentStep === 'booking',
-      isCompleted: currentStep === 'confirmation',
+      label: 'Time',
+      status: hasTime ? 'complete' : selectedEventType ? 'current' : 'upcoming',
+    },
+    {
+      label: 'Details',
+      status: isComplete || isReview ? 'complete' : isDetails ? 'current' : 'upcoming',
+    },
+    {
+      label: 'Review',
+      status: isComplete ? 'complete' : isReview ? 'current' : 'upcoming',
     },
   ]
 
-  const dateDisplay =
-    selectedDate && selectedTimeSlot
-      ? format(new TZDate(selectedTimeSlot, timeZone), 'EEEE, MMMM d, yyyy')
-      : null
-
-  const timeDisplay =
-    selectedDate && selectedTimeSlot
-      ? format(new TZDate(selectedTimeSlot, timeZone), 'h:mm a')
-      : null
+  const selectedStart = selectedTimeSlot ? new TZDate(selectedTimeSlot, timeZone) : null
+  const formattedPrice = selectedEventType
+    ? (selectedEventType.price ?? 0) > 0
+      ? formatCurrencyFromCents(selectedEventType.price ?? 0, selectedEventType.currency ?? 'USD')
+      : 'Free'
+    : null
 
   return (
-    <div className="field-notes flex h-full w-full flex-col p-6 xl:border-r xl:p-8">
-      {/* Mentor Profile */}
-      <div className="mb-8 flex items-start gap-4">
-        {bookingData.image ? (
-          <Image
-            src={bookingData.image}
-            alt={bookingData.name}
-            width={64}
-            height={64}
-            className="border-foreground/20 h-16 w-16 rounded-lg border-2 object-cover shadow-[2px_2px_0_rgba(13,20,39,0.14)]"
-          />
-        ) : (
-          <Avatar className="border-foreground/20 h-16 w-16 rounded-lg border-2 shadow-[2px_2px_0_rgba(13,20,39,0.14)]">
-            <AvatarFallback>{bookingData.name.charAt(0)}</AvatarFallback>
-          </Avatar>
-        )}
-        <div className="flex-1">
-          <h2 className="text-lg font-bold">{bookingData.name}</h2>
-          <div className="mt-1 flex flex-wrap gap-2">
-            <Badge variant="secondary" className="bg-card text-xs">
-              {bookingData.school}
-            </Badge>
-            {bookingData.major && (
-              <span className="text-muted-foreground text-xs">{bookingData.major}</span>
-            )}
-          </div>
+    <aside
+      aria-labelledby="booking-summary-heading"
+      className="bg-card rounded-xl border p-5 lg:sticky lg:top-24"
+    >
+      <div className="flex items-center gap-3">
+        <Avatar className="size-12">
+          {bookingData.image && <AvatarImage src={bookingData.image} alt={bookingData.name} />}
+          <AvatarFallback>{bookingData.name.charAt(0)}</AvatarFallback>
+        </Avatar>
+        <div className="min-w-0">
+          <h2 id="booking-summary-heading" className="truncate font-semibold">
+            {bookingData.name}
+          </h2>
+          {(bookingData.school || bookingData.major) && (
+            <p className="text-muted-foreground mt-0.5 text-sm leading-5">
+              {[bookingData.major, bookingData.school].filter(Boolean).join(', ')}
+            </p>
+          )}
         </div>
       </div>
 
-      {/* Selected Session Details */}
-      {selectedEventType && (
-        <div className="paper-panel mb-8 p-4">
-          <div className="mb-3 flex items-center justify-between">
-            <h3 className="text-primary font-semibold">{selectedEventType.title}</h3>
-            {selectedEventType.price && selectedEventType.price > 0 ? (
-              <Badge variant="default">
-                {formatCurrencyFromCents(
-                  selectedEventType.price,
-                  selectedEventType.currency ?? 'USD'
-                )}
-              </Badge>
-            ) : (
-              <Badge variant="secondary">Free</Badge>
-            )}
-          </div>
-
-          <div className="space-y-2 text-sm">
-            <div className="text-muted-foreground flex items-center gap-2">
-              <Clock className="h-4 w-4" />
-              <span>{selectedEventType.length} minutes</span>
+      <section className="mt-5 border-t pt-5" aria-labelledby="selected-session-heading">
+        <h3 id="selected-session-heading" className="text-sm font-semibold">
+          Booking summary
+        </h3>
+        {selectedEventType ? (
+          <dl className="mt-3 flex flex-col gap-3 text-sm">
+            <div>
+              <dt className="text-muted-foreground text-xs">Session</dt>
+              <dd className="mt-0.5 font-medium break-words">{selectedEventType.title}</dd>
             </div>
-            {dateDisplay && timeDisplay && (
-              <div className="mt-3 border-t pt-3">
-                <div className="flex items-center gap-2 font-medium">
-                  <Calendar className="text-primary h-4 w-4" />
-                  <span>{dateDisplay}</span>
-                </div>
-                <div className="text-muted-foreground ml-6">
-                  {timeDisplay} ({timeZone})
-                </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <dt className="text-muted-foreground text-xs">Length</dt>
+                <dd className="mt-0.5">{selectedEventType.length} minutes</dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground text-xs">Price</dt>
+                <dd className="mt-0.5">{formattedPrice}</dd>
+              </div>
+            </div>
+            {selectedStart && (
+              <div>
+                <dt className="text-muted-foreground text-xs">Time</dt>
+                <dd className="mt-0.5">
+                  {format(selectedStart, 'EEE, MMM d, yyyy')}
+                  <span className="block">{format(selectedStart, 'h:mm a')}</span>
+                </dd>
+                <dd className="text-muted-foreground mt-0.5 text-xs break-words">{timeZone}</dd>
               </div>
             )}
-          </div>
-        </div>
-      )}
+          </dl>
+        ) : (
+          <p className="text-muted-foreground mt-2 text-sm">Choose a session to begin.</p>
+        )}
+      </section>
 
-      {/* Progress Steps */}
-      <div className="mt-auto space-y-4">
-        {steps.map((step, index) => (
-          <div
-            key={step.id}
-            className={cn(
-              'flex items-center gap-3 transition-colors duration-200',
-              step.isActive
-                ? 'text-primary'
-                : step.isCompleted
-                  ? 'text-primary/70'
-                  : 'text-muted-foreground'
-            )}
-          >
-            <div
+      <nav className="mt-5 border-t pt-5" aria-label="Booking progress">
+        <ol className="flex flex-col gap-3">
+          {steps.map((step, index) => (
+            <li
+              key={step.label}
+              aria-current={step.status === 'current' ? 'step' : undefined}
               className={cn(
-                'flex h-8 w-8 items-center justify-center rounded-md border text-xs font-semibold transition-all',
-                step.isActive
-                  ? 'border-primary bg-primary text-primary-foreground ring-primary/10 ring-4'
-                  : step.isCompleted
-                    ? 'border-primary bg-primary text-primary-foreground'
-                    : 'border-muted-foreground/30 bg-background'
+                'flex items-center gap-3 text-sm',
+                step.status === 'upcoming' && 'text-muted-foreground'
               )}
             >
-              {step.isCompleted ? <Check className="h-4 w-4" /> : index + 1}
-            </div>
-            <span className={cn('text-sm font-medium', step.isActive && 'font-bold')}>
-              {step.label}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
+              <span
+                className={cn(
+                  'flex size-6 shrink-0 items-center justify-center rounded-full border text-xs font-medium [&_svg]:size-3.5',
+                  step.status === 'complete' && 'border-primary bg-primary text-primary-foreground',
+                  step.status === 'current' && 'border-primary text-primary',
+                  step.status === 'upcoming' && 'border-border'
+                )}
+              >
+                {step.status === 'complete' ? <Check aria-hidden="true" /> : index + 1}
+              </span>
+              <span className={cn(step.status === 'current' && 'font-semibold')}>{step.label}</span>
+            </li>
+          ))}
+        </ol>
+      </nav>
+    </aside>
   )
 }

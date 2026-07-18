@@ -1,5 +1,4 @@
 import type { EventType } from '~/app/(app)/(public)/mentor/[username]/book/actions'
-import { Badge } from '~/components/ui/badge'
 import {
   Select,
   SelectContent,
@@ -10,12 +9,17 @@ import {
 import { formatCurrencyFromCents } from '~/lib/format-currency'
 import { cn } from '~/lib/utils'
 
+const formatEventTypePrice = (eventType: EventType) =>
+  (eventType.price ?? 0) > 0
+    ? formatCurrencyFromCents(eventType.price ?? 0, eventType.currency ?? 'USD')
+    : 'Free'
+
 export const EventTypeSelector = ({
   selectedEventType,
   eventTypes,
   onSelectEventType,
   onSelectTimeSlot,
-  className = '',
+  className,
 }: {
   selectedEventType: EventType | null
   eventTypes: EventType[]
@@ -24,67 +28,49 @@ export const EventTypeSelector = ({
   className?: string
 }) => (
   <Select
-    items={[
-      { label: 'Select a session type', value: null },
-      ...eventTypes.map(eventType => ({
-        label: eventType.title,
-        value: eventType.id.toString(),
-      })),
-    ]}
+    items={eventTypes.map(eventType => ({
+      label: eventType.title,
+      value: eventType.id.toString(),
+    }))}
     value={selectedEventType?.id.toString() ?? null}
     onValueChange={value => {
-      const eventType = eventTypes.find(et => et.id.toString() === value)
+      const eventType = eventTypes.find(candidate => candidate.id.toString() === value)
       onSelectEventType(eventType ?? null)
       onSelectTimeSlot(null)
     }}
   >
-    <SelectTrigger aria-label="Session type" className={cn('w-full', className)}>
-      <div className="flex w-full items-center justify-between">
-        {selectedEventType ? (
-          <div className="flex flex-col items-start">
-            <span className="font-medium">{selectedEventType.title}</span>
-            <span className="text-muted-foreground text-xs">
+    <SelectTrigger aria-label="Session" className={cn('h-auto min-h-12 w-full py-2.5', className)}>
+      {selectedEventType ? (
+        <div className="flex min-w-0 flex-1 items-center justify-between gap-4 text-left">
+          <span className="min-w-0">
+            <span className="block truncate font-medium">{selectedEventType.title}</span>
+            <span className="text-muted-foreground block text-xs">
               {selectedEventType.length} minutes
             </span>
-          </div>
-        ) : (
-          <span className="text-muted-foreground">
-            {className.includes('h-10') ? 'Session Type' : 'Select a session type'}
           </span>
-        )}
-
-        <div className="pr-2">
-          {selectedEventType?.price && selectedEventType.price > 0 ? (
-            <Badge variant="secondary" className="badge-success-muted">
-              {formatCurrencyFromCents(
-                selectedEventType.price,
-                selectedEventType.currency ?? 'USD'
-              )}
-            </Badge>
-          ) : (
-            <Badge variant="outline">{selectedEventType ? 'Free' : ''}</Badge>
-          )}
+          <span className="shrink-0 text-sm font-medium">
+            {formatEventTypePrice(selectedEventType)}
+          </span>
         </div>
-      </div>
+      ) : (
+        <span className="text-muted-foreground">Select a session</span>
+      )}
     </SelectTrigger>
     <SelectContent>
       <SelectGroup>
         {eventTypes.map(eventType => (
-          <SelectItem key={eventType.id} value={eventType.id.toString()}>
-            <div className="flex w-full items-center">
-              <div className="flex flex-col items-start">
-                <span className="font-medium">{eventType.title}</span>
-                <span className="text-muted-foreground text-xs">{eventType.length} minutes</span>
-              </div>
-              <div className="flex-grow" />
-              {eventType.price && eventType.price > 0 ? (
-                <Badge variant="secondary" className="badge-success-muted">
-                  {formatCurrencyFromCents(eventType.price, eventType.currency ?? 'USD')}
-                </Badge>
-              ) : (
-                <Badge variant="outline">Free</Badge>
-              )}
-            </div>
+          <SelectItem key={eventType.id} value={eventType.id.toString()} className="py-3">
+            <span className="flex min-w-0 flex-1 items-center justify-between gap-4">
+              <span className="min-w-0">
+                <span className="block truncate">{eventType.title}</span>
+                <span className="text-muted-foreground block text-xs font-normal">
+                  {eventType.length} minutes
+                </span>
+              </span>
+              <span className="shrink-0 text-xs font-medium">
+                {formatEventTypePrice(eventType)}
+              </span>
+            </span>
           </SelectItem>
         ))}
       </SelectGroup>

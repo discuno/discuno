@@ -4,8 +4,7 @@ import { Check, Circle, ExternalLink } from 'lucide-react'
 import Link from 'next/link'
 import type { ProfileDraft, ProfileRequirement } from './profile-form-state'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
-import { Badge } from '~/components/ui/badge'
-import { Button } from '~/components/ui/button'
+import { Button, buttonVariants } from '~/components/ui/button'
 import {
   Card,
   CardContent,
@@ -16,6 +15,7 @@ import {
 } from '~/components/ui/card'
 import { Progress, ProgressLabel, ProgressValue } from '~/components/ui/progress'
 import { Separator } from '~/components/ui/separator'
+import { cn } from '~/lib/utils'
 
 interface ProfilePreviewCardProps {
   draft: ProfileDraft
@@ -53,91 +53,100 @@ export const ProfilePreviewCard = ({
   const remainingCount = requirements.length - completedCount
 
   return (
-    <Card>
-      <CardHeader className="gap-3">
-        <Badge variant="secondary" className="w-fit">
-          Student view
-        </Badge>
-        <div className="flex items-center gap-3">
-          <Avatar className="size-14">
-            <AvatarImage
-              src={imageUrl ?? ''}
-              alt={draft.name.trim() ? `${draft.name.trim()}'s profile photo` : 'Profile preview'}
-            />
-            <AvatarFallback>{getInitials(draft.name)}</AvatarFallback>
-          </Avatar>
-          <div className="min-w-0">
-            <CardTitle className="truncate">{draft.name.trim() || 'Your name'}</CardTitle>
-            <CardDescription className="mt-1 truncate">
-              {[draft.major.trim(), school].filter(Boolean).join(' · ') || 'Your academic context'}
-            </CardDescription>
+    <div className="flex flex-col gap-6">
+      <Card aria-labelledby="student-preview-heading">
+        <CardHeader>
+          <CardTitle id="student-preview-heading" role="heading" aria-level={2}>
+            Student preview
+          </CardTitle>
+          <CardDescription>Updates as you edit.</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-5">
+          <div className="flex items-center gap-3">
+            <Avatar className="size-14">
+              <AvatarImage
+                src={imageUrl ?? ''}
+                alt={draft.name.trim() ? `${draft.name.trim()}'s profile photo` : 'Profile preview'}
+              />
+              <AvatarFallback>{getInitials(draft.name)}</AvatarFallback>
+            </Avatar>
+            <div className="min-w-0">
+              <p className="truncate font-semibold">{draft.name.trim() || 'Your name'}</p>
+              <p className="text-muted-foreground mt-0.5 truncate text-sm">
+                {[draft.major.trim(), school].filter(Boolean).join(' · ') ||
+                  'Your academic context'}
+              </p>
+            </div>
           </div>
-        </div>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-5">
-        <p className="text-muted-foreground line-clamp-4 text-sm leading-6">
-          {draft.bio.trim() ||
-            'Your introduction will help a student decide whether your firsthand experience fits the question they are facing.'}
-        </p>
 
-        <Separator />
+          <p className="text-muted-foreground line-clamp-5 text-sm leading-6">
+            {draft.bio.trim() || 'Your introduction will appear here.'}
+          </p>
+        </CardContent>
+        <CardFooter className="flex-col items-stretch gap-2">
+          {savedUsername ? (
+            <Link
+              href={`/mentor/${savedUsername}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={buttonVariants({ variant: 'outline' })}
+            >
+              View public profile
+              <ExternalLink data-icon="inline-end" aria-hidden="true" />
+            </Link>
+          ) : (
+            <Button variant="outline" disabled>
+              Save a username to view your profile
+            </Button>
+          )}
+          <p className="text-muted-foreground text-center text-xs leading-5">
+            {isDirty
+              ? 'The link opens your last saved profile.'
+              : 'The link opens the profile students can see.'}
+          </p>
+        </CardFooter>
+      </Card>
 
+      <Separator />
+
+      <section aria-labelledby="profile-readiness-heading">
         <Progress
           value={readinessPercent}
           aria-label="Profile readiness"
           aria-valuetext={`${completedCount} of ${requirements.length} profile essentials complete`}
         >
-          <ProgressLabel>
+          <ProgressLabel id="profile-readiness-heading" role="heading" aria-level={2}>
             {isReady ? 'Profile essentials complete' : 'Profile readiness'}
           </ProgressLabel>
           <ProgressValue />
         </Progress>
 
-        <ul className="flex flex-wrap gap-2" aria-label="Profile essentials">
+        <ul className="mt-4 flex flex-col gap-2.5" aria-label="Profile essentials">
           {requirements.map(requirement => (
-            <li key={requirement.id}>
-              <Badge variant={requirement.complete ? 'secondary' : 'outline'} className="gap-1">
-                {requirement.complete ? (
-                  <Check aria-hidden="true" className="size-3" />
-                ) : (
-                  <Circle aria-hidden="true" className="size-3" />
-                )}
-                {requirement.label}
-              </Badge>
+            <li
+              key={requirement.id}
+              className={cn(
+                'flex items-center gap-2 text-sm',
+                !requirement.complete && 'text-muted-foreground'
+              )}
+            >
+              {requirement.complete ? (
+                <Check aria-hidden="true" className="text-primary size-4" />
+              ) : (
+                <Circle aria-hidden="true" className="size-4" />
+              )}
+              <span>{requirement.label}</span>
+              <span className="sr-only">{requirement.complete ? 'Complete' : 'Not complete'}</span>
             </li>
           ))}
         </ul>
 
         {!isReady && (
-          <p className="text-muted-foreground text-xs leading-5">
-            {remainingCount} {remainingCount === 1 ? 'essential remains' : 'essentials remain'}{' '}
-            before this profile step is complete.
+          <p className="text-muted-foreground mt-4 text-xs leading-5">
+            {remainingCount} {remainingCount === 1 ? 'essential remains' : 'essentials remain'}.
           </p>
         )}
-      </CardContent>
-      <CardFooter className="flex-col items-stretch gap-2">
-        {savedUsername ? (
-          <Button
-            render={
-              <Link href={`/mentor/${savedUsername}`} target="_blank" rel="noopener noreferrer" />
-            }
-            nativeButton={false}
-            variant="outline"
-          >
-            View public profile
-            <ExternalLink data-icon="inline-end" aria-hidden="true" />
-          </Button>
-        ) : (
-          <Button variant="outline" disabled>
-            Save a username to view your profile
-          </Button>
-        )}
-        <p className="text-muted-foreground text-center text-xs leading-5">
-          {isDirty
-            ? 'The link opens your last saved public version.'
-            : 'The link opens the version students can see.'}
-        </p>
-      </CardFooter>
-    </Card>
+      </section>
+    </div>
   )
 }

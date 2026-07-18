@@ -20,45 +20,29 @@ import { Skeleton } from '~/components/ui/skeleton'
 
 const workspaceNavItems: NavMainProps['items'] = [
   {
-    title: 'Workspace',
-    url: '#',
-    icon: 'Settings2',
-    sectionLabel: 'Workspace',
-    items: [
-      {
-        title: 'Bookings',
-        url: '/settings/bookings',
-        icon: 'CalendarCheck',
-      },
-      {
-        title: 'Availability',
-        url: '/settings/availability',
-        icon: 'CalendarDays',
-      },
-      {
-        title: 'Sessions',
-        url: '/settings/event-types',
-        icon: 'BookOpen',
-      },
-      {
-        title: 'Public profile',
-        url: '/settings/profile/edit',
-        icon: 'User',
-      },
-    ],
+    title: 'Bookings',
+    url: '/settings/bookings',
+    icon: 'CalendarCheck',
   },
   {
-    title: 'Connections',
-    url: '#',
-    icon: 'Settings2',
-    sectionLabel: 'Connections',
-    items: [
-      {
-        title: 'Calendar',
-        url: '/settings/calendar',
-        icon: 'Calendar',
-      },
-    ],
+    title: 'Availability',
+    url: '/settings/availability',
+    icon: 'CalendarDays',
+  },
+  {
+    title: 'Sessions',
+    url: '/settings/event-types',
+    icon: 'BookOpen',
+  },
+  {
+    title: 'Public profile',
+    url: '/settings/profile/edit',
+    icon: 'User',
+  },
+  {
+    title: 'Calendar',
+    url: '/settings/calendar',
+    icon: 'Calendar',
   },
 ]
 
@@ -79,7 +63,7 @@ const DynamicSidebarContent = async () => {
     {
       title: 'Overview',
       url: '/settings',
-      icon: 'Rocket',
+      icon: 'House',
       badge: onboardingStatus.isComplete
         ? undefined
         : `${onboardingStatus.completedSteps}/${onboardingStatus.totalSteps}`,
@@ -123,8 +107,7 @@ const SidebarContentSkeleton = () => {
 // Main sidebar component using PPR
 export const AppSidebar = ({ ...props }: React.ComponentProps<typeof Sidebar>) => {
   return (
-    <Sidebar variant="inset" collapsible="icon" {...props}>
-      {/* Static header - prerendered */}
+    <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
@@ -133,7 +116,6 @@ export const AppSidebar = ({ ...props }: React.ComponentProps<typeof Sidebar>) =
         </SidebarMenu>
       </SidebarHeader>
 
-      {/* Dynamic content - streamed in at request time */}
       <Suspense fallback={<SidebarContentSkeleton />}>
         <DynamicSidebarContent />
       </Suspense>

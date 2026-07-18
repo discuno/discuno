@@ -1,13 +1,5 @@
-import {
-  ArrowDown,
-  ArrowRight,
-  BriefcaseBusiness,
-  Compass,
-  GraduationCap,
-  MessageCircleQuestion,
-  Route,
-  Search,
-} from 'lucide-react'
+import { ArrowDown, ArrowRight, MessageCircleQuestion, Route, Search } from 'lucide-react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { PostGrid } from '~/app/(app)/(public)/(feed)/(post)/PostGrid'
 import { DiscoveryFilters } from '~/app/(app)/(public)/(feed)/components/DiscoveryFilters'
@@ -17,10 +9,9 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '~/components/ui/accordion'
-import { Button } from '~/components/ui/button'
-import { Item, ItemContent, ItemGroup, ItemMedia, ItemTitle } from '~/components/ui/item'
+import { buttonVariants } from '~/components/ui/button'
 import { siteConfig } from '~/lib/metadata'
-import { decodeUrlParam } from '~/lib/utils'
+import { cn, decodeUrlParam } from '~/lib/utils'
 import { getInfiniteScrollPosts, getPostsByFilters } from '~/server/queries/posts'
 import { getMajors, getSchools } from '~/server/queries/reference-data'
 
@@ -30,16 +21,20 @@ interface FeedContentProps {
 
 const decisionPrompts = [
   {
-    icon: GraduationCap,
-    question: 'Is this major actually right for me?',
+    topic: 'Major',
+    question: 'Is this major right for the work I want to do?',
   },
   {
-    icon: BriefcaseBusiness,
-    question: 'What really helped you land that internship?',
+    topic: 'Internship',
+    question: 'What actually helped you land your first internship?',
   },
   {
-    icon: Compass,
-    question: 'Should I change direction or give it more time?',
+    topic: 'Direction',
+    question: 'Should I switch paths or give this more time?',
+  },
+  {
+    topic: 'Campus',
+    question: 'Which opportunities are worth making room for?',
   },
 ]
 
@@ -47,17 +42,18 @@ const conversationSteps = [
   {
     icon: MessageCircleQuestion,
     title: 'Name the decision',
-    description: 'Bring the question you keep circling, even if it is not perfectly formed yet.',
+    description: 'Bring the question you keep circling. It does not need to be perfectly formed.',
   },
   {
     icon: Search,
-    title: 'Look for relevant overlap',
-    description: 'Choose someone whose school, field, or path gives them useful firsthand context.',
+    title: 'Hear relevant firsthand context',
+    description:
+      'Ask someone whose school, field, or path overlaps with the choice in front of you.',
   },
   {
     icon: Route,
-    title: 'Leave with a next move',
-    description: 'Use the conversation to uncover tradeoffs and decide what you want to do next.',
+    title: 'Choose your next move',
+    description: 'Leave with fewer unknowns, better questions, and one action you can take next.',
   },
 ]
 
@@ -65,22 +61,22 @@ const faqs = [
   {
     question: 'What can I talk through with a mentor?',
     answer:
-      'Bring a specific college or early-career decision: a course, major, internship search, interview, campus question, graduate-school plan, or change in direction. Mentors share firsthand perspective; official academic, financial, legal, and medical decisions still belong with the appropriate professional.',
+      'Bring a specific course, major, internship, recruiting, campus, graduate school, or change-of-direction question. A mentor shares firsthand context. Official academic, financial, legal, and medical decisions still belong with the right professional.',
   },
   {
     question: 'How do I choose the right person?',
     answer:
-      'Look for the overlap that matters to your question: the same school, field of study, recruiting path, or decision. Read the mentor’s own description and session options before choosing.',
+      'Look for the overlap that matters to your question, such as the same school, field, recruiting path, or decision. Then read the mentor’s own profile and session options.',
   },
   {
     question: 'What does “school email confirmed” mean?',
     answer:
-      'It means the mentor demonstrated access to a supported school email address. It supports the school affiliation shown on the profile; it is not an identity check, background check, credential, endorsement, or promise of results.',
+      'It means the mentor demonstrated access to a supported institutional email address. It supports the school affiliation shown on the profile. It does not verify identity, background, expertise, credentials, or outcomes.',
   },
   {
     question: 'What will a session cost?',
     answer:
-      'Mentors decide whether a session is free or paid. You will see the duration and listed price before choosing a time, plus any applicable tax before a paid checkout is complete.',
+      'Mentors choose whether a session is free or paid. You will see its duration and listed price before choosing a time, plus any applicable tax before paid checkout is complete.',
   },
 ]
 
@@ -137,85 +133,59 @@ export const FeedContent = async ({ searchParams }: FeedContentProps) => {
         }}
       />
 
-      <section className="field-notes border-foreground/20 relative overflow-hidden border-b-2">
-        <div
-          className="bg-primary pointer-events-none absolute top-0 right-[8%] hidden h-3 w-28 -rotate-2 lg:block"
-          aria-hidden="true"
-        />
-        <div className="page-container grid gap-12 py-14 sm:py-18 lg:grid-cols-[1.02fr_0.98fr] lg:items-center lg:gap-16 lg:py-24">
-          <div>
-            <p className="note-stamp">Field note 01 · Find the overlap</p>
-            <h1 className="display-title mt-7 max-w-3xl">
-              What college <span className="marker-underline">decision</span> are you trying to
-              make?
-            </h1>
-            <p className="text-muted-foreground mt-6 max-w-xl text-lg leading-8">
-              Find a student who knows the school, major, or path you&apos;re weighing. Bring the
-              question a search result cannot answer for your situation.
+      <section className="border-b">
+        <div className="mx-auto grid w-full max-w-[76rem] gap-10 px-4 py-10 sm:px-6 sm:py-14 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-center lg:gap-14 lg:px-8 lg:py-16">
+          <div className="public-enter max-w-[42rem]">
+            <p className="text-primary text-sm font-semibold">
+              Student-to-student guidance for college decisions
             </p>
-
-            <div className="mt-8">
-              <p className="text-foreground/55 text-xs font-bold tracking-[0.13em] uppercase">
-                Notes students bring
-              </p>
-              <ItemGroup className="mt-3 gap-2.5">
-                {decisionPrompts.map(prompt => (
-                  <Item
-                    key={prompt.question}
-                    className="question-slip flex-nowrap px-3.5 py-3"
-                    variant="outline"
-                    size="sm"
-                  >
-                    <ItemMedia
-                      variant="icon"
-                      className="bg-accent text-foreground flex size-8 rounded-md"
-                    >
-                      <prompt.icon className="size-4" aria-hidden="true" />
-                    </ItemMedia>
-                    <ItemContent>
-                      <ItemTitle className="text-foreground">“{prompt.question}”</ItemTitle>
-                    </ItemContent>
-                  </Item>
-                ))}
-              </ItemGroup>
-            </div>
-
-            <Button
-              render={<Link href="#mentors" />}
-              nativeButton={false}
-              size="lg"
-              className="mt-8"
-            >
-              Find someone who&apos;s been there
-              <ArrowDown />
-            </Button>
+            <h1 className="display-hero mt-4">
+              What are you <span className="marker-highlight">trying to decide?</span>
+            </h1>
+            <p className="text-muted-foreground mt-6 max-w-xl text-lg leading-8 sm:text-xl">
+              Find a student with relevant firsthand context, ask what search cannot answer, and
+              choose your next move.
+            </p>
+            <Link href="#mentors" className={cn(buttonVariants({ size: 'lg' }), 'mt-8')}>
+              Find a mentor
+              <ArrowDown data-icon="inline-end" />
+            </Link>
           </div>
 
-          <DiscoveryFilters
-            schools={schools}
-            majors={majors}
-            gradYears={gradYears}
-            searchParams={searchParams}
-            hasFilters={hasFilters}
-          />
+          <div className="public-enter-delayed bg-muted relative aspect-[4/3] overflow-hidden rounded-xl lg:aspect-[7/6]">
+            <Image
+              src="/images/hero-conversation.png"
+              alt="Two students talk through a question at a library table"
+              fill
+              priority
+              className="object-cover object-center"
+              sizes="(max-width: 1023px) calc(100vw - 2rem), 56vw"
+            />
+          </div>
         </div>
       </section>
 
-      <section id="mentors" className="scroll-mt-20 border-b py-14 sm:py-18">
-        <div className="page-container">
-          <div>
-            <p className="eyebrow">{hasFilters ? 'Closest matches' : 'Student mentors'}</p>
-            <h2 className="mt-3 max-w-3xl text-3xl font-semibold tracking-[-0.035em] sm:text-4xl">
-              {hasFilters
-                ? 'Students whose experience overlaps with your search'
-                : 'Meet someone a few steps ahead'}
+      <DiscoveryFilters
+        schools={schools}
+        majors={majors}
+        gradYears={gradYears}
+        searchParams={searchParams}
+        hasFilters={hasFilters}
+      />
+
+      <section id="mentors" className="scroll-mt-20 py-14 sm:py-18">
+        <div className="mx-auto w-full max-w-[76rem] px-4 sm:px-6 lg:px-8">
+          <div className="max-w-[42rem]">
+            <h2 className="font-display text-4xl leading-tight font-semibold tracking-[-0.035em] sm:text-5xl">
+              {hasFilters ? 'Students matched to your search' : 'Meet someone a few steps ahead'}
             </h2>
-            <p className="text-muted-foreground mt-3 max-w-2xl leading-7">
-              Read what each person has lived through, then choose the perspective that fits the
-              question in front of you.
+            <p className="text-muted-foreground mt-3 text-base leading-7 sm:text-lg">
+              {hasFilters
+                ? 'Compare the school, field, and firsthand context behind each match.'
+                : 'Start with the person whose experience is closest to your question.'}
             </p>
           </div>
-          <div className="mt-7">
+          <div className="mt-8">
             <PostGrid
               schoolId={schoolId}
               majorId={majorId}
@@ -226,32 +196,52 @@ export const FeedContent = async ({ searchParams }: FeedContentProps) => {
         </div>
       </section>
 
-      <section id="how-it-works" className="field-notes scroll-mt-20 border-b py-14 sm:py-18">
-        <div className="page-container grid gap-10 lg:grid-cols-[0.72fr_1.28fr] lg:gap-16">
-          <div>
-            <p className="eyebrow">One useful conversation</p>
-            <h2 className="mt-4 max-w-2xl text-4xl leading-[1.02] font-semibold tracking-[-0.035em] sm:text-5xl">
-              From a question in your head to a next move you can own.
+      <section className="bg-muted/35 border-y py-14 sm:py-18">
+        <div className="mx-auto grid w-full max-w-[76rem] gap-9 px-4 sm:px-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16 lg:px-8">
+          <div className="max-w-[32rem]">
+            <h2 className="font-display text-4xl leading-tight font-semibold tracking-[-0.035em]">
+              A question is enough to start.
             </h2>
+            <p className="text-muted-foreground mt-3 leading-7">
+              It can be about one course, an internship, or whether to change direction.
+            </p>
           </div>
-          <ol className="paper-panel ink-shadow divide-foreground/15 divide-y overflow-hidden">
-            {conversationSteps.map((step, index) => (
+
+          <ul className="divide-border border-y">
+            {decisionPrompts.map(prompt => (
               <li
-                key={step.title}
-                className="grid gap-4 p-5 sm:grid-cols-[4rem_2.5rem_1fr] sm:items-start sm:p-6"
+                key={prompt.question}
+                className="grid gap-2 py-4 sm:grid-cols-[7rem_minmax(0,1fr)] sm:items-baseline"
               >
-                <span
-                  className="font-display text-primary text-4xl leading-none font-semibold"
-                  aria-hidden="true"
-                >
-                  0{index + 1}
-                </span>
-                <span className="bg-accent text-foreground flex size-10 items-center justify-center rounded-md border">
-                  <step.icon className="size-5" aria-hidden="true" />
-                </span>
+                <span className="text-muted-foreground text-sm font-medium">{prompt.topic}</span>
+                <p className="font-display text-xl leading-7 font-medium">“{prompt.question}”</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      <section id="how-it-works" className="scroll-mt-20 py-14 sm:py-18">
+        <div className="mx-auto grid w-full max-w-[76rem] gap-9 px-4 sm:px-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16 lg:px-8">
+          <div className="max-w-[34rem]">
+            <h2 className="font-display text-4xl leading-tight font-semibold tracking-[-0.035em] sm:text-5xl">
+              A useful conversation changes what you do next.
+            </h2>
+            <p className="text-muted-foreground mt-3 leading-7">
+              You bring the decision. Your mentor brings context you can test against your own
+              situation.
+            </p>
+          </div>
+
+          <ol className="divide-border border-y">
+            {conversationSteps.map(step => (
+              <li key={step.title} className="grid grid-cols-[2.5rem_minmax(0,1fr)] gap-4 py-6">
+                <step.icon className="text-primary mt-1 size-5" aria-hidden="true" />
                 <div>
-                  <h3 className="font-semibold">{step.title}</h3>
-                  <p className="text-muted-foreground mt-1 text-sm leading-6">{step.description}</p>
+                  <h3 className="text-lg font-semibold">{step.title}</h3>
+                  <p className="text-muted-foreground mt-1 max-w-xl leading-7">
+                    {step.description}
+                  </p>
                 </div>
               </li>
             ))}
@@ -259,19 +249,16 @@ export const FeedContent = async ({ searchParams }: FeedContentProps) => {
         </div>
       </section>
 
-      <section className="py-16 sm:py-20">
-        <div className="page-container grid gap-12 lg:grid-cols-[0.75fr_1.25fr]">
-          <div>
-            <p className="eyebrow">Common questions</p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-[-0.035em]">
-              Know before you book
-            </h2>
-          </div>
-          <Accordion className="bg-card">
+      <section className="border-t py-14 sm:py-18">
+        <div className="mx-auto grid w-full max-w-[76rem] gap-8 px-4 sm:px-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16 lg:px-8">
+          <h2 className="font-display max-w-md text-4xl leading-tight font-semibold tracking-[-0.035em]">
+            A few things to know before you book
+          </h2>
+          <Accordion className="border-t">
             {faqs.map(faq => (
               <AccordionItem key={faq.question} value={faq.question}>
-                <AccordionTrigger className="p-5 text-base">{faq.question}</AccordionTrigger>
-                <AccordionContent className="text-muted-foreground max-w-2xl px-1 text-sm leading-7">
+                <AccordionTrigger>{faq.question}</AccordionTrigger>
+                <AccordionContent className="text-muted-foreground max-w-2xl leading-7">
                   {faq.answer}
                 </AccordionContent>
               </AccordionItem>
@@ -280,23 +267,20 @@ export const FeedContent = async ({ searchParams }: FeedContentProps) => {
         </div>
       </section>
 
-      <section className="field-notes-ink on-ink border-background/10 border-y">
-        <div className="page-container flex flex-col gap-8 py-14 sm:flex-row sm:items-center sm:justify-between sm:py-16">
-          <div>
-            <p className="note-stamp">A note for someone a few steps ahead</p>
-            <h2 className="mt-2 max-w-2xl text-3xl font-semibold tracking-[-0.035em]">
-              Help someone else skip a few dead ends.
+      <section className="border-t py-12 sm:py-16">
+        <div className="mx-auto flex w-full max-w-[76rem] flex-col items-start gap-6 px-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
+          <div className="max-w-[42rem]">
+            <h2 className="font-display text-3xl leading-tight font-semibold tracking-[-0.03em] sm:text-4xl">
+              You have lived a question another student is asking.
             </h2>
+            <p className="text-muted-foreground mt-2 leading-7">
+              Share what you learned in one focused conversation, on a schedule you control.
+            </p>
           </div>
-          <Button
-            render={<Link href="/for-mentors" />}
-            nativeButton={false}
-            size="lg"
-            className="bg-highlight text-highlight-foreground hover:bg-highlight/90 shrink-0"
-          >
-            See how mentoring works
-            <ArrowRight />
-          </Button>
+          <Link href="/for-mentors" className={cn(buttonVariants({ size: 'lg' }), 'shrink-0')}>
+            Start mentoring
+            <ArrowRight data-icon="inline-end" />
+          </Link>
         </div>
       </section>
     </>

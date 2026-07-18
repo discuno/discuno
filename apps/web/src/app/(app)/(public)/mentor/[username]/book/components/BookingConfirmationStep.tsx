@@ -3,31 +3,28 @@ import { Check, Mail } from 'lucide-react'
 export const BookingConfirmationStep = () => {
   return (
     <div
-      className="flex h-full flex-col items-center justify-center px-6 py-12 text-center"
+      className="flex min-h-[32rem] flex-col items-center justify-center px-6 py-12 text-center"
       role="status"
       aria-live="polite"
       aria-atomic="true"
     >
-      <div className="bg-highlight text-highlight-foreground mb-6 flex h-14 w-14 items-center justify-center rounded-md border shadow-[2px_2px_0_rgba(13,20,39,0.14)]">
-        <Check className="h-7 w-7" strokeWidth={2.5} />
+      <div className="border-success/25 bg-success/10 text-success flex size-12 items-center justify-center rounded-full border [&_svg]:size-5">
+        <Check aria-hidden="true" />
       </div>
-      <p className="text-primary mb-2 text-xs font-semibold tracking-[0.14em] uppercase">
-        Confirmed
-      </p>
       <h2
         data-booking-step-heading
         tabIndex={-1}
-        className="text-foreground text-2xl font-semibold tracking-tight outline-none"
+        className="mt-5 text-2xl font-semibold tracking-tight outline-none"
       >
         You’re booked
       </h2>
-      <p className="text-muted-foreground mt-3 max-w-sm text-sm leading-6">
-        We sent the session details and calendar invitation to your email.
+      <p className="text-muted-foreground mt-2 max-w-sm text-sm leading-6">
+        The session details and calendar invitation are on their way to your email.
       </p>
-      <div className="bg-muted/50 text-muted-foreground mt-6 flex items-center gap-2 rounded-lg border px-3 py-2 text-xs">
-        <Mail className="h-4 w-4" />
-        Check your spam folder if it doesn’t arrive within a few minutes.
-      </div>
+      <p className="text-muted-foreground mt-5 flex items-center gap-2 text-xs">
+        <Mail aria-hidden="true" className="size-4" />
+        Check your spam folder if the email does not arrive within a few minutes.
+      </p>
     </div>
   )
 }

@@ -2,7 +2,6 @@
 
 import { Check, ChevronsUpDown, X, type LucideIcon } from 'lucide-react'
 import { startTransition, useOptimistic, useState } from 'react'
-
 import { useRouter } from 'next/navigation'
 import { Button } from '~/components/ui/button'
 import {
@@ -45,10 +44,12 @@ export const FilterButton = ({
   const [open, setOpen] = useState(false)
   const [value, setOptimisticValue] = useOptimistic(foundItem?.value ?? '')
   const router = useRouter()
+  const selectedItem = filterItems.find(item => item.value === value)
+  const controlLabel = label ?? `Select ${queryName}`
 
   const handleFilterChange = (itemId: number) => {
-    const selectedItem = filterItems.find(item => item.id === itemId)
-    const selectedValue = selectedItem?.value ?? ''
+    const nextItem = filterItems.find(item => item.id === itemId)
+    const selectedValue = nextItem?.value ?? ''
     const url = new URL(window.location.href)
 
     const nextValue = selectedValue === value ? '' : selectedValue
@@ -67,8 +68,8 @@ export const FilterButton = ({
     setOpen(false)
   }
 
-  const handleClearFilter = (e: React.MouseEvent) => {
-    e.stopPropagation()
+  const handleClearFilter = (event: React.MouseEvent) => {
+    event.stopPropagation()
     const url = new URL(window.location.href)
     url.searchParams.delete(queryName)
     url.hash = 'mentors'
@@ -84,26 +85,21 @@ export const FilterButton = ({
         <PopoverTrigger
           render={
             <Button
-              variant="outline"
+              variant={value ? 'secondary' : 'outline'}
               role="combobox"
               aria-expanded={open}
-              aria-label={label ?? `Select ${queryName}`}
-              className={cn(
-                'bg-card h-11 min-w-0 flex-1 justify-between px-3.5 font-medium',
-                value && 'border-primary/30 text-foreground'
-              )}
+              aria-label={selectedItem ? `${controlLabel}: ${selectedItem.label}` : controlLabel}
+              className="h-11 min-w-0 flex-1 justify-between"
             />
           }
         >
           <span className="flex min-w-0 items-center gap-2">
-            {Icon && <Icon className="text-primary size-4 shrink-0" aria-hidden="true" />}
+            {Icon && <Icon data-icon="inline-start" aria-hidden="true" />}
             <span className={cn('truncate', !value && 'text-muted-foreground')}>
-              {value
-                ? filterItems.find(item => item.value === value)?.label
-                : (label ?? `Select ${queryName}...`)}
+              {selectedItem?.label ?? controlLabel}
             </span>
           </span>
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          <ChevronsUpDown data-icon="inline-end" aria-hidden="true" />
         </PopoverTrigger>
         <PopoverContent
           className="w-(--anchor-width) min-w-[260px] p-0"
@@ -111,25 +107,20 @@ export const FilterButton = ({
           sideOffset={6}
         >
           <Command>
-            <CommandInput placeholder={`Search ${label?.toLowerCase() ?? queryName}…`} />
+            <CommandInput placeholder={`Search ${controlLabel.toLowerCase()}`} />
             <CommandList>
-              <CommandEmpty>No {queryName} found.</CommandEmpty>
-              <CommandGroup>
+              <CommandEmpty>No matching options.</CommandEmpty>
+              <CommandGroup heading={controlLabel}>
                 {filterItems.map(item => (
                   <CommandItem
                     key={item.value}
                     value={item.value}
                     keywords={[item.label]}
-                    onSelect={() => {
-                      handleFilterChange(item.id)
-                    }}
-                    className="text-foreground"
+                    onSelect={() => handleFilterChange(item.id)}
                   >
                     <Check
-                      className={cn(
-                        'mr-2 h-4 w-4',
-                        value === item.value ? 'opacity-100' : 'opacity-0'
-                      )}
+                      className={cn(value === item.value ? 'opacity-100' : 'opacity-0')}
+                      aria-hidden="true"
                     />
                     {item.label}
                   </CommandItem>
@@ -144,10 +135,10 @@ export const FilterButton = ({
           variant="ghost"
           size="icon"
           onClick={handleClearFilter}
-          className="text-muted-foreground hover:text-foreground h-10 w-10 shrink-0"
-          aria-label={`Clear ${queryName} filter`}
+          className="shrink-0"
+          aria-label={`Clear ${controlLabel.toLowerCase()}`}
         >
-          <X className="h-4 w-4" />
+          <X aria-hidden="true" />
         </Button>
       )}
     </div>

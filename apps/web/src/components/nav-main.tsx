@@ -7,7 +7,7 @@ import {
   CalendarCheck,
   CalendarDays,
   CreditCard,
-  Rocket,
+  House,
   Settings2,
   User,
 } from 'lucide-react'
@@ -34,7 +34,7 @@ const iconMap = {
   BookOpen,
   CreditCard,
   CalendarCheck,
-  Rocket,
+  House,
 }
 
 export type NavMainProps = {

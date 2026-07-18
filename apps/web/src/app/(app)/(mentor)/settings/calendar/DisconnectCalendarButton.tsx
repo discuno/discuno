@@ -39,21 +39,26 @@ export function DisconnectCalendarButton({ disabled }: { disabled: boolean }) {
     <AlertDialog>
       <AlertDialogTrigger
         render={
-          <Button type="button" variant="ghost" className="w-full sm:w-auto" disabled={disabled} />
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full sm:w-auto"
+            disabled={disabled}
+          />
         }
       >
-        <Link2Off data-icon="inline-start" />
+        <Link2Off data-icon="inline-start" aria-hidden="true" />
         Disconnect
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogMedia>
-            <Link2Off />
+            <Link2Off aria-hidden="true" />
           </AlertDialogMedia>
           <AlertDialogTitle>Disconnect this calendar?</AlertDialogTitle>
           <AlertDialogDescription>
-            Students will no longer be able to book you, and your synced session types will be
-            paused. You can reconnect this same account later.
+            Students will no longer be able to book you, and synced session types will be paused.
+            You can reconnect this same account later.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <form action={disconnectCalcomAccount}>

@@ -1,68 +1,81 @@
 import { ArrowLeft, GraduationCap } from 'lucide-react'
 import Link from 'next/link'
 import { Brand } from '~/components/shared/Brand'
-import { Button } from '~/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
+import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert'
+import { buttonVariants } from '~/components/ui/button'
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '~/components/ui/empty'
+import { cn } from '~/lib/utils'
 
 const AuthRejectedPage = () => {
   return (
-    <div className="field-notes min-h-screen px-4 py-6 sm:px-6 sm:py-10">
-      <div className="mx-auto flex max-w-5xl items-center justify-between">
+    <div className="bg-background flex min-h-screen flex-col">
+      <header className="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-5 sm:px-6">
         <Brand />
-        <Button render={<Link href="/" />} nativeButton={false} variant="ghost" size="sm">
-          <ArrowLeft aria-hidden="true" />
+        <Link href="/" className={buttonVariants({ variant: 'ghost', size: 'sm' })}>
+          <ArrowLeft data-icon="inline-start" aria-hidden="true" />
           Back to Discuno
-        </Button>
-      </div>
+        </Link>
+      </header>
 
-      <main className="mx-auto max-w-xl py-14 sm:py-20">
-        <p className="eyebrow text-center">Mentor access</p>
-        <Card className="stacked-note paper-panel ink-shadow corner-mark mt-5">
-          <CardHeader className="items-center px-6 pt-8 text-center sm:px-10 sm:pt-10">
-            <div className="bg-accent text-foreground mb-3 flex size-14 items-center justify-center rounded-md border">
-              <GraduationCap className="size-7" aria-hidden="true" />
-            </div>
-            <CardTitle className="text-2xl leading-8 sm:text-3xl">
+      <main className="mx-auto flex w-full max-w-lg flex-1 items-center px-4 py-12 sm:px-6 sm:py-16">
+        <Empty className="w-full py-0 md:py-0" aria-labelledby="auth-rejected-title">
+          <EmptyHeader className="max-w-md gap-3">
+            <EmptyMedia variant="icon" className="bg-accent text-accent-foreground">
+              <GraduationCap aria-hidden="true" />
+            </EmptyMedia>
+            <EmptyTitle
+              id="auth-rejected-title"
+              role="heading"
+              aria-level={1}
+              className="font-display text-3xl leading-tight font-semibold tracking-tight sm:text-4xl"
+            >
               This email cannot create a mentor profile
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6 px-6 pb-8 text-center sm:px-10 sm:pb-10">
-            <p className="text-muted-foreground text-base leading-7">
-              You can still browse mentors and book sessions with this account. To share your
-              experience as a mentor, sign in with a supported school-issued .edu address.
-            </p>
+            </EmptyTitle>
+            <EmptyDescription className="text-base leading-7">
+              This account can still browse mentors and book sessions. Mentor profiles require a
+              supported school-issued .edu address.
+            </EmptyDescription>
+          </EmptyHeader>
 
-            <div className="paper-panel bg-accent/25 p-5 text-left">
-              <p className="font-semibold">What the school email check means</p>
-              <p className="text-muted-foreground mt-2 text-sm leading-6">
-                It confirms access to an institutional email address and supports the school
-                affiliation shown on a profile. It is not an identity check, background check,
-                professional credential, or promise of results.
-              </p>
-            </div>
+          <EmptyContent className="max-w-md">
+            <Alert className="text-left">
+              <GraduationCap aria-hidden="true" />
+              <AlertTitle>What the school email check means</AlertTitle>
+              <AlertDescription>
+                <p>
+                  It confirms access to an institutional email address and supports the school
+                  affiliation shown on a profile. It is not an identity check, background check,
+                  professional credential, or promise of results. If a supported school address is
+                  not recognized,{' '}
+                  <Link href="/support" className="text-foreground underline underline-offset-4">
+                    contact support
+                  </Link>
+                  .
+                </p>
+              </AlertDescription>
+            </Alert>
 
             <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
-              <Button render={<Link href="/auth?intent=mentor" />} nativeButton={false}>
+              <Link href="/auth?intent=mentor" className={buttonVariants({ size: 'lg' })}>
                 Sign in with a school email
-              </Button>
-              <Button render={<Link href="/#mentors" />} nativeButton={false} variant="outline">
-                <ArrowLeft aria-hidden="true" />
-                Continue browsing
-              </Button>
-            </div>
-
-            <p className="border-foreground/15 text-muted-foreground border-t pt-6 text-sm">
-              Using a school email that is not recognized?{' '}
-              <Link
-                href="/support"
-                className="text-primary font-medium underline underline-offset-4"
-              >
-                Contact support
               </Link>
-              .
-            </p>
-          </CardContent>
-        </Card>
+              <Link
+                href="/#mentors"
+                className={cn(buttonVariants({ variant: 'outline', size: 'lg' }))}
+              >
+                <ArrowLeft data-icon="inline-start" aria-hidden="true" />
+                Continue browsing
+              </Link>
+            </div>
+          </EmptyContent>
+        </Empty>
       </main>
     </div>
   )

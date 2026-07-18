@@ -4,6 +4,7 @@ import { CalendarIcon, Clock } from 'lucide-react'
 
 import type { TimeSlot } from '~/app/(app)/(public)/mentor/[username]/book/actions'
 import { Button } from '~/components/ui/button'
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia } from '~/components/ui/empty'
 import { Skeleton } from '~/components/ui/skeleton'
 
 export const TimeSlotsList = ({
@@ -21,9 +22,9 @@ export const TimeSlotsList = ({
 }) => {
   if (isFetchingSlots) {
     return (
-      <div className="slide-in-up flex flex-col gap-2">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <Skeleton key={i} className="h-10 w-full" />
+      <div className="grid grid-cols-2 gap-2" aria-label="Loading available times">
+        {Array.from({ length: 6 }).map((_, index) => (
+          <Skeleton key={index} className="h-10 w-full" />
         ))}
       </div>
     )
@@ -31,13 +32,13 @@ export const TimeSlotsList = ({
 
   if (slots.length > 0) {
     return (
-      <div className="slide-in-up grid grid-cols-2 gap-2 md:grid-cols-1">
-        {slots.map((slot, index) => (
+      <div className="grid grid-cols-2 gap-2" aria-live="polite">
+        {slots.map(slot => (
           <Button
             key={slot.time}
+            type="button"
             variant="outline"
-            className="slide-in-up h-11 w-full justify-center px-3 text-sm"
-            style={{ animationDelay: `${Math.min(index, 10) * 25}ms` }}
+            className="w-full justify-center"
             disabled={!slot.available}
             onClick={() => onSelectTimeSlot(slot.time)}
           >
@@ -50,9 +51,13 @@ export const TimeSlotsList = ({
   }
 
   return (
-    <div className="slide-in-up text-muted-foreground rounded-md border border-dashed p-6 text-center">
-      <CalendarIcon className="mx-auto mb-2 h-8 w-8" />
-      <p className="text-sm">{emptyMessage}</p>
-    </div>
+    <Empty className="min-h-44 py-8 md:py-8" aria-live="polite">
+      <EmptyHeader>
+        <EmptyMedia variant="icon">
+          <CalendarIcon />
+        </EmptyMedia>
+        <EmptyDescription>{emptyMessage}</EmptyDescription>
+      </EmptyHeader>
+    </Empty>
   )
 }

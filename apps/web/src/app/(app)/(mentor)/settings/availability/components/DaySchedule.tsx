@@ -3,7 +3,13 @@
 import { Plus } from 'lucide-react'
 import type { TimeInterval } from '~/app/types/availability'
 import { Button } from '~/components/ui/button'
-import { Field, FieldError, FieldLabel } from '~/components/ui/field'
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+} from '~/components/ui/field'
 import { Switch } from '~/components/ui/switch'
 import { getIntervalValidation, getNextAvailableInterval } from './availability-utils'
 import { TimeIntervalRow } from './TimeIntervalRow'
@@ -41,21 +47,28 @@ export const DaySchedule = ({
   }
 
   return (
-    <div className="border-foreground/15 bg-card group hover:border-foreground/30 rounded-xl border p-3 transition-colors sm:p-4">
-      <Field orientation="horizontal">
+    <div className="grid gap-4 py-4 sm:grid-cols-[10rem_minmax(0,1fr)] sm:gap-6">
+      <Field orientation="horizontal" data-disabled={disabled || undefined}>
         <Switch
           id={`switch-${day}`}
           checked={isEnabled}
           onCheckedChange={onDayToggle}
           disabled={disabled}
         />
-        <FieldLabel htmlFor={`switch-${day}`} className="cursor-pointer capitalize">
-          {day}
-        </FieldLabel>
-        {!isEnabled && <span className="text-muted-foreground text-xs">Unavailable</span>}
+        <FieldContent>
+          <FieldLabel htmlFor={`switch-${day}`} className="cursor-pointer capitalize">
+            {day}
+          </FieldLabel>
+          <FieldDescription>
+            {isEnabled
+              ? `${intervals.length} window${intervals.length === 1 ? '' : 's'}`
+              : 'Unavailable'}
+          </FieldDescription>
+        </FieldContent>
       </Field>
+
       {isEnabled && (
-        <div className="mt-4 flex flex-col gap-3">
+        <div className="flex min-w-0 flex-col gap-3">
           {intervals.map((interval, index) => (
             <TimeIntervalRow
               key={index}
@@ -72,9 +85,9 @@ export const DaySchedule = ({
           )}
           <Button
             type="button"
-            variant="outline"
+            variant="ghost"
             size="sm"
-            className="w-full"
+            className="self-start"
             onClick={handleAddInterval}
             disabled={disabled || !nextInterval}
           >

@@ -517,13 +517,16 @@ Use `docs/positioning.md` as the source of truth for public-facing copy.
 
 Use `docs/design-system.md` as the source of truth for visual work.
 
-- Discuno's owned direction is “decision field notes”: warm paper, deep ink, cobalt actions, one
-  chartreuse highlighter, Newsreader display type, Geist UI text, ruled fields, stamps, and question
-  slips.
+- Discuno's owned direction is “warm editorial clarity”: warm paper, deep ink, cobalt actions, one
+  chartreuse highlighter, Newsreader display type, Geist UI text, real student imagery, open margins,
+  and measured rules.
 - Keep familiar interaction semantics. The shadcn/Base primitives supply behavior; Discuno tokens
-  and recurring editorial assets supply the identity.
+  and content-led editorial composition supply the identity.
 - Acquisition may be more expressive. Auth, booking, payments, and the mentor workspace must remain
   calmer and keep decoration away from dense controls.
+- Cards are reserved for real containment such as forms, calendars, summaries, warnings, and
+  overlays. Do not use stacked notes, stamps, fake tape, rotated elements, or cards as the default
+  section and list treatment.
 - Do not reintroduce generic blue-purple gradients, blurred color orbs, glass cards, universal pill
   geometry, or large soft floating shadows.
 - Add registry components only for a real user or business job. Do not add charts without

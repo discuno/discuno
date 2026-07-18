@@ -1,10 +1,10 @@
-import { CalendarCheck, ExternalLink, Link2, ShieldCheck } from 'lucide-react'
+import { CircleAlert, ExternalLink } from 'lucide-react'
 import Link from 'next/link'
-import { Alert, AlertDescription } from '~/components/ui/alert'
+import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert'
 import { Badge } from '~/components/ui/badge'
-import { Button } from '~/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
+import { buttonVariants } from '~/components/ui/button'
 import { requirePermission } from '~/lib/auth/auth-utils'
+import { cn } from '~/lib/utils'
 import {
   getActiveConnectionByUserId,
   getReadyConnectionByUserId,
@@ -45,15 +45,14 @@ export default async function CalendarSettingsPage({ searchParams }: CalendarSet
   const statusMessage = params.calcom ? statusMessages[params.calcom] : undefined
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-      <header className="flex flex-col items-start gap-3">
-        <Badge variant="outline">Calendar</Badge>
-        <h1 className="text-3xl font-semibold tracking-tight">
-          Connect the calendar you already use
+    <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
+      <header className="flex max-w-2xl flex-col gap-1.5">
+        <h1 className="font-display text-3xl leading-tight font-semibold tracking-tight">
+          Calendar connection
         </h1>
-        <p className="text-muted-foreground max-w-2xl leading-7">
-          Cal.com keeps your availability and existing calendar conflicts in sync. Discuno only
-          requests the access needed to show times, create sessions, and keep bookings current.
+        <p className="text-muted-foreground text-sm leading-6">
+          Cal.com syncs availability and conflicts. Discuno requests only the access needed to show
+          times, create sessions, and keep bookings current.
         </p>
       </header>
 
@@ -63,75 +62,70 @@ export default async function CalendarSettingsPage({ searchParams }: CalendarSet
         </Alert>
       )}
 
-      <Card className="shadow-none">
-        <CardHeader>
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <CardTitle>Cal.com connection</CardTitle>
-              <CardDescription>
-                {readyConnection
-                  ? `Connected as cal.com/${readyConnection.calcomUsername}`
-                  : isConnected
-                    ? 'Connection approved; finishing the first sync'
-                    : 'Required before students can book you'}
-              </CardDescription>
-            </div>
-            <Badge variant={isReady ? 'secondary' : 'outline'}>
-              {isReady ? 'Ready' : isConnected ? 'Finishing setup' : 'Not connected'}
-            </Badge>
+      <section
+        className="border-border flex flex-col gap-6 border-y py-6"
+        aria-labelledby="calcom-title"
+      >
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex flex-col gap-1">
+            <h2 id="calcom-title" className="text-lg font-semibold">
+              Cal.com
+            </h2>
+            <p className="text-muted-foreground text-sm leading-6">
+              {readyConnection
+                ? `Connected as cal.com/${readyConnection.calcomUsername}`
+                : isConnected
+                  ? 'Connection approved; finishing the first sync'
+                  : 'Required before students can book you'}
+            </p>
           </div>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-5">
-          <ul className="grid gap-3 text-sm sm:grid-cols-3">
-            <li className="bg-muted/50 flex flex-col items-start gap-2 rounded-lg p-3">
-              <CalendarCheck className="text-primary size-5" aria-hidden="true" />
-              Avoid double bookings
-            </li>
-            <li className="bg-muted/50 flex flex-col items-start gap-2 rounded-lg p-3">
-              <Link2 className="text-primary size-5" aria-hidden="true" />
-              Keep times in sync
-            </li>
-            <li className="bg-muted/50 flex flex-col items-start gap-2 rounded-lg p-3">
-              <ShieldCheck className="text-primary size-5" aria-hidden="true" />
-              Disconnect after sessions settle
-            </li>
-          </ul>
+          <Badge variant={isReady ? 'success' : isConnected ? 'warning' : 'outline'}>
+            {isReady ? 'Ready' : isConnected ? 'Finishing setup' : 'Not connected'}
+          </Badge>
+        </div>
 
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <Button
-              render={<Link href="/api/integrations/calcom/connect?returnTo=/settings/calendar" />}
-              nativeButton={false}
-            >
-              {isConnected ? 'Reconnect Cal.com' : 'Continue with Cal.com'}
-              <ExternalLink aria-hidden="true" data-icon="inline-end" />
-            </Button>
-            {isConnected && (
-              <>
-                <Button
-                  render={<a href="https://app.cal.com" target="_blank" rel="noreferrer" />}
-                  nativeButton={false}
-                  variant="outline"
-                >
-                  Open Cal.com
-                  <ExternalLink aria-hidden="true" data-icon="inline-end" />
-                </Button>
-                <DisconnectCalendarButton disabled={hasProtectedBookings} />
-              </>
-            )}
-          </div>
-          {!isConnected && (
-            <p className="text-muted-foreground text-sm">
-              Sign in or create your Cal.com account, approve access, and you&apos;ll return here
-              automatically.
-            </p>
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+          <Link
+            href="/api/integrations/calcom/connect?returnTo=/settings/calendar"
+            prefetch={false}
+            className={cn(buttonVariants(), 'w-full sm:w-auto')}
+          >
+            {isConnected ? 'Reconnect Cal.com' : 'Continue with Cal.com'}
+            <ExternalLink aria-hidden="true" data-icon="inline-end" />
+          </Link>
+          {isConnected && (
+            <>
+              <a
+                href="https://app.cal.com"
+                target="_blank"
+                rel="noreferrer"
+                className={cn(buttonVariants({ variant: 'outline' }), 'w-full sm:w-auto')}
+              >
+                Open Cal.com
+                <ExternalLink aria-hidden="true" data-icon="inline-end" />
+              </a>
+              <DisconnectCalendarButton disabled={hasProtectedBookings} />
+            </>
           )}
-          {hasProtectedBookings && (
-            <p className="text-muted-foreground text-sm">
+        </div>
+
+        {!isConnected && (
+          <p className="text-muted-foreground text-sm leading-6">
+            Sign in or create a Cal.com account, approve access, and you&apos;ll return here
+            automatically.
+          </p>
+        )}
+
+        {hasProtectedBookings && (
+          <Alert>
+            <CircleAlert aria-hidden="true" />
+            <AlertTitle>Calendar changes are paused</AlertTitle>
+            <AlertDescription>
               Keep this connection in place until active sessions and their payments are settled.
-            </p>
-          )}
-        </CardContent>
-      </Card>
+            </AlertDescription>
+          </Alert>
+        )}
+      </section>
     </div>
   )
 }
