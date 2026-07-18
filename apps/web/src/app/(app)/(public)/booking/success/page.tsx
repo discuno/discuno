@@ -146,7 +146,7 @@ const BookingSuccessPage = async ({ searchParams }: BookingSuccessPageProps) => 
             </Alert>
 
             <div className="flex w-full flex-col gap-2 sm:flex-row sm:justify-center">
-              <Link href="/#mentors" className={buttonVariants({ size: 'lg' })}>
+              <Link href="/find" className={buttonVariants({ size: 'lg' })}>
                 <Search data-icon="inline-start" aria-hidden="true" />
                 Browse mentors
               </Link>

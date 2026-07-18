@@ -1,35 +1,66 @@
+import { ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 import { Brand } from '~/components/shared/Brand'
+import { buttonVariants } from '~/components/ui/button'
 
-const primaryLinks = [
-  { label: 'Find a mentor', href: '/#mentors' },
-  { label: 'Start mentoring', href: '/for-mentors' },
-  { label: 'College guides', href: '/blog' },
-  { label: 'About', href: '/about' },
-  { label: 'Support', href: '/support' },
+const linkGroups = [
+  {
+    title: 'Decide',
+    links: [
+      { label: 'Find a mentor', href: '/find' },
+      { label: 'How it works', href: '/#how-it-works' },
+      { label: 'College guides', href: '/blog' },
+    ],
+  },
+  {
+    title: 'Mentor',
+    links: [
+      { label: 'Start mentoring', href: '/for-mentors' },
+      { label: 'Sign in', href: '/auth?intent=mentor' },
+    ],
+  },
+  {
+    title: 'Discuno',
+    links: [
+      { label: 'About', href: '/about' },
+      { label: 'Support', href: '/support' },
+    ],
+  },
 ]
 
 export const Footer = () => {
   return (
     <footer className="border-foreground/15 border-t">
-      <div className="page-shell py-8 sm:py-10">
-        <div className="flex flex-col gap-7 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex flex-col gap-3">
+      <div className="page-shell py-10 sm:py-14">
+        <div className="grid gap-10 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:gap-16">
+          <div className="flex max-w-xl flex-col items-start gap-5">
             <Brand />
-            <p className="text-muted-foreground text-sm">
-              One question. One useful conversation. A clearer next move.
+            <p className="font-display text-3xl leading-tight font-medium tracking-[-0.03em] sm:text-4xl">
+              A clearer next move starts with one honest question.
             </p>
+            <Link href="/#decision-composer" className={buttonVariants({ variant: 'outline' })}>
+              Bring your question
+              <ArrowRight data-icon="inline-end" />
+            </Link>
           </div>
 
-          <nav className="flex flex-wrap gap-x-6 gap-y-3" aria-label="Footer navigation">
-            {primaryLinks.map(link => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="text-muted-foreground hover:text-foreground text-sm font-medium transition-colors"
-              >
-                {link.label}
-              </Link>
+          <nav className="grid grid-cols-2 gap-8 sm:grid-cols-3" aria-label="Footer navigation">
+            {linkGroups.map(group => (
+              <div key={group.title}>
+                <p className="text-sm font-semibold">{group.title}</p>
+                <ul className="mt-3 flex flex-col gap-2.5">
+                  {group.links.map(link => (
+                    <li key={link.href}>
+                      <Link
+                        href={link.href}
+                        className="text-muted-foreground hover:text-foreground text-sm transition-colors"
+                      >
+                        {link.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             ))}
           </nav>
         </div>

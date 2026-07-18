@@ -57,7 +57,7 @@ describe('AttendeeDetailsStep', () => {
 
     await user.click(screen.getByRole('button', { name: 'Review booking' }))
 
-    expect(screen.getByRole('heading', { name: 'Review booking' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Review your session' })).toBeInTheDocument()
     expect(screen.getByText('Choosing between two majors')).toBeInTheDocument()
     expect(onReviewChange).toHaveBeenCalledWith(true)
     expect(mutate).not.toHaveBeenCalled()
@@ -87,7 +87,7 @@ describe('AttendeeDetailsStep', () => {
 
     await user.click(screen.getByRole('button', { name: 'Review booking' }))
 
-    expect(screen.getByRole('heading', { name: 'Your details' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Your question and details' })).toBeInTheDocument()
     expect(screen.getByText('Enter your full name.')).toBeInTheDocument()
     expect(screen.getByText('Enter a valid email address.')).toBeInTheDocument()
     expect(onReviewChange).not.toHaveBeenCalled()

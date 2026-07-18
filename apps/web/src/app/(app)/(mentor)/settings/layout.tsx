@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { SettingsHeader } from '~/app/(app)/(mentor)/settings/components/SettingsHeader'
 import { AppSidebar } from '~/components/app-sidebar'
+import { SkipLink } from '~/components/shared/SkipLink'
 import { SidebarInset, SidebarProvider } from '~/components/ui/sidebar'
 import { requirePermission } from '~/lib/auth/auth-utils'
 import { UnauthenticatedError, UnauthorizedError } from '~/lib/errors'
@@ -19,8 +20,9 @@ const SettingsLayout = async ({ children }: { children: React.ReactNode }) => {
 
   return (
     <SidebarProvider>
+      <SkipLink href="#mentor-workspace-content" />
       <AppSidebar />
-      <SidebarInset className="min-w-0 overflow-hidden">
+      <SidebarInset id="mentor-workspace-content" tabIndex={-1} className="min-w-0 overflow-hidden">
         <SettingsHeader />
         <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-4 py-6 sm:px-6 sm:py-8 lg:px-10">
           {children}

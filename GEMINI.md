@@ -506,6 +506,14 @@ Use `SKIP_ENV_VALIDATION=1` only when local experimentation requires bypassing v
 
 Use `docs/positioning.md` as the source of truth for public-facing copy.
 
+- The public student journey is question first: `/` captures one concrete decision, `/find` narrows
+  eligible mentors by school, major, and graduation year, the mentor profile establishes fit, and
+  booking carries the same question into session details. Keep the raw question in versioned
+  `sessionStorage` before intentional booking submission; never place it in URLs, page or SEO
+  metadata, logs, or analytics payloads. Once submitted, the validated topic follows the existing
+  booking and immutable Checkout snapshot contract.
+- Keep `/find` honest about its matching model. Until Discuno has a real topic taxonomy and ranking
+  signal, describe results as context filtered rather than semantically matched.
 - Position Discuno as student-to-student guidance for a specific college decision, not as a generic mentorship platform.
 - Lead with the student's question and desired next move; mention mechanics only where they remove friction.
 - Use `conversation` in persuasion copy, `session` in transactional copy, and `student` instead of `mentee` outside legal/internal contexts.

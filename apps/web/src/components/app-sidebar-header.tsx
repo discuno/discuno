@@ -15,7 +15,7 @@ export const AppSidebarHeader = () => {
   }
 
   return (
-    <SidebarMenuButton size="lg" render={<Link href="/" onClick={handleClick} />}>
+    <SidebarMenuButton size="lg" render={<Link href="/settings" onClick={handleClick} />}>
       <IconLogo className="text-primary size-7 shrink-0" aria-hidden="true" />
       <div className="grid min-w-0 flex-1 text-left text-sm leading-tight">
         <TextLogo className="text-foreground h-4 w-auto" aria-hidden="true" />

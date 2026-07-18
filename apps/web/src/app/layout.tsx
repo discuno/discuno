@@ -17,6 +17,7 @@ const RootLayout = ({ children }: Readonly<{ children: React.ReactNode }>) => {
       lang="en"
       dir="ltr"
       className={`${GeistSans.variable} theme-discuno`}
+      data-scroll-behavior="smooth"
       suppressHydrationWarning
     >
       <body className="bg-background text-foreground min-h-[100dvh] font-sans antialiased">

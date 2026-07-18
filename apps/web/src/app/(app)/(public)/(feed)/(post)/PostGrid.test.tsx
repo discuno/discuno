@@ -55,12 +55,19 @@ const renderWithQueryClient = (children: ReactNode) => {
   return render(<QueryClientProvider client={queryClient}>{children}</QueryClientProvider>)
 }
 
-const renderGrid = (posts: Card[]) =>
+const renderGrid = (
+  posts: Card[],
+  filters: {
+    schoolId?: number | null
+    majorId?: number | null
+    graduationYear?: number | null
+  } = {}
+) =>
   renderWithQueryClient(
     <PostGrid
-      schoolId={null}
-      majorId={null}
-      graduationYear={null}
+      schoolId={filters.schoolId ?? null}
+      majorId={filters.majorId ?? null}
+      graduationYear={filters.graduationYear ?? null}
       initialPage={{ posts, hasMore: false }}
     />
   )
@@ -80,7 +87,7 @@ describe('public mentor discovery grid', () => {
       '1'
     )
     expect(screen.getByRole('heading', { name: 'Mentor 1' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /see how they can help/i })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: "See Mentor 1's sessions" })).toHaveAttribute(
       'href',
       '/mentor/mentor-1'
     )
@@ -100,13 +107,23 @@ describe('public mentor discovery grid', () => {
     )
   })
 
-  it('offers a useful recovery path when no mentor exactly matches', () => {
+  it('sets honest expectations when no profiles are public', () => {
     renderGrid([])
+
+    expect(screen.getByText('Mentor profiles are being prepared')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /read college guides/i })).toHaveAttribute(
+      'href',
+      '/blog'
+    )
+  })
+
+  it('offers a useful recovery path when no mentor exactly matches a filter', () => {
+    renderGrid([], { schoolId: 11 })
 
     expect(screen.getByText('No exact matches yet')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /clear all filters/i })).toHaveAttribute(
       'href',
-      '/#mentors'
+      '/find#mentors'
     )
   })
 
@@ -114,7 +131,7 @@ describe('public mentor discovery grid', () => {
     const card = makeCard(1)
     renderGrid([card])
 
-    const callToAction = screen.getByRole('link', { name: /see how they can help/i })
+    const callToAction = screen.getByRole('link', { name: "See Mentor 1's sessions" })
     callToAction.addEventListener('click', event => event.preventDefault())
     fireEvent.click(callToAction)
 
@@ -123,5 +140,21 @@ describe('public mentor discovery grid', () => {
       targetUserId: card.createdById,
       postId: card.id,
     })
+  })
+
+  it('uses structured discovery links without carrying the decision question', () => {
+    renderGrid([makeCard(1)])
+
+    expect(screen.getByRole('link', { name: 'University of Michigan' })).toHaveAttribute(
+      'href',
+      '/find?school=umich#mentors'
+    )
+    expect(screen.getByRole('link', { name: 'Computer Science' })).toHaveAttribute(
+      'href',
+      '/find?major=computer%20science#mentors'
+    )
+    expect(
+      screen.getByRole('link', { name: "See Mentor 1's sessions" }).getAttribute('href')
+    ).not.toContain('question')
   })
 })

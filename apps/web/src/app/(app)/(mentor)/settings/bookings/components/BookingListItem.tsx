@@ -33,6 +33,7 @@ import type { Booking } from './booking-types'
 type BookingListItemProps = {
   booking: Booking
   timeZone: string
+  headingLevel?: 2 | 3
 }
 
 const statusPresentation: Record<
@@ -81,7 +82,7 @@ const formatTime = (date: Date, timeZone: string) =>
     timeZone,
   }).format(date)
 
-export const BookingListItem = ({ booking, timeZone }: BookingListItemProps) => {
+export const BookingListItem = ({ booking, timeZone, headingLevel = 2 }: BookingListItemProps) => {
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
   const queryClient = useQueryClient()
   const startDate = new Date(booking.startTime)
@@ -120,7 +121,7 @@ export const BookingListItem = ({ booking, timeZone }: BookingListItemProps) => 
     <Item role="listitem" className="items-start rounded-none border-0 px-0 py-5 sm:flex-nowrap">
       <ItemContent className="min-w-0 gap-2">
         <ItemHeader className="items-start">
-          <ItemTitle role="heading" aria-level={2} className="line-clamp-none text-base">
+          <ItemTitle role="heading" aria-level={headingLevel} className="line-clamp-none text-base">
             {booking.title}
           </ItemTitle>
           <Badge variant={status.variant} aria-label={`Booking status: ${status.label}`}>
@@ -132,11 +133,13 @@ export const BookingListItem = ({ booking, timeZone }: BookingListItemProps) => 
         </ItemDescription>
         <div className="text-muted-foreground flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
           <time dateTime={startDate.toISOString()}>
-            {formatDate(startDate, timeZone)} · {formatTime(startDate, timeZone)}–
+            {formatDate(startDate, timeZone)} from {formatTime(startDate, timeZone)} to{' '}
             {formatTime(endDate, timeZone)}
           </time>
-          <span aria-hidden="true">·</span>
-          <span>{timeZone.replaceAll('_', ' ')}</span>
+          <span>
+            <span className="sr-only">Timezone: </span>
+            {timeZone.replaceAll('_', ' ')}
+          </span>
         </div>
       </ItemContent>
 

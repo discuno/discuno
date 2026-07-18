@@ -1,32 +1,49 @@
-import { ArrowRightIcon } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 import type { Metadata } from 'next'
-import Image from 'next/image'
 import Link from 'next/link'
-
 import { buttonVariants } from '~/components/ui/button'
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '~/components/ui/empty'
-import { formatDate, getAllPosts } from '~/lib/blog'
+import { formatDate, getAllPosts, type BlogPostMetadata } from '~/lib/blog'
 import { absoluteUrl, createMetadata } from '~/lib/metadata'
-import { cn } from '~/lib/utils'
 
 export const metadata: Metadata = createMetadata({
   title: 'Guides for College Decisions',
   description:
-    'Questions, checklists, and firsthand prompts for choosing a major, navigating campus, preparing for recruiting, and making your next college decision.',
+    'Questions and practical prompts for choosing a major, navigating campus, preparing for recruiting, and making your next college decision.',
   alternates: {
     canonical: '/blog',
   },
   openGraph: {
-    title: 'College decisions, made clearer | Discuno',
-    description: 'Practical questions and guides for the college choices no one fully explains.',
+    title: 'Questions for clearer college decisions | Discuno',
+    description: 'Practical guides for the college choices no one fully explains.',
     url: '/blog',
   },
 })
 
-const displayTag = (tag: string) => tag.replaceAll('-', ' ')
+function PostMeta({ post }: { post: BlogPostMetadata }) {
+  return (
+    <dl className="text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 text-sm">
+      <div>
+        <dt className="sr-only">Published</dt>
+        <dd>
+          <time dateTime={post.date}>{formatDate(post.date)}</time>
+        </dd>
+      </div>
+      <div>
+        <dt className="sr-only">Reading time</dt>
+        <dd>{post.readingTime}</dd>
+      </div>
+      <div>
+        <dt className="sr-only">Author</dt>
+        <dd>By {post.author}</dd>
+      </div>
+    </dl>
+  )
+}
 
-const BlogPage = () => {
+export default function BlogPage() {
   const posts = getAllPosts()
+  const [featuredPost, ...remainingPosts] = posts
   const blogJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Blog',
@@ -58,15 +75,17 @@ const BlogPage = () => {
   }
 
   return (
-    <div className="mx-auto w-full max-w-[76rem] px-4 py-12 sm:px-6 sm:py-16 lg:px-8 lg:py-20">
+    <div className="page-shell py-12 sm:py-18 lg:py-20">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(blogJsonLd) }}
       />
 
-      <header className="grid gap-8 pb-12 sm:pb-16 lg:grid-cols-12 lg:items-end">
-        <h1 className="display-hero lg:col-span-8">Questions worth asking before you choose.</h1>
-        <p className="text-muted-foreground max-w-sm text-base leading-7 lg:col-span-4 lg:pb-1">
+      <header className="grid gap-7 pb-12 sm:pb-16 lg:grid-cols-12 lg:items-end">
+        <h1 className="display-hero max-w-4xl lg:col-span-8">
+          Ask better questions <span className="marker-highlight">before you choose.</span>
+        </h1>
+        <p className="text-muted-foreground max-w-sm leading-7 lg:col-span-4 lg:pb-1">
           Practical guides for majors, internships, campus life, and the decision in front of you.
         </p>
       </header>
@@ -76,7 +95,7 @@ const BlogPage = () => {
           College guides
         </h2>
 
-        {posts.length === 0 ? (
+        {!featuredPost ? (
           <Empty>
             <EmptyHeader>
               <EmptyTitle>
@@ -86,88 +105,73 @@ const BlogPage = () => {
             </EmptyHeader>
           </Empty>
         ) : (
-          <div>
-            {posts.map(post => (
+          <>
+            <article className="border-foreground/18 grid gap-6 border-b py-9 sm:py-12 md:grid-cols-12 md:gap-10">
+              <div className="md:col-span-3">
+                <p className="text-primary text-sm font-semibold">Latest guide</p>
+                <div className="mt-3">
+                  <PostMeta post={featuredPost} />
+                </div>
+              </div>
+              <div className="md:col-span-9">
+                <h3 className="font-display max-w-4xl text-4xl leading-[1.02] font-semibold tracking-[-0.04em] text-balance sm:text-5xl">
+                  <Link
+                    href={`/blog/${featuredPost.slug}`}
+                    className="hover:text-primary transition-colors motion-reduce:transition-none"
+                  >
+                    {featuredPost.title}
+                  </Link>
+                </h3>
+                <p className="text-muted-foreground mt-5 max-w-2xl text-lg leading-8">
+                  {featuredPost.description}
+                </p>
+                <Link
+                  href={`/blog/${featuredPost.slug}`}
+                  className={buttonVariants({ variant: 'link', className: 'mt-5 -ml-3' })}
+                >
+                  Read guide
+                  <ArrowRight data-icon="inline-end" />
+                </Link>
+              </div>
+            </article>
+
+            {remainingPosts.map(post => (
               <article
                 key={post.slug}
-                className="border-foreground/18 grid gap-6 border-b py-8 md:grid-cols-12 md:gap-8 lg:py-10"
+                className="border-foreground/18 grid gap-5 border-b py-8 md:grid-cols-12 md:gap-10 lg:py-10"
               >
-                <dl className="text-muted-foreground flex min-w-0 flex-wrap gap-x-4 gap-y-2 text-sm md:col-span-3 md:flex-col md:items-start">
-                  <div>
-                    <dt className="sr-only">Published</dt>
-                    <dd>
-                      <time dateTime={post.date}>{formatDate(post.date)}</time>
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="sr-only">Author</dt>
-                    <dd>By {post.author}</dd>
-                  </div>
-                  <div>
-                    <dt className="sr-only">Reading time</dt>
-                    <dd>{post.readingTime}</dd>
-                  </div>
-                  {post.tags.length > 0 && (
-                    <div className="w-full min-w-0 basis-full leading-6 capitalize">
-                      <dt className="sr-only">Topics</dt>
-                      <dd className="break-words">{post.tags.map(displayTag).join(', ')}</dd>
-                    </div>
-                  )}
-                </dl>
-
-                <div
-                  className={cn(
-                    'min-w-0 md:col-span-9',
-                    post.image && 'grid gap-6 lg:grid-cols-[minmax(0,1fr)_16rem] lg:gap-10'
-                  )}
-                >
-                  {post.image && (
-                    <div
-                      className="bg-muted relative order-first aspect-[8/5] overflow-hidden rounded-xl lg:order-last"
-                      aria-hidden="true"
-                    >
-                      <Image
-                        src={post.image}
-                        alt=""
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 1024px) 100vw, 256px"
-                      />
-                    </div>
-                  )}
-
-                  <div>
-                    <h3 className="font-display text-3xl leading-tight font-semibold tracking-[-0.03em] sm:text-4xl">
-                      <Link
-                        href={`/blog/${post.slug}`}
-                        className="hover:text-primary transition-colors"
-                      >
-                        {post.title}
-                      </Link>
-                    </h3>
-                    <p className="text-muted-foreground mt-4 max-w-2xl text-base leading-7">
-                      {post.description}
-                    </p>
+                <div className="md:col-span-3">
+                  <PostMeta post={post} />
+                </div>
+                <div className="md:col-span-9">
+                  <h3 className="font-display max-w-3xl text-3xl leading-tight font-semibold tracking-[-0.03em] text-balance sm:text-4xl">
                     <Link
                       href={`/blog/${post.slug}`}
-                      className={buttonVariants({
-                        variant: 'link',
-                        size: 'sm',
-                        className: 'mt-5 -ml-3',
-                      })}
+                      className="hover:text-primary transition-colors motion-reduce:transition-none"
                     >
-                      Read guide
-                      <ArrowRightIcon data-icon="inline-end" />
+                      {post.title}
                     </Link>
-                  </div>
+                  </h3>
+                  <p className="text-muted-foreground mt-4 max-w-2xl leading-7">
+                    {post.description}
+                  </p>
+                  <Link
+                    href={`/blog/${post.slug}`}
+                    className={buttonVariants({
+                      variant: 'link',
+                      size: 'sm',
+                      className: 'mt-4 -ml-3',
+                    })}
+                  >
+                    Read guide
+                    <ArrowRight data-icon="inline-end" />
+                  </Link>
                 </div>
               </article>
             ))}
-          </div>
+          </>
         )}
       </section>
     </div>
   )
 }
-
-export default BlogPage

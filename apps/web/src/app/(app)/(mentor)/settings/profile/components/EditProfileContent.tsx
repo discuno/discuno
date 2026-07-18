@@ -241,7 +241,7 @@ export const EditProfileContent = ({ profile, majors }: EditProfileContentProps)
   }
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-6">
+    <form method="post" onSubmit={handleSubmit} noValidate className="flex flex-col gap-6">
       {formError && (
         <Alert variant="destructive" id="profile-form-error">
           <CircleAlert aria-hidden="true" />
@@ -258,6 +258,8 @@ export const EditProfileContent = ({ profile, majors }: EditProfileContentProps)
             userId={profile.userId}
             onImageChange={setProfileImageUrl}
           />
+
+          <Separator />
 
           <ProfileCard
             title="Introduction"
@@ -533,7 +535,6 @@ export const EditProfileContent = ({ profile, majors }: EditProfileContentProps)
             school={profile.school}
             savedUsername={savedUsername}
             requirements={readiness.requirements}
-            readinessPercent={readiness.percent}
             isReady={readiness.isComplete}
             isDirty={isDirty}
           />

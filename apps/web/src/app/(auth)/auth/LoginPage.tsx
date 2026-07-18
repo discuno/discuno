@@ -6,6 +6,7 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import { SignInMethods, type AuthAudience } from '~/components/auth/SignInMethods'
 import { Brand } from '~/components/shared/Brand'
+import { SkipLink } from '~/components/shared/SkipLink'
 import { buttonVariants } from '~/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs'
 import { authClient } from '~/lib/auth-client'
@@ -29,7 +30,7 @@ export function LoginPage({
       setIsLoading(provider)
       await authClient.signIn.social({
         provider,
-        callbackURL: returnTo ?? (userType === 'mentor' ? '/settings' : '/#mentors'),
+        callbackURL: returnTo ?? (userType === 'mentor' ? '/settings' : '/find'),
       })
     } catch {
       console.error('OAuth sign-in failed')
@@ -53,35 +54,45 @@ export function LoginPage({
 
   return (
     <div className="bg-background flex min-h-screen flex-col">
-      <header className="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-5 sm:px-6">
-        <Brand />
-        <Link href="/" className={buttonVariants({ variant: 'ghost', size: 'sm' })}>
-          <ArrowLeft data-icon="inline-start" />
-          Back to Discuno
-        </Link>
+      <SkipLink href="#auth-content" />
+      <header className="border-foreground/15 border-b">
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
+          <Brand />
+          <Link href="/" className={buttonVariants({ variant: 'ghost', size: 'sm' })}>
+            <ArrowLeft data-icon="inline-start" />
+            Back to Discuno
+          </Link>
+        </div>
       </header>
 
-      <main className="mx-auto flex w-full max-w-md flex-1 items-center px-4 py-10 sm:px-6 sm:py-14">
-        <section className="w-full" aria-labelledby="auth-title">
+      <main
+        id="auth-content"
+        tabIndex={-1}
+        className="mx-auto flex w-full max-w-lg flex-1 items-center px-4 py-10 sm:px-6 sm:py-16"
+      >
+        <section
+          className="bg-card border-foreground/20 w-full rounded-xl border p-6 sm:p-8"
+          aria-labelledby="auth-title"
+        >
+          <div className="flex flex-col gap-3">
+            <h1
+              id="auth-title"
+              className="font-display text-4xl leading-tight font-semibold tracking-[-0.035em]"
+            >
+              {title}
+            </h1>
+            <p className="text-muted-foreground text-base leading-7">{description}</p>
+          </div>
+
           <Tabs
             value={userType}
             onValueChange={value => setUserType(value as UserType)}
-            className="w-full"
+            className="mt-7 w-full"
           >
             <TabsList variant="line" className="grid w-full grid-cols-2">
               <TabsTrigger value="student">Find guidance</TabsTrigger>
               <TabsTrigger value="mentor">Start mentoring</TabsTrigger>
             </TabsList>
-
-            <div className="flex flex-col gap-3 pt-8">
-              <h1
-                id="auth-title"
-                className="font-display text-4xl leading-tight font-semibold tracking-tight"
-              >
-                {title}
-              </h1>
-              <p className="text-muted-foreground text-base leading-7">{description}</p>
-            </div>
 
             <TabsContent value="student" className="mt-7">
               <SignInMethods
@@ -101,7 +112,7 @@ export function LoginPage({
             </TabsContent>
           </Tabs>
 
-          <p className="text-muted-foreground mt-8 text-xs leading-5">
+          <p className="text-muted-foreground border-foreground/15 mt-8 border-t pt-5 text-xs leading-5">
             By continuing, you agree to the{' '}
             <Link href="/terms" className="text-foreground underline underline-offset-4">
               Terms

@@ -1,14 +1,7 @@
+import { ArrowRight, CircleAlert } from 'lucide-react'
 import type { Metadata } from 'next'
+import Image from 'next/image'
 import Link from 'next/link'
-import {
-  ArrowRight,
-  CalendarDays,
-  Check,
-  CircleAlert,
-  CircleDollarSign,
-  GraduationCap,
-  MessageSquareText,
-} from 'lucide-react'
 import {
   Accordion,
   AccordionContent,
@@ -21,7 +14,6 @@ import {
   MENTOR_PAYOUT_DELAY_HOURS,
   PLATFORM_COMMISSION_BASIS_POINTS,
 } from '~/lib/stripe/marketplace'
-import { cn } from '~/lib/utils'
 import { MentorAccountRetryButton } from './MentorAccountRetryButton'
 
 const platformFeePercent = PLATFORM_COMMISSION_BASIS_POINTS / 100
@@ -30,7 +22,7 @@ const mentorSharePercent = 100 - platformFeePercent
 export const metadata: Metadata = createMetadata({
   title: 'Become a Student Mentor',
   description:
-    'Help another student think through a college decision you have already lived. Set your schedule and offer free or paid one-to-one conversations.',
+    'Help another student think through a college decision you have already lived. Set your schedule and offer free or paid one-to-one sessions.',
   keywords: [
     'become a college mentor',
     'student mentor',
@@ -44,7 +36,7 @@ export const metadata: Metadata = createMetadata({
   openGraph: {
     title: 'Become a Student Mentor on Discuno',
     description:
-      'Help another student make sense of a choice you have already lived. Mentor on your schedule, for free or for a price you set.',
+      'Help another student think through a choice you have already lived, on a schedule you control.',
     url: '/for-mentors',
   },
 })
@@ -58,20 +50,23 @@ const studentQuestions = [
 
 const onboardingSteps = [
   {
-    icon: GraduationCap,
     title: 'Show your context',
     description: 'Add the school, field, and experiences behind your perspective.',
   },
   {
-    icon: MessageSquareText,
     title: 'Name the questions',
     description: 'Be specific about the decisions you have navigated and can discuss.',
   },
   {
-    icon: CalendarDays,
     title: 'Choose your terms',
     description: 'Offer free or paid sessions and open only the times that fit.',
   },
+]
+
+const responsibilities = [
+  'Talk about choices, tradeoffs, surprises, and mistakes you experienced firsthand.',
+  'Stay clear about what you know, what you do not, and when official guidance belongs in the conversation.',
+  'Keep your profile, session options, calendar, and pricing accurate.',
 ]
 
 const faqItems = [
@@ -147,11 +142,11 @@ const mentorPageJsonLd = {
   ],
 }
 
-const ForMentorsPage = async ({
+export default async function ForMentorsPage({
   searchParams,
 }: {
   searchParams: Promise<{ 'school-email-required'?: string }>
-}) => {
+}) {
   const params = await searchParams
   const showSchoolEmailNotice = params['school-email-required'] === '1'
 
@@ -162,48 +157,69 @@ const ForMentorsPage = async ({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(mentorPageJsonLd) }}
       />
 
-      <section className="page-shell py-12 sm:py-20 lg:py-24">
-        {showSchoolEmailNotice && (
-          <div
-            role="alert"
-            className="border-warning/40 bg-warning/10 mb-12 flex flex-col gap-5 border-y py-5 sm:flex-row sm:items-center sm:justify-between sm:px-5"
-          >
-            <div className="flex max-w-3xl items-start gap-3">
-              <CircleAlert className="text-warning mt-0.5 size-5 shrink-0" aria-hidden="true" />
-              <div>
-                <p className="font-semibold">This account does not have mentor access</p>
-                <p className="text-muted-foreground mt-1 text-sm leading-6">
-                  Mentor tools require a supported school-issued .edu address. Sign in again with
-                  your school account, or keep this account to browse and book.
-                </p>
-              </div>
-            </div>
-            <MentorAccountRetryButton />
-          </div>
-        )}
-
-        <div className="grid min-h-[68svh] items-center gap-14 lg:grid-cols-[1.08fr_0.92fr] lg:gap-24">
-          <div className="public-enter">
-            <h1 className="display-hero max-w-3xl">
-              Share what you <span className="marker-highlight">wish you&apos;d known.</span>
-            </h1>
-            <p className="text-muted-foreground mt-7 max-w-xl text-lg leading-8 sm:text-xl">
-              Help another student think through a decision you have already lived.
-            </p>
-            <Link
-              href="/auth?intent=mentor"
-              className={cn(buttonVariants({ size: 'lg' }), 'mt-8 h-12 px-6 text-base')}
+      <section className="border-b">
+        <div className="page-shell py-10 sm:py-14">
+          {showSchoolEmailNotice && (
+            <div
+              role="alert"
+              className="border-warning/40 bg-warning/10 mb-10 flex flex-col gap-5 rounded-lg border p-5 sm:flex-row sm:items-center sm:justify-between"
             >
-              Start mentoring
-              <ArrowRight className="size-4" aria-hidden="true" />
-            </Link>
-          </div>
+              <div className="flex max-w-3xl items-start gap-3">
+                <CircleAlert className="text-warning mt-0.5 shrink-0" aria-hidden="true" />
+                <div>
+                  <p className="font-semibold">This account does not have mentor access</p>
+                  <p className="text-muted-foreground mt-1 text-sm leading-6">
+                    Mentor tools require a supported school-issued .edu address. Sign in again with
+                    your school account, or keep this account to browse and book.
+                  </p>
+                </div>
+              </div>
+              <MentorAccountRetryButton />
+            </div>
+          )}
 
-          <div className="public-enter-delayed border-foreground/25 border-t lg:mt-16">
+          <div className="grid min-h-[68svh] gap-10 lg:grid-cols-12 lg:items-center lg:gap-14">
+            <div className="public-enter lg:col-span-7">
+              <h1 className="display-hero max-w-4xl">
+                Share what you <span className="marker-highlight">wish you knew.</span>
+              </h1>
+              <p className="text-muted-foreground mt-6 max-w-xl text-lg leading-8">
+                Share firsthand context with another student, on a schedule you control.
+              </p>
+              <Link
+                href="/auth?intent=mentor"
+                className={buttonVariants({ size: 'lg', className: 'mt-8' })}
+              >
+                Start mentoring
+                <ArrowRight data-icon="inline-end" />
+              </Link>
+            </div>
+
+            <div className="public-enter-delayed bg-muted relative aspect-[4/3] overflow-hidden rounded-xl lg:col-span-5 lg:aspect-[4/5]">
+              <Image
+                src="/images/conversation-after-class.jpg"
+                alt="Two students talk through a college decision after class"
+                fill
+                priority
+                className="object-cover object-center"
+                sizes="(max-width: 1023px) calc(100vw - 2rem), 40vw"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="page-shell py-16 sm:py-24">
+        <div className="max-w-4xl">
+          <h2 className="display-heading">Students bring the question.</h2>
+          <p className="text-muted-foreground mt-5 max-w-xl leading-7">
+            You bring the parts no catalog, job post, or course description can show.
+          </p>
+          <div className="border-foreground/20 mt-10 grid border-t sm:grid-cols-2 sm:gap-x-12">
             {studentQuestions.map(question => (
               <p
                 key={question}
-                className="border-foreground/25 font-display border-b py-5 text-xl leading-7 sm:text-2xl"
+                className="border-foreground/20 font-display border-b py-5 text-xl leading-7 font-medium sm:text-2xl"
               >
                 “{question}”
               </p>
@@ -212,92 +228,82 @@ const ForMentorsPage = async ({
         </div>
       </section>
 
-      <section className="border-border border-y">
-        <div className="page-shell grid gap-12 py-16 sm:py-24 lg:grid-cols-[0.72fr_1.28fr] lg:gap-24">
-          <div>
-            <h2 className="display-heading max-w-sm">From experience to a useful conversation.</h2>
-            <p className="text-muted-foreground mt-5 max-w-sm leading-7">
+      <section className="border-y">
+        <div className="page-shell py-16 sm:py-24">
+          <div className="max-w-3xl">
+            <h2 className="display-heading">Make your experience useful.</h2>
+            <p className="text-muted-foreground mt-5 leading-7">
               You do not need every answer. You need relevant experience and clear boundaries.
             </p>
           </div>
-          <ol className="border-foreground/20 border-t">
-            {onboardingSteps.map(step => {
-              const Icon = step.icon
-
-              return (
-                <li
-                  key={step.title}
-                  className="border-foreground/20 grid gap-4 border-b py-6 sm:grid-cols-[0.75fr_1.25fr] sm:items-start sm:gap-7"
-                >
-                  <div className="flex items-center gap-3">
-                    <Icon className="text-primary size-5" aria-hidden="true" />
-                    <h3 className="font-semibold">{step.title}</h3>
-                  </div>
-                  <p className="text-muted-foreground text-sm leading-6">{step.description}</p>
-                </li>
-              )
-            })}
+          <ol className="border-foreground/20 mt-10 grid border-y md:grid-cols-3 md:divide-x">
+            {onboardingSteps.map(step => (
+              <li
+                key={step.title}
+                className="border-foreground/20 border-b py-6 last:border-b-0 md:border-b-0 md:px-7 md:first:pl-0 md:last:pr-0"
+              >
+                <h3 className="font-semibold">{step.title}</h3>
+                <p className="text-muted-foreground mt-3 text-sm leading-6">{step.description}</p>
+              </li>
+            ))}
           </ol>
         </div>
       </section>
 
       <section className="page-shell py-16 sm:py-24">
-        <div className="grid gap-12 lg:grid-cols-[0.72fr_1.28fr] lg:gap-24">
-          <div>
-            <h2 className="display-heading max-w-sm">Give back, get paid, or do both.</h2>
-            <p className="text-muted-foreground mt-5 max-w-sm leading-7">
-              You decide what each session is worth and when it fits your schedule.
-            </p>
-          </div>
+        <div className="max-w-4xl">
+          <h2 className="display-heading">Free, paid, or both.</h2>
+          <p className="text-muted-foreground mt-5 max-w-xl leading-7">
+            Set each session&apos;s price and open only the times that fit your schedule.
+          </p>
+        </div>
 
-          <div>
-            <div className="border-foreground/20 sm:divide-foreground/20 grid border-y sm:grid-cols-2 sm:divide-x">
+        <div className="mt-10 grid gap-10 lg:grid-cols-12 lg:gap-14">
+          <div className="lg:col-span-7">
+            <div className="border-foreground/20 grid border-y sm:grid-cols-2 sm:divide-x">
               <div className="py-7 sm:pr-8">
-                <MessageSquareText className="text-primary size-5" aria-hidden="true" />
-                <h3 className="mt-5 text-sm font-semibold">Free sessions</h3>
-                <p className="font-display mt-2 text-5xl font-semibold">$0</p>
-                <p className="text-muted-foreground mt-4 text-sm leading-6">
-                  Offer a low-pressure conversation without setting up payouts.
+                <h3 className="font-semibold">Free sessions</h3>
+                <p className="font-display mt-3 text-5xl leading-none font-semibold">$0</p>
+                <p className="text-muted-foreground mt-4 max-w-sm text-sm leading-6">
+                  Offer a conversation without setting up payouts.
                 </p>
               </div>
               <div className="border-foreground/20 border-t py-7 sm:border-t-0 sm:pl-8">
-                <CircleDollarSign className="text-primary size-5" aria-hidden="true" />
-                <h3 className="mt-5 text-sm font-semibold">Paid sessions</h3>
-                <p className="font-display mt-2 text-5xl font-semibold">{mentorSharePercent}%</p>
-                <p className="text-muted-foreground mt-4 text-sm leading-6">
+                <h3 className="font-semibold">Paid sessions</h3>
+                <p className="font-display mt-3 text-5xl leading-none font-semibold">
+                  {mentorSharePercent}%
+                </p>
+                <p className="text-muted-foreground mt-4 max-w-sm text-sm leading-6">
                   You set the listed price. Discuno retains {platformFeePercent}%.
                 </p>
               </div>
             </div>
             <p className="text-muted-foreground mt-4 text-xs leading-5">
-              Current fees are subject to the Discuno Terms of Service. Tax and payout eligibility
-              may vary.
+              Current fees are subject to the Terms of Service. Tax and payout eligibility may vary.
             </p>
+          </div>
 
-            <div className="border-foreground/20 mt-10 grid gap-4 border-t pt-6 sm:grid-cols-3 sm:gap-8">
-              {[
-                'Talk about real choices, tradeoffs, surprises, and mistakes.',
-                'Stay specific about what you know and what you do not.',
-                'Open only the times and topics that work for you.',
-              ].map(item => (
-                <div key={item} className="flex gap-3 text-sm leading-6">
-                  <Check className="text-primary mt-1 size-4 shrink-0" aria-hidden="true" />
-                  <span>{item}</span>
-                </div>
+          <div className="border-foreground/20 lg:col-span-5 lg:border-l lg:pl-10">
+            <h3 className="text-lg font-semibold">What students should expect from you</h3>
+            <ul className="border-foreground/20 mt-4 border-t">
+              {responsibilities.map(item => (
+                <li key={item} className="border-foreground/20 border-b py-4 text-sm leading-6">
+                  {item}
+                </li>
               ))}
-            </div>
+            </ul>
           </div>
         </div>
       </section>
 
-      <section id="faq" className="border-border scroll-mt-24 border-t">
-        <div className="page-shell grid gap-10 py-16 sm:py-24 lg:grid-cols-[0.72fr_1.28fr] lg:gap-24">
-          <div>
-            <h2 className="display-heading">Practical details.</h2>
-            <p className="text-muted-foreground mt-4 leading-7">
-              Need help?{' '}
+      <section id="faq" className="scroll-mt-24 border-t">
+        <div className="page-shell grid gap-10 py-16 sm:py-24 lg:grid-cols-[0.7fr_1.3fr] lg:gap-24">
+          <div className="max-w-md">
+            <h2 className="display-heading">Before you begin.</h2>
+            <p className="text-muted-foreground mt-5 leading-7">
+              For account or booking help, visit{' '}
               <Link href="/support" className="text-foreground underline underline-offset-4">
-                Contact support
+                Support
               </Link>
               .
             </p>
@@ -316,23 +322,6 @@ const ForMentorsPage = async ({
           </Accordion>
         </div>
       </section>
-
-      <section className="border-border border-t">
-        <div className="page-shell flex flex-col gap-8 py-16 sm:py-20 lg:flex-row lg:items-end lg:justify-between">
-          <h2 className="display-heading max-w-2xl">
-            Turn your hindsight into someone&apos;s next move.
-          </h2>
-          <Link
-            href="/auth?intent=mentor"
-            className={cn(buttonVariants({ size: 'lg' }), 'h-12 shrink-0 px-6 text-base')}
-          >
-            Start mentoring
-            <ArrowRight className="size-4" aria-hidden="true" />
-          </Link>
-        </div>
-      </section>
     </div>
   )
 }
-
-export default ForMentorsPage

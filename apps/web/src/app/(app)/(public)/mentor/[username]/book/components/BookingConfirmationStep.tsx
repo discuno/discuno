@@ -16,7 +16,7 @@ export const BookingConfirmationStep = () => {
         tabIndex={-1}
         className="mt-5 text-2xl font-semibold tracking-tight outline-none"
       >
-        You’re booked
+        Session confirmed
       </h2>
       <p className="text-muted-foreground mt-2 max-w-sm text-sm leading-6">
         The session details and calendar invitation are on their way to your email.

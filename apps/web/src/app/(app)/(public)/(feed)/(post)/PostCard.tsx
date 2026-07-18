@@ -11,7 +11,13 @@ import { Button, buttonVariants } from '~/components/ui/button'
 import { getClientAnalyticsConsentSnapshot } from '~/lib/analytics/client-consent'
 import { cn } from '~/lib/utils'
 
-export const PostCard = ({ card }: { card: Card }) => {
+export const PostCard = ({
+  card,
+  discoveryReturnHref,
+}: {
+  card: Card
+  discoveryReturnHref?: string
+}) => {
   const [imageFailed, setImageFailed] = useState(false)
 
   const handleProfileView = () => {
@@ -31,8 +37,13 @@ export const PostCard = ({ card }: { card: Card }) => {
     })
   }
 
-  const profileHref = card.username ? `/mentor/${card.username}` : null
+  const profileHref = card.username
+    ? `/mentor/${card.username}${
+        discoveryReturnHref ? `?returnTo=${encodeURIComponent(discoveryReturnHref)}` : ''
+      }`
+    : null
   const name = card.name ?? 'Student mentor'
+  const firstName = name.trim().split(/\s+/).find(Boolean) ?? 'their'
   const initial = name.trim().charAt(0).toUpperCase() || 'M'
   const hasAcademicContext = [card.school, card.major].some(Boolean)
   const hasAcademicStage = [card.schoolYear, card.graduationYear].some(Boolean)
@@ -73,17 +84,7 @@ export const PostCard = ({ card }: { card: Card }) => {
         </div>
 
         <h3 className="font-display mt-3 text-2xl leading-tight font-semibold tracking-[-0.025em] sm:text-3xl">
-          {profileHref ? (
-            <Link
-              href={profileHref}
-              onClick={handleProfileView}
-              className="hover:text-primary transition-colors motion-reduce:transition-none"
-            >
-              {name}
-            </Link>
-          ) : (
-            name
-          )}
+          {name}
         </h3>
 
         {hasAcademicContext && (
@@ -91,7 +92,7 @@ export const PostCard = ({ card }: { card: Card }) => {
             {card.school &&
               (card.schoolDomainPrefix ? (
                 <Link
-                  href={`/?school=${encodeURIComponent(card.schoolDomainPrefix)}#mentors`}
+                  href={`/find?school=${encodeURIComponent(card.schoolDomainPrefix)}#mentors`}
                   className="text-foreground font-medium hover:underline"
                 >
                   {card.school}
@@ -102,7 +103,7 @@ export const PostCard = ({ card }: { card: Card }) => {
             {card.school && card.major && <span aria-hidden="true">·</span>}
             {card.major && (
               <Link
-                href={`/?major=${encodeURIComponent(card.major.toLowerCase())}#mentors`}
+                href={`/find?major=${encodeURIComponent(card.major.toLowerCase())}#mentors`}
                 className="hover:text-foreground hover:underline"
               >
                 {card.major}
@@ -131,9 +132,10 @@ export const PostCard = ({ card }: { card: Card }) => {
           <Link
             href={profileHref}
             onClick={handleProfileView}
+            aria-label={`See ${name}'s sessions`}
             className={cn(buttonVariants({ variant: 'outline' }), 'w-full sm:w-fit')}
           >
-            See how they can help
+            See {firstName}&rsquo;s sessions
             <ArrowUpRight data-icon="inline-end" />
           </Link>
         ) : (

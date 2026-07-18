@@ -78,8 +78,6 @@ export const generateMetadata = async ({ params }: Props): Promise<Metadata> => 
   })
 }
 
-const displayTag = (tag: string) => tag.replaceAll('-', ' ')
-
 const BlogPostPage = async ({ params }: Props) => {
   const { slug } = await params
   const post = getPostBySlug(slug)
@@ -126,7 +124,7 @@ const BlogPostPage = async ({ params }: Props) => {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <article className="mx-auto w-full max-w-[76rem] px-4 py-10 sm:px-6 sm:py-14 lg:px-8 lg:py-16">
+      <article className="page-shell py-10 sm:py-14 lg:py-18">
         <div className="mx-auto max-w-4xl">
           <Link
             href="/blog"
@@ -140,7 +138,7 @@ const BlogPostPage = async ({ params }: Props) => {
             All college guides
           </Link>
 
-          <header className="mt-8">
+          <header className="mt-8 border-b pb-9 sm:pb-12">
             <h1 className="font-display text-5xl leading-[0.96] font-medium tracking-[-0.045em] text-balance sm:text-6xl lg:text-7xl">
               {post.title}
             </h1>
@@ -148,7 +146,7 @@ const BlogPostPage = async ({ params }: Props) => {
               {post.description}
             </p>
 
-            <dl className="section-rule text-muted-foreground mt-8 flex flex-wrap gap-x-5 gap-y-2 pt-5 text-sm">
+            <dl className="text-muted-foreground mt-8 flex flex-wrap gap-x-5 gap-y-2 text-sm">
               <div>
                 <dt className="sr-only">Author</dt>
                 <dd className="text-foreground font-medium">By {post.author}</dd>
@@ -164,17 +162,6 @@ const BlogPostPage = async ({ params }: Props) => {
                 <dd>{post.readingTime}</dd>
               </div>
             </dl>
-
-            {post.tags.length > 0 && (
-              <ul
-                className="text-muted-foreground mt-4 flex flex-wrap gap-x-3 gap-y-1 text-sm capitalize"
-                aria-label="Topics"
-              >
-                {post.tags.map(tag => (
-                  <li key={tag}>{displayTag(tag)}</li>
-                ))}
-              </ul>
-            )}
           </header>
         </div>
 
@@ -221,7 +208,7 @@ const BlogPostPage = async ({ params }: Props) => {
               context.
             </p>
             <Link
-              href="/"
+              href="/find"
               className={buttonVariants({
                 className: 'mt-5',
               })}

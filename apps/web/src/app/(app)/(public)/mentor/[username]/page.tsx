@@ -2,6 +2,7 @@ import { ArrowLeft, ArrowRight, CalendarDays, CircleAlert, Clock3 } from 'lucide
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { DecisionContext } from '~/components/shared/DecisionContext'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert'
 import { Badge } from '~/components/ui/badge'
@@ -16,6 +17,7 @@ import {
 } from '~/components/ui/empty'
 import { Separator } from '~/components/ui/separator'
 import { formatCurrencyFromCents } from '~/lib/format-currency'
+import { sanitizeDiscoveryReturnHref } from '~/lib/discovery-return'
 import { createMetadata, siteConfig } from '~/lib/metadata'
 import { cn } from '~/lib/utils'
 import { getMentorEnabledEventTypesWithStripeStatus } from '~/server/queries/event-types'
@@ -23,11 +25,11 @@ import { getPublicProfileByUsername } from '~/server/queries/profiles'
 
 interface MentorProfilePageProps {
   params: Promise<{ username: string }>
-  searchParams: Promise<{ checkout?: string }>
+  searchParams: Promise<{ checkout?: string; returnTo?: string }>
 }
 
 export default async function MentorProfilePage({ params, searchParams }: MentorProfilePageProps) {
-  const [{ username }, { checkout }] = await Promise.all([params, searchParams])
+  const [{ username }, { checkout, returnTo }] = await Promise.all([params, searchParams])
   const profile = await getPublicProfileByUsername(username)
 
   if (!profile) notFound()
@@ -35,6 +37,8 @@ export default async function MentorProfilePage({ params, searchParams }: Mentor
   const eventTypes = await getMentorEnabledEventTypesWithStripeStatus(profile.userId)
   const hasBooking = eventTypes.length > 0 && Boolean(profile.calcomUsername)
   const firstName = profile.name?.split(' ')[0] ?? 'this mentor'
+  const discoveryReturnHref = sanitizeDiscoveryReturnHref(returnTo)
+  const encodedReturnHref = encodeURIComponent(discoveryReturnHref)
 
   const profileJsonLd = {
     '@context': 'https://schema.org',
@@ -65,9 +69,22 @@ export default async function MentorProfilePage({ params, searchParams }: Mentor
         }}
       />
 
+      <section className="bg-accent/35 border-b" aria-label="Your decision context">
+        <div className="mx-auto w-full max-w-[76rem] px-4 py-6 sm:px-6 lg:px-8">
+          <DecisionContext
+            compact
+            emptyTitle="Your decision"
+            emptyDescription={`Add the question you may want to discuss with ${firstName}.`}
+          />
+          <p className="text-muted-foreground mt-3 max-w-2xl text-xs leading-5">
+            Your question stays in this browser session and carries into booking details.
+          </p>
+        </div>
+      </section>
+
       <header className="mx-auto w-full max-w-[76rem] px-4 py-8 sm:px-6 sm:py-12 lg:px-8 lg:py-14">
         <Link
-          href="/#mentors"
+          href={discoveryReturnHref}
           className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), '-ml-3')}
         >
           <ArrowLeft data-icon="inline-start" />
@@ -109,7 +126,9 @@ export default async function MentorProfilePage({ params, searchParams }: Mentor
                 <div className="flex min-w-0 flex-col gap-1">
                   <dt className="text-muted-foreground text-xs font-medium">Year</dt>
                   <dd>
-                    {profile.schoolYear} · Class of {profile.graduationYear}
+                    {[profile.schoolYear, `Class of ${profile.graduationYear}`]
+                      .filter(Boolean)
+                      .join(' · ')}
                   </dd>
                 </div>
               )}
@@ -178,7 +197,7 @@ export default async function MentorProfilePage({ params, searchParams }: Mentor
                 {eventTypes.map((eventType, index) => (
                   <li key={eventType.calcomEventTypeId}>
                     <Link
-                      href={`/mentor/${username}/book?eventType=${eventType.calcomEventTypeId}`}
+                      href={`/mentor/${username}/book?eventType=${eventType.calcomEventTypeId}&returnTo=${encodedReturnHref}`}
                       className="hover:bg-muted/60 focus-visible:bg-muted/60 group -mx-3 grid gap-4 rounded-lg px-3 py-5 transition-colors sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-8"
                     >
                       <div className="min-w-0">
@@ -223,7 +242,10 @@ export default async function MentorProfilePage({ params, searchParams }: Mentor
                   </EmptyDescription>
                 </EmptyHeader>
                 <EmptyContent>
-                  <Link href="/#mentors" className={buttonVariants({ variant: 'outline' })}>
+                  <Link
+                    href={discoveryReturnHref}
+                    className={buttonVariants({ variant: 'outline' })}
+                  >
                     Browse other mentors
                   </Link>
                 </EmptyContent>
@@ -245,7 +267,7 @@ export default async function MentorProfilePage({ params, searchParams }: Mentor
 
             {hasBooking ? (
               <Link
-                href={`/mentor/${username}/book`}
+                href={`/mentor/${username}/book?returnTo=${encodedReturnHref}`}
                 className={cn(buttonVariants({ size: 'lg' }), 'mt-5 w-full')}
               >
                 See available times
@@ -260,6 +282,7 @@ export default async function MentorProfilePage({ params, searchParams }: Mentor
             <Separator className="my-5" />
 
             <div className="text-muted-foreground flex flex-col gap-3 text-xs leading-5">
+              <p>No account is needed to browse times or book a session.</p>
               <p>See the session length, price, and available times before you confirm.</p>
               <p>For paid sessions, card details are handled securely at checkout.</p>
               {profile.schoolEmailVerified && (

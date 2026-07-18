@@ -52,18 +52,18 @@
   :root {
     color-scheme: light;
 
-    --background: 43 42% 96%;
+    --background: 44 48% 97%;
     --foreground: 225 47% 13%;
-    --card: 42 50% 99%;
+    --card: 45 60% 99%;
     --card-foreground: 225 47% 13%;
     --popover: 42 50% 99%;
     --popover-foreground: 225 47% 13%;
-    --primary: 232 76% 52%;
+    --primary: 233 82% 51%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 43 31% 91%;
+    --secondary: 44 32% 92%;
     --secondary-foreground: 225 40% 21%;
-    --muted: 42 24% 92%;
-    --muted-foreground: 224 16% 34%;
+    --muted: 44 28% 93%;
+    --muted-foreground: 224 17% 33%;
     --accent: 70 83% 84%;
     --accent-foreground: 225 47% 13%;
     --destructive: 0 72% 47%;
@@ -72,9 +72,9 @@
     --success-foreground: 0 0% 100%;
     --warning: 36 92% 46%;
     --warning-foreground: 28 75% 15%;
-    --border: 226 19% 75%;
-    --input: 225 18% 61%;
-    --ring: 232 76% 52%;
+    --border: 226 22% 74%;
+    --input: 225 20% 58%;
+    --ring: 233 82% 51%;
     --highlight: 70 93% 65%;
     --highlight-foreground: 225 47% 13%;
     --radius: 0.625rem;
@@ -87,12 +87,12 @@
 
     --sidebar: 43 42% 96%;
     --sidebar-foreground: 225 47% 13%;
-    --sidebar-primary: 232 76% 52%;
+    --sidebar-primary: 233 82% 51%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 70 83% 84%;
     --sidebar-accent-foreground: 225 47% 13%;
     --sidebar-border: 226 19% 75%;
-    --sidebar-ring: 232 76% 52%;
+    --sidebar-ring: 233 82% 51%;
   }
 
   .dark {
@@ -201,7 +201,7 @@
   }
 
   .display-hero {
-    @apply font-display text-[clamp(3rem,7vw,5.75rem)] leading-[0.94] font-medium tracking-[-0.052em] text-balance;
+    @apply font-display text-[clamp(3rem,6.5vw,5.25rem)] leading-[0.96] font-medium tracking-[-0.05em] text-balance;
     font-optical-sizing: auto;
     font-variation-settings: 'opsz' 72;
   }
@@ -239,6 +239,18 @@
   .public-enter-delayed {
     animation: public-enter 720ms 90ms cubic-bezier(0.16, 1, 0.3, 1) both;
   }
+
+  .decision-context-enter {
+    animation: decision-context-enter 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .editorial-row {
+    @apply border-foreground/18 border-b transition-[border-color,background-color,transform] duration-200;
+  }
+
+  .editorial-row:hover {
+    @apply border-foreground/45;
+  }
 }
 
 /* Legal documents are continuous reading surfaces, not stacks of cards. */
@@ -274,6 +286,17 @@
   from {
     opacity: 0;
     transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes decision-context-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
   }
   to {
     opacity: 1;

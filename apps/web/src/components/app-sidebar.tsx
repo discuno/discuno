@@ -1,9 +1,6 @@
 import { connection } from 'next/server'
 import { Suspense } from 'react'
-import {
-  getFullProfileAction,
-  getMentorOnboardingStatus,
-} from '~/app/(app)/(mentor)/settings/actions'
+import { getFullProfileAction } from '~/app/(app)/(mentor)/settings/actions'
 import { AppSidebarHeader } from '~/components/app-sidebar-header'
 import { NavMain, type NavMainProps } from '~/components/nav-main'
 import { NavUser } from '~/components/nav-user'
@@ -20,7 +17,12 @@ import { Skeleton } from '~/components/ui/skeleton'
 
 const workspaceNavItems: NavMainProps['items'] = [
   {
-    title: 'Bookings',
+    title: 'Today',
+    url: '/settings',
+    icon: 'House',
+  },
+  {
+    title: 'Sessions',
     url: '/settings/bookings',
     icon: 'CalendarCheck',
   },
@@ -30,7 +32,7 @@ const workspaceNavItems: NavMainProps['items'] = [
     icon: 'CalendarDays',
   },
   {
-    title: 'Sessions',
+    title: 'Session types',
     url: '/settings/event-types',
     icon: 'BookOpen',
   },
@@ -57,26 +59,11 @@ const DynamicSidebarContent = async () => {
   await connection()
 
   const user = await getFullProfileAction()
-  const onboardingStatus = await getMentorOnboardingStatus()
-
-  const navMain: NavMainProps['items'] = [
-    {
-      title: 'Overview',
-      url: '/settings',
-      icon: 'House',
-      badge: onboardingStatus.isComplete
-        ? undefined
-        : `${onboardingStatus.completedSteps}/${onboardingStatus.totalSteps}`,
-      badgeVariant: 'secondary',
-      isOnboarding: !onboardingStatus.isComplete,
-    },
-    ...workspaceNavItems,
-  ]
 
   return (
     <>
       <SidebarContent>
-        <NavMain items={navMain} />
+        <NavMain items={workspaceNavItems} />
       </SidebarContent>
       <SidebarFooter>
         <NavMain items={[backToDiscunoItem]} />
@@ -92,9 +79,9 @@ const SidebarContentSkeleton = () => {
     <>
       <SidebarContent>
         <div className="flex flex-col gap-2 p-2">
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
+          {workspaceNavItems.map(item => (
+            <Skeleton key={item.url} className="h-10 w-full" />
+          ))}
         </div>
       </SidebarContent>
       <SidebarFooter>

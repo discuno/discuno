@@ -1,6 +1,6 @@
 'use client'
 
-import { LayoutDashboard, Menu, MoveRight } from 'lucide-react'
+import { ArrowRight, LayoutDashboard, Menu } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
@@ -44,9 +44,9 @@ interface NavBarBaseProps {
 type Audience = 'student' | 'mentor'
 
 const publicLinks = [
-  { href: '/#mentors', label: 'Find a mentor' },
   { href: '/#how-it-works', label: 'How it works' },
   { href: '/blog', label: 'College guides' },
+  { href: '/for-mentors', label: 'Start mentoring' },
 ]
 
 const mobileLinks = [...publicLinks, { href: '/about', label: 'About Discuno' }]
@@ -89,7 +89,7 @@ export function NavBarBase({
         >
           <Brand className="shrink-0" />
 
-          <div className="hidden flex-1 items-center justify-center gap-7 lg:flex">
+          <div className="hidden flex-1 items-center justify-center gap-8 lg:flex">
             {publicLinks.map(link => (
               <Link
                 key={link.href}
@@ -116,37 +116,31 @@ export function NavBarBase({
                 >
                   Sign in
                 </Button>
-                <Button
-                  size="sm"
-                  className="hidden md:inline-flex"
-                  onClick={() => openLoginModal('signup', 'mentor')}
+                <Link
+                  href="/find"
+                  className={cn(buttonVariants({ size: 'sm' }), 'hidden md:inline-flex')}
                 >
-                  Start mentoring
-                  <MoveRight data-icon="inline-end" />
-                </Button>
+                  Find a mentor
+                  <ArrowRight data-icon="inline-end" />
+                </Link>
               </>
             ) : (
               <>
                 {isMentor ? (
                   <Link
                     href="/settings"
-                    className={cn(
-                      buttonVariants({ variant: 'outline', size: 'sm' }),
-                      'hidden sm:inline-flex'
-                    )}
+                    className={cn(buttonVariants({ size: 'sm' }), 'hidden sm:inline-flex')}
                   >
                     <LayoutDashboard data-icon="inline-start" />
-                    Dashboard
+                    Open workspace
                   </Link>
                 ) : (
                   <Link
-                    href="/for-mentors"
-                    className={cn(
-                      buttonVariants({ variant: 'outline', size: 'sm' }),
-                      'hidden sm:inline-flex'
-                    )}
+                    href="/find"
+                    className={cn(buttonVariants({ size: 'sm' }), 'hidden sm:inline-flex')}
                   >
-                    Start mentoring
+                    Find a mentor
+                    <ArrowRight data-icon="inline-end" />
                   </Link>
                 )}
                 <AvatarIcon
@@ -195,9 +189,9 @@ function MobileMenu({
       >
         <Menu />
       </SheetTrigger>
-      <SheetContent className="w-[min(88vw,24rem)]">
+      <SheetContent className="w-[min(90vw,25rem)]">
         <SheetHeader>
-          <SheetTitle>Menu</SheetTitle>
+          <SheetTitle>Explore Discuno</SheetTitle>
         </SheetHeader>
 
         <nav className="flex flex-col px-5" aria-label="Mobile navigation">
@@ -232,16 +226,14 @@ function MobileMenu({
               >
                 Sign in
               </Button>
-              <Button
-                size="lg"
-                onClick={() => {
-                  onLoginClick('signup', 'mentor')
-                  setOpen(false)
-                }}
+              <Link
+                href="/find"
+                className={buttonVariants({ size: 'lg' })}
+                onClick={() => setOpen(false)}
               >
-                Start mentoring
-                <MoveRight data-icon="inline-end" />
-              </Button>
+                Find a mentor
+                <ArrowRight data-icon="inline-end" />
+              </Link>
             </>
           ) : isMentor ? (
             <Link
@@ -250,16 +242,16 @@ function MobileMenu({
               onClick={() => setOpen(false)}
             >
               <LayoutDashboard data-icon="inline-start" />
-              Open dashboard
+              Open workspace
             </Link>
           ) : (
             <Link
-              href="/for-mentors"
+              href="/find"
               className={buttonVariants({ size: 'lg' })}
               onClick={() => setOpen(false)}
             >
-              Start mentoring
-              <MoveRight data-icon="inline-end" />
+              Find a mentor
+              <ArrowRight data-icon="inline-end" />
             </Link>
           )}
         </SheetFooter>

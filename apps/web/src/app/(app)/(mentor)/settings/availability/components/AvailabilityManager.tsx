@@ -119,9 +119,7 @@ export function AvailabilityManager({ initialAvailability }: AvailabilityManager
             Set recurring hours and date exceptions. Changes appear after you save.
           </p>
         </div>
-        <Badge variant={isDirty ? 'warning' : 'secondary'}>
-          {isDirty ? 'Unsaved changes' : 'Up to date'}
-        </Badge>
+        {isDirty ? <Badge variant="warning">Unsaved changes</Badge> : null}
       </div>
 
       {validationMessage && (
@@ -146,7 +144,7 @@ export function AvailabilityManager({ initialAvailability }: AvailabilityManager
       </div>
 
       <div
-        className="bg-background sticky bottom-4 z-20 flex flex-col gap-3 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between"
+        className="bg-background sticky bottom-0 z-20 flex flex-col gap-3 border-t py-4 sm:flex-row sm:items-center sm:justify-between"
         role="region"
         aria-label="Save availability changes"
         aria-busy={isPending}

@@ -48,11 +48,10 @@ export default async function CalendarSettingsPage({ searchParams }: CalendarSet
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
       <header className="flex max-w-2xl flex-col gap-1.5">
         <h1 className="font-display text-3xl leading-tight font-semibold tracking-tight">
-          Calendar connection
+          Calendar
         </h1>
         <p className="text-muted-foreground text-sm leading-6">
-          Cal.com syncs availability and conflicts. Discuno requests only the access needed to show
-          times, create sessions, and keep bookings current.
+          Connect the calendar Discuno uses for availability and sessions.
         </p>
       </header>
 

@@ -1,7 +1,9 @@
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { DecisionContext } from '~/components/shared/DecisionContext'
 import { buttonVariants } from '~/components/ui/button'
+import { sanitizeDiscoveryReturnHref } from '~/lib/discovery-return'
 import { createMetadata, siteConfig } from '~/lib/metadata'
 import { getMentorEnabledEventTypesWithStripeStatus } from '~/server/queries/event-types'
 import { getPublicProfileByUsername } from '~/server/queries/profiles'
@@ -14,11 +16,12 @@ interface BookingPageProps {
   }>
   searchParams: Promise<{
     eventType?: string
+    returnTo?: string
   }>
 }
 
 const BookingPage = async ({ params, searchParams }: BookingPageProps) => {
-  const [{ username }, { eventType }] = await Promise.all([params, searchParams])
+  const [{ username }, { eventType, returnTo }] = await Promise.all([params, searchParams])
   const initialNowIso = new Date().toISOString()
 
   const profile = await getPublicProfileByUsername(username)
@@ -32,6 +35,8 @@ const BookingPage = async ({ params, searchParams }: BookingPageProps) => {
   )
     ? requestedEventTypeId
     : undefined
+  const discoveryReturnHref = sanitizeDiscoveryReturnHref(returnTo)
+  const profileHref = `/mentor/${username}?returnTo=${encodeURIComponent(discoveryReturnHref)}`
 
   const bookingData = {
     username,
@@ -50,20 +55,31 @@ const BookingPage = async ({ params, searchParams }: BookingPageProps) => {
   }
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
-      <header className="mb-6 max-w-2xl sm:mb-8">
+    <div className="mx-auto w-full max-w-[76rem] px-4 py-6 sm:px-6 sm:py-10 lg:px-8 lg:py-12">
+      <div className="border-foreground/18 border-b pb-7 sm:pb-9">
         <Link
-          href={`/mentor/${username}`}
+          href={profileHref}
           className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), '-ml-3')}
         >
           <ArrowLeft />
           Back to profile
         </Link>
-        <h1 className="font-display mt-6 text-3xl leading-tight font-medium tracking-tight sm:text-4xl">
-          Book a session with {profile.name ?? 'this mentor'}
+        <div className="mt-6">
+          <DecisionContext
+            compact
+            editable={false}
+            emptyTitle="Your question"
+            emptyDescription="Choose a time, then add the question with your booking details."
+          />
+        </div>
+      </div>
+
+      <header className="mt-8 mb-7 max-w-2xl sm:mt-10 sm:mb-9">
+        <h1 className="font-display text-4xl leading-tight font-medium tracking-[-0.035em] sm:text-5xl">
+          Choose a time with {profile.name ?? 'this mentor'}
         </h1>
-        <p className="text-muted-foreground mt-2 text-sm leading-6 sm:text-base">
-          Choose a session and an available time. Review everything before you confirm.
+        <p className="text-muted-foreground mt-3 text-base leading-7">
+          Pick the session and time that fit. You will review every detail before confirming.
         </p>
       </header>
       <BookingInterface

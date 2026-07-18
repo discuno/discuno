@@ -189,7 +189,7 @@ export function EmailSignInForm({ returnTo = '/settings' }: { returnTo?: string 
   }
 
   return (
-    <form onSubmit={handleEmailSubmit} noValidate>
+    <form method="post" onSubmit={handleEmailSubmit} noValidate>
       <FieldGroup className="gap-4">
         <Field data-invalid={Boolean(emailError || requestError)}>
           <FieldLabel htmlFor={emailInputId}>School email</FieldLabel>

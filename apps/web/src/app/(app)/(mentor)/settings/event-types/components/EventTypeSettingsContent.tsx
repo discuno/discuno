@@ -354,6 +354,7 @@ export const EventTypeSettingsContent = ({
           </DialogHeader>
 
           <form
+            method="post"
             className="flex flex-col gap-6"
             onSubmit={event => {
               event.preventDefault()

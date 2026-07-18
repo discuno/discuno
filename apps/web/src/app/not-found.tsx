@@ -1,6 +1,7 @@
 import { ArrowLeft, Search } from 'lucide-react'
 import Link from 'next/link'
 import { Brand } from '~/components/shared/Brand'
+import { SkipLink } from '~/components/shared/SkipLink'
 import { buttonVariants } from '~/components/ui/button'
 import {
   Empty,
@@ -15,13 +16,18 @@ import { cn } from '~/lib/utils'
 const NotFound = () => {
   return (
     <div className="bg-background flex min-h-screen flex-col">
+      <SkipLink href="#not-found-content" />
       <header className="border-border/80 border-b">
         <div className="mx-auto flex h-16 w-full max-w-5xl items-center px-4 sm:px-6">
           <Brand />
         </div>
       </header>
 
-      <main className="mx-auto flex w-full max-w-lg flex-1 items-center px-4 py-12 sm:px-6 sm:py-16">
+      <main
+        id="not-found-content"
+        tabIndex={-1}
+        className="mx-auto flex w-full max-w-lg flex-1 items-center px-4 py-12 sm:px-6 sm:py-16"
+      >
         <Empty className="w-full py-0 md:py-0" aria-labelledby="not-found-title">
           <EmptyHeader className="max-w-md gap-3">
             <EmptyMedia variant="icon">
@@ -42,7 +48,7 @@ const NotFound = () => {
 
           <EmptyContent className="max-w-md">
             <div className="flex w-full flex-col gap-2 sm:flex-row sm:justify-center">
-              <Link href="/#mentors" className={buttonVariants({ size: 'lg' })}>
+              <Link href="/find" className={buttonVariants({ size: 'lg' })}>
                 <Search data-icon="inline-start" aria-hidden="true" />
                 Browse mentors
               </Link>

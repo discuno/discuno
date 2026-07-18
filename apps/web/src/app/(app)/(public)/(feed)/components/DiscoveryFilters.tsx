@@ -84,7 +84,7 @@ export function DiscoveryFilters({
           </p>
           {hasFilters && (
             <Link
-              href="/#mentors"
+              href="/find#mentors"
               className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'shrink-0')}
             >
               Clear filters

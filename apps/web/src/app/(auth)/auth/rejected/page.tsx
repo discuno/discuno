@@ -1,6 +1,7 @@
 import { ArrowLeft, GraduationCap } from 'lucide-react'
 import Link from 'next/link'
 import { Brand } from '~/components/shared/Brand'
+import { SkipLink } from '~/components/shared/SkipLink'
 import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert'
 import { buttonVariants } from '~/components/ui/button'
 import {
@@ -16,6 +17,7 @@ import { cn } from '~/lib/utils'
 const AuthRejectedPage = () => {
   return (
     <div className="bg-background flex min-h-screen flex-col">
+      <SkipLink href="#auth-rejected-content" />
       <header className="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-5 sm:px-6">
         <Brand />
         <Link href="/" className={buttonVariants({ variant: 'ghost', size: 'sm' })}>
@@ -24,7 +26,11 @@ const AuthRejectedPage = () => {
         </Link>
       </header>
 
-      <main className="mx-auto flex w-full max-w-lg flex-1 items-center px-4 py-12 sm:px-6 sm:py-16">
+      <main
+        id="auth-rejected-content"
+        tabIndex={-1}
+        className="mx-auto flex w-full max-w-lg flex-1 items-center px-4 py-12 sm:px-6 sm:py-16"
+      >
         <Empty className="w-full py-0 md:py-0" aria-labelledby="auth-rejected-title">
           <EmptyHeader className="max-w-md gap-3">
             <EmptyMedia variant="icon" className="bg-accent text-accent-foreground">
@@ -66,10 +72,7 @@ const AuthRejectedPage = () => {
               <Link href="/auth?intent=mentor" className={buttonVariants({ size: 'lg' })}>
                 Sign in with a school email
               </Link>
-              <Link
-                href="/#mentors"
-                className={cn(buttonVariants({ variant: 'outline', size: 'lg' }))}
-              >
+              <Link href="/find" className={cn(buttonVariants({ variant: 'outline', size: 'lg' }))}>
                 <ArrowLeft data-icon="inline-start" aria-hidden="true" />
                 Continue browsing
               </Link>

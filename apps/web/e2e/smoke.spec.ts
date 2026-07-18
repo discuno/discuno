@@ -22,7 +22,9 @@ test.beforeEach(async ({ page }) => {
   await preventTestAccountCreation(page)
 })
 
-test('public discovery page renders its primary path', async ({ page }) => {
+test('question-first path reaches clean discovery without exposing the question', async ({
+  page,
+}) => {
   test.skip(
     !canExerciseDataBackedRoutes,
     'Set DATABASE_URL or PLAYWRIGHT_BASE_URL to exercise data-backed discovery'
@@ -34,10 +36,20 @@ test('public discovery page renders its primary path', async ({ page }) => {
   await expect(
     page.getByRole('heading', {
       level: 1,
-      name: /what are you trying to decide/i,
+      name: /what are you deciding/i,
     })
   ).toBeVisible()
-  await expect(page.getByRole('main').getByRole('link', { name: /find a mentor/i })).toBeVisible()
+
+  const question = 'Should I switch majors before recruiting starts?'
+  await page.getByRole('textbox', { name: /what are you trying to decide/i }).fill(question)
+  await page.getByRole('button', { name: 'Find a mentor' }).click()
+  await page.waitForURL(url => url.pathname === '/find')
+
+  const discoveryUrl = new URL(page.url())
+  expect(discoveryUrl.searchParams.has('decisionQuestion')).toBe(false)
+  expect(discoveryUrl.searchParams.has('question')).toBe(false)
+  expect(page.url()).not.toContain(encodeURIComponent(question))
+  await expect(page.getByRole('paragraph').filter({ hasText: question })).toBeVisible()
 })
 
 test('public about page renders without mutating application state', async ({ page }) => {
@@ -47,7 +59,7 @@ test('public about page renders without mutating application state', async ({ pa
   await expect(
     page.getByRole('heading', {
       level: 1,
-      name: /college should not be figured out from scratch/i,
+      name: /college decisions need context/i,
     })
   ).toBeVisible()
 })

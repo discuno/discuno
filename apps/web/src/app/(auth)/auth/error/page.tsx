@@ -1,6 +1,7 @@
 import { AlertCircle, ArrowLeft, CalendarDays, RefreshCw, Users } from 'lucide-react'
 import Link from 'next/link'
 import { Brand } from '~/components/shared/Brand'
+import { SkipLink } from '~/components/shared/SkipLink'
 import { buttonVariants } from '~/components/ui/button'
 import {
   Empty,
@@ -72,6 +73,7 @@ const AuthErrorPage = async ({
 
   return (
     <div className="bg-background flex min-h-screen flex-col">
+      <SkipLink href="#auth-error-content" />
       <header className="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-5 sm:px-6">
         <Brand />
         <Link href="/" className={buttonVariants({ variant: 'ghost', size: 'sm' })}>
@@ -80,7 +82,11 @@ const AuthErrorPage = async ({
         </Link>
       </header>
 
-      <main className="mx-auto flex w-full max-w-lg flex-1 items-center px-4 py-12 sm:px-6 sm:py-16">
+      <main
+        id="auth-error-content"
+        tabIndex={-1}
+        className="mx-auto flex w-full max-w-lg flex-1 items-center px-4 py-12 sm:px-6 sm:py-16"
+      >
         <Empty className="w-full py-0 md:py-0" aria-labelledby="auth-error-title">
           <EmptyHeader className="max-w-md gap-3">
             <EmptyMedia

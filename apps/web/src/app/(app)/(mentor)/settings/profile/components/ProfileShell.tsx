@@ -11,8 +11,10 @@ export const ProfileShell = ({ title, description, children }: ProfileShellProps
   return (
     <div className="flex flex-col gap-7">
       <header className="max-w-2xl">
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{title}</h1>
-        <p className="text-muted-foreground mt-2 text-sm leading-6">{description}</p>
+        <h1 className="font-display text-3xl leading-tight font-semibold tracking-tight">
+          {title}
+        </h1>
+        <p className="text-muted-foreground mt-1.5 text-sm leading-6">{description}</p>
       </header>
 
       <Suspense

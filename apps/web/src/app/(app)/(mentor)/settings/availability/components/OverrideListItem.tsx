@@ -28,7 +28,7 @@ export function OverrideListItem({ override, onEdit, onDelete }: OverrideListIte
   })
 
   const displayIntervals = override.intervals
-    .map(interval => `${formatTime(interval.start)}–${formatTime(interval.end)}`)
+    .map(interval => `${formatTime(interval.start)} to ${formatTime(interval.end)}`)
     .join(', ')
 
   return (

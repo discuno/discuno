@@ -37,15 +37,11 @@ export const BookingSidebar = ({
 
   const steps: Array<{ label: string; status: StepStatus }> = [
     {
-      label: 'Session',
-      status: selectedEventType ? 'complete' : 'current',
-    },
-    {
       label: 'Time',
-      status: hasTime ? 'complete' : selectedEventType ? 'current' : 'upcoming',
+      status: hasTime ? 'complete' : 'current',
     },
     {
-      label: 'Details',
+      label: 'Question',
       status: isComplete || isReview ? 'complete' : isDetails ? 'current' : 'upcoming',
     },
     {
@@ -64,7 +60,7 @@ export const BookingSidebar = ({
   return (
     <aside
       aria-labelledby="booking-summary-heading"
-      className="bg-card rounded-xl border p-5 lg:sticky lg:top-24"
+      className="bg-card rounded-lg border p-5 lg:sticky lg:top-24"
     >
       <div className="flex items-center gap-3">
         <Avatar className="size-12">
@@ -120,8 +116,8 @@ export const BookingSidebar = ({
       </section>
 
       <nav className="mt-5 border-t pt-5" aria-label="Booking progress">
-        <ol className="flex flex-col gap-3">
-          {steps.map((step, index) => (
+        <ol className="grid grid-cols-3 gap-3 lg:flex lg:flex-col">
+          {steps.map(step => (
             <li
               key={step.label}
               aria-current={step.status === 'current' ? 'step' : undefined}
@@ -138,7 +134,7 @@ export const BookingSidebar = ({
                   step.status === 'upcoming' && 'border-border'
                 )}
               >
-                {step.status === 'complete' ? <Check aria-hidden="true" /> : index + 1}
+                {step.status === 'complete' ? <Check aria-hidden="true" /> : null}
               </span>
               <span className={cn(step.status === 'current' && 'font-semibold')}>{step.label}</span>
             </li>

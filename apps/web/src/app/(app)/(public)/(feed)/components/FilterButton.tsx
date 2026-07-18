@@ -21,9 +21,36 @@ export interface FilterValue {
   id: number
 }
 
+export type DiscoveryFilterQueryName = 'school' | 'major' | 'gradYear'
+
+const DISCOVERY_FILTER_QUERY_NAMES: DiscoveryFilterQueryName[] = ['school', 'major', 'gradYear']
+
+export function createFindHref(
+  currentSearch: string,
+  queryName: DiscoveryFilterQueryName,
+  nextValue: string
+) {
+  const currentParams = new URLSearchParams(currentSearch)
+  const nextParams = new URLSearchParams()
+
+  for (const allowedQueryName of DISCOVERY_FILTER_QUERY_NAMES) {
+    const currentValue = currentParams.get(allowedQueryName)
+    if (currentValue) nextParams.set(allowedQueryName, currentValue)
+  }
+
+  if (nextValue) {
+    nextParams.set(queryName, nextValue)
+  } else {
+    nextParams.delete(queryName)
+  }
+
+  const query = nextParams.toString()
+  return `/find${query ? `?${query}` : ''}#mentors`
+}
+
 interface FilterProps {
   filterItems: FilterValue[]
-  queryName: string
+  queryName: DiscoveryFilterQueryName
   startValue: string
   label?: string
   className?: string
@@ -50,32 +77,20 @@ export const FilterButton = ({
   const handleFilterChange = (itemId: number) => {
     const nextItem = filterItems.find(item => item.id === itemId)
     const selectedValue = nextItem?.value ?? ''
-    const url = new URL(window.location.href)
-
     const nextValue = selectedValue === value ? '' : selectedValue
 
-    if (nextValue) {
-      url.searchParams.set(queryName, nextValue)
-    } else {
-      url.searchParams.delete(queryName)
-    }
-
-    url.hash = 'mentors'
     startTransition(() => {
       setOptimisticValue(nextValue)
-      router.push(url.pathname + url.search + url.hash)
+      router.push(createFindHref(window.location.search, queryName, nextValue))
     })
     setOpen(false)
   }
 
   const handleClearFilter = (event: React.MouseEvent) => {
     event.stopPropagation()
-    const url = new URL(window.location.href)
-    url.searchParams.delete(queryName)
-    url.hash = 'mentors'
     startTransition(() => {
       setOptimisticValue('')
-      router.push(url.pathname + url.search + url.hash)
+      router.push(createFindHref(window.location.search, queryName, ''))
     })
   }
 

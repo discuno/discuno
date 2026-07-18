@@ -25,6 +25,7 @@ import { MINIMUM_PAID_BOOKING_LEAD_MINUTES } from '~/lib/constants'
 import { BadRequestError } from '~/lib/errors'
 import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert'
 import { Button } from '~/components/ui/button'
+import { useDecisionQuestion } from '~/hooks/use-decision-question'
 
 export interface BookingFormData {
   name: string
@@ -68,6 +69,7 @@ export const BookingEmbed = ({
     [initialNowIso, timeZone]
   )
   const { data: session } = useSession()
+  const { question: storedDecisionQuestion, saveQuestion } = useDecisionQuestion()
 
   // State management
   const [selectedEventTypeOverride, setSelectedEventTypeOverride] = useState<EventType | null>(
@@ -89,9 +91,13 @@ export const BookingEmbed = ({
     name: '',
     email: '',
     phone: '',
-    topic: '',
+    topic: storedDecisionQuestion,
   })
   const previousStepRef = useRef<BookingStep>(currentStep)
+
+  useEffect(() => {
+    saveQuestion(formData.topic)
+  }, [formData.topic, saveQuestion])
 
   // Date range for calendar
   const { startMonth, endMonth } = useMemo(
@@ -158,15 +164,23 @@ export const BookingEmbed = ({
     setDetailsStage('details')
   }, [])
 
-  const handleTimeSlotSelect = useCallback((timeSlot: string | null) => {
-    setSelectedTimeSlot(timeSlot)
-    if (timeSlot) {
-      setBookingAttemptId(crypto.randomUUID())
-      setPaidAttemptSubmitted(false)
-      setDetailsStage('details')
-      setCurrentStep('booking')
-    }
-  }, [])
+  const handleTimeSlotSelect = useCallback(
+    (timeSlot: string | null) => {
+      setSelectedTimeSlot(timeSlot)
+      if (timeSlot) {
+        setFormData(current =>
+          current.topic || !storedDecisionQuestion
+            ? current
+            : { ...current, topic: storedDecisionQuestion }
+        )
+        setBookingAttemptId(crypto.randomUUID())
+        setPaidAttemptSubmitted(false)
+        setDetailsStage('details')
+        setCurrentStep('booking')
+      }
+    },
+    [storedDecisionQuestion]
+  )
 
   useEffect(() => {
     const timer = window.setInterval(() => setBrowserNowMs(Date.now()), 30_000)
@@ -298,9 +312,9 @@ export const BookingEmbed = ({
   return (
     <div
       ref={bookingSurfaceRef}
-      className="grid w-full scroll-mt-20 grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start"
+      className="grid w-full scroll-mt-20 grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(18rem,0.55fr)] lg:items-start lg:gap-8"
     >
-      <section className="bg-card min-w-0 overflow-hidden rounded-xl border">
+      <section className="bg-card min-w-0 overflow-hidden rounded-lg border">
         {renderContent()}
       </section>
       <BookingSidebar

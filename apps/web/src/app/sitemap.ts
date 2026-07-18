@@ -44,6 +44,11 @@ const sitemap = async (): Promise<MetadataRoute.Sitemap> => {
       priority: 1,
     },
     {
+      url: absoluteUrl('/find'),
+      changeFrequency: 'daily',
+      priority: 0.9,
+    },
+    {
       url: absoluteUrl('/for-mentors'),
       changeFrequency: 'monthly',
       priority: 0.9,

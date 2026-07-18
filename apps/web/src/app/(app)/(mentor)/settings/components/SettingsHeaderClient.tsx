@@ -15,11 +15,11 @@ import { SidebarTrigger } from '~/components/ui/sidebar'
 import { StripeDashboardButton } from './StripeDashboardButton'
 
 const routeLabels: Record<string, string> = {
-  '/settings': 'Mentor workspace',
-  '/settings/calendar': 'Calendar connection',
+  '/settings': 'Today',
+  '/settings/calendar': 'Calendar',
   '/settings/availability': 'Availability',
   '/settings/event-types': 'Session types',
-  '/settings/bookings': 'Bookings',
+  '/settings/bookings': 'Sessions',
   '/settings/profile': 'Public profile',
   '/settings/profile/edit': 'Public profile',
 }
@@ -54,7 +54,7 @@ export function SettingsHeaderClient({
           <BreadcrumbList className="flex-nowrap">
             <BreadcrumbItem className="min-w-0">
               {isWorkspaceRoot ? (
-                <BreadcrumbPage className="truncate font-medium">Mentor workspace</BreadcrumbPage>
+                <BreadcrumbPage className="truncate font-medium">Today</BreadcrumbPage>
               ) : (
                 <BreadcrumbLink render={<Link href="/settings" />} className="truncate">
                   Mentor workspace

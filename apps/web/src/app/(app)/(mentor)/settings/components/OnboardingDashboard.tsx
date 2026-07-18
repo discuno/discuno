@@ -1,20 +1,18 @@
-import {
-  BookOpen,
-  CalendarDays,
-  Check,
-  CreditCard,
-  DollarSign,
-  Link2,
-  MoveRight,
-  User,
-} from 'lucide-react'
+import { ArrowRight, BookOpen, CalendarDays, CreditCard, Link2, User } from 'lucide-react'
 import Link from 'next/link'
-import { Fragment } from 'react'
 import { Badge } from '~/components/ui/badge'
-import { buttonVariants } from '~/components/ui/button'
-import { Progress } from '~/components/ui/progress'
-import { Separator } from '~/components/ui/separator'
-import { cn } from '~/lib/utils'
+import { Button } from '~/components/ui/button'
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemGroup,
+  ItemMedia,
+  ItemSeparator,
+  ItemTitle,
+} from '~/components/ui/item'
+import { TodaySessions } from './TodaySessions'
 
 export interface OnboardingStep {
   id: string
@@ -39,181 +37,193 @@ interface OnboardingDashboardProps {
   initialStatus: OnboardingStatus
 }
 
-const iconMap = {
-  User,
-  CalendarDays,
-  CreditCard,
-  BookOpen,
-  DollarSign,
-  Link2,
+const setupOrder = ['calendar', 'profile', 'availability', 'event-types', 'stripe']
+
+const setupPresentation = {
+  calendar: {
+    title: 'Calendar',
+    description: 'Connect the calendar Discuno uses for accurate booking times.',
+    actionLabel: 'Connect calendar',
+    icon: Link2,
+  },
+  profile: {
+    title: 'Public profile',
+    description: 'Add the details students need before choosing a conversation.',
+    actionLabel: 'Edit profile',
+    icon: User,
+  },
+  availability: {
+    title: 'Availability',
+    description: 'Open at least one recurring time window for students.',
+    actionLabel: 'Set availability',
+    icon: CalendarDays,
+  },
+  'event-types': {
+    title: 'Session types',
+    description: 'Choose at least one session students can book.',
+    actionLabel: 'Review session types',
+    icon: BookOpen,
+  },
+  stripe: {
+    title: 'Payouts',
+    description: 'Finish payout setup before offering a paid session.',
+    actionLabel: 'Set up payouts',
+    icon: CreditCard,
+  },
 } as const
 
-const setupOrder = ['profile', 'calendar', 'availability', 'event-types', 'stripe', 'pricing']
+const workspaceTasks = [
+  {
+    title: 'Availability',
+    description: 'Update your recurring hours and specific dates.',
+    href: '/settings/availability',
+    icon: CalendarDays,
+  },
+  {
+    title: 'Session types',
+    description: 'Control what students can book and what each session costs.',
+    href: '/settings/event-types',
+    icon: BookOpen,
+  },
+  {
+    title: 'Public profile',
+    description: 'Keep your firsthand context and academic details current.',
+    href: '/settings/profile/edit',
+    icon: User,
+  },
+] as const
 
-const StepIcon = ({ iconName }: { iconName: string }) => {
-  const Icon = iconMap[iconName as keyof typeof iconMap]
-  return <Icon className="size-5" aria-hidden="true" />
-}
-
-function SetupList({ steps, nextStepId }: { steps: OnboardingStep[]; nextStepId?: string }) {
+function SetupList({ steps }: { steps: OnboardingStep[] }) {
   return (
-    <ul aria-label="Setup requirements">
+    <ItemGroup className="gap-0">
       {steps.map((step, index) => {
-        const isNext = step.id === nextStepId
-        const status = step.completed
-          ? 'Complete'
-          : step.requiredForPaid === false
-            ? 'Optional'
-            : 'Required'
+        const presentation = setupPresentation[step.id as keyof typeof setupPresentation]
+        const Icon = presentation.icon
+        const description =
+          step.id === 'profile' && step.missingFields?.length
+            ? `Add ${step.missingFields.map(field => field.toLowerCase()).join(', ')}.`
+            : presentation.description
 
         return (
-          <Fragment key={step.id}>
-            {index > 0 ? <Separator /> : null}
-            <li
-              className={cn(
-                'grid gap-4 py-5 sm:grid-cols-[1.5rem_minmax(0,1fr)_auto] sm:items-center',
-                isNext && 'border-primary border-l-2 pl-4'
-              )}
-            >
-              <span className={step.completed ? 'text-success' : 'text-muted-foreground'}>
-                {step.completed ? (
-                  <Check className="size-5" aria-hidden="true" />
-                ) : (
-                  <StepIcon iconName={step.iconName} />
-                )}
-              </span>
-
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="font-semibold">{step.title}</h3>
-                  <Badge variant={step.completed ? 'success' : 'outline'}>
-                    {isNext ? 'Up next' : status}
-                  </Badge>
-                </div>
-                <p className="text-muted-foreground mt-1 max-w-2xl text-sm leading-6">
-                  {step.description}
-                </p>
-              </div>
-
-              {!step.completed ? (
-                <Link
-                  href={step.actionUrl}
-                  className={cn(
-                    buttonVariants({ variant: isNext ? 'default' : 'outline' }),
-                    'w-full sm:w-auto'
-                  )}
+          <div key={step.id}>
+            {index > 0 ? <ItemSeparator className="my-0" /> : null}
+            <Item className="items-start rounded-none border-0 px-0 py-5 sm:flex-nowrap">
+              <ItemMedia variant="icon">
+                <Icon aria-hidden="true" />
+              </ItemMedia>
+              <ItemContent className="min-w-0">
+                <ItemTitle role="heading" aria-level={3} className="text-base">
+                  {presentation.title}
+                </ItemTitle>
+                <ItemDescription className="line-clamp-none leading-6">
+                  {description}
+                </ItemDescription>
+              </ItemContent>
+              <ItemActions className="basis-full sm:basis-auto sm:self-center">
+                <Button
+                  render={<Link href={step.actionUrl} />}
+                  nativeButton={false}
+                  variant={index === 0 ? 'default' : 'outline'}
+                  size="sm"
+                  className="w-full sm:w-auto"
                 >
-                  {step.actionLabel}
-                  <MoveRight data-icon="inline-end" aria-hidden="true" />
-                </Link>
-              ) : null}
-            </li>
-          </Fragment>
+                  {presentation.actionLabel}
+                  <ArrowRight data-icon="inline-end" aria-hidden="true" />
+                </Button>
+              </ItemActions>
+            </Item>
+          </div>
         )
       })}
-    </ul>
+    </ItemGroup>
   )
 }
 
-function CompleteDashboard() {
+function ReadyWorkspace() {
   return (
     <div className="flex w-full max-w-4xl flex-col gap-8">
-      <header className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-[-0.035em] sm:text-4xl">
-            Mentor overview
-          </h1>
-          <p className="text-muted-foreground mt-3 max-w-xl leading-7">
-            <span className="text-success font-semibold">Ready for bookings.</span> Keep your
-            profile, availability, and session details current from the workspace navigation.
-          </p>
-        </div>
-        <Link href="/settings/bookings" className={buttonVariants({ size: 'lg' })}>
-          Review bookings
-          <MoveRight data-icon="inline-end" aria-hidden="true" />
-        </Link>
+      <header className="flex max-w-2xl flex-col gap-1.5">
+        <h1 className="font-display text-3xl leading-tight font-semibold tracking-tight">Today</h1>
+        <p className="text-muted-foreground text-sm leading-6">
+          Your booking setup is ready. Choose the task you need to handle next.
+        </p>
       </header>
+
+      <TodaySessions />
+
+      <section aria-labelledby="workspace-tasks-heading">
+        <h2 id="workspace-tasks-heading" className="text-lg font-semibold">
+          Keep your page current
+        </h2>
+        <ItemGroup className="border-border mt-4 gap-0 border-y">
+          {workspaceTasks.map((task, index) => {
+            const Icon = task.icon
+
+            return (
+              <div key={task.href}>
+                {index > 0 ? <ItemSeparator className="my-0" /> : null}
+                <Item
+                  render={<Link href={task.href} />}
+                  className="rounded-none border-0 px-0 py-5"
+                >
+                  <ItemMedia variant="icon">
+                    <Icon aria-hidden="true" />
+                  </ItemMedia>
+                  <ItemContent>
+                    <ItemTitle className="text-base">{task.title}</ItemTitle>
+                    <ItemDescription className="line-clamp-none leading-6">
+                      {task.description}
+                    </ItemDescription>
+                  </ItemContent>
+                  <ItemActions>
+                    <ArrowRight aria-hidden="true" />
+                  </ItemActions>
+                </Item>
+              </div>
+            )
+          })}
+        </ItemGroup>
+      </section>
     </div>
   )
 }
 
 export const OnboardingDashboard = ({ initialStatus }: OnboardingDashboardProps) => {
-  const { isComplete, completedSteps, totalSteps, steps } = initialStatus
+  if (initialStatus.isComplete) return <ReadyWorkspace />
 
-  if (isComplete) return <CompleteDashboard />
-
-  const orderedSteps = [...steps].sort(
-    (left, right) => setupOrder.indexOf(left.id) - setupOrder.indexOf(right.id)
-  )
-  const requiredSteps = orderedSteps.filter(
-    step => step.requiredForPaid === undefined || step.requiredForPaid === true
-  )
-  const coreSteps = orderedSteps.filter(step => step.requiredForPaid === undefined)
-  const paymentSteps = orderedSteps.filter(step => step.requiredForPaid !== undefined)
-  const nextRequiredStep = requiredSteps.find(step => !step.completed)
-  const remainingSteps = Math.max(totalSteps - completedSteps, 0)
-  const progressPercent = totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 100
+  const remainingSteps = initialStatus.steps
+    .filter(step => step.requiredForPaid !== false && !step.completed)
+    .sort((left, right) => setupOrder.indexOf(left.id) - setupOrder.indexOf(right.id))
 
   return (
-    <div className="flex w-full max-w-4xl flex-col gap-12">
-      <header>
-        <Badge variant="warning">Bookings paused</Badge>
-        <h1 className="mt-4 text-3xl font-semibold tracking-[-0.035em] sm:text-4xl">
-          Finish your mentor setup
-        </h1>
-        <p className="text-muted-foreground mt-3 max-w-2xl leading-7">
-          {remainingSteps} required {remainingSteps === 1 ? 'task remains' : 'tasks remain'} before
-          students can book a session with you.
-        </p>
-
-        <div className="mt-7 max-w-2xl">
-          <div className="mb-3 flex items-center justify-between gap-4 text-sm">
-            <span className="font-medium">Booking readiness</span>
-            <span className="text-muted-foreground tabular-nums">
-              {completedSteps} of {totalSteps}
-            </span>
-          </div>
-          <Progress
-            value={progressPercent}
-            aria-label="Mentor booking setup progress"
-            aria-valuetext={`${completedSteps} of ${totalSteps} required tasks complete`}
-          />
+    <div className="flex w-full max-w-4xl flex-col gap-8">
+      <header className="flex max-w-2xl flex-col items-start gap-3">
+        <Badge variant="warning">Setup incomplete</Badge>
+        <div className="flex flex-col gap-1.5">
+          <h1 className="font-display text-3xl leading-tight font-semibold tracking-tight">
+            Today
+          </h1>
+          <p className="text-muted-foreground text-sm leading-6">
+            Review the remaining setup before sharing your mentor page with students.
+          </p>
         </div>
       </header>
 
-      <section aria-labelledby="booking-requirements-title">
-        <h2 id="booking-requirements-title" className="text-xl font-semibold tracking-[-0.02em]">
-          Required for booking
-        </h2>
-        <p className="text-muted-foreground mt-1 text-sm">
-          Complete these tasks in order so students can schedule you.
-        </p>
-        <Separator className="mt-5" />
-        <SetupList steps={coreSteps} nextStepId={nextRequiredStep?.id} />
-        <Separator />
+      <section className="border-border border-y py-6" aria-labelledby="booking-readiness-heading">
+        <div className="flex max-w-2xl flex-col gap-1">
+          <h2 id="booking-readiness-heading" className="text-lg font-semibold">
+            Finish your setup
+          </h2>
+          <p className="text-muted-foreground text-sm leading-6">
+            {remainingSteps.length} {remainingSteps.length === 1 ? 'task remains' : 'tasks remain'}.
+          </p>
+        </div>
+        <div className="mt-4">
+          <SetupList steps={remainingSteps} />
+        </div>
       </section>
 
-      {paymentSteps.length > 0 ? (
-        <section aria-labelledby="payment-requirements-title">
-          <div className="flex flex-wrap items-center gap-2">
-            <h2
-              id="payment-requirements-title"
-              className="text-xl font-semibold tracking-[-0.02em]"
-            >
-              Paid sessions
-            </h2>
-            {!paymentSteps.some(step => step.requiredForPaid === true) ? (
-              <Badge variant="outline">Optional</Badge>
-            ) : null}
-          </div>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Payout setup is required only when you charge for a session.
-          </p>
-          <Separator className="mt-5" />
-          <SetupList steps={paymentSteps} nextStepId={nextRequiredStep?.id} />
-          <Separator />
-        </section>
-      ) : null}
+      <TodaySessions />
 
       <p className="text-muted-foreground text-sm">
         Need help?{' '}

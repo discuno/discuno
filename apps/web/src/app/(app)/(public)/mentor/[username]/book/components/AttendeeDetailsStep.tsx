@@ -2,7 +2,7 @@ import { TZDate } from '@date-fns/tz'
 import type { UseMutationResult } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { ArrowLeft, ArrowRight, LockKeyhole } from 'lucide-react'
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { EventType } from '~/app/(app)/(public)/mentor/[username]/book/actions'
 import type { BookingFormData } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingEmbed'
 import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert'
@@ -10,6 +10,7 @@ import { Button } from '~/components/ui/button'
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '~/components/ui/field'
 import { Input } from '~/components/ui/input'
 import { Spinner } from '~/components/ui/spinner'
+import { Textarea } from '~/components/ui/textarea'
 import { formatCurrencyFromCents } from '~/lib/format-currency'
 import { validateEmail } from '~/lib/utils/validation'
 
@@ -47,7 +48,7 @@ export const AttendeeDetailsStep = ({
   })
   const [attemptedSubmit, setAttemptedSubmit] = useState(false)
   const [isReviewing, setIsReviewing] = useState(false)
-  const formRef = useRef<HTMLFormElement>(null)
+  const formRef = useRef<HTMLDivElement>(null)
   const previousReviewState = useRef(isReviewing)
 
   const trimmedName = formData.name.trim()
@@ -80,8 +81,7 @@ export const AttendeeDetailsStep = ({
     onReviewChange(nextValue)
   }
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
+  const handleSubmit = () => {
     setAttemptedSubmit(true)
 
     if (
@@ -114,7 +114,12 @@ export const AttendeeDetailsStep = ({
 
   return (
     <div className="min-h-full px-5 py-5 sm:px-7 sm:py-6">
-      <form ref={formRef} onSubmit={handleSubmit} noValidate className="mx-auto w-full max-w-2xl">
+      <div
+        ref={formRef}
+        role="form"
+        aria-labelledby="booking-details-heading"
+        className="mx-auto w-full max-w-2xl"
+      >
         <Button
           type="button"
           variant="ghost"
@@ -132,13 +137,13 @@ export const AttendeeDetailsStep = ({
         {!isReviewing ? (
           <>
             <header className="mb-7">
-              <p className="text-muted-foreground text-xs font-medium">Step 3 of 4</p>
               <h2
+                id="booking-details-heading"
                 data-booking-step-heading
                 tabIndex={-1}
-                className="mt-1 text-xl font-semibold tracking-tight outline-none sm:text-2xl"
+                className="text-xl font-semibold tracking-tight outline-none sm:text-2xl"
               >
-                Your details
+                Your question and details
               </h2>
               <p className="text-muted-foreground mt-1 text-sm leading-6">
                 We will send the confirmation and meeting details to your email.
@@ -150,15 +155,15 @@ export const AttendeeDetailsStep = ({
                 <FieldLabel htmlFor="booking-topic">
                   What would you like to talk through?
                 </FieldLabel>
-                <Input
+                <Textarea
                   id="booking-topic"
                   name="topic"
-                  type="text"
                   value={formData.topic}
                   onChange={event => setFormData({ ...formData, topic: event.target.value })}
                   onBlur={() => setTouched(current => ({ ...current, topic: true }))}
                   placeholder="For example: choosing between two majors"
                   maxLength={200}
+                  rows={4}
                   aria-invalid={showTopicError}
                   aria-describedby={showTopicError ? 'booking-topic-error' : 'booking-topic-help'}
                   disabled={detailsLocked}
@@ -261,7 +266,7 @@ export const AttendeeDetailsStep = ({
               </Field>
             </FieldGroup>
 
-            <Button type="submit" size="lg" className="mt-7 w-full">
+            <Button type="button" size="lg" className="mt-7 w-full" onClick={handleSubmit}>
               Review booking
               <ArrowRight data-icon="inline-end" />
             </Button>
@@ -269,13 +274,13 @@ export const AttendeeDetailsStep = ({
         ) : (
           <>
             <header className="mb-7">
-              <p className="text-muted-foreground text-xs font-medium">Step 4 of 4</p>
               <h2
+                id="booking-details-heading"
                 data-booking-step-heading
                 tabIndex={-1}
-                className="mt-1 text-xl font-semibold tracking-tight outline-none sm:text-2xl"
+                className="text-xl font-semibold tracking-tight outline-none sm:text-2xl"
               >
-                Review booking
+                Review your session
               </h2>
               <p className="text-muted-foreground mt-1 text-sm leading-6">
                 Confirm the session, time, and contact details below.
@@ -356,10 +361,11 @@ export const AttendeeDetailsStep = ({
                 Edit details
               </Button>
               <Button
-                type="submit"
+                type="button"
                 size="lg"
                 className="sm:flex-1"
                 disabled={createBookingMutation.isPending}
+                onClick={handleSubmit}
               >
                 {createBookingMutation.isPending ? (
                   <>
@@ -376,7 +382,7 @@ export const AttendeeDetailsStep = ({
             </div>
           </>
         )}
-      </form>
+      </div>
     </div>
   )
 }

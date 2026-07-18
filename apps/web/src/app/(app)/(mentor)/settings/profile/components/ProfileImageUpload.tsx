@@ -17,12 +17,11 @@ import {
   AlertDialogTrigger,
 } from '~/components/ui/alert-dialog'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
-import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
 import { Field, FieldDescription, FieldLabel } from '~/components/ui/field'
 import { Spinner } from '~/components/ui/spinner'
 import { compressFile } from '~/lib/blob/client-utils'
+import { ProfileCard } from './ProfileCard'
 
 interface ProfileImageUploadProps {
   currentImageUrl?: string | null
@@ -157,17 +156,11 @@ export const ProfileImageUpload = ({
   const isBusy = activeAction !== null
 
   return (
-    <Card>
-      <CardHeader className="gap-2">
-        <div className="flex items-center justify-between gap-3">
-          <CardTitle role="heading" aria-level={2}>
-            Profile photo
-          </CardTitle>
-          <Badge variant="outline">Required</Badge>
-        </div>
-        <CardDescription>Use a clear, recent photo of yourself.</CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-5 sm:flex-row sm:items-center">
+    <ProfileCard
+      title="Profile photo"
+      description="Part of your profile setup. Use a clear, recent photo of yourself."
+    >
+      <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
         <Avatar className="size-24">
           <AvatarImage
             src={previewUrl ?? ''}
@@ -259,7 +252,7 @@ export const ProfileImageUpload = ({
             {statusMessage}
           </p>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </ProfileCard>
   )
 }

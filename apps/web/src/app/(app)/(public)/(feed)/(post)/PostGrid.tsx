@@ -35,9 +35,16 @@ interface PostGridProps {
   majorId: number | null
   graduationYear: number | null
   initialPage: PostsPage
+  discoveryReturnHref?: string
 }
 
-export const PostGrid = ({ schoolId, majorId, graduationYear, initialPage }: PostGridProps) => {
+export const PostGrid = ({
+  schoolId,
+  majorId,
+  graduationYear,
+  initialPage,
+  discoveryReturnHref,
+}: PostGridProps) => {
   const hasFilters = schoolId !== null || majorId !== null || graduationYear !== null
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isError, refetch } =
     useInfiniteQuery({
@@ -68,7 +75,7 @@ export const PostGrid = ({ schoolId, majorId, graduationYear, initialPage }: Pos
 
   if (isError) {
     return (
-      <Empty className="border-y">
+      <Empty className="border-y" role="alert">
         <EmptyHeader>
           <EmptyMedia variant="icon">
             <RefreshCw />
@@ -87,20 +94,26 @@ export const PostGrid = ({ schoolId, majorId, graduationYear, initialPage }: Pos
 
   if (allPosts.length === 0) {
     return (
-      <Empty className="border-y">
+      <Empty className="border-y" role="status">
         <EmptyHeader>
           <EmptyMedia variant="icon">
             <SearchX />
           </EmptyMedia>
-          <EmptyTitle>No exact matches yet</EmptyTitle>
+          <EmptyTitle>
+            {hasFilters ? 'No exact matches yet' : 'Mentor profiles are being prepared'}
+          </EmptyTitle>
           <EmptyDescription>
-            Remove one filter. Someone from a related school or field may still have useful
-            firsthand context.
+            {hasFilters
+              ? 'Remove one filter. Someone from a related school or field may still have useful firsthand context.'
+              : 'Use the guides to sharpen your question while students finish publishing their profiles.'}
           </EmptyDescription>
         </EmptyHeader>
         <EmptyContent>
-          <Link href="/#mentors" className={cn(buttonVariants({ variant: 'outline' }))}>
-            Clear all filters
+          <Link
+            href={hasFilters ? '/find#mentors' : '/blog'}
+            className={cn(buttonVariants({ variant: 'outline' }))}
+          >
+            {hasFilters ? 'Clear all filters' : 'Read college guides'}
           </Link>
         </EmptyContent>
       </Empty>
@@ -109,6 +122,9 @@ export const PostGrid = ({ schoolId, majorId, graduationYear, initialPage }: Pos
 
   return (
     <>
+      <p className="sr-only" aria-live="polite">
+        {allPosts.length} mentor {allPosts.length === 1 ? 'profile' : 'profiles'} shown.
+      </p>
       <div
         role="list"
         aria-label="Student mentors"
@@ -117,7 +133,7 @@ export const PostGrid = ({ schoolId, majorId, graduationYear, initialPage }: Pos
         className="divide-border divide-y border-y"
       >
         {allPosts.map(card => (
-          <PostCard key={card.id} card={card} />
+          <PostCard key={card.id} card={card} discoveryReturnHref={discoveryReturnHref} />
         ))}
       </div>
 

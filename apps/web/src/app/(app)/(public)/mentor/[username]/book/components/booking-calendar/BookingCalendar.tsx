@@ -87,16 +87,16 @@ export const BookingCalendar = ({
           tabIndex={-1}
           className="text-xl font-semibold tracking-tight outline-none sm:text-2xl"
         >
-          Session and time
+          Choose a time
         </h2>
         <p className="text-muted-foreground mt-1 text-sm leading-6">
-          Available times with {bookingData.name} are shown in {timeZone}.
+          Times with {bookingData.name} are shown in {timeZone}.
         </p>
       </header>
 
       <div className="flex flex-col gap-7 p-5 sm:p-7">
         <Field>
-          <FieldLabel>1. Session</FieldLabel>
+          <FieldLabel>Session</FieldLabel>
           <EventTypeSelector
             selectedEventType={selectedEventType}
             eventTypes={eventTypes}
@@ -108,7 +108,7 @@ export const BookingCalendar = ({
         <section className="border-t pt-7" aria-labelledby="booking-date-time-heading">
           <div className="mb-5">
             <h3 id="booking-date-time-heading" className="text-sm font-medium">
-              2. Date and time
+              Date and time
             </h3>
             <p className="text-muted-foreground mt-1 text-sm">
               Choose an available date, then a start time.

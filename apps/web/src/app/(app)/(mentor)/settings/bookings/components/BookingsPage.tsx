@@ -30,7 +30,7 @@ const Count = ({ value }: { value: number }) => (
 
 const BookingsLoading = () => (
   <div aria-live="polite" aria-busy="true">
-    <span className="sr-only">Loading bookings…</span>
+    <span className="sr-only">Loading sessions…</span>
     <ItemGroup className="border-border divide-border gap-0 divide-y border-y" aria-hidden="true">
       {Array.from({ length: 3 }).map((_, index) => (
         <Item key={index} className="items-start rounded-none border-0 px-0 py-5 sm:flex-nowrap">
@@ -54,7 +54,7 @@ export const BookingsPage = () => {
     queryKey: ['bookings'],
     queryFn: async () => {
       const result = await getBookings()
-      if (!result.success) throw new Error(result.error ?? 'Failed to fetch bookings')
+      if (!result.success) throw new Error(result.error ?? 'Failed to fetch sessions')
       return result.data ?? []
     },
     staleTime: 1000 * 60,
@@ -67,10 +67,10 @@ export const BookingsPage = () => {
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="flex max-w-2xl flex-col gap-1.5">
           <h1 className="font-display text-3xl leading-tight font-semibold tracking-tight">
-            Bookings
+            Sessions
           </h1>
           <p className="text-muted-foreground text-sm leading-6">
-            Prepare for upcoming sessions and review past bookings.
+            Prepare for upcoming conversations and review past sessions.
           </p>
         </div>
         <p className="text-muted-foreground text-xs sm:pb-1">
@@ -83,7 +83,7 @@ export const BookingsPage = () => {
       ) : error ? (
         <Alert variant="destructive">
           <CircleAlert aria-hidden="true" />
-          <AlertTitle>Bookings could not be loaded</AlertTitle>
+          <AlertTitle>Sessions could not be loaded</AlertTitle>
           <AlertDescription>
             <p>{error instanceof Error ? error.message : 'Please try again.'}</p>
             <Button variant="outline" onClick={() => void refetch()} disabled={isFetching}>
@@ -100,7 +100,7 @@ export const BookingsPage = () => {
         <Tabs defaultValue="upcoming" className="gap-4">
           <TabsList
             variant="line"
-            aria-label="Booking status"
+            aria-label="Session status"
             className="max-w-full overflow-x-auto"
           >
             <TabsTrigger value="upcoming">
@@ -122,7 +122,7 @@ export const BookingsPage = () => {
               bookings={groups.upcoming}
               timeZone={timeZone}
               emptyTitle="No upcoming sessions"
-              emptyDescription="New bookings will appear here as soon as a student schedules one."
+              emptyDescription="A session will appear here when a student schedules one."
             />
           </TabsContent>
           <TabsContent value="completed">
@@ -138,7 +138,7 @@ export const BookingsPage = () => {
               bookings={groups.cancelled}
               timeZone={timeZone}
               emptyTitle="No cancelled sessions"
-              emptyDescription="Cancelled or rejected bookings will remain here for your records."
+              emptyDescription="Cancelled or rejected sessions will remain here for your records."
             />
           </TabsContent>
         </Tabs>

@@ -3,10 +3,10 @@ import { Skeleton } from '~/components/ui/skeleton'
 export const BookingEmbedSkeleton = () => {
   return (
     <div
-      className="grid w-full grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start"
+      className="grid w-full grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(18rem,0.55fr)] lg:items-start lg:gap-8"
       aria-hidden="true"
     >
-      <div className="bg-card overflow-hidden rounded-xl border">
+      <div className="bg-card overflow-hidden rounded-lg border">
         <div className="flex flex-col gap-2 border-b px-5 py-5 sm:px-7 sm:py-6">
           <Skeleton className="h-7 w-64 max-w-full" />
           <Skeleton className="h-4 w-80 max-w-full" />
@@ -49,7 +49,7 @@ export const BookingEmbedSkeleton = () => {
         </div>
       </div>
 
-      <div className="bg-card rounded-xl border p-5">
+      <div className="bg-card rounded-lg border p-5">
         <div className="flex items-center gap-3">
           <Skeleton className="size-12 rounded-full" />
           <div className="flex min-w-0 flex-1 flex-col gap-2">
