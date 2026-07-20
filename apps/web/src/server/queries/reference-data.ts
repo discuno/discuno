@@ -1,7 +1,7 @@
 'use cache'
 import 'server-only'
 
-import { cacheLife } from 'next/dist/server/use-cache/cache-life'
+import { cacheLife } from 'next/cache'
 import { cache } from 'react'
 import { getAllMajors, getAllSchools } from '~/server/dal/schools'
 

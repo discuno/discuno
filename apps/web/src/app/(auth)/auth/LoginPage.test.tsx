@@ -1,0 +1,92 @@
+import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+const mocks = vi.hoisted(() => ({ socialSignIn: vi.fn() }))
+
+vi.mock('~/lib/auth-client', () => ({
+  authClient: {
+    emailOtp: { sendVerificationOtp: vi.fn() },
+    signIn: { emailOtp: vi.fn(), social: mocks.socialSignIn },
+  },
+}))
+
+import { LoginPage } from './LoginPage'
+
+describe('fresh-session sign-in', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mocks.socialSignIn.mockResolvedValue({ data: { redirect: true }, error: null })
+  })
+
+  it('explains the extra check and preserves the safe resume path through OAuth', async () => {
+    const user = userEvent.setup()
+
+    render(
+      <LoginPage
+        initialUserType="mentor"
+        reauthenticationRequired
+        returnTo="/api/integrations/calcom/connect?returnTo=%2Fsettings%2Fcalendar"
+      />
+    )
+
+    expect(screen.getByRole('heading', { name: 'Confirm it’s you' })).toBeTruthy()
+    expect(screen.getByText(/sign in again for security/i)).toBeTruthy()
+
+    await user.click(screen.getByRole('button', { name: 'Continue with Google' }))
+
+    await waitFor(() =>
+      expect(mocks.socialSignIn).toHaveBeenCalledWith({
+        provider: 'google',
+        callbackURL: '/api/integrations/calcom/connect?returnTo=%2Fsettings%2Fcalendar',
+      })
+    )
+  })
+
+  it('preserves a normal post-sign-in resume path without showing reauthentication copy', async () => {
+    const user = userEvent.setup()
+
+    render(
+      <LoginPage
+        initialUserType="mentor"
+        returnTo="/api/integrations/calcom/connect?returnTo=%2Fsettings%2Fcalendar"
+      />
+    )
+
+    expect(screen.getByRole('heading', { name: 'Mentor sign in' })).toBeTruthy()
+    expect(screen.queryByRole('heading', { name: 'Confirm it’s you' })).toBeNull()
+
+    await user.click(screen.getByRole('button', { name: 'Continue with Google' }))
+
+    await waitFor(() =>
+      expect(mocks.socialSignIn).toHaveBeenCalledWith({
+        provider: 'google',
+        callbackURL: '/api/integrations/calcom/connect?returnTo=%2Fsettings%2Fcalendar',
+      })
+    )
+  })
+
+  it('shows OAuth providers before the school email option for mentors', () => {
+    render(<LoginPage initialUserType="mentor" />)
+
+    const schoolEmail = screen.getByRole('textbox', { name: 'School email' })
+    const google = screen.getByRole('button', { name: 'Continue with Google' })
+
+    expect(screen.getByRole('button', { name: 'Email me a sign-in code' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Continue with Microsoft' })).toBeTruthy()
+    expect(
+      google.compareDocumentPosition(schoolEmail) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
+  })
+
+  it('makes account-free booking explicit for students', async () => {
+    const user = userEvent.setup()
+
+    render(<LoginPage initialUserType="mentor" />)
+
+    await user.click(screen.getByRole('tab', { name: 'Student' }))
+
+    expect(screen.getByText(/continue browsing without an account/i)).toBeTruthy()
+    expect(screen.queryByRole('textbox', { name: 'School email' })).toBeNull()
+  })
+})

@@ -1,9 +1,6 @@
 import { connection } from 'next/server'
 import { Suspense } from 'react'
-import {
-  getFullProfileAction,
-  getMentorOnboardingStatus,
-} from '~/app/(app)/(mentor)/settings/actions'
+import { getFullProfileAction } from '~/app/(app)/(mentor)/settings/actions'
 import { AppSidebarHeader } from '~/components/app-sidebar-header'
 import { NavMain, type NavMainProps } from '~/components/nav-main'
 import { NavUser } from '~/components/nav-user'
@@ -14,84 +11,62 @@ import {
   SidebarHeader,
   SidebarMenu,
   SidebarMenuItem,
+  SidebarRail,
 } from '~/components/ui/sidebar'
 import { Skeleton } from '~/components/ui/skeleton'
 
-// Static navigation items that don't depend on user data
-const staticNavItems: NavMainProps['items'] = [
+const workspaceNavItems: NavMainProps['items'] = [
   {
-    title: 'Home',
-    url: '/',
-    icon: 'ArrowLeft',
+    title: 'Today',
+    url: '/settings',
+    icon: 'House',
   },
   {
-    title: 'Meeting Configuration',
-    url: '#',
-    icon: 'Settings2',
-    sectionLabel: 'Meeting Setup',
-    items: [
-      {
-        title: 'Availability',
-        url: '/settings/availability',
-        icon: 'Calendar',
-        description: "Set when you're free",
-      },
-      {
-        title: 'Event Types',
-        url: '/settings/event-types',
-        icon: 'BookOpen',
-        description: 'Configure session types',
-      },
-    ],
+    title: 'Sessions',
+    url: '/settings/bookings',
+    icon: 'CalendarCheck',
   },
   {
-    title: 'Manage',
-    url: '#',
-    icon: 'Settings2',
-    sectionLabel: 'Manage',
-    items: [
-      {
-        title: 'Profile',
-        url: '/settings/profile/edit',
-        icon: 'User',
-        description: 'Edit your profile',
-      },
-      {
-        title: 'Bookings',
-        url: '/settings/bookings',
-        icon: 'CalendarCheck',
-        description: 'View your sessions',
-      },
-    ],
+    title: 'Availability',
+    url: '/settings/availability',
+    icon: 'CalendarDays',
+  },
+  {
+    title: 'Session types',
+    url: '/settings/event-types',
+    icon: 'BookOpen',
+  },
+  {
+    title: 'Public profile',
+    url: '/settings/profile',
+    icon: 'User',
+  },
+  {
+    title: 'Calendar',
+    url: '/settings/calendar',
+    icon: 'Calendar',
   },
 ]
+
+const backToDiscunoItem: NavMainProps['items'][number] = {
+  title: 'Back to Discuno',
+  url: '/',
+  icon: 'ArrowLeft',
+}
 
 // Dynamic component that fetches user-specific data
 const DynamicSidebarContent = async () => {
   await connection()
 
   const user = await getFullProfileAction()
-  const onboardingStatus = await getMentorOnboardingStatus()
-
-  const homeItem = staticNavItems[0]
-  const navMain: NavMainProps['items'] = [
-    ...(homeItem ? [homeItem] : []),
-    {
-      title: onboardingStatus.isComplete ? 'Profile Settings' : 'Activate Profile',
-      url: '/settings',
-      icon: 'Rocket',
-      statusDot: onboardingStatus.isComplete ? 'active' : 'inactive',
-      isOnboarding: !onboardingStatus.isComplete,
-    },
-    ...staticNavItems.slice(1), // Rest of the static items
-  ]
 
   return (
     <>
       <SidebarContent>
-        <NavMain items={navMain} />
+        <NavMain items={workspaceNavItems} />
       </SidebarContent>
       <SidebarFooter>
+        <NavMain items={[backToDiscunoItem]} />
         <NavUser user={user} />
       </SidebarFooter>
     </>
@@ -103,10 +78,10 @@ const SidebarContentSkeleton = () => {
   return (
     <>
       <SidebarContent>
-        <div className="space-y-2 p-2">
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
+        <div className="flex flex-col gap-2 p-2">
+          {workspaceNavItems.map(item => (
+            <Skeleton key={item.url} className="h-10 w-full" />
+          ))}
         </div>
       </SidebarContent>
       <SidebarFooter>
@@ -119,8 +94,7 @@ const SidebarContentSkeleton = () => {
 // Main sidebar component using PPR
 export const AppSidebar = ({ ...props }: React.ComponentProps<typeof Sidebar>) => {
   return (
-    <Sidebar variant="inset" {...props}>
-      {/* Static header - prerendered */}
+    <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
@@ -129,10 +103,10 @@ export const AppSidebar = ({ ...props }: React.ComponentProps<typeof Sidebar>) =
         </SidebarMenu>
       </SidebarHeader>
 
-      {/* Dynamic content - streamed in at request time */}
       <Suspense fallback={<SidebarContentSkeleton />}>
         <DynamicSidebarContent />
       </Suspense>
+      <SidebarRail />
     </Sidebar>
   )
 }

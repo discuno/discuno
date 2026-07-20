@@ -1,14 +1,28 @@
 'use client'
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Check, ChevronsUpDown, GraduationCap, User } from 'lucide-react'
+import { Check, CheckCircle2, ChevronsUpDown, CircleAlert } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { updateUserProfile } from '~/app/(app)/(mentor)/settings/profile/actions'
 import { ProfileCard } from '~/app/(app)/(mentor)/settings/profile/components/ProfileCard'
 import { ProfileImageUpload } from '~/app/(app)/(mentor)/settings/profile/components/ProfileImageUpload'
+import { ProfilePreviewCard } from '~/app/(app)/(mentor)/settings/profile/components/ProfilePreviewCard'
+import {
+  ACADEMIC_LEVELS,
+  BIO_MAX_LENGTH,
+  createProfileDraft,
+  getProfileReadiness,
+  hasProfileDraftChanged,
+  normalizeProfileUsername,
+  validateProfileDraft,
+  type ProfileDraft,
+  type ProfileField,
+  type ProfileFieldErrors,
+} from '~/app/(app)/(mentor)/settings/profile/components/profile-form-state'
 import type { FullUserProfile } from '~/app/types'
+import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert'
 import { Button } from '~/components/ui/button'
 import {
   Command,
@@ -18,24 +32,21 @@ import {
   CommandItem,
   CommandList,
 } from '~/components/ui/command'
-import { Field, FieldDescription, FieldGroup, FieldLabel } from '~/components/ui/field'
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '~/components/ui/field'
 import { Input } from '~/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '~/components/ui/popover'
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from '~/components/ui/select'
+import { Separator } from '~/components/ui/separator'
+import { Spinner } from '~/components/ui/spinner'
 import { Textarea } from '~/components/ui/textarea'
 import { cn } from '~/lib/utils'
-
-type School = {
-  label: string
-  value: string
-  id: number
-}
 
 type Major = {
   label: string
@@ -45,152 +56,363 @@ type Major = {
 
 interface EditProfileContentProps {
   profile: FullUserProfile
-  schools: School[]
   majors: Major[]
 }
 
-export const EditProfileContent = ({ profile, schools, majors }: EditProfileContentProps) => {
+interface ProfileSaveRequest {
+  formData: FormData
+  draftSnapshot: ProfileDraft
+}
+
+const UNSAVED_CHANGES_MESSAGE = 'You have unsaved profile changes. Leave without saving them?'
+
+const RequiredText = () => (
+  <>
+    <span aria-hidden="true">*</span>
+    <span className="sr-only"> (required)</span>
+  </>
+)
+
+export const EditProfileContent = ({ profile, majors }: EditProfileContentProps) => {
   const currentYear = new Date().getFullYear()
-  const graduationYears = Array.from({ length: 6 }, (_, i) => currentYear + i)
+  const graduationYears = useMemo(
+    () => Array.from({ length: 9 }, (_, index) => currentYear + index),
+    [currentYear]
+  )
+  const academicLevelItems = useMemo(
+    () => [
+      { label: 'Select level', value: null },
+      ...ACADEMIC_LEVELS.map(level => ({ label: level, value: level })),
+    ],
+    []
+  )
+  const graduationYearItems = useMemo(
+    () => [
+      { label: 'Select year', value: null },
+      ...graduationYears.map(year => ({ label: year.toString(), value: year.toString() })),
+    ],
+    [graduationYears]
+  )
+  const initialDraft = useMemo(
+    () => createProfileDraft(profile, currentYear),
+    [currentYear, profile]
+  )
   const router = useRouter()
   const queryClient = useQueryClient()
 
+  const [draft, setDraft] = useState<ProfileDraft>(initialDraft)
+  const draftRef = useRef(draft)
+  const [savedDraft, setSavedDraft] = useState<ProfileDraft>(initialDraft)
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(profile.image)
+  const [savedUsername, setSavedUsername] = useState<string | null>(profile.username)
   const [majorOpen, setMajorOpen] = useState(false)
-  const [majorValue, setMajorValue] = useState(profile.major ?? '')
+  const [fieldErrors, setFieldErrors] = useState<ProfileFieldErrors>({})
+  const [formError, setFormError] = useState<string | null>(null)
+  const [saveMessage, setSaveMessage] = useState<string | null>(null)
+
+  const isDirty = hasProfileDraftChanged(draft, savedDraft)
+  const readiness = getProfileReadiness(draft, Boolean(profileImageUrl))
+
+  useEffect(() => {
+    if (!isDirty) return
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault()
+      event.returnValue = ''
+    }
+
+    const handleLinkClick = (event: MouseEvent) => {
+      if (!(event.target instanceof Element)) return
+
+      const anchor = event.target.closest<HTMLAnchorElement>('a[href]')
+      if (!anchor || anchor.target === '_blank' || anchor.hasAttribute('download')) return
+
+      const targetUrl = new URL(anchor.href, window.location.href)
+      const currentUrl = new URL(window.location.href)
+      const staysOnCurrentDocument =
+        targetUrl.origin === currentUrl.origin &&
+        targetUrl.pathname === currentUrl.pathname &&
+        targetUrl.search === currentUrl.search
+
+      if (staysOnCurrentDocument || window.confirm(UNSAVED_CHANGES_MESSAGE)) return
+
+      event.preventDefault()
+      event.stopPropagation()
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    document.addEventListener('click', handleLinkClick, true)
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+      document.removeEventListener('click', handleLinkClick, true)
+    }
+  }, [isDirty])
+
+  function updateField<FieldName extends ProfileField>(
+    field: FieldName,
+    value: ProfileDraft[FieldName]
+  ) {
+    setDraft(current => {
+      const next = { ...current, [field]: value }
+      draftRef.current = next
+      return next
+    })
+    setFieldErrors(current => {
+      if (!current[field]) return current
+      const next = { ...current }
+      delete next[field]
+      return next
+    })
+    setFormError(null)
+    setSaveMessage(null)
+  }
 
   const mutation = useMutation({
-    mutationFn: (formData: FormData) => updateUserProfile(formData),
-    onSuccess: data => {
-      if (data.success) {
-        toast.success('Profile updated successfully!')
-        void queryClient.invalidateQueries({ queryKey: ['profile'] })
-        router.refresh()
-      } else {
-        toast.error(data.message ?? 'An unexpected error occurred.')
+    mutationFn: ({ formData }: ProfileSaveRequest) => updateUserProfile(formData),
+    onSuccess: (data, request) => {
+      if (!data.success) {
+        const message = data.message ?? 'We could not save your profile. Please try again.'
+        if (message.toLowerCase().includes('username')) {
+          setFieldErrors(current => ({ ...current, username: message }))
+        }
+        setFormError(message)
+        setSaveMessage(null)
+        toast.error('Profile not saved.')
+        return
       }
+
+      const savedValues: ProfileDraft = {
+        ...request.draftSnapshot,
+        name: request.draftSnapshot.name.trim(),
+        username: request.draftSnapshot.username.trim(),
+        bio: request.draftSnapshot.bio.trim(),
+        major: request.draftSnapshot.major.trim(),
+      }
+      const hasNewerChanges = hasProfileDraftChanged(draftRef.current, request.draftSnapshot)
+
+      if (!hasNewerChanges) {
+        draftRef.current = savedValues
+        setDraft(savedValues)
+      }
+      setSavedDraft(savedValues)
+      setSavedUsername(savedValues.username)
+      setFieldErrors({})
+      setFormError(null)
+      setSaveMessage(
+        hasNewerChanges
+          ? 'Your earlier changes were saved. Save again when your latest edits are ready.'
+          : 'Saved. Your public profile now uses these details.'
+      )
+      toast.success(hasNewerChanges ? 'Earlier profile changes saved.' : 'Profile saved.')
+      void queryClient.invalidateQueries({ queryKey: ['profile'] })
+      router.refresh()
     },
-    onError: (error: Error) => {
-      toast.error(error.message || 'An unexpected error occurred.')
+    onError: () => {
+      const message = 'We could not save your profile. Please try again.'
+      setFormError(message)
+      setSaveMessage(null)
+      toast.error(message)
     },
   })
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    const formData = new FormData(event.currentTarget)
-    mutation.mutate(formData)
+    setSaveMessage(null)
+
+    const errors = validateProfileDraft(draft, currentYear)
+    setFieldErrors(errors)
+
+    const firstInvalidField = (
+      ['name', 'username', 'bio', 'major', 'schoolYear', 'graduationYear'] as ProfileField[]
+    ).find(field => errors[field])
+
+    if (firstInvalidField) {
+      setFormError('Review the highlighted details before saving.')
+      requestAnimationFrame(() => document.getElementById(firstInvalidField)?.focus())
+      return
+    }
+
+    setFormError(null)
+    mutation.mutate({
+      formData: new FormData(event.currentTarget),
+      draftSnapshot: { ...draft },
+    })
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Left Column - Profile Image */}
-        <div className="lg:col-span-1">
-          <ProfileImageUpload currentImageUrl={profile.image} userName={profile.name} />
-        </div>
+    <form method="post" onSubmit={handleSubmit} noValidate className="flex flex-col gap-6">
+      {formError && (
+        <Alert variant="destructive" id="profile-form-error">
+          <CircleAlert aria-hidden="true" />
+          <AlertTitle>Profile not saved</AlertTitle>
+          <AlertDescription>{formError}</AlertDescription>
+        </Alert>
+      )}
 
-        {/* Right Column - Form Fields */}
-        <div className="space-y-6 lg:col-span-2">
+      <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <div className="flex min-w-0 flex-col gap-10">
+          <ProfileImageUpload
+            currentImageUrl={profile.image}
+            userName={draft.name}
+            userId={profile.userId}
+            onImageChange={setProfileImageUrl}
+          />
+
+          <Separator />
+
           <ProfileCard
-            title="Basic Information"
-            description="Your name and bio are displayed on your public profile"
-            icon={User}
+            title="Introduction"
+            description="Explain the firsthand experience you can help a student think through."
           >
             <FieldGroup>
-              <Field>
+              <Field data-invalid={Boolean(fieldErrors.name)}>
                 <FieldLabel htmlFor="name">
-                  Full Name <span className="text-red-500">*</span>
+                  Public name <RequiredText />
                 </FieldLabel>
                 <Input
                   id="name"
                   name="name"
-                  defaultValue={profile.name ?? ''}
-                  placeholder="Enter your full name"
+                  value={draft.name}
+                  onChange={event => updateField('name', event.target.value)}
+                  placeholder="Your full name"
+                  maxLength={255}
+                  autoComplete="name"
                   required
-                  className="text-base"
+                  aria-invalid={Boolean(fieldErrors.name)}
+                  aria-describedby={fieldErrors.name ? 'name-error' : undefined}
                 />
+                <FieldError id="name-error">{fieldErrors.name}</FieldError>
               </Field>
-              <Field>
+
+              <Field data-invalid={Boolean(fieldErrors.username)}>
+                <FieldLabel htmlFor="username">
+                  Public username <RequiredText />
+                </FieldLabel>
+                <Input
+                  id="username"
+                  name="username"
+                  value={draft.username}
+                  onChange={event =>
+                    updateField('username', normalizeProfileUsername(event.target.value))
+                  }
+                  placeholder="your-name"
+                  minLength={3}
+                  maxLength={30}
+                  pattern="[a-z0-9_-]+"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  required
+                  aria-invalid={Boolean(fieldErrors.username)}
+                  aria-describedby={
+                    fieldErrors.username ? 'username-help username-error' : 'username-help'
+                  }
+                />
+                <FieldDescription id="username-help">
+                  discuno.com/mentor/{draft.username || 'your-name'}. Use lowercase letters,
+                  numbers, hyphens, or underscores.
+                </FieldDescription>
+                <FieldError id="username-error">{fieldErrors.username}</FieldError>
+              </Field>
+
+              <Field data-invalid={Boolean(fieldErrors.bio)}>
                 <FieldLabel htmlFor="bio">
-                  Biography <span className="text-red-500">*</span>
+                  What can you help a student think through? <RequiredText />
                 </FieldLabel>
                 <Textarea
                   id="bio"
                   name="bio"
-                  defaultValue={
-                    profile.bio ?? (profile.school ? `Student at ${profile.school}` : '')
-                  }
-                  placeholder="Tell students about yourself, your experience, and what you can help with..."
-                  rows={5}
+                  value={draft.bio}
+                  onChange={event => updateField('bio', event.target.value)}
+                  placeholder="Describe a decision you have faced and what you learned from it."
+                  rows={8}
+                  maxLength={BIO_MAX_LENGTH}
                   required
-                  className="resize-none text-base"
+                  aria-invalid={Boolean(fieldErrors.bio)}
+                  aria-describedby={
+                    fieldErrors.bio ? 'bio-help bio-count bio-error' : 'bio-help bio-count'
+                  }
+                  className="min-h-44 resize-y"
                 />
-                <FieldDescription>
-                  Share your background, interests, and how you can help prospective students
-                </FieldDescription>
+                <div className="flex items-start justify-between gap-4">
+                  <FieldDescription id="bio-help">
+                    Mention the classes, work, campus life, or choices you have experienced.
+                  </FieldDescription>
+                  <span
+                    id="bio-count"
+                    className="text-muted-foreground shrink-0 text-xs tabular-nums"
+                    aria-live="polite"
+                  >
+                    {draft.bio.length}/{BIO_MAX_LENGTH}
+                  </span>
+                </div>
+                <FieldError id="bio-error">{fieldErrors.bio}</FieldError>
               </Field>
             </FieldGroup>
           </ProfileCard>
 
+          <Separator />
+
           <ProfileCard
-            title="Academic Information"
-            description="Your academic background helps students find the right mentor"
-            icon={GraduationCap}
+            title="Academic context"
+            description="Add the school and field students will use to understand your perspective."
           >
             <FieldGroup>
-              <Field>
+              <Field data-disabled>
                 <FieldLabel htmlFor="school">School</FieldLabel>
-                <Select name="school" disabled defaultValue={profile.school ?? ''}>
-                  <SelectTrigger className="text-base">
-                    <SelectValue placeholder="Select your school" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {schools.map(school => (
-                      <SelectItem key={school.id} value={school.label}>
-                        {school.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Input id="school" value={profile.school ?? 'No school linked'} disabled readOnly />
+                <FieldDescription>
+                  Set from your supported school email. Contact support if it is incorrect.
+                </FieldDescription>
               </Field>
 
-              <Field>
+              <Field data-invalid={Boolean(fieldErrors.major)}>
                 <FieldLabel htmlFor="major">
-                  Major <span className="text-red-500">*</span>
+                  Major or field of study <RequiredText />
                 </FieldLabel>
-                <input type="hidden" name="major" value={majorValue} required />
+                <input type="hidden" name="major" value={draft.major} />
                 <Popover open={majorOpen} onOpenChange={setMajorOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={majorOpen}
-                      className="w-full justify-between text-base"
-                    >
-                      {majorValue
-                        ? majors.find(major => major.label === majorValue)?.label
-                        : 'Select your major'}
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
+                  <PopoverTrigger
+                    render={
+                      <Button
+                        id="major"
+                        type="button"
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={majorOpen}
+                        aria-invalid={Boolean(fieldErrors.major)}
+                        aria-describedby={
+                          fieldErrors.major ? 'major-help major-error' : 'major-help'
+                        }
+                        className="w-full justify-between"
+                      />
+                    }
+                  >
+                    <span className={cn('truncate', !draft.major && 'text-muted-foreground')}>
+                      {draft.major || 'Choose your major'}
+                    </span>
+                    <ChevronsUpDown data-icon="inline-end" aria-hidden="true" />
                   </PopoverTrigger>
-                  <PopoverContent className="w-full p-0" align="start">
+                  <PopoverContent className="w-(--anchor-width) p-0" align="start">
                     <Command>
-                      <CommandInput placeholder="Search major..." className="text-base" />
+                      <CommandInput placeholder="Search majors…" aria-label="Search majors" />
                       <CommandList>
-                        <CommandEmpty>No major found.</CommandEmpty>
+                        <CommandEmpty>No matching major found.</CommandEmpty>
                         <CommandGroup>
                           {majors.map(major => (
                             <CommandItem
                               key={major.id}
                               value={major.label}
-                              onSelect={currentValue => {
-                                setMajorValue(currentValue === majorValue ? '' : currentValue)
+                              onSelect={() => {
+                                updateField('major', major.label)
                                 setMajorOpen(false)
                               }}
                             >
                               <Check
+                                aria-hidden="true"
                                 className={cn(
-                                  'mr-2 h-4 w-4',
-                                  majorValue === major.label ? 'opacity-100' : 'opacity-0'
+                                  draft.major === major.label ? 'opacity-100' : 'opacity-0'
                                 )}
                               />
                               {major.label}
@@ -201,51 +423,122 @@ export const EditProfileContent = ({ profile, schools, majors }: EditProfileCont
                     </Command>
                   </PopoverContent>
                 </Popover>
+                <FieldDescription id="major-help">
+                  Choose the field closest to your experience.
+                </FieldDescription>
+                <FieldError id="major-error">{fieldErrors.major}</FieldError>
               </Field>
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Field>
-                  <FieldLabel htmlFor="schoolYear">Academic Level</FieldLabel>
-                  <Select name="schoolYear" defaultValue={profile.schoolYear}>
-                    <SelectTrigger className="text-base">
-                      <SelectValue placeholder="Select level" />
+              <FieldGroup className="grid gap-5 sm:grid-cols-2">
+                <Field data-invalid={Boolean(fieldErrors.schoolYear)}>
+                  <FieldLabel htmlFor="schoolYear">
+                    Academic level <RequiredText />
+                  </FieldLabel>
+                  <Select
+                    items={academicLevelItems}
+                    name="schoolYear"
+                    value={draft.schoolYear}
+                    onValueChange={value => {
+                      if (value) updateField('schoolYear', value)
+                    }}
+                  >
+                    <SelectTrigger
+                      id="schoolYear"
+                      aria-invalid={Boolean(fieldErrors.schoolYear)}
+                      aria-describedby={fieldErrors.schoolYear ? 'school-year-error' : undefined}
+                      className="w-full"
+                    >
+                      <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Freshman">Freshman</SelectItem>
-                      <SelectItem value="Sophomore">Sophomore</SelectItem>
-                      <SelectItem value="Junior">Junior</SelectItem>
-                      <SelectItem value="Senior">Senior</SelectItem>
-                      <SelectItem value="Graduate">Graduate</SelectItem>
+                      <SelectGroup>
+                        {ACADEMIC_LEVELS.map(level => (
+                          <SelectItem key={level} value={level}>
+                            {level}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
                     </SelectContent>
                   </Select>
+                  <FieldError id="school-year-error">{fieldErrors.schoolYear}</FieldError>
                 </Field>
 
-                <Field>
-                  <FieldLabel htmlFor="graduationYear">Expected Graduation</FieldLabel>
-                  <Select name="graduationYear" defaultValue={profile.graduationYear.toString()}>
-                    <SelectTrigger className="text-base">
-                      <SelectValue placeholder="Select year" />
+                <Field data-invalid={Boolean(fieldErrors.graduationYear)}>
+                  <FieldLabel htmlFor="graduationYear">
+                    Expected graduation <RequiredText />
+                  </FieldLabel>
+                  <Select
+                    items={graduationYearItems}
+                    name="graduationYear"
+                    value={draft.graduationYear || null}
+                    onValueChange={value =>
+                      updateField('graduationYear', typeof value === 'string' ? value : '')
+                    }
+                  >
+                    <SelectTrigger
+                      id="graduationYear"
+                      aria-invalid={Boolean(fieldErrors.graduationYear)}
+                      aria-describedby={
+                        fieldErrors.graduationYear ? 'graduation-year-error' : undefined
+                      }
+                      className="w-full"
+                    >
+                      <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {graduationYears.map(year => (
-                        <SelectItem key={year} value={year.toString()}>
-                          {year}
-                        </SelectItem>
-                      ))}
+                      <SelectGroup>
+                        {graduationYears.map(year => (
+                          <SelectItem key={year} value={year.toString()}>
+                            {year}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
                     </SelectContent>
                   </Select>
+                  <FieldError id="graduation-year-error">{fieldErrors.graduationYear}</FieldError>
                 </Field>
-              </div>
+              </FieldGroup>
             </FieldGroup>
           </ProfileCard>
-        </div>
-      </div>
 
-      {/* Actions */}
-      <div className="flex justify-end pt-4">
-        <Button type="submit" disabled={mutation.isPending}>
-          {mutation.isPending ? 'Saving...' : 'Save Changes'}
-        </Button>
+          <footer className="bg-background sticky bottom-0 flex flex-col gap-3 border-t py-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-h-5 text-sm" role="status" aria-live="polite">
+              {mutation.isPending ? (
+                <span className="text-muted-foreground">Saving your profile…</span>
+              ) : saveMessage ? (
+                <span className="flex items-center gap-2">
+                  <CheckCircle2 aria-hidden="true" className="text-primary size-4" />
+                  {saveMessage}
+                </span>
+              ) : isDirty ? (
+                <span className="font-medium">You have unsaved changes.</span>
+              ) : (
+                <span className="text-muted-foreground">Your profile details are up to date.</span>
+              )}
+            </div>
+            <Button
+              type="submit"
+              size="lg"
+              className="w-full sm:w-auto"
+              disabled={mutation.isPending || !isDirty}
+            >
+              {mutation.isPending && <Spinner data-icon="inline-start" />}
+              {mutation.isPending ? 'Saving…' : 'Save profile'}
+            </Button>
+          </footer>
+        </div>
+
+        <aside className="min-w-0 lg:sticky lg:top-24" aria-label="Public profile preview">
+          <ProfilePreviewCard
+            draft={draft}
+            imageUrl={profileImageUrl}
+            school={profile.school}
+            savedUsername={savedUsername}
+            requirements={readiness.requirements}
+            isReady={readiness.isComplete}
+            isDirty={isDirty}
+          />
+        </aside>
       </div>
     </form>
   )

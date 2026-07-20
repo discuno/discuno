@@ -18,8 +18,8 @@ export const compressFile = async (file: File): Promise<File> => {
 
   try {
     return await imageCompression(file, compressionOptions)
-  } catch (error) {
-    console.error('Error compressing image:', error)
+  } catch {
+    console.warn('Profile image compression failed; using the original file')
     // Fall back to original file if compression fails
     return file
   }

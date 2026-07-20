@@ -19,9 +19,39 @@ import { config } from 'dotenv'
 import { sql } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
+import { createInterface } from 'node:readline/promises'
 import Stripe from 'stripe'
 import { seedDatabase } from '~/lib/db/seed'
 type Environment = 'local' | 'preview' | 'test'
+
+const RESET_ENVIRONMENTS = ['local', 'preview', 'test'] as const
+
+const parseEnvironment = (value: string | undefined): Environment => {
+  if (!value || !RESET_ENVIRONMENTS.includes(value as Environment)) {
+    throw new Error('Reset target must be exactly one of: local, preview, test')
+  }
+  return value as Environment
+}
+
+const requireTypedConfirmation = async (environment: Environment): Promise<void> => {
+  const expected = `RESET ${environment.toUpperCase()}`
+  const supplied = process.argv.find(argument => argument.startsWith('--confirm='))?.slice(10)
+  if (supplied === expected) return
+
+  if (!process.stdin.isTTY || !process.stdout.isTTY) {
+    throw new Error(
+      `Refusing non-interactive reset without the exact argument --confirm="${expected}"`
+    )
+  }
+
+  const prompt = createInterface({ input: process.stdin, output: process.stdout })
+  try {
+    const answer = await prompt.question(`Type "${expected}" to continue: `)
+    if (answer !== expected) throw new Error('Database reset confirmation did not match')
+  } finally {
+    prompt.close()
+  }
+}
 
 const loadEnvironmentConfig = (environment: Environment) => {
   const envFiles = {
@@ -71,117 +101,50 @@ const dropAllTables = async (environment: Environment) => {
   const { client, db } = createResetConnection(environment)
 
   try {
-    if (environment !== 'test') {
-      // Step 0: Clean up Cal.com team memberships for existing local tokens
-      console.log('🌐 Cleaning up Cal.com team memberships...')
-      const calcomApiBase = process.env.NEXT_PUBLIC_CALCOM_API_URL
-      const calcomClientId = process.env.NEXT_PUBLIC_X_CAL_ID
-      const calcomSecretKey = process.env.X_CAL_SECRET_KEY
-      const calcomOrgId = process.env.CALCOM_ORG_ID
-      const collegeMentorTeamId = process.env.COLLEGE_MENTOR_TEAM_ID
-      if (!calcomClientId || !calcomSecretKey || !calcomOrgId || !collegeMentorTeamId) {
-        console.warn('⚠️ Missing Cal.com credentials. Skipping Cal.com cleanup.')
-      } else {
-        try {
-          // Step 0a: Fetch all team memberships to get membership IDs
-          console.log('📋 Fetching team memberships...')
-          const membershipsResponse = await fetch(
-            `${calcomApiBase}/organizations/${calcomOrgId}/teams/${collegeMentorTeamId}/memberships`,
-            {
-              method: 'GET',
-              headers: {
-                'x-cal-secret-key': calcomSecretKey,
-                'x-cal-client-id': calcomClientId,
-              },
-            }
-          )
-
-          if (!membershipsResponse.ok) {
-            const errorText = await membershipsResponse.text()
-            console.error(
-              `Failed to fetch team memberships: ${membershipsResponse.status} ${errorText}`
-            )
-          } else {
-            const membershipsData = await membershipsResponse.json()
-
-            if (membershipsData.status === 'success' && Array.isArray(membershipsData.data)) {
-              const memberships = membershipsData.data
-              console.log(`Found ${memberships.length} team memberships to clean up`)
-
-              // Step 0b: Delete each membership (except OWNER role to avoid breaking the team)
-              for (const membership of memberships) {
-                try {
-                  // Skip OWNER memberships to avoid breaking the team
-                  if (membership.role === 'OWNER') {
-                    console.log(`Skipping OWNER membership for user ${membership.user.email}`)
-                    continue
-                  }
-
-                  console.log(
-                    `Removing membership ${membership.id} for user ${membership.user.email}`
-                  )
-
-                  const deleteMembershipResponse = await fetch(
-                    `${calcomApiBase}/organizations/${calcomOrgId}/teams/${collegeMentorTeamId}/memberships/${membership.id}`,
-                    {
-                      method: 'DELETE',
-                      headers: {
-                        'x-cal-secret-key': calcomSecretKey,
-                        'x-cal-client-id': calcomClientId,
-                      },
-                    }
-                  )
-
-                  if (!deleteMembershipResponse.ok) {
-                    const deleteErrorText = await deleteMembershipResponse.text()
-                    console.error(
-                      `Failed to delete membership ${membership.id}: ${deleteMembershipResponse.status} ${deleteErrorText}`
-                    )
-                  } else {
-                    console.log(`Successfully deleted membership ${membership.id}`)
-                  }
-
-                  // Step 0c: Also delete the Cal.com user if possible
-                  try {
-                    const userResponse = await fetch(
-                      `${calcomApiBase}/oauth-clients/${calcomClientId}/users/${membership.userId}`,
-                      {
-                        method: 'DELETE',
-                        headers: {
-                          'x-cal-secret-key': calcomSecretKey,
-                        },
-                      }
-                    )
-
-                    if (!userResponse.ok) {
-                      const userErrorText = await userResponse.text()
-                      console.error(
-                        `Failed to delete Cal.com user ${membership.userId}: ${userResponse.status} ${userErrorText}`
-                      )
-                    } else {
-                      console.log(`Successfully deleted Cal.com user ${membership.userId}`)
-                    }
-                  } catch (userError) {
-                    console.error(`Error deleting Cal.com user ${membership.userId}:`, userError)
-                  }
-                } catch (membershipError) {
-                  console.error(`Error processing membership ${membership.id}:`, membershipError)
-                }
-              }
-            } else {
-              console.warn('Unexpected memberships response format:', membershipsData)
-            }
-          }
-        } catch (error) {
-          console.error('Error during Cal.com cleanup:', error)
-        }
+    if (environment === 'test') {
+      const guardRows = await db.execute(sql`
+        SELECT marker
+        FROM _discuno_test_environment_guard
+        LIMIT 1
+      `)
+      const marker = Array.from(guardRows)[0]?.marker
+      if (marker !== 'discuno-test-environment-v1') {
+        throw new Error(
+          'Refusing to reset database: the dedicated Discuno test-environment guard is missing.'
+        )
       }
-      // Step 0a: Cleanup Stripe Connect test accounts
+    } else {
+      let marker: unknown
+      try {
+        const guardRows = await db.execute(sql`
+          SELECT marker
+          FROM _discuno_database_environment_guard
+          LIMIT 1
+        `)
+        marker = Array.from(guardRows)[0]?.marker
+      } catch {
+        throw new Error(
+          'Refusing to reset database: the dedicated Discuno environment guard is missing.'
+        )
+      }
+
+      const expectedMarker = `discuno-${environment}-environment-v1`
+      if (marker !== expectedMarker) {
+        throw new Error(
+          `Refusing to reset database: expected the ${environment} environment guard.`
+        )
+      }
+    }
+
+    if (environment !== 'test' && process.env.ALLOW_EXTERNAL_ACCOUNT_CLEANUP === 'true') {
+      // Cal.com accounts are mentor-owned OAuth connections and must never be
+      // deleted when Discuno resets a database. Only platform-owned Stripe test
+      // accounts are eligible for this explicitly enabled cleanup.
       const stripeSecretKey = process.env.STRIPE_SECRET_KEY
-      if (!stripeSecretKey) {
-        throw new Error('STRIPE_SECRET_KEY environment variable is not set')
+      if (!stripeSecretKey?.startsWith('sk_test_')) {
+        throw new Error('External reset cleanup requires a Stripe test-mode secret key.')
       }
-      const stripe = new Stripe(stripeSecretKey)
+      const stripe = new Stripe(stripeSecretKey, { apiVersion: '2026-06-24.dahlia' })
       console.log('💳 Cleaning up Stripe Connect test accounts...')
       try {
         // Fetch Stripe account IDs from DB
@@ -260,11 +223,17 @@ const dropAllTables = async (environment: Environment) => {
       }
       // Drop enum types to match updated schema
       console.log(
-        '   Dropping enum types: stripe_account_status, school_year, booking_status, payment_status, stripe_payment_status, analytics_event_type'
+        '   Dropping enum types: stripe_account_status, school_year, booking_status, calcom_booking_lifecycle_state, calcom_booking_financial_disposition, payment_status, stripe_payment_status, analytics_event_type'
       )
       await tx.execute(sql.raw(`DROP TYPE IF EXISTS public."stripe_account_status" CASCADE;`))
       await tx.execute(sql.raw(`DROP TYPE IF EXISTS public."school_year" CASCADE;`))
       await tx.execute(sql.raw(`DROP TYPE IF EXISTS public."booking_status" CASCADE;`))
+      await tx.execute(
+        sql.raw(`DROP TYPE IF EXISTS public."calcom_booking_lifecycle_state" CASCADE;`)
+      )
+      await tx.execute(
+        sql.raw(`DROP TYPE IF EXISTS public."calcom_booking_financial_disposition" CASCADE;`)
+      )
       await tx.execute(sql.raw(`DROP TYPE IF EXISTS public."payment_status" CASCADE;`))
       await tx.execute(sql.raw(`DROP TYPE IF EXISTS public."stripe_payment_status" CASCADE;`))
       await tx.execute(sql.raw(`DROP TYPE IF EXISTS public."analytics_event_type" CASCADE;`))
@@ -358,14 +327,17 @@ const pushSchema = async (environment: Environment) => {
 }
 
 const main = async () => {
-  const environment = process.argv[2] as Environment | undefined
-
-  if (!environment) {
+  let environment: Environment
+  try {
+    environment = parseEnvironment(process.argv[2])
+  } catch (error) {
     console.error('❌ Environment is required. Usage: tsx scripts/db-reset.ts <environment>')
     console.error('   Valid environments: local, preview, test')
     console.error('   🚨 Production reset is disabled for safety')
-    process.exit(1)
+    throw error
   }
+
+  await requireTypedConfirmation(environment)
 
   console.log(`🔄 Starting database reset for ${environment} environment`)
   console.log(`📅 Timestamp: ${new Date().toISOString()}`)
@@ -400,11 +372,11 @@ const main = async () => {
 
     console.log('─'.repeat(60))
     console.log(`🎉 Database reset completed successfully for ${environment}`)
-    console.log('📊 Your database has been reset and seeded with fresh sample data')
-    console.log('   - 30 mentor users added to college-mentors team')
-    console.log('   - Posts, reviews, and complete relationship mappings')
-    console.log('   - Schools, majors, and waitlist entries')
-    console.log('   - Event types managed at team level (not per-user)')
+    if (environment === 'test') {
+      console.log('📊 The dedicated test database has a fresh, empty schema')
+    } else {
+      console.log('📊 The database has been reset and seeded with fresh sample data')
+    }
   } catch (error) {
     console.log('─'.repeat(60))
     console.error(`💥 Database reset failed for ${environment}:`, error)

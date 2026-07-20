@@ -1,39 +1,126 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useSyncExternalStore } from 'react'
+import posthog from 'posthog-js'
+import {
+  getClientAnalyticsConsentSnapshot,
+  getServerAnalyticsConsentSnapshot,
+  subscribeToClientAnalyticsConsent,
+} from '~/lib/analytics/client-consent'
+import {
+  applyClientAnalyticsPreference,
+  getBrowserAnalyticsPreference,
+  suspendClientAnalytics,
+} from '~/lib/analytics/client-posthog'
+import {
+  fetchAnalyticsPreference,
+  persistAnalyticsPreference,
+  resolveEffectiveAnalyticsPreference,
+  shouldPersistBrowserPreference,
+} from '~/lib/analytics/preferences-client'
 import { authClient, useSession } from '~/lib/auth-client'
 
+const requestWasAborted = (signal: AbortSignal) => signal.aborted
+
+const getPageViewProperties = () => {
+  const currentUrl = new URL(window.location.href)
+  if (currentUrl.pathname === '/booking/success') currentUrl.search = ''
+  return { $current_url: currentUrl.toString() }
+}
+
 /**
- * AnonymousAuthProvider enforces that all visitors have at least an anonymous session,
- * and shows Google One Tap for anonymous users to optionally upgrade to a real account.
+ * Ensure every visitor has a session without interrupting the experience.
+ * Account conversion is always user initiated elsewhere in the product.
  */
 export const AnonymousAuthProvider = ({ children }: { children: React.ReactNode }) => {
   const { data: session, isPending } = useSession()
   const hasInitialized = useRef(false)
-  const router = useRouter()
+  const hasCapturedResolvedPage = useRef(false)
+  const analyticsConsentState = useSyncExternalStore(
+    subscribeToClientAnalyticsConsent,
+    getClientAnalyticsConsentSnapshot,
+    getServerAnalyticsConsentSnapshot
+  )
+  const userId = session?.user.id
+  const isAnonymous = session?.user.isAnonymous === true
 
   useEffect(() => {
-    // Wait for session check to complete
-    if (isPending) return
+    if (isPending) {
+      suspendClientAnalytics()
+      return
+    }
 
-    // Prevent duplicate initialization
-    if (hasInitialized.current) return
+    const browserPreference = getBrowserAnalyticsPreference()
 
-    // No session at all - create anonymous session
-    if (!session) {
-      hasInitialized.current = true
-      authClient.signIn.anonymous().catch(() => {
-        hasInitialized.current = false // Allow retry on error
+    if (!userId) {
+      applyClientAnalyticsPreference(browserPreference.enabled, {
+        persistChoice: browserPreference.explicitConsent !== 'pending',
+      })
+      return
+    }
+
+    const controller = new AbortController()
+    suspendClientAnalytics()
+
+    const synchronizePreference = async () => {
+      const storedPreference = await fetchAnalyticsPreference(controller.signal)
+      if (requestWasAborted(controller.signal)) return
+
+      if (storedPreference === undefined) {
+        applyClientAnalyticsPreference(browserPreference.enabled, {
+          persistChoice: browserPreference.explicitConsent !== 'pending',
+        })
+        return
+      }
+
+      const preferenceContext = {
+        browserPreference,
+        storedPreference,
+      }
+      const effectivePreference = resolveEffectiveAnalyticsPreference(preferenceContext)
+
+      if (shouldPersistBrowserPreference(preferenceContext)) {
+        await persistAnalyticsPreference(effectivePreference, controller.signal)
+      }
+
+      if (requestWasAborted(controller.signal)) return
+      applyClientAnalyticsPreference(effectivePreference, {
+        persistChoice: storedPreference !== null || browserPreference.explicitConsent !== 'pending',
       })
     }
-    // Has anonymous session - show Google One Tap
-    else if (session.user.isAnonymous) {
-      hasInitialized.current = true
-      void authClient.oneTap({ cancelOnTapOutside: false })
+
+    void synchronizePreference()
+
+    return () => controller.abort()
+  }, [isAnonymous, isPending, userId])
+
+  useEffect(() => {
+    if (analyticsConsentState !== 'enabled') return
+
+    if (userId && !isAnonymous) {
+      if (posthog.get_distinct_id() !== userId) {
+        posthog.identify(userId)
+      }
+    } else if (posthog.get_property('$user_id')) {
+      posthog.reset()
     }
-    // Has real session - do nothing
-  }, [session, isPending, router])
+
+    // PostHog's automatic initial page view is held by the consent gate. Send
+    // it once after consent resolves, after any permanent user identification.
+    if (!hasCapturedResolvedPage.current) {
+      hasCapturedResolvedPage.current = true
+      posthog.capture('$pageview', getPageViewProperties())
+    }
+  }, [analyticsConsentState, isAnonymous, userId])
+
+  useEffect(() => {
+    if (isPending || session || hasInitialized.current) return
+
+    hasInitialized.current = true
+    authClient.signIn.anonymous().catch(() => {
+      hasInitialized.current = false
+    })
+  }, [session, isPending])
 
   return <>{children}</>
 }

@@ -1,5 +1,6 @@
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod'
 import { z } from 'zod/v4'
+import { discunoUsernameSchema } from '~/lib/auth/username'
 import { excludeFields } from '~/lib/schemas/db/helpers'
 import { updateUserSchema } from '~/lib/schemas/db/users'
 import { userProfile } from '~/server/db/schema/index'
@@ -20,6 +21,7 @@ export const updateUserProfileSchema = createUpdateSchema(userProfile, updateExc
 export const updateCompleteProfileSchema = updateUserProfileSchema
   .extend(updateUserSchema.shape)
   .extend({
+    username: discunoUsernameSchema.optional(),
     school: z.string().optional(),
     major: z.string().optional(),
   })

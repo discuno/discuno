@@ -3,7 +3,15 @@
 import { Plus } from 'lucide-react'
 import type { TimeInterval } from '~/app/types/availability'
 import { Button } from '~/components/ui/button'
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+} from '~/components/ui/field'
 import { Switch } from '~/components/ui/switch'
+import { getIntervalValidation, getNextAvailableInterval } from './availability-utils'
 import { TimeIntervalRow } from './TimeIntervalRow'
 
 interface DayScheduleProps {
@@ -15,8 +23,6 @@ interface DayScheduleProps {
   disabled?: boolean
 }
 
-const DEFAULT_INTERVAL = { start: '09:00', end: '17:00' }
-
 export const DaySchedule = ({
   day,
   intervals,
@@ -25,42 +31,44 @@ export const DaySchedule = ({
   onDayToggle,
   disabled = false,
 }: DayScheduleProps) => {
-  // Handle adding a new interval with default times
+  const intervalValidation = getIntervalValidation(intervals)
+  const nextInterval = getNextAvailableInterval(intervals)
+
   const handleAddInterval = () => {
-    onIntervalsChange([...intervals, DEFAULT_INTERVAL])
+    if (nextInterval) onIntervalsChange([...intervals, nextInterval])
   }
 
-  // Handle removing an interval by its index
   const handleRemoveInterval = (indexToRemove: number) => {
     onIntervalsChange(intervals.filter((_, i) => i !== indexToRemove))
   }
 
-  // Handle interval changes
   const handleIntervalChange = (indexToUpdate: number, updated: TimeInterval) => {
     onIntervalsChange(intervals.map((interval, i) => (i === indexToUpdate ? updated : interval)))
   }
 
   return (
-    <div className="bg-card hover:border-muted-foreground/50 group rounded-lg border p-4 transition-colors">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <Switch
-            id={`switch-${day}`}
-            checked={isEnabled}
-            onCheckedChange={onDayToggle}
-            disabled={disabled}
-          />
-          <label
-            htmlFor={`switch-${day}`}
-            className="text-card-foreground cursor-pointer text-sm font-medium capitalize"
-          >
+    <div className="grid gap-4 py-4 sm:grid-cols-[10rem_minmax(0,1fr)] sm:gap-6">
+      <Field orientation="horizontal" data-disabled={disabled || undefined}>
+        <Switch
+          id={`switch-${day}`}
+          checked={isEnabled}
+          onCheckedChange={onDayToggle}
+          disabled={disabled}
+        />
+        <FieldContent>
+          <FieldLabel htmlFor={`switch-${day}`} className="cursor-pointer capitalize">
             {day}
-          </label>
-        </div>
-        {!isEnabled && <span className="text-muted-foreground text-xs">Unavailable</span>}
-      </div>
+          </FieldLabel>
+          <FieldDescription>
+            {isEnabled
+              ? `${intervals.length} window${intervals.length === 1 ? '' : 's'}`
+              : 'Unavailable'}
+          </FieldDescription>
+        </FieldContent>
+      </Field>
+
       {isEnabled && (
-        <div className="mt-4 space-y-3">
+        <div className="flex min-w-0 flex-col gap-3">
           {intervals.map((interval, index) => (
             <TimeIntervalRow
               key={index}
@@ -68,17 +76,23 @@ export const DaySchedule = ({
               onIntervalChange={updated => handleIntervalChange(index, updated)}
               onRemove={() => handleRemoveInterval(index)}
               disabled={disabled}
+              invalid={intervalValidation?.kind === 'overlap'}
+              label={`${day} time window ${index + 1}`}
             />
           ))}
+          {intervalValidation?.kind === 'overlap' && (
+            <FieldError>{intervalValidation.message}</FieldError>
+          )}
           <Button
-            variant="outline"
+            type="button"
+            variant="ghost"
             size="sm"
-            className="w-full"
+            className="self-start"
             onClick={handleAddInterval}
-            disabled={disabled}
+            disabled={disabled || !nextInterval}
           >
-            <Plus className="mr-2 h-4 w-4" />
-            Add time slot
+            <Plus data-icon="inline-start" />
+            {nextInterval ? 'Add another window' : 'No room for another hour'}
           </Button>
         </div>
       )}

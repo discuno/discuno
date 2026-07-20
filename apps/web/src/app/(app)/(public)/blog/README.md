@@ -1,6 +1,6 @@
 # Discuno Blog Documentation
 
-This directory contains the blog pages for the Discuno platform. The blog is built with Next.js 15, MDX, and is fully optimized for SEO and AI indexing.
+This directory contains the blog pages for the Discuno platform. The blog is built with Next.js 16, MDX, and is fully optimized for SEO and AI indexing.
 
 ## 📁 Directory Structure
 

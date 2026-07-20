@@ -1,40 +1,34 @@
-import { Shield } from 'lucide-react'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
+import { AnalyticsPrivacyControls } from './AnalyticsPrivacyControls'
 import { createMetadata } from '~/lib/metadata'
 
 export const metadata: Metadata = createMetadata({
   title: 'Privacy Policy',
   description:
     'Learn how Discuno protects your privacy and data. Read our privacy policy covering data collection, usage, security, and your rights.',
+  alternates: { canonical: '/privacy' },
   openGraph: {
-    title: 'Privacy Policy - Discuno',
-    description: 'How we protect your privacy and secure your data on our mentorship platform.',
+    title: 'Privacy Policy | Discuno',
+    description: 'How Discuno collects, uses, protects, and shares personal information.',
   },
 })
 
 export default function PrivacyPage() {
   return (
-    <div className="text-foreground min-h-screen">
-      {/* Hero Section */}
-      <div className="from-primary/5 to-background border-b bg-gradient-to-b">
-        <div className="container mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <div className="bg-primary/10 mx-auto flex h-16 w-16 items-center justify-center rounded-full">
-              <Shield className="text-primary h-8 w-8" />
-            </div>
-            <h1 className="mt-6 text-4xl font-bold tracking-tight sm:text-5xl">Privacy Policy</h1>
-            <p className="text-muted-foreground mx-auto mt-4 max-w-2xl text-lg">
-              Effective Date: January 15, 2025
-            </p>
-          </div>
+    <div className="min-h-screen">
+      <header className="border-border border-b">
+        <div className="page-shell max-w-5xl py-14 sm:py-20">
+          <h1 className="text-4xl leading-tight font-semibold tracking-tight sm:text-5xl">
+            Privacy Policy
+          </h1>
+          <p className="text-muted-foreground mt-4 text-sm">Effective July 14, 2026</p>
         </div>
-      </div>
+      </header>
 
-      {/* Content */}
-      <div className="container mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
-        <div className="prose prose-slate dark:prose-invert max-w-none space-y-8">
+      <div className="page-shell max-w-5xl py-10 sm:py-16">
+        <div className="legal-document">
           <Card>
             <CardHeader>
               <CardTitle>Introduction</CardTitle>
@@ -75,20 +69,24 @@ export default function PrivacyPage() {
                   profile photo, university affiliation, graduation year, major
                 </li>
                 <li>
-                  <strong>Profile Information:</strong> Bio, areas of expertise, experience,
-                  availability, pricing (for mentors)
+                  <strong>Guest Booking Information:</strong> Name, email address, mobile number,
+                  and time zone submitted when booking without a permanent account
+                </li>
+                <li>
+                  <strong>Profile Information:</strong> Bio, academic background, session details,
+                  availability, and pricing (for mentors)
                 </li>
                 <li>
                   <strong>Payment Information:</strong> Stripe account details (stored by Stripe,
                   not by us), billing address, transaction history
                 </li>
                 <li>
-                  <strong>Communications:</strong> Messages sent through our platform, support
-                  inquiries, feedback, reviews
+                  <strong>Communications:</strong> Support inquiries, feedback, and transactional
+                  emails related to your account or bookings
                 </li>
                 <li>
-                  <strong>User Content:</strong> Posts, comments, reviews, and other content you
-                  create on the platform
+                  <strong>User Content:</strong> Profile biographies, session descriptions, and
+                  other information you choose to publish through your mentor profile
                 </li>
               </ul>
 
@@ -101,16 +99,22 @@ export default function PrivacyPage() {
                   operating system, device identifiers
                 </li>
                 <li>
-                  <strong>Usage Data:</strong> Pages visited, time spent on pages, click patterns,
-                  session duration, referring URLs
+                  <strong>First-Party Discovery Signals:</strong> Limited interactions such as
+                  mentor profile views that Discuno stores to operate and improve mentor discovery.
+                  These records are not sent to PostHog and are not used for advertising
                 </li>
                 <li>
-                  <strong>Analytics Data:</strong> Collected through PostHog to understand user
-                  behavior and improve our services
+                  <strong>Analytics Data:</strong> When optional analytics is enabled, collected
+                  through PostHog to understand usage and improve Discuno
                 </li>
                 <li>
                   <strong>Cookies and Similar Technologies:</strong> Session cookies, authentication
                   tokens, preference settings
+                </li>
+                <li>
+                  <strong>Anonymous Sessions:</strong> We create a temporary account identifier and
+                  session for visitors so we can protect booking actions from abuse, preserve a
+                  checkout attempt, and connect activity if the visitor later chooses to sign in
                 </li>
               </ul>
 
@@ -185,10 +189,10 @@ export default function PrivacyPage() {
               </p>
               <ul className="ml-6 list-disc space-y-2">
                 <li>
-                  Mentor profiles (name, photo, bio, university, major, expertise, reviews) are
-                  publicly visible
+                  Published mentor profiles—including name, photo, bio, university, major, and
+                  session options—are publicly visible
                 </li>
-                <li>Posts and comments you make on the platform are visible to other users</li>
+                <li>Session duration and listed prices are visible before a student books</li>
               </ul>
 
               <p className="mt-4">
@@ -213,14 +217,21 @@ export default function PrivacyPage() {
                   <strong>Cal.com:</strong> Calendar management, booking coordination, scheduling
                 </li>
                 <li>
-                  <strong>PostHog:</strong> Analytics and product insights (anonymized when
-                  possible)
+                  <strong>PostHog:</strong> Optional product analytics and usage insights; events
+                  may be associated with your Discuno user identifier
+                </li>
+                <li>
+                  <strong>Resend:</strong> Transactional and authentication email delivery
+                </li>
+                <li>
+                  <strong>Inngest:</strong> Durable processing of booking, refund, and payout jobs
                 </li>
                 <li>
                   <strong>Railway:</strong> Database hosting and infrastructure
                 </li>
                 <li>
-                  <strong>Vercel:</strong> Application hosting and deployment
+                  <strong>Vercel:</strong> Application hosting, deployment, and user-uploaded file
+                  storage through Vercel Blob
                 </li>
                 <li>
                   <strong>Upstash:</strong> Redis caching and rate limiting
@@ -269,11 +280,17 @@ export default function PrivacyPage() {
                 <li>Maintain business records and analytics</li>
               </ul>
               <p className="mt-4">
-                <strong>Account Deletion:</strong> When you delete your account, your personal
-                information and public profile will be deleted or anonymized within 30 days. Content
-                that others have interacted with (such as reviews, posts, or public comments) may
-                remain visible in anonymized form to preserve the integrity of community
-                interactions.
+                <strong>Anonymous Visitor Records:</strong> Anonymous users with no remaining
+                session are ordinarily removed after 90 days. We may retain transaction, fraud,
+                dispute, tax, and booking records for longer where needed for legal obligations or
+                legitimate business records.
+              </p>
+              <p className="mt-4">
+                <strong>Account Deletion:</strong> After we receive and verify your deletion
+                request, your personal information and public profile will be deleted or anonymized
+                within 30 days. Booking, payment, fraud-prevention, dispute, tax, and accounting
+                records may be retained where required for legal obligations or legitimate business
+                records.
               </p>
               <p>
                 Transaction records and payment history may be retained for up to 7 years to comply
@@ -310,7 +327,7 @@ export default function PrivacyPage() {
                 <strong>5.3 Deletion</strong>
               </p>
               <ul className="ml-6 list-disc space-y-2">
-                <li>Delete your account and associated data</li>
+                <li>Request deletion of your account and associated data</li>
                 <li>Request deletion of specific information (subject to legal obligations)</li>
               </ul>
 
@@ -362,8 +379,7 @@ export default function PrivacyPage() {
                   role-based permissions
                 </li>
                 <li>
-                  <strong>Monitoring:</strong> Security logging, intrusion detection, regular
-                  security audits
+                  <strong>Monitoring:</strong> Security logging and automated abuse prevention
                 </li>
                 <li>
                   <strong>Infrastructure:</strong> Secure cloud hosting with reputable providers
@@ -392,7 +408,8 @@ export default function PrivacyPage() {
                   <strong>Functional Cookies:</strong> Remember your preferences and settings
                 </li>
                 <li>
-                  <strong>Analytics Cookies:</strong> Understand how you use our platform (PostHog)
+                  <strong>Analytics Cookies:</strong> When enabled, understand how Discuno is used
+                  through PostHog
                 </li>
                 <li>
                   <strong>Performance Cookies:</strong> Monitor platform performance and errors
@@ -402,6 +419,7 @@ export default function PrivacyPage() {
                 You can control cookies through your browser settings. Note that disabling certain
                 cookies may limit platform functionality.
               </p>
+              <AnalyticsPrivacyControls />
             </CardContent>
           </Card>
 
@@ -422,10 +440,10 @@ export default function PrivacyPage() {
                 <li>Moderate content and maintain community standards</li>
               </ul>
               <p className="mt-4">
-                These tools operate primarily on aggregated, anonymized data. When personal data is
-                processed, it is done in accordance with this Privacy Policy and applicable data
-                protection laws. We do not use your personal information to train third-party AI
-                models without your explicit consent.
+                These tools may use aggregated usage information and, where necessary, account-level
+                data. When personal data is processed, it is handled in accordance with this Privacy
+                Policy and applicable data protection laws. We do not use your personal information
+                to train third-party AI models without your explicit consent.
               </p>
               <p>
                 If we integrate third-party AI services (such as OpenAI or similar providers) in the
@@ -610,7 +628,9 @@ export default function PrivacyPage() {
                 <li>We do not sell your personal information</li>
                 <li>You have rights to access, correct, and delete your information</li>
                 <li>We implement industry-standard security measures</li>
-                <li>We use cookies for essential functionality and analytics</li>
+                <li>
+                  We use cookies for essential functionality and optional analytics you enable
+                </li>
                 <li>Contact us at support@discuno.com with privacy questions</li>
               </ul>
             </CardContent>

@@ -1,65 +1,56 @@
-import { headers } from 'next/headers'
 import { NextResponse } from 'next/server'
 import type { Stripe } from 'stripe'
-import { handleCheckoutSessionWebhook } from '~/app/(app)/(public)/mentor/[username]/book/actions'
 import { env } from '~/env'
+import { readBoundedUtf8Body, RequestBodyTooLargeError } from '~/lib/http/request-body'
+import { getSafeErrorName } from '~/lib/operational-logging'
 import { stripe } from '~/lib/stripe'
+import { enqueueVerifiedStripeWebhook } from '~/lib/stripe/webhook-inbox'
+
+const MAX_STRIPE_WEBHOOK_BYTES = 1024 * 1024
 
 export async function POST(req: Request) {
-  const signature = (await headers()).get('stripe-signature') ?? ''
+  const signature = req.headers.get('stripe-signature') ?? ''
 
   let event: Stripe.Event
+  let body: string
 
   try {
-    event = stripe.webhooks.constructEvent(await req.text(), signature, env.STRIPE_WEBHOOK_SECRET)
+    body = await readBoundedUtf8Body(req, MAX_STRIPE_WEBHOOK_BYTES)
+  } catch (error) {
+    const tooLarge = error instanceof RequestBodyTooLargeError
+    console.error('Stripe webhook body could not be read', {
+      errorName: getSafeErrorName(error),
+    })
+    return new Response(tooLarge ? 'Payload too large' : 'Invalid webhook payload', {
+      status: tooLarge ? 413 : 400,
+    })
+  }
+
+  try {
+    event = stripe.webhooks.constructEvent(body, signature, env.STRIPE_WEBHOOK_SECRET)
   } catch (err) {
-    const errorMessage = err instanceof Error ? err.message : 'Unknown error'
-    console.error(`❌ Webhook signature verification failed: ${errorMessage}`)
-    return new Response(`Webhook Error: ${errorMessage}`, {
+    console.error('Stripe webhook signature verification failed', {
+      errorName: getSafeErrorName(err),
+    })
+    return new Response('Invalid webhook signature', {
       status: 400,
     })
   }
 
   try {
-    switch (event.type) {
-      case 'checkout.session.completed':
-        await handleCheckoutSessionSucceeded(event.data.object)
-        break
-
-      default:
-        console.log(`🤷‍♀️ Unhandled event type: ${event.type}`)
-    }
+    const result = await enqueueVerifiedStripeWebhook({
+      eventId: event.id,
+      eventType: event.type,
+      source: 'platform',
+    })
+    return NextResponse.json({ received: true, duplicate: result.duplicate })
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    console.error(`❌ Webhook handler failed: ${errorMessage}`)
-    return new Response(`Webhook handler error: ${errorMessage}`, {
+    console.error('Failed to persist or queue verified Stripe webhook', {
+      eventId: event.id,
+      errorName: getSafeErrorName(error),
+    })
+    return new Response('Webhook queue unavailable', {
       status: 500,
     })
-  }
-
-  return NextResponse.json({ received: true })
-}
-
-/**
- * Handle successful checkout sessions
- */
-async function handleCheckoutSessionSucceeded(checkoutSession: Stripe.Checkout.Session) {
-  console.log(`Handling successful checkout session: ${checkoutSession.id}`)
-  try {
-    const response = await handleCheckoutSessionWebhook(checkoutSession)
-
-    // Check if the response is 200 OK
-    if (response.status === 200) {
-      console.log(`✅ Successfully handled checkout session: ${checkoutSession.id}`)
-    } else {
-      // Response was not 200, log error and throw
-      const errorText = await response.text()
-      console.error(`❌ Failed to handle checkout session ${checkoutSession.id}: ${errorText}`)
-      throw new Error(`Failed to handle checkout session ${checkoutSession.id}: ${errorText}`)
-    }
-  } catch (error) {
-    console.error(`❌ Error handling checkout session ${checkoutSession.id}:`, error)
-    // Re-throw the error to be caught by the main POST function's error handler
-    throw error
   }
 }

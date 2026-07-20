@@ -24,6 +24,13 @@ export class UnauthorizedError extends AppError {
   }
 }
 
+export class SessionNotFreshError extends AppError {
+  constructor(message = 'Session is not fresh') {
+    super(message, 'SESSION_NOT_FRESH', 403)
+    this.name = 'SessionNotFreshError'
+  }
+}
+
 export class InternalServerError extends AppError {
   constructor(message = 'Internal server error') {
     super(message, 'INTERNAL_SERVER_ERROR', 500)
@@ -32,9 +39,12 @@ export class InternalServerError extends AppError {
 }
 
 export class ExternalApiError extends AppError {
-  constructor(message = 'Unknown external API error') {
+  public providerStatus?: number
+
+  constructor(message = 'Unknown external API error', providerStatus?: number) {
     super(message, 'EXTERNAL_API_ERROR', 502)
     this.name = 'ExternalApiError'
+    this.providerStatus = providerStatus
   }
 }
 

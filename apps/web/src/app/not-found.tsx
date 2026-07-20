@@ -1,30 +1,65 @@
-import { AlertCircle, Home } from 'lucide-react'
+import { ArrowLeft, Search } from 'lucide-react'
 import Link from 'next/link'
-import { Button } from '~/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
+import { Brand } from '~/components/shared/Brand'
+import { SkipLink } from '~/components/shared/SkipLink'
+import { buttonVariants } from '~/components/ui/button'
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '~/components/ui/empty'
+import { cn } from '~/lib/utils'
 
 const NotFound = () => {
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
-            <AlertCircle className="h-6 w-6 text-red-600" />
-          </div>
-          <CardTitle>Not Found</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4 text-center">
-          <p className="text-muted-foreground">
-            The page you&apos;re looking for doesn&apos;t exist.
-          </p>
-          <Button asChild>
-            <Link href="/">
-              <Home className="mr-2 h-4 w-4" />
-              Go Home
-            </Link>
-          </Button>
-        </CardContent>
-      </Card>
+    <div className="bg-background flex min-h-screen flex-col">
+      <SkipLink href="#not-found-content" />
+      <header className="border-border/80 border-b">
+        <div className="mx-auto flex h-16 w-full max-w-5xl items-center px-4 sm:px-6">
+          <Brand />
+        </div>
+      </header>
+
+      <main
+        id="not-found-content"
+        tabIndex={-1}
+        className="mx-auto flex w-full max-w-lg flex-1 items-center px-4 py-12 sm:px-6 sm:py-16"
+      >
+        <Empty className="w-full py-0 md:py-0" aria-labelledby="not-found-title">
+          <EmptyHeader className="max-w-md gap-3">
+            <EmptyMedia variant="icon">
+              <Search aria-hidden="true" />
+            </EmptyMedia>
+            <EmptyTitle
+              id="not-found-title"
+              role="heading"
+              aria-level={1}
+              className="text-3xl leading-tight font-semibold tracking-tight sm:text-4xl"
+            >
+              This page isn&apos;t here
+            </EmptyTitle>
+            <EmptyDescription className="text-base leading-7">
+              The link may be outdated or the page may have moved. Return home or browse mentors.
+            </EmptyDescription>
+          </EmptyHeader>
+
+          <EmptyContent className="max-w-md">
+            <div className="flex w-full flex-col gap-2 sm:flex-row sm:justify-center">
+              <Link href="/find" className={buttonVariants({ size: 'lg' })}>
+                <Search data-icon="inline-start" aria-hidden="true" />
+                Browse mentors
+              </Link>
+              <Link href="/" className={cn(buttonVariants({ size: 'lg', variant: 'outline' }))}>
+                <ArrowLeft data-icon="inline-start" aria-hidden="true" />
+                Return home
+              </Link>
+            </div>
+          </EmptyContent>
+        </Empty>
+      </main>
     </div>
   )
 }

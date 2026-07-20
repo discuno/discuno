@@ -1,11 +1,11 @@
 import 'server-only'
 
-import { and, eq, inArray, sql } from 'drizzle-orm'
-import { cache } from 'react'
-import { createCalcomUser, fetchCalcomEventTypesByUsername } from '~/lib/calcom'
+import { and, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm'
+import { fetchCalcomEventTypesForUser } from '~/lib/calcom'
+import { getCalcomAccessToken } from '~/lib/calcom/tokens'
 import { db } from '~/server/db'
+import { withDatabaseAdvisoryLock } from '~/server/db/advisory-lock'
 import { calcomToken, mentorEventType } from '~/server/db/schema/index'
-import { getCalcomUsernameByUserId } from '~/server/queries/calcom'
 
 /**
  * Data Access Layer for authentication operations
@@ -14,108 +14,21 @@ import { getCalcomUsernameByUserId } from '~/server/queries/calcom'
 /**
  * Check if user has Cal.com integration already set up
  */
-export const hasCalcomIntegration = cache(async (userId: string): Promise<boolean> => {
-  try {
-    const token = await db.query.calcomToken.findFirst({
-      where: eq(calcomToken.userId, userId),
-    })
-    return !!token
-  } catch (error) {
-    console.error('Error checking Cal.com integration:', error)
-    return false
-  }
-})
-
-/**
- * Create Cal.com managed user for a newly authenticated user
- * This function MUST succeed for authentication to complete
- * Throws an error if Cal.com integration fails
- */
-export const createCalcomUserForNewUser = async ({
-  userId,
-  email,
-  name,
-  image,
-}: {
-  userId: string
-  email: string
-  name: string | null
-  image: string | null
-}): Promise<{ calcomUserId: number; username: string; accessToken: string }> => {
-  // Check if user already has Cal.com integration
-  const hasIntegration = await hasCalcomIntegration(userId)
-  if (hasIntegration) {
-    console.log(`User ${userId} already has Cal.com integration, skipping creation`)
-    // Get existing Cal.com user info
-    const token = await db.query.calcomToken.findFirst({
-      where: eq(calcomToken.userId, userId),
-    })
-    if (!token) {
-      throw new Error('Cal.com integration check failed: token not found')
-    }
-    return {
-      calcomUserId: token.calcomUserId,
-      username: token.calcomUsername,
-      accessToken: token.accessToken,
-    }
-  }
-
-  // Create Cal.com managed user
-  console.log(`Creating Cal.com user for new user: ${email}`)
-
-  try {
-    const calcomResult = await createCalcomUser({
-      userId,
-      email,
-      name: name ?? email.split('@')[0] ?? 'Mentor',
-      timeZone: 'America/New_York', // Default timezone
-      avatarUrl: image ?? undefined,
-      bio: 'Mentor on Discuno - helping students navigate college life',
-      metadata: {
-        source: 'discuno-signup',
-        createdAt: new Date().toISOString(),
-      },
-    })
-
-    console.log(`Cal.com user created successfully for ${email}:`, {
-      calcomUserId: calcomResult.calcomUserId,
-      username: calcomResult.username,
-    })
-
-    return calcomResult
-  } catch (error) {
-    console.error(`Failed to create Cal.com user for ${email}:`, error)
-
-    // Throw a user-friendly error that will prevent authentication
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
-    throw new Error(`Cal.com integration required: ${errorMessage}`)
-  }
-}
-
-/**
- * Enforce Cal.com user creation during authentication
- * This function attempts to create Cal.com integration and logs results
- * Note: When called from events.signIn, this cannot prevent authentication
- */
-type EnforceCalcomResult =
-  | { success: true; accessToken: string }
-  | { success: false; error: string }
-
-export const enforceCalcomIntegration = async (userData: {
-  userId: string
-  email: string
-  name: string | null
-  image: string | null
-}): Promise<EnforceCalcomResult> => {
-  try {
-    const { accessToken } = await createCalcomUserForNewUser(userData)
-    console.log(`Cal.com integration enforced successfully for ${userData.email}`)
-    return { accessToken, success: true }
-  } catch (error) {
-    console.error(`Cal.com integration enforcement failed for ${userData.email}:`, error)
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
-    return { success: false, error: errorMessage }
-  }
+const getActiveCalcomIdentity = async (userId: string) => {
+  return db.query.calcomToken.findFirst({
+    where: and(
+      eq(calcomToken.userId, userId),
+      eq(calcomToken.authMode, 'oauth'),
+      isNull(calcomToken.disconnectedAt),
+      isNotNull(calcomToken.accessToken),
+      isNotNull(calcomToken.refreshToken)
+    ),
+    columns: {
+      id: true,
+      calcomUserId: true,
+      connectedAt: true,
+    },
+  })
 }
 
 type RemoteEventType = {
@@ -123,6 +36,10 @@ type RemoteEventType = {
   title: string
   lengthInMinutes: number
   description?: string
+  bookingCompatibility: {
+    compatible: boolean
+    reasons: string[]
+  }
 }
 
 type ExistingEventType = {
@@ -171,88 +88,102 @@ export function computeEventTypeSyncPlan(
  * Intended to be called on first login after Cal.com integration is created
  */
 export const syncMentorEventTypesForUser = async (
-  userId: string,
-  accessToken: string
+  userId: string
 ): Promise<
   | { success: true; created: number; updated: number; deleted: number }
   | { success: false; error: string }
 > => {
   try {
-    const calUser = await getCalcomUsernameByUserId(userId)
-    if (!calUser) {
-      return { success: false, error: 'CALCOM_USERNAME_NOT_FOUND' }
+    // Provider I/O happens before the connection lock so token refresh never
+    // nests a second advisory-lock reservation. The generation is rechecked
+    // under the lock before any remote account data is committed.
+    const identity = await getActiveCalcomIdentity(userId)
+    if (!identity) {
+      return { success: false as const, error: 'CALCOM_CONNECTION_NOT_FOUND' }
     }
-
-    const remote = await fetchCalcomEventTypesByUsername(calUser.calcomUsername, accessToken)
-
+    const accessToken = await getCalcomAccessToken(userId)
+    const remote = await fetchCalcomEventTypesForUser(userId, { accessToken })
     const now = new Date()
 
-    return await db.transaction(async tx => {
-      // Fetch existing event types for this mentor (include metadata for change detection)
-      const existing = await tx
-        .select({
-          calcomEventTypeId: mentorEventType.calcomEventTypeId,
-          title: mentorEventType.title,
-          description: mentorEventType.description,
-          duration: mentorEventType.duration,
+    return await withDatabaseAdvisoryLock(`discuno:calcom-connection:${userId}`, async () => {
+      return db.transaction(async tx => {
+        const currentIdentity = await tx.query.calcomToken.findFirst({
+          where: and(
+            eq(calcomToken.userId, userId),
+            eq(calcomToken.id, identity.id),
+            eq(calcomToken.calcomUserId, identity.calcomUserId),
+            eq(calcomToken.authMode, 'oauth'),
+            isNull(calcomToken.disconnectedAt),
+            isNotNull(calcomToken.accessToken),
+            isNotNull(calcomToken.refreshToken)
+          ),
+          columns: { connectedAt: true },
         })
-        .from(mentorEventType)
-        .where(eq(mentorEventType.mentorUserId, userId))
+        const connectionGenerationMatches =
+          currentIdentity &&
+          currentIdentity.connectedAt?.getTime() === identity.connectedAt?.getTime()
+        if (!connectionGenerationMatches) {
+          return { success: false as const, error: 'CALCOM_CONNECTION_CHANGED' }
+        }
 
-      const { toCreateIds, toUpdateIds, toDeleteIds } = computeEventTypeSyncPlan(existing, remote)
-
-      const existingMap = new Map<
-        number,
-        { title: string; description: string | null; duration: number }
-      >()
-      for (const row of existing) {
-        existingMap.set(row.calcomEventTypeId, {
-          title: row.title,
-          description: row.description ?? null,
-          duration: row.duration,
-        })
-      }
-
-      const createIdSet = new Set<number>(toCreateIds)
-      const updateIdSet = new Set<number>(toUpdateIds)
-
-      const valuesToUpsert: Array<{
-        mentorUserId: string
-        calcomEventTypeId: number
-        title: string
-        description: string | null
-        duration: number
-        isEnabled: boolean
-        currency: string
-        createdAt: Date
-        updatedAt: Date
-      }> = []
-
-      let createdCount = 0
-      let updatedCount = 0
-
-      for (const r of remote) {
-        if (createIdSet.has(r.id)) {
-          valuesToUpsert.push({
-            mentorUserId: userId,
-            calcomEventTypeId: r.id,
-            title: r.title,
-            description: r.description ?? null,
-            duration: r.lengthInMinutes,
-            isEnabled: false,
-            currency: 'USD',
-            createdAt: now,
-            updatedAt: now,
+        // Fetch existing event types for this mentor (include metadata for change detection)
+        const existing = await tx
+          .select({
+            calcomEventTypeId: mentorEventType.calcomEventTypeId,
+            title: mentorEventType.title,
+            description: mentorEventType.description,
+            duration: mentorEventType.duration,
+            bookingCompatible: mentorEventType.bookingCompatible,
+            bookingCompatibilityReasons: mentorEventType.bookingCompatibilityReasons,
           })
-          createdCount += 1
-        } else if (updateIdSet.has(r.id)) {
-          const existingMeta = existingMap.get(r.id)
-          const changed =
-            !existingMeta ||
-            existingMeta.title !== r.title ||
-            (existingMeta.description ?? null) !== (r.description ?? null) ||
-            existingMeta.duration !== r.lengthInMinutes
-          if (changed) {
+          .from(mentorEventType)
+          .where(eq(mentorEventType.mentorUserId, userId))
+
+        const { toCreateIds, toUpdateIds, toDeleteIds } = computeEventTypeSyncPlan(existing, remote)
+
+        const existingMap = new Map<
+          number,
+          {
+            title: string
+            description: string | null
+            duration: number
+            bookingCompatible: boolean | null
+            bookingCompatibilityReasons: string[]
+          }
+        >()
+        for (const row of existing) {
+          existingMap.set(row.calcomEventTypeId, {
+            title: row.title,
+            description: row.description ?? null,
+            duration: row.duration,
+            bookingCompatible: row.bookingCompatible,
+            bookingCompatibilityReasons: row.bookingCompatibilityReasons,
+          })
+        }
+
+        const createIdSet = new Set<number>(toCreateIds)
+        const updateIdSet = new Set<number>(toUpdateIds)
+
+        const valuesToUpsert: Array<{
+          mentorUserId: string
+          calcomEventTypeId: number
+          title: string
+          description: string | null
+          duration: number
+          isEnabled: boolean
+          currency: string
+          bookingCompatible: boolean
+          bookingCompatibilityReasons: string[]
+          bookingCompatibilityCheckedAt: Date
+          createdAt: Date
+          updatedAt: Date
+        }> = []
+
+        let createdCount = 0
+        let updatedCount = 0
+
+        for (const r of remote) {
+          if (createIdSet.has(r.id)) {
             valuesToUpsert.push({
               mentorUserId: userId,
               calcomEventTypeId: r.id,
@@ -261,50 +192,85 @@ export const syncMentorEventTypesForUser = async (
               duration: r.lengthInMinutes,
               isEnabled: false,
               currency: 'USD',
+              bookingCompatible: r.bookingCompatibility.compatible,
+              bookingCompatibilityReasons: r.bookingCompatibility.reasons,
+              bookingCompatibilityCheckedAt: now,
               createdAt: now,
               updatedAt: now,
             })
-            updatedCount += 1
+            createdCount += 1
+          } else if (updateIdSet.has(r.id)) {
+            const existingMeta = existingMap.get(r.id)
+            const changed =
+              !existingMeta ||
+              existingMeta.title !== r.title ||
+              (existingMeta.description ?? null) !== (r.description ?? null) ||
+              existingMeta.duration !== r.lengthInMinutes ||
+              existingMeta.bookingCompatible !== r.bookingCompatibility.compatible ||
+              JSON.stringify(existingMeta.bookingCompatibilityReasons) !==
+                JSON.stringify(r.bookingCompatibility.reasons)
+            if (changed) {
+              valuesToUpsert.push({
+                mentorUserId: userId,
+                calcomEventTypeId: r.id,
+                title: r.title,
+                description: r.description ?? null,
+                duration: r.lengthInMinutes,
+                isEnabled: false,
+                currency: 'USD',
+                bookingCompatible: r.bookingCompatibility.compatible,
+                bookingCompatibilityReasons: r.bookingCompatibility.reasons,
+                bookingCompatibilityCheckedAt: now,
+                createdAt: now,
+                updatedAt: now,
+              })
+              updatedCount += 1
+            }
           }
         }
-      }
 
-      if (valuesToUpsert.length > 0) {
-        await tx
-          .insert(mentorEventType)
-          .values(valuesToUpsert)
-          .onConflictDoUpdate({
-            target: mentorEventType.calcomEventTypeId,
-            set: {
-              title: sql`excluded.title`,
-              description: sql`excluded.description`,
-              duration: sql`excluded.duration`,
-              updatedAt: now,
-            },
-          })
-      }
+        if (valuesToUpsert.length > 0) {
+          await tx
+            .insert(mentorEventType)
+            .values(valuesToUpsert)
+            .onConflictDoUpdate({
+              target: mentorEventType.calcomEventTypeId,
+              set: {
+                title: sql`excluded.title`,
+                description: sql`excluded.description`,
+                duration: sql`excluded.duration`,
+                bookingCompatible: sql`excluded.booking_compatible`,
+                bookingCompatibilityReasons: sql`excluded.booking_compatibility_reasons`,
+                bookingCompatibilityCheckedAt: sql`excluded.booking_compatibility_checked_at`,
+                updatedAt: now,
+              },
+            })
+        }
 
-      if (toDeleteIds.length > 0) {
-        await tx
-          .delete(mentorEventType)
-          .where(
-            and(
-              eq(mentorEventType.mentorUserId, userId),
-              inArray(mentorEventType.calcomEventTypeId, toDeleteIds)
+        if (toDeleteIds.length > 0) {
+          await tx
+            .delete(mentorEventType)
+            .where(
+              and(
+                eq(mentorEventType.mentorUserId, userId),
+                inArray(mentorEventType.calcomEventTypeId, toDeleteIds)
+              )
             )
-          )
-      }
+        }
 
-      return {
-        success: true,
-        created: createdCount,
-        updated: updatedCount,
-        deleted: toDeleteIds.length,
-      }
+        return {
+          success: true as const,
+          created: createdCount,
+          updated: updatedCount,
+          deleted: toDeleteIds.length,
+        }
+      })
     })
   } catch (error) {
-    console.error('Failed to sync mentor event types:', error)
-    const errorMessage = error instanceof Error ? error.message : 'UNKNOWN_SYNC_ERROR'
-    return { success: false, error: errorMessage }
+    console.error('Failed to sync mentor event types', {
+      userId,
+      errorName: error instanceof Error ? error.name : 'UnknownError',
+    })
+    return { success: false, error: 'CALCOM_EVENT_TYPE_SYNC_FAILED' }
   }
 }

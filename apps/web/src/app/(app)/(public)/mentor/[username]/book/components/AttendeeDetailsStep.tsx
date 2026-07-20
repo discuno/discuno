@@ -1,192 +1,387 @@
+import { TZDate } from '@date-fns/tz'
 import type { UseMutationResult } from '@tanstack/react-query'
 import { format } from 'date-fns'
-import { Check, Mail, Phone as PhoneIcon, User } from 'lucide-react'
-import { useState } from 'react'
-import PhoneInput from 'react-phone-number-input'
-import 'react-phone-number-input/style.css'
+import { ArrowLeft, ArrowRight, LockKeyhole } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 import type { EventType } from '~/app/(app)/(public)/mentor/[username]/book/actions'
 import type { BookingFormData } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingEmbed'
+import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert'
 import { Button } from '~/components/ui/button'
-import { Card, CardContent } from '~/components/ui/card'
-import { InputGroup, InputGroupAddon, InputGroupInput } from '~/components/ui/input-group'
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '~/components/ui/field'
+import { Input } from '~/components/ui/input'
 import { Spinner } from '~/components/ui/spinner'
+import { Textarea } from '~/components/ui/textarea'
+import { formatCurrencyFromCents } from '~/lib/format-currency'
 import { validateEmail } from '~/lib/utils/validation'
 
 interface AttendeeDetailsStepProps {
   selectedEventType: EventType | null
-  selectedDate?: Date
   selectedTimeSlot: string | null
+  timeZone: string
   formData: BookingFormData
   setFormData: (formData: BookingFormData) => void
   setCurrentStep: (step: 'calendar' | 'booking') => void
+  onReviewChange: (isReviewing: boolean) => void
   createBookingMutation: UseMutationResult<void, Error, void>
+  detailsLocked: boolean
 }
+
+const ATTENDEE_NAME_MAX_LENGTH = 100
+const ATTENDEE_EMAIL_MAX_LENGTH = 255
 
 export const AttendeeDetailsStep = ({
   selectedEventType,
-  selectedDate,
   selectedTimeSlot,
+  timeZone,
   formData,
   setFormData,
   setCurrentStep,
+  onReviewChange,
   createBookingMutation,
+  detailsLocked,
 }: AttendeeDetailsStepProps) => {
-  const [emailError, setEmailError] = useState<string>('')
-  const [nameError, setNameError] = useState<string>('')
+  const [touched, setTouched] = useState({
+    name: false,
+    email: false,
+    phone: false,
+    topic: false,
+  })
+  const [attemptedSubmit, setAttemptedSubmit] = useState(false)
+  const [isReviewing, setIsReviewing] = useState(false)
+  const formRef = useRef<HTMLDivElement>(null)
+  const previousReviewState = useRef(isReviewing)
 
-  const handleEmailChange = (email: string) => {
-    setFormData({ ...formData, email })
-    if (email && !validateEmail(email)) {
-      setEmailError('Please enter a valid email address')
-    } else {
-      setEmailError('')
-    }
+  const trimmedName = formData.name.trim()
+  const trimmedEmail = formData.email.trim()
+  const hasValidName = trimmedName.length >= 2 && trimmedName.length <= ATTENDEE_NAME_MAX_LENGTH
+  const hasValidEmail =
+    trimmedEmail.length <= ATTENDEE_EMAIL_MAX_LENGTH && validateEmail(trimmedEmail)
+  const normalizedPhone = formData.phone.replace(/[\s\-().]/g, '')
+  const hasValidPhone = /^\+[1-9]\d{7,14}$/.test(normalizedPhone)
+  const hasValidTopic = formData.topic.trim().length >= 3 && formData.topic.trim().length <= 200
+  const showNameError = (touched.name || attemptedSubmit) && !hasValidName
+  const showEmailError = (touched.email || attemptedSubmit) && !hasValidEmail
+  const showPhoneError = (touched.phone || attemptedSubmit) && !hasValidPhone
+  const showTopicError = (touched.topic || attemptedSubmit) && !hasValidTopic
+
+  useEffect(() => {
+    if (previousReviewState.current === isReviewing) return
+    previousReviewState.current = isReviewing
+    const frame = requestAnimationFrame(() => {
+      formRef.current?.scrollIntoView({ block: 'start' })
+      formRef.current
+        ?.querySelector<HTMLElement>('[data-booking-step-heading]')
+        ?.focus({ preventScroll: true })
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [isReviewing])
+
+  const setReviewing = (nextValue: boolean) => {
+    setIsReviewing(nextValue)
+    onReviewChange(nextValue)
   }
 
-  const handleNameChange = (name: string) => {
-    setFormData({ ...formData, name })
-    if (name && name.trim().length < 2) {
-      setNameError('Name must be at least 2 characters')
-    } else {
-      setNameError('')
+  const handleSubmit = () => {
+    setAttemptedSubmit(true)
+
+    if (
+      !hasValidName ||
+      !hasValidEmail ||
+      !hasValidPhone ||
+      !hasValidTopic ||
+      createBookingMutation.isPending
+    ) {
+      requestAnimationFrame(() => {
+        formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus()
+      })
+      return
     }
+
+    if (!isReviewing) {
+      setReviewing(true)
+      return
+    }
+
+    createBookingMutation.mutate()
   }
 
-  const isFormValid = formData.name.trim().length >= 2 && validateEmail(formData.email)
+  const formattedPrice =
+    selectedEventType && (selectedEventType.price ?? 0) > 0
+      ? formatCurrencyFromCents(selectedEventType.price ?? 0, selectedEventType.currency ?? 'USD')
+      : 'Free'
+  const selectedStart = selectedTimeSlot ? new TZDate(selectedTimeSlot, timeZone) : null
+  const isPaid = (selectedEventType?.price ?? 0) > 0
 
   return (
-    <div className="slide-in-up h-full overflow-y-auto p-3">
-      <div className="mb-2">
-        <h2 className="text-base font-semibold">Your Details</h2>
-        <p className="text-muted-foreground text-xs">
-          Please provide your contact information for the booking
-        </p>
-      </div>
+    <div className="min-h-full px-5 py-5 sm:px-7 sm:py-6">
+      <div
+        ref={formRef}
+        role="form"
+        aria-labelledby="booking-details-heading"
+        className="mx-auto w-full max-w-2xl"
+      >
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="text-muted-foreground mb-5 -ml-3"
+          onClick={() => {
+            onReviewChange(false)
+            setCurrentStep('calendar')
+          }}
+        >
+          <ArrowLeft data-icon="inline-start" />
+          Change time
+        </Button>
 
-      <div className="max-w-sm space-y-4">
-        <div className="space-y-3">
-          <InputGroup>
-            <InputGroupAddon>
-              <User className="h-4 w-4" />
-            </InputGroupAddon>
-            <InputGroupInput
-              id="name"
-              type="text"
-              value={formData.name}
-              onChange={e => handleNameChange(e.target.value)}
-              placeholder="Your full name"
-              aria-invalid={!!nameError}
-              required
-              minLength={2}
-            />
-            {!nameError && formData.name.trim().length >= 2 && (
-              <InputGroupAddon align="inline-end">
-                <Check className="h-4 w-4 text-green-500" />
-              </InputGroupAddon>
+        {!isReviewing ? (
+          <>
+            <header className="mb-7">
+              <h2
+                id="booking-details-heading"
+                data-booking-step-heading
+                tabIndex={-1}
+                className="text-xl font-semibold tracking-tight outline-none sm:text-2xl"
+              >
+                Your question and details
+              </h2>
+              <p className="text-muted-foreground mt-1 text-sm leading-6">
+                We will send the confirmation and meeting details to your email.
+              </p>
+            </header>
+
+            <FieldGroup className="gap-6">
+              <Field data-invalid={showTopicError} data-disabled={detailsLocked}>
+                <FieldLabel htmlFor="booking-topic">
+                  What would you like to talk through?
+                </FieldLabel>
+                <Textarea
+                  id="booking-topic"
+                  name="topic"
+                  value={formData.topic}
+                  onChange={event => setFormData({ ...formData, topic: event.target.value })}
+                  onBlur={() => setTouched(current => ({ ...current, topic: true }))}
+                  placeholder="For example: choosing between two majors"
+                  maxLength={200}
+                  rows={4}
+                  aria-invalid={showTopicError}
+                  aria-describedby={showTopicError ? 'booking-topic-error' : 'booking-topic-help'}
+                  disabled={detailsLocked}
+                  required
+                />
+                {showTopicError ? (
+                  <FieldError id="booking-topic-error">
+                    Share a short question or decision for the conversation.
+                  </FieldError>
+                ) : (
+                  <FieldDescription id="booking-topic-help">A sentence is enough.</FieldDescription>
+                )}
+              </Field>
+
+              <Field data-invalid={showNameError} data-disabled={detailsLocked}>
+                <FieldLabel htmlFor="booking-name">Full name</FieldLabel>
+                <Input
+                  id="booking-name"
+                  name="name"
+                  type="text"
+                  autoComplete="name"
+                  value={formData.name}
+                  onChange={event => setFormData({ ...formData, name: event.target.value })}
+                  onBlur={() => setTouched(current => ({ ...current, name: true }))}
+                  placeholder="Your full name"
+                  maxLength={ATTENDEE_NAME_MAX_LENGTH}
+                  aria-invalid={showNameError}
+                  aria-describedby={showNameError ? 'booking-name-error' : undefined}
+                  disabled={detailsLocked}
+                  required
+                />
+                {showNameError && (
+                  <FieldError id="booking-name-error">
+                    {trimmedName.length > ATTENDEE_NAME_MAX_LENGTH
+                      ? `Keep your name to ${ATTENDEE_NAME_MAX_LENGTH} characters or fewer.`
+                      : 'Enter your full name.'}
+                  </FieldError>
+                )}
+              </Field>
+
+              <Field data-invalid={showEmailError} data-disabled={detailsLocked}>
+                <FieldLabel htmlFor="booking-email">Email address</FieldLabel>
+                <Input
+                  id="booking-email"
+                  name="email"
+                  type="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  value={formData.email}
+                  onChange={event => setFormData({ ...formData, email: event.target.value })}
+                  onBlur={() => setTouched(current => ({ ...current, email: true }))}
+                  placeholder="you@example.com"
+                  maxLength={ATTENDEE_EMAIL_MAX_LENGTH}
+                  aria-invalid={showEmailError}
+                  aria-describedby={showEmailError ? 'booking-email-error' : 'booking-email-help'}
+                  disabled={detailsLocked}
+                  required
+                />
+                {showEmailError ? (
+                  <FieldError id="booking-email-error">
+                    {trimmedEmail.length > ATTENDEE_EMAIL_MAX_LENGTH
+                      ? `Keep your email to ${ATTENDEE_EMAIL_MAX_LENGTH} characters or fewer.`
+                      : 'Enter a valid email address.'}
+                  </FieldError>
+                ) : (
+                  <FieldDescription id="booking-email-help">
+                    {isPaid
+                      ? 'Your receipt and calendar invitation will be sent here.'
+                      : 'Your calendar invitation and meeting details will be sent here.'}
+                  </FieldDescription>
+                )}
+              </Field>
+
+              <Field data-invalid={showPhoneError} data-disabled={detailsLocked}>
+                <FieldLabel htmlFor="booking-phone">Mobile number</FieldLabel>
+                <Input
+                  id="booking-phone"
+                  name="phone"
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  value={formData.phone}
+                  onChange={event => setFormData({ ...formData, phone: event.target.value })}
+                  onBlur={() => setTouched(current => ({ ...current, phone: true }))}
+                  placeholder="+1 555 123 4567"
+                  aria-invalid={showPhoneError}
+                  aria-describedby={showPhoneError ? 'booking-phone-error' : 'booking-phone-help'}
+                  disabled={detailsLocked}
+                  required
+                />
+                {showPhoneError ? (
+                  <FieldError id="booking-phone-error">
+                    Include your country code, for example +1 555 123 4567.
+                  </FieldError>
+                ) : (
+                  <FieldDescription id="booking-phone-help">
+                    Used for session coordination and enabled reminders.
+                  </FieldDescription>
+                )}
+              </Field>
+            </FieldGroup>
+
+            <Button type="button" size="lg" className="mt-7 w-full" onClick={handleSubmit}>
+              Review booking
+              <ArrowRight data-icon="inline-end" />
+            </Button>
+          </>
+        ) : (
+          <>
+            <header className="mb-7">
+              <h2
+                id="booking-details-heading"
+                data-booking-step-heading
+                tabIndex={-1}
+                className="text-xl font-semibold tracking-tight outline-none sm:text-2xl"
+              >
+                Review your session
+              </h2>
+              <p className="text-muted-foreground mt-1 text-sm leading-6">
+                Confirm the session, time, and contact details below.
+              </p>
+            </header>
+
+            {detailsLocked && (
+              <Alert className="mb-6">
+                <LockKeyhole />
+                <AlertTitle>Details locked for this payment attempt</AlertTitle>
+                <AlertDescription>
+                  Choose a new time to start a new attempt with different details.
+                </AlertDescription>
+              </Alert>
             )}
-          </InputGroup>
-          {nameError && <p className="text-destructive text-xs">{nameError}</p>}
 
-          <InputGroup>
-            <InputGroupAddon>
-              <Mail className="h-4 w-4" />
-            </InputGroupAddon>
-            <InputGroupInput
-              id="email"
-              type="email"
-              value={formData.email}
-              onChange={e => handleEmailChange(e.target.value)}
-              placeholder="your.email@example.com"
-              aria-invalid={!!emailError}
-              required
-            />
-            {!emailError && formData.email && validateEmail(formData.email) && (
-              <InputGroupAddon align="inline-end">
-                <Check className="h-4 w-4 text-green-500" />
-              </InputGroupAddon>
-            )}
-          </InputGroup>
-          {emailError && <p className="text-destructive text-xs">{emailError}</p>}
-
-          <div>
-            <InputGroup>
-              <InputGroupAddon>
-                <PhoneIcon className="h-4 w-4" />
-              </InputGroupAddon>
-              <PhoneInput
-                id="phone"
-                international
-                defaultCountry="US"
-                value={formData.phone}
-                onChange={value => setFormData({ ...formData, phone: value })}
-                placeholder="Phone number (optional)"
-                className="flex-1 rounded-none border-0 bg-transparent shadow-none focus-visible:ring-0 dark:bg-transparent"
-                data-slot="input-group-control"
-              />
-            </InputGroup>
-            <p className="text-muted-foreground mt-1 text-xs">Optional - for SMS reminders</p>
-          </div>
-        </div>
-
-        {/* Booking Summary */}
-        {selectedEventType && selectedTimeSlot && (
-          <Card className="mt-3">
-            <CardContent className="p-2.5">
-              <h3 className="mb-1 text-sm font-medium">Booking Summary</h3>
-              <div className="space-y-0 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Session:</span>
-                  <span className="font-medium">{selectedEventType.title}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Date:</span>
-                  <span className="font-medium">{selectedDate?.toDateString()}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Time:</span>
-                  <span className="font-medium">{format(new Date(selectedTimeSlot), 'p')}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Duration:</span>
-                  <span className="font-medium">{selectedEventType.length} minutes</span>
-                </div>
-                <div className="mt-1 flex justify-between border-t pt-1">
-                  <span className="font-medium">Price:</span>
-                  <span className="font-semibold">
-                    {selectedEventType.price && selectedEventType.price > 0
-                      ? `$${(selectedEventType.price / 100).toFixed(2)} ${selectedEventType.currency}`
-                      : 'Free'}
-                  </span>
-                </div>
+            <dl className="divide-y border-y text-sm">
+              <div className="grid gap-1 py-3 sm:grid-cols-[8rem_minmax(0,1fr)] sm:gap-4">
+                <dt className="text-muted-foreground">Session</dt>
+                <dd className="font-medium break-words">
+                  {selectedEventType?.title ?? 'Not selected'}
+                  {selectedEventType && (
+                    <span className="text-muted-foreground ml-2 font-normal">
+                      {selectedEventType.length} minutes
+                    </span>
+                  )}
+                </dd>
               </div>
-            </CardContent>
-          </Card>
-        )}
+              <div className="grid gap-1 py-3 sm:grid-cols-[8rem_minmax(0,1fr)] sm:gap-4">
+                <dt className="text-muted-foreground">Date and time</dt>
+                <dd>
+                  {selectedStart
+                    ? format(selectedStart, "EEEE, MMMM d, yyyy 'at' h:mm a")
+                    : 'Not selected'}
+                  <span className="text-muted-foreground block text-xs break-words">
+                    {timeZone}
+                  </span>
+                </dd>
+              </div>
+              <div className="grid gap-1 py-3 sm:grid-cols-[8rem_minmax(0,1fr)] sm:gap-4">
+                <dt className="text-muted-foreground">Price</dt>
+                <dd>
+                  {formattedPrice}
+                  {isPaid && (
+                    <span className="text-muted-foreground block text-xs">
+                      Applicable taxes are calculated at checkout. Discuno adds no service fee.
+                    </span>
+                  )}
+                </dd>
+              </div>
+              <div className="grid gap-1 py-3 sm:grid-cols-[8rem_minmax(0,1fr)] sm:gap-4">
+                <dt className="text-muted-foreground">Question</dt>
+                <dd className="break-words whitespace-pre-wrap">{formData.topic}</dd>
+              </div>
+              <div className="grid gap-1 py-3 sm:grid-cols-[8rem_minmax(0,1fr)] sm:gap-4">
+                <dt className="text-muted-foreground">Name</dt>
+                <dd className="break-words">{formData.name}</dd>
+              </div>
+              <div className="grid gap-1 py-3 sm:grid-cols-[8rem_minmax(0,1fr)] sm:gap-4">
+                <dt className="text-muted-foreground">Email</dt>
+                <dd className="break-words">{formData.email}</dd>
+              </div>
+              <div className="grid gap-1 py-3 sm:grid-cols-[8rem_minmax(0,1fr)] sm:gap-4">
+                <dt className="text-muted-foreground">Mobile</dt>
+                <dd>{formData.phone}</dd>
+              </div>
+            </dl>
 
-        <div className="mt-3 flex gap-2">
-          <Button variant="outline" onClick={() => setCurrentStep('calendar')} size="sm">
-            Back
-          </Button>
-          <Button
-            onClick={() => {
-              createBookingMutation.mutate()
-            }}
-            disabled={!isFormValid || createBookingMutation.isPending}
-            className="flex-1"
-            size="sm"
-          >
-            {createBookingMutation.isPending ? (
-              <>
-                <Spinner className="mr-2" />
-                Creating...
-              </>
-            ) : selectedEventType?.price && selectedEventType.price > 0 ? (
-              'Continue to Payment'
-            ) : (
-              'Confirm Booking'
-            )}
-          </Button>
-        </div>
+            <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row">
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                className="sm:flex-1"
+                disabled={detailsLocked || createBookingMutation.isPending}
+                onClick={() => setReviewing(false)}
+              >
+                Edit details
+              </Button>
+              <Button
+                type="button"
+                size="lg"
+                className="sm:flex-1"
+                disabled={createBookingMutation.isPending}
+                onClick={handleSubmit}
+              >
+                {createBookingMutation.isPending ? (
+                  <>
+                    <Spinner data-icon="inline-start" />
+                    {isPaid ? 'Opening checkout…' : 'Confirming session…'}
+                  </>
+                ) : (
+                  <>
+                    {isPaid ? 'Continue to checkout' : 'Confirm session'}
+                    <ArrowRight data-icon="inline-end" />
+                  </>
+                )}
+              </Button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   )

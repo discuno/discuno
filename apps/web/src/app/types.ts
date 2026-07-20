@@ -10,6 +10,7 @@ export interface Card extends Post {
   name: string | null
   username: string | null
   calcomUsername: string | null
+  verifiedSchoolEmail: boolean
   description: string | null
   random_sort_key: number
   userImage?: string | null
@@ -60,6 +61,7 @@ export interface Toast {
 export interface FullUserProfile {
   userId: string
   userProfileId: number
+  username: string | null
   email: string | null
   emailVerified: boolean
   bio: string | null
@@ -71,18 +73,11 @@ export interface FullUserProfile {
   major: string | null
   calcomUserId: number | null
   calcomUsername: string | null
-  accessToken: string | null
-  refreshToken: string | null
 }
 
 // Booking related types
 export type BookingStatus =
-  | 'confirmed'
-  | 'pending'
-  | 'cancelled'
-  | 'completed'
-  | 'no_show'
-  | 'rescheduled'
+  'confirmed' | 'pending' | 'cancelled' | 'completed' | 'no_show' | 'rescheduled'
 
 export type BookingAttendee = DbBookingAttendee
 

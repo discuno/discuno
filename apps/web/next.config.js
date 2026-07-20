@@ -3,25 +3,31 @@
  * for Docker builds.
  */
 import './src/env.js'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const workspaceRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 
 /** @type {import("next").NextConfig} */
 const coreConfig = {
   serverExternalPackages: ['drizzle-orm'],
+  outputFileTracingRoot: workspaceRoot,
+  outputFileTracingIncludes: {
+    '/*': [
+      '../../node_modules/.pnpm/sharp@*/node_modules/sharp/**/*',
+      '../../node_modules/.pnpm/@img+sharp-linux-x64@*/node_modules/@img/sharp-linux-x64/**/*',
+      '../../node_modules/.pnpm/@img+sharp-libvips-linux-x64@*/node_modules/@img/sharp-libvips-linux-x64/**/*',
+    ],
+  },
   cacheComponents: true,
   turbopack: {
+    root: workspaceRoot,
     rules: {
       '*.svg': {
         loaders: ['@svgr/webpack'],
         as: '*.js',
       },
     },
-  },
-  experimental: {
-    optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
-  },
-  typescript: {
-    // Only ignore in CI environments, not local development
-    ignoreBuildErrors: process.env.CI === 'true',
   },
   images: {
     remotePatterns: [
@@ -56,7 +62,8 @@ const coreConfig = {
       // Example: Cloudinary, Imgur, your CDN, etc.
     ],
     formats: ['image/webp', 'image/avif'],
-    minimumCacheTTL: 60 * 60, // 1 hour
+    qualities: [75],
+    minimumCacheTTL: 60 * 60 * 4,
   },
   headers: async () => [
     {

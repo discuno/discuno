@@ -1,25 +1,33 @@
 import { type Metadata } from 'next'
+import { resolveReauthenticationReturnTo } from '~/lib/auth/config'
 import { createMetadata } from '~/lib/metadata'
 import { LoginPage } from './LoginPage'
 
 export const metadata: Metadata = createMetadata({
-  title: 'Become a Mentor',
-  description:
-    'Join Discuno as a student mentor. Share your college experience, help fellow students succeed, and earn money while making a difference. Sign in with your .edu email to get started.',
+  title: 'Sign in',
+  description: 'Sign in to Discuno as a student or mentor.',
   openGraph: {
-    title: 'Become a Mentor on Discuno',
-    description:
-      'Share your college experience and earn money by mentoring students. Join our verified community of student mentors.',
+    title: 'Sign in to Discuno',
+    description: 'Sign in to your Discuno account.',
   },
   alternates: {
     canonical: 'https://discuno.com/auth',
   },
 })
 
-export default async function AuthPage() {
+export default async function AuthPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ intent?: string; reauth?: string; returnTo?: string }>
+}) {
+  const { intent, reauth, returnTo } = await searchParams
+  const reauthenticationRequired = reauth === '1'
+
   return (
-    <main>
-      <LoginPage />
-    </main>
+    <LoginPage
+      initialUserType={intent === 'student' ? 'student' : 'mentor'}
+      reauthenticationRequired={reauthenticationRequired}
+      returnTo={returnTo ? resolveReauthenticationReturnTo(returnTo) : undefined}
+    />
   )
 }

@@ -1,310 +1,163 @@
-import { type Metadata } from 'next'
-import {
-  Award,
-  GraduationCap,
-  Heart,
-  Lightbulb,
-  Shield,
-  Target,
-  TrendingUp,
-  Users,
-  Zap,
-} from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
+import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Icons } from '~/components/shared/icons'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
-import { createMetadata } from '~/lib/metadata'
+import { buttonVariants } from '~/components/ui/button'
+import { absoluteUrl, createMetadata, siteConfig } from '~/lib/metadata'
 
 export const metadata: Metadata = createMetadata({
-  title: 'About Us',
+  title: 'About Discuno',
   description:
-    "Learn about Discuno's mission to democratize mentorship by connecting college students with experienced peers. Meet our team and discover our values.",
+    'Discuno helps students bring firsthand context into the college decisions official information cannot fully explain.',
+  alternates: {
+    canonical: '/about',
+  },
   openGraph: {
-    title: 'About Discuno - Empowering Students Through Mentorship',
+    title: 'About Discuno',
     description:
-      'Discuno exists to democratize access to mentorship by connecting college students with experienced peers who have walked the same path.',
+      'Why a hard college question can become clearer after one useful conversation with someone who has been there.',
+    url: '/about',
   },
 })
 
-const values = [
+const principles = [
   {
-    icon: Heart,
-    title: 'Student-First',
-    description: 'Every decision we make prioritizes the student experience and learning outcomes.',
-  },
-  {
-    icon: Shield,
-    title: 'Trust & Safety',
+    title: 'Make the source clear',
     description:
-      'We verify all mentors and ensure secure, transparent transactions for peace of mind.',
+      'School, field, and firsthand experience should help a student judge whether the perspective is useful.',
   },
   {
-    icon: Lightbulb,
-    title: 'Quality Mentorship',
-    description: 'We foster meaningful connections that drive real growth and career advancement.',
+    title: 'Share context, not certainty',
+    description:
+      'A mentor can name tradeoffs without pretending there is one right answer for someone else.',
   },
   {
-    icon: TrendingUp,
-    title: 'Continuous Growth',
-    description: 'We constantly improve our platform based on feedback from students and mentors.',
+    title: 'End with a smaller next move',
+    description: 'A useful conversation leads to something concrete to ask, test, or do next.',
   },
 ]
 
-const stats = [
-  { value: '1,000+', label: 'Active Students' },
-  { value: '500+', label: 'Expert Mentors' },
-  { value: '50+', label: 'Universities' },
-  { value: '10,000+', label: 'Sessions Booked' },
-]
+const aboutJsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'AboutPage',
+      '@id': absoluteUrl('/about#page'),
+      url: absoluteUrl('/about'),
+      name: 'About Discuno',
+      description:
+        'Discuno connects students for one-to-one conversations about real college decisions.',
+      mainEntity: {
+        '@id': absoluteUrl('/#organization'),
+      },
+      inLanguage: 'en-US',
+    },
+    {
+      '@type': 'Organization',
+      '@id': absoluteUrl('/#organization'),
+      name: siteConfig.name,
+      url: absoluteUrl('/'),
+      logo: absoluteUrl('/logos/black-icon-logo.png'),
+      description: siteConfig.description,
+    },
+  ],
+}
 
-const AboutPage = () => {
+export default function AboutPage() {
   return (
-    <div className="text-foreground min-h-screen">
-      {/* Hero Section */}
-      <div className="from-primary/5 to-background border-b bg-gradient-to-b">
-        <div className="container mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <div className="bg-primary/10 mx-auto flex h-16 w-16 items-center justify-center rounded-full">
-              <GraduationCap className="text-primary h-8 w-8" />
-            </div>
-            <h1 className="mt-6 text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
-              About Discuno
+    <div className="min-h-screen">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(aboutJsonLd) }}
+      />
+
+      <section className="border-b">
+        <div className="page-shell grid gap-10 py-12 sm:py-16 lg:grid-cols-12 lg:items-center lg:gap-14 lg:py-20">
+          <div className="public-enter lg:col-span-7">
+            <h1 className="display-hero max-w-4xl">
+              The facts are only <span className="marker-highlight">part of the choice.</span>
             </h1>
-            <p className="text-muted-foreground mx-auto mt-4 max-w-2xl text-lg sm:text-xl">
-              Empowering students through peer-to-peer mentorship and meaningful connections.
+            <p className="text-muted-foreground mt-6 max-w-xl text-lg leading-8">
+              Discuno puts firsthand student experience beside the facts behind a college choice.
             </p>
           </div>
-        </div>
-      </div>
 
-      {/* Main Content */}
-      <div className="container mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
-        {/* Mission Section */}
-        <section className="mb-20">
-          <div className="grid gap-12 lg:grid-cols-2 lg:gap-16">
-            <div className="flex flex-col justify-center">
-              <div className="bg-primary/10 mb-4 inline-flex h-12 w-12 items-center justify-center rounded-lg">
-                <Target className="text-primary h-6 w-6" />
+          <div className="bg-muted relative aspect-[4/3] overflow-hidden rounded-xl lg:col-span-5">
+            <Image
+              src="/images/hero-conversation.png"
+              alt="Two students talk through a decision at a table"
+              fill
+              preload
+              className="object-cover object-center"
+              sizes="(max-width: 1023px) calc(100vw - 2rem), 40vw"
+            />
+          </div>
+        </div>
+      </section>
+
+      <section className="page-shell py-16 sm:py-20">
+        <div className="grid gap-12 lg:grid-cols-12 lg:gap-20">
+          <div className="lg:col-span-7">
+            <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+              Facts tell you what. Experience shows you what it felt like.
+            </h2>
+            <div className="border-foreground/20 mt-8 grid border-y md:grid-cols-2 md:divide-x">
+              <div className="py-7 md:pr-10">
+                <h3 className="text-sm font-semibold">Official information</h3>
+                <p className="text-muted-foreground mt-3 leading-7">
+                  Requirements, credits, prerequisites, and the official shape of a major.
+                </p>
               </div>
-              <h2 className="mb-4 text-3xl font-bold tracking-tight">Our Mission</h2>
-              <p className="text-muted-foreground mb-4 text-lg leading-relaxed">
-                Discuno exists to democratize access to mentorship by connecting college students
-                with experienced peers who have walked the same path. We believe that the best
-                guidance often comes from those who recently faced the same challenges.
-              </p>
-              <p className="text-muted-foreground text-lg leading-relaxed">
-                Whether you&apos;re navigating course selection, preparing for internships, or
-                planning your career, our platform makes it easy to find and connect with mentors
-                who understand your journey.
-              </p>
-            </div>
-            <div className="flex flex-col justify-center">
-              <Card className="border-primary/20 bg-primary/5">
-                <CardHeader>
-                  <div className="bg-primary/10 mb-2 inline-flex h-10 w-10 items-center justify-center rounded-lg">
-                    <Zap className="text-primary h-5 w-5" />
-                  </div>
-                  <CardTitle className="text-2xl">Why Discuno?</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex gap-3">
-                    <Award className="text-primary mt-1 h-5 w-5 shrink-0" />
-                    <div>
-                      <h3 className="font-semibold">Verified Mentors</h3>
-                      <p className="text-muted-foreground text-sm">
-                        All mentors are verified students with .edu email addresses
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex gap-3">
-                    <Shield className="text-primary mt-1 h-5 w-5 shrink-0" />
-                    <div>
-                      <h3 className="font-semibold">Secure Payments</h3>
-                      <p className="text-muted-foreground text-sm">
-                        Industry-leading payment processing through Stripe
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex gap-3">
-                    <Users className="text-primary mt-1 h-5 w-5 shrink-0" />
-                    <div>
-                      <h3 className="font-semibold">Flexible Scheduling</h3>
-                      <p className="text-muted-foreground text-sm">
-                        Book sessions that fit your schedule with integrated calendar management
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <div className="border-foreground/20 border-t py-7 md:border-t-0 md:pl-10">
+                <h3 className="text-sm font-semibold">Firsthand experience</h3>
+                <p className="text-muted-foreground mt-3 leading-7">
+                  The tradeoffs, surprises, and questions that only appeared after making the
+                  choice.
+                </p>
+              </div>
             </div>
           </div>
-        </section>
 
-        {/* Stats Section */}
-        <section className="mb-20">
-          <div className="from-primary/10 via-primary/5 to-primary/10 rounded-2xl border bg-gradient-to-r p-8 sm:p-12">
-            <h2 className="mb-8 text-center text-3xl font-bold">Our Impact</h2>
-            <div className="grid grid-cols-2 gap-8 lg:grid-cols-4">
-              {stats.map(stat => (
-                <div key={stat.label} className="text-center">
-                  <div className="text-primary mb-2 text-4xl font-bold sm:text-5xl">
-                    {stat.value}
-                  </div>
-                  <div className="text-muted-foreground text-sm font-medium sm:text-base">
-                    {stat.label}
-                  </div>
+          <div className="border-foreground/20 lg:col-span-5 lg:border-l lg:pl-10">
+            <p className="text-sm font-semibold">A useful conversation</p>
+            <div className="border-foreground/20 mt-3 border-t">
+              {principles.map(principle => (
+                <div key={principle.title} className="border-foreground/20 border-b py-5">
+                  <h3 className="font-semibold">{principle.title}</h3>
+                  <p className="text-muted-foreground mt-3 text-sm leading-6">
+                    {principle.description}
+                  </p>
                 </div>
               ))}
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Values Section */}
-        <section className="mb-20">
-          <div className="mb-12 text-center">
-            <h2 className="mb-4 text-3xl font-bold tracking-tight">Our Values</h2>
-            <p className="text-muted-foreground mx-auto max-w-2xl text-lg">
-              These core principles guide everything we do at Discuno
+      <section className="border-t">
+        <div className="page-shell grid gap-10 py-14 sm:py-18 lg:grid-cols-12 lg:items-end lg:gap-16">
+          <div className="max-w-3xl lg:col-span-8">
+            <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+              Perspective has a boundary
+            </h2>
+            <p className="mt-5 leading-7">
+              A mentor shares what they saw, tried, and learned. They do not verify your options or
+              decide what is right for you.
+            </p>
+            <p className="text-muted-foreground mt-4 text-sm leading-6">
+              Peer perspective complements official academic, financial, legal, and medical
+              guidance. Those decisions still belong with the right professional and with you.
             </p>
           </div>
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {values.map(value => {
-              const Icon = value.icon
-              return (
-                <Card key={value.title} className="border-border/50">
-                  <CardHeader>
-                    <div className="bg-primary/10 mb-3 flex h-12 w-12 items-center justify-center rounded-lg">
-                      <Icon className="text-primary h-6 w-6" />
-                    </div>
-                    <CardTitle className="text-lg">{value.title}</CardTitle>
-                    <CardDescription className="text-sm leading-relaxed">
-                      {value.description}
-                    </CardDescription>
-                  </CardHeader>
-                </Card>
-              )
-            })}
-          </div>
-        </section>
-
-        {/* Team Section */}
-        <section className="mb-20">
-          <div className="mb-12 text-center">
-            <h2 className="mb-4 text-3xl font-bold tracking-tight">Meet the Team</h2>
-            <p className="text-muted-foreground mx-auto max-w-2xl text-lg">
-              Built by a University of Michigan student passionate about making mentorship
-              accessible
-            </p>
-          </div>
-          <div className="flex justify-center">
-            <Card className="border-border/50 max-w-sm">
-              <CardHeader className="text-center">
-                <div className="from-primary/20 to-primary/5 mx-auto mb-4 flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br">
-                  <span className="text-primary text-3xl font-bold">B</span>
-                </div>
-                <CardTitle className="text-lg">Brad</CardTitle>
-                <CardDescription>Founder & Developer</CardDescription>
-              </CardHeader>
-              <CardContent className="text-muted-foreground text-center text-sm">
-                Computer Science student at the University of Michigan building tools to help
-                students connect and grow.
-              </CardContent>
-            </Card>
-          </div>
-        </section>
-
-        {/* Connect With Us Section */}
-        <section className="mb-20">
-          <Card className="border-primary/20 bg-primary/5">
-            <CardHeader className="text-center">
-              <CardTitle className="text-2xl">Connect With Us</CardTitle>
-              <CardDescription className="text-base">
-                Follow our journey and stay updated on the latest features and news
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex justify-center pb-8">
-              <div className="flex items-center gap-6">
-                <a
-                  href="https://linkedin.com/company/discuno"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-muted-foreground hover:text-primary transition-colors"
-                  aria-label="LinkedIn"
-                >
-                  <Icons.linkedin className="h-8 w-8" />
-                </a>
-                <a
-                  href="https://instagram.com/discunoapp"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-muted-foreground hover:text-primary transition-colors"
-                  aria-label="Instagram"
-                >
-                  <Icons.instagram className="h-8 w-8" />
-                </a>
-                <a
-                  href="https://x.com/discuno"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-muted-foreground hover:text-primary transition-colors"
-                  aria-label="X (Twitter)"
-                >
-                  <Icons.twitter className="h-8 w-8" />
-                </a>
-                <a
-                  href="https://github.com/discuno/discuno"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-muted-foreground hover:text-primary transition-colors"
-                  aria-label="GitHub"
-                >
-                  <Icons.github className="h-8 w-8" />
-                </a>
-              </div>
-            </CardContent>
-          </Card>
-        </section>
-
-        {/* Sponsors Section */}
-        <section>
-          <Card className="border-primary/20 bg-primary/5">
-            <CardHeader className="text-center">
-              <CardTitle className="text-2xl">Thank You to Our Sponsors</CardTitle>
-              <CardDescription className="text-base">
-                Our open-source journey is made possible by the generous support of our sponsors
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex justify-center pb-8">
-              <Link
-                href="https://cal.com/discuno/30min?utm_source=banner&utm_campaign=oss"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="transition-opacity hover:opacity-80"
-              >
-                {/* Light theme banner */}
-                <Image
-                  alt="Book us with Cal.com"
-                  src="/book-with-cal-light.svg"
-                  className="dark:hidden"
-                  width={200}
-                  height={50}
-                />
-                {/* Dark theme banner */}
-                <Image
-                  alt="Book us with Cal.com"
-                  src="/book-with-cal-dark.svg"
-                  className="hidden dark:block"
-                  width={200}
-                  height={50}
-                />
-              </Link>
-            </CardContent>
-          </Card>
-        </section>
-      </div>
+          <Link
+            href="/find"
+            className={`${buttonVariants({ size: 'lg' })} lg:col-span-4 lg:justify-self-end`}
+          >
+            Find a mentor
+            <ArrowRight data-icon="inline-end" />
+          </Link>
+        </div>
+      </section>
     </div>
   )
 }
-
-export default AboutPage

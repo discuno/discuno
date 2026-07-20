@@ -1,173 +1,153 @@
 'use client'
 
-import { GraduationCap, School, User } from 'lucide-react'
+import { ArrowUpRight, BadgeCheck } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { usePostHog } from 'posthog-js/react'
+import { useState } from 'react'
 import { logAnalyticsEvent } from '~/app/(app)/(public)/(feed)/(post)/actions'
 import type { Card } from '~/app/types'
-import { AspectRatio } from '~/components/ui/aspect-ratio'
-import { Button } from '~/components/ui/button'
-import { HoverCard, HoverCardContent, HoverCardTrigger } from '~/components/ui/hover-card'
+import { Badge } from '~/components/ui/badge'
+import { Button, buttonVariants } from '~/components/ui/button'
+import { getClientAnalyticsConsentSnapshot } from '~/lib/analytics/client-consent'
+import { cn } from '~/lib/utils'
 
-export const PostCard = ({ card }: { card: Card }) => {
-  const posthog = usePostHog()
+export const PostCard = ({
+  card,
+  discoveryReturnHref,
+}: {
+  card: Card
+  discoveryReturnHref?: string
+}) => {
+  const [imageFailed, setImageFailed] = useState(false)
 
   const handleProfileView = () => {
-    const distinctId = posthog.get_distinct_id()
-    posthog.capture('profile_view', {
-      post_user_id: card.createdById,
-      post_id: card.id,
-    })
+    if (getClientAnalyticsConsentSnapshot() === 'enabled') {
+      void import('posthog-js').then(({ default: posthog }) => {
+        posthog.capture('profile_view', {
+          post_user_id: card.createdById,
+          post_id: card.id,
+        })
+      })
+    }
+
     void logAnalyticsEvent({
       eventType: 'PROFILE_VIEW',
-      distinctId,
       targetUserId: card.createdById,
       postId: card.id,
     })
   }
 
-  const isNewMentor = (() => {
-    const profileDate = new Date(card.createdAt)
-    const now = new Date()
-    const daysSinceJoined = Math.floor(
-      (now.getTime() - profileDate.getTime()) / (1000 * 60 * 60 * 24)
-    )
-    return daysSinceJoined <= 30
-  })()
+  const profileHref = card.username
+    ? `/mentor/${card.username}${
+        discoveryReturnHref ? `?returnTo=${encodeURIComponent(discoveryReturnHref)}` : ''
+      }`
+    : null
+  const name = card.name ?? 'Student mentor'
+  const firstName = name.trim().split(/\s+/).find(Boolean) ?? 'their'
+  const initial = name.trim().charAt(0).toUpperCase() || 'M'
+  const hasAcademicContext = [card.school, card.major].some(Boolean)
+  const hasAcademicStage = [card.schoolYear, card.graduationYear].some(Boolean)
+  const hasProfileSignals = [card.verifiedSchoolEmail, card.hasFreeSessions, hasAcademicStage].some(
+    Boolean
+  )
 
   return (
-    <div className="animate-in fade-in-50 zoom-in-95 bg-card/90 hover:shadow-primary/10 dark:bg-card/90 dark:shadow-primary/5 dark:hover:bg-card/95 dark:hover:shadow-primary/15 group relative overflow-hidden rounded-xl p-0 shadow-lg transition-all duration-100 hover:scale-[1.02] hover:shadow-xl dark:shadow-lg">
-      {/* Badges */}
-      <div className="absolute top-2 right-2 z-10 flex flex-col gap-2">
-        {isNewMentor && (
-          <div className="bg-primary/90 text-primary-foreground rounded-full px-3 py-1 text-xs font-semibold shadow-lg">
-            NEW
-          </div>
-        )}
-        {card.hasFreeSessions && (
-          <div className="bg-muted/50 text-foreground rounded-full px-3 py-1 text-xs font-semibold shadow-lg">
-            FREE
-          </div>
+    <article
+      role="listitem"
+      className="grid grid-cols-[5.5rem_minmax(0,1fr)] gap-x-4 gap-y-5 py-7 sm:grid-cols-[7.5rem_minmax(0,1fr)] sm:gap-x-7 lg:grid-cols-[8.5rem_minmax(0,1fr)_auto] lg:items-center lg:gap-x-8"
+    >
+      <div className="bg-muted relative aspect-[4/5] w-full overflow-hidden rounded-lg">
+        <span
+          className="text-primary flex size-full items-center justify-center text-3xl font-semibold"
+          aria-hidden="true"
+        >
+          {initial}
+        </span>
+        {card.userImage && !imageFailed && (
+          <Image
+            src={card.userImage}
+            alt={`${name} profile photo`}
+            fill
+            className="object-cover object-top"
+            sizes="(max-width: 639px) 88px, (max-width: 1023px) 120px, 136px"
+            onError={() => setImageFailed(true)}
+          />
         )}
       </div>
 
-      {/* Profile Image Section */}
-      <AspectRatio
-        ratio={16 / 9}
-        className="relative flex w-full items-center justify-center overflow-hidden"
-        style={{
-          background: `radial-gradient(circle at center, ${card.schoolSecondaryColor ?? '#4A5568'} 0%, ${card.schoolPrimaryColor ?? '#1A202C'} 100%)`,
-        }}
-      >
-        {card.userImage ? (
-          <div className="relative h-32 w-32 overflow-hidden rounded-lg border-2 border-white/50 shadow-lg">
-            <Image
-              src={card.userImage}
-              alt={card.name ?? 'Student profile'}
-              fill
-              className="object-cover"
-              sizes="128px"
-            />
-          </div>
-        ) : (
-          <User className="h-16 w-16 text-white/80" />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-      </AspectRatio>
+      <div className="min-w-0">
+        <h3 className="text-2xl leading-tight font-semibold tracking-[-0.025em] sm:text-3xl">
+          {name}
+        </h3>
 
-      {/* Content Section */}
-      <div className="space-y-3 p-4">
-        {/* Name */}
-        <div className="h-14">
-          <h2 className="text-foreground truncate text-xl font-bold">
-            {card.name ?? 'Student Name'}
-          </h2>
-        </div>
-
-        {/* School & Major Row */}
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <div className="mb-1 flex items-center gap-2">
-              <School className="text-primary h-4 w-4 flex-shrink-0" />
+        {hasAcademicContext && (
+          <p className="text-muted-foreground mt-2 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+            {card.school &&
+              (card.schoolDomainPrefix ? (
+                <Link
+                  href={`/find?school=${encodeURIComponent(card.schoolDomainPrefix)}#mentors`}
+                  className="text-foreground font-medium hover:underline"
+                >
+                  {card.school}
+                </Link>
+              ) : (
+                <span className="text-foreground font-medium">{card.school}</span>
+              ))}
+            {card.school && card.major && <span aria-hidden="true">·</span>}
+            {card.major && (
               <Link
-                href={{ pathname: '/', query: { school: card.schoolDomainPrefix ?? '' } }}
-                className="text-foreground truncate text-sm font-semibold hover:underline"
-                aria-label={`Filter by school ${card.school ?? ''}`}
-                title={card.school ?? ''}
-              >
-                {card.school}
-              </Link>
-            </div>
-            <div className="flex items-center gap-2">
-              <GraduationCap className="text-muted-foreground h-4 w-4 flex-shrink-0" />
-              <Link
-                href={{ pathname: '/', query: { major: card.major?.toLowerCase() ?? '' } }}
-                className="text-muted-foreground hover:text-foreground truncate text-sm hover:underline"
-                aria-label={`Filter by major ${card.major ?? ''}`}
-                title={card.major ?? ''}
+                href={`/find?major=${encodeURIComponent(card.major.toLowerCase())}#mentors`}
+                className="hover:text-foreground hover:underline"
               >
                 {card.major}
               </Link>
-            </div>
-          </div>
-
-          {/* School Year Badge */}
-          <div className="bg-primary/10 text-primary border-primary/20 rounded-full border px-3 py-1 text-xs font-medium whitespace-nowrap">
-            {card.schoolYear}
-          </div>
-        </div>
-
-        {/* Bio with HoverCard */}
-        {card.description && (
-          <HoverCard openDelay={500} closeDelay={100}>
-            <HoverCardTrigger asChild>
-              <button className="w-full text-left">
-                <div className="text-muted-foreground hover:text-foreground flex items-center gap-2 transition-colors">
-                  <User className="h-4 w-4 flex-shrink-0" />
-                  <span className="truncate text-sm">
-                    {card.description.length > 40
-                      ? `${card.description.substring(0, 40)}...`
-                      : card.description}
-                  </span>
-                </div>
-              </button>
-            </HoverCardTrigger>
-            <HoverCardContent className="w-80" side="top">
-              <div className="space-y-2">
-                <h4 className="text-foreground text-sm font-semibold">About {card.name}</h4>
-                <p className="text-muted-foreground text-sm leading-relaxed">{card.description}</p>
-              </div>
-            </HoverCardContent>
-          </HoverCard>
+            )}
+          </p>
         )}
 
-        {/* Footer Info */}
-        <div className="flex items-center justify-start pt-3">
-          <div className="text-muted-foreground flex items-center gap-1">
-            <span className="text-xs">Class of</span>
-            <span className="text-foreground text-xs font-medium">{card.graduationYear}</span>
-          </div>
-        </div>
+        {card.description && (
+          <p className="text-muted-foreground mt-3 line-clamp-3 max-w-2xl text-sm leading-6 sm:text-base sm:leading-7">
+            {card.description}
+          </p>
+        )}
 
-        {/* View Profile Link */}
-        {card.username ? (
-          <Button
-            asChild
-            variant="tinted"
-            className="mt-3 w-full hover:shadow-sm"
+        {hasProfileSignals && (
+          <div className="text-muted-foreground mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs">
+            {card.verifiedSchoolEmail && (
+              <span className="text-foreground inline-flex items-center gap-1.5 font-medium">
+                <BadgeCheck aria-hidden="true" className="size-4" />
+                School email confirmed
+              </span>
+            )}
+            {card.hasFreeSessions && <Badge variant="secondary">Free session available</Badge>}
+            {hasAcademicStage && (
+              <span>
+                {[card.schoolYear, card.graduationYear ? `Class of ${card.graduationYear}` : null]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className="col-span-2 sm:col-span-1 sm:col-start-2 lg:col-start-3 lg:row-start-1">
+        {profileHref ? (
+          <Link
+            href={profileHref}
             onClick={handleProfileView}
+            aria-label={`See ${name}'s sessions`}
+            className={cn(buttonVariants({ variant: 'outline' }), 'w-full sm:w-fit')}
           >
-            <Link href={`/mentor/${card.username}`} scroll={false}>
-              View Profile
-            </Link>
-          </Button>
+            See {firstName}&rsquo;s sessions
+            <ArrowUpRight data-icon="inline-end" />
+          </Link>
         ) : (
-          <Button variant="tinted" className="mt-3 w-full" disabled>
-            Profile Unavailable
+          <Button variant="outline" className="w-full sm:w-fit" disabled>
+            Profile unavailable
           </Button>
         )}
       </div>
-    </div>
+    </article>
   )
 }

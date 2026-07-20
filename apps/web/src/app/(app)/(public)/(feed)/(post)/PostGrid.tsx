@@ -1,118 +1,155 @@
 'use client'
 
 import { useInfiniteQuery } from '@tanstack/react-query'
-import { useEffect, useMemo } from 'react'
-import { useInView } from 'react-intersection-observer'
+import { RefreshCw, SearchX } from 'lucide-react'
+import Link from 'next/link'
+import { useMemo } from 'react'
 import { PostCard } from '~/app/(app)/(public)/(feed)/(post)/PostCard'
 import {
   fetchPostsAction,
   fetchPostsByFilterAction,
 } from '~/app/(app)/(public)/(feed)/(post)/actions'
 import type { Card } from '~/app/types'
-import { AspectRatio } from '~/components/ui/aspect-ratio'
-import { Skeleton } from '~/components/ui/skeleton'
+import { Button, buttonVariants } from '~/components/ui/button'
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '~/components/ui/empty'
 import { Spinner } from '~/components/ui/spinner'
+import { cn } from '~/lib/utils'
 
-// Define the PostGridProps interface
+const MENTOR_PAGE_SIZE = 6
+
+export interface PostsPage {
+  posts: Card[]
+  nextCursor?: string
+  hasMore: boolean
+}
+
 interface PostGridProps {
   schoolId: number | null
   majorId: number | null
   graduationYear: number | null
+  initialPage: PostsPage
+  discoveryReturnHref?: string
 }
 
-const PostGridSkeleton = () => {
-  return (
-    <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      {Array.from({ length: 12 }, (_, i) => (
-        <div key={i} className="flex flex-col space-y-3">
-          <AspectRatio ratio={16 / 9}>
-            <Skeleton className="h-full w-full rounded-lg" />
-          </AspectRatio>
-          <div className="space-y-2">
-            <Skeleton className="h-4 w-3/4" />
-            <Skeleton className="h-4 w-1/2" />
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-const PostsDisplay = ({ posts }: { posts: Card[] }) => {
-  return (
-    <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      {posts.map((card, index) => (
-        <PostCard key={`${card.id}-${index}`} card={card} />
-      ))}
-    </div>
-  )
-}
-
-// PostGrid component
-export const PostGrid = ({ schoolId, majorId, graduationYear }: PostGridProps) => {
-  const { ref, inView } = useInView()
-
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isError } =
+export const PostGrid = ({
+  schoolId,
+  majorId,
+  graduationYear,
+  initialPage,
+  discoveryReturnHref,
+}: PostGridProps) => {
+  const hasFilters = schoolId !== null || majorId !== null || graduationYear !== null
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isError, refetch } =
     useInfiniteQuery({
       queryKey: ['posts', { schoolId, majorId, graduationYear }],
       queryFn: async ({ pageParam }: { pageParam?: string }) => {
-        const limit = 12
-        if (schoolId || majorId || graduationYear) {
+        const limit = MENTOR_PAGE_SIZE
+        if (hasFilters) {
           return fetchPostsByFilterAction(schoolId, majorId, graduationYear, limit, pageParam)
         }
         return fetchPostsAction(limit, pageParam)
       },
       initialPageParam: undefined,
+      initialData: {
+        pages: [initialPage],
+        pageParams: [undefined],
+      },
+      staleTime: 60_000,
       getNextPageParam: lastPage => lastPage.nextCursor,
     })
 
-  useEffect(() => {
-    if (inView && hasNextPage && !isFetchingNextPage) {
-      void fetchNextPage()
-    }
-  }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage])
-
-  // Deduplicate posts across pages to prevent duplicates from cursor pagination overlaps
   const allPosts = useMemo(() => {
-    if (!data?.pages) return []
-
-    const uniquePostsMap = new Map<number, Card>()
+    const uniquePosts = new Map<number, Card>()
     for (const page of data.pages) {
-      for (const post of page.posts) {
-        uniquePostsMap.set(post.id, post)
-      }
+      for (const post of page.posts) uniquePosts.set(post.id, post)
     }
-    return Array.from(uniquePostsMap.values())
+    return Array.from(uniquePosts.values())
   }, [data])
-
-  if (isLoading) {
-    return (
-      <div className="container mx-auto min-h-[calc(100vh-4rem)] px-4 py-8">
-        <PostGridSkeleton />
-      </div>
-    )
-  }
 
   if (isError) {
     return (
-      <div className="container mx-auto min-h-[calc(100vh-4rem)] px-4 py-8 text-center text-red-500">
-        Error loading posts. Please try again later.
-      </div>
+      <Empty className="border-y" role="alert">
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <RefreshCw />
+          </EmptyMedia>
+          <EmptyTitle>Mentors did not load</EmptyTitle>
+          <EmptyDescription>Check your connection and try again.</EmptyDescription>
+        </EmptyHeader>
+        <EmptyContent>
+          <Button variant="outline" onClick={() => void refetch()}>
+            Try again
+          </Button>
+        </EmptyContent>
+      </Empty>
+    )
+  }
+
+  if (allPosts.length === 0) {
+    return (
+      <Empty className="border-y" role="status">
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <SearchX />
+          </EmptyMedia>
+          <EmptyTitle>
+            {hasFilters ? 'No students match these filters' : 'No mentor profiles yet'}
+          </EmptyTitle>
+          <EmptyDescription>
+            {hasFilters
+              ? 'Remove a filter to widen the list.'
+              : 'Read a college guide while students finish publishing their profiles.'}
+          </EmptyDescription>
+        </EmptyHeader>
+        <EmptyContent>
+          <Link
+            href={hasFilters ? '/find#mentors' : '/blog'}
+            className={cn(buttonVariants({ variant: 'outline' }))}
+          >
+            {hasFilters ? 'Clear all filters' : 'Read college guides'}
+          </Link>
+        </EmptyContent>
+      </Empty>
     )
   }
 
   return (
-    <div className="container mx-auto min-h-[calc(100vh-4rem)] px-4 py-8">
-      <PostsDisplay posts={allPosts} />
-      <div ref={ref} />
-      {isFetchingNextPage && (
-        <div className="flex justify-center">
-          <span className="flex items-center">
-            <Spinner className="mr-2" />
-            Loading...
-          </span>
+    <>
+      <p className="sr-only" aria-live="polite">
+        {allPosts.length} mentor {allPosts.length === 1 ? 'profile' : 'profiles'} shown.
+      </p>
+      <div
+        role="list"
+        aria-label="Student mentors"
+        data-mentor-layout="list"
+        data-mentor-count={allPosts.length}
+        className="divide-border divide-y border-y"
+      >
+        {allPosts.map(card => (
+          <PostCard key={card.id} card={card} discoveryReturnHref={discoveryReturnHref} />
+        ))}
+      </div>
+
+      {hasNextPage && (
+        <div className="mt-10 flex justify-center">
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={() => void fetchNextPage()}
+            disabled={isFetchingNextPage}
+          >
+            {isFetchingNextPage && <Spinner data-icon="inline-start" />}
+            {isFetchingNextPage ? 'Loading mentors' : 'Show more'}
+          </Button>
         </div>
       )}
-    </div>
+    </>
   )
 }

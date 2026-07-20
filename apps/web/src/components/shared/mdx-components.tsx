@@ -3,129 +3,178 @@ import Image from 'next/image'
 import Link from 'next/link'
 import type { AnchorHTMLAttributes, HTMLAttributes, ImgHTMLAttributes } from 'react'
 
-/**
- * Custom components for MDX rendering
- * These components replace default HTML elements with styled versions
- */
+import { Separator } from '~/components/ui/separator'
+import { cn } from '~/lib/utils'
+
 export const mdxComponents: MDXComponents = {
-  // Custom heading components with anchor links
-  h1: ({ children, ...props }: HTMLAttributes<HTMLHeadingElement>) => (
-    <h1 className="mt-8 mb-6 text-4xl font-bold tracking-tight" {...props}>
+  h1: ({ children, className, ...props }: HTMLAttributes<HTMLHeadingElement>) => (
+    <h1
+      className={cn(
+        'font-display mt-14 scroll-m-24 text-4xl leading-tight font-semibold tracking-[-0.035em] text-balance first:mt-0 sm:text-5xl',
+        className
+      )}
+      {...props}
+    >
       {children}
     </h1>
   ),
-  h2: ({ children, ...props }: HTMLAttributes<HTMLHeadingElement>) => (
-    <h2 className="mt-8 mb-4 text-3xl font-semibold tracking-tight" {...props}>
+  h2: ({ children, className, ...props }: HTMLAttributes<HTMLHeadingElement>) => (
+    <h2
+      className={cn(
+        'font-display mt-14 scroll-m-24 text-3xl leading-tight font-semibold tracking-[-0.03em] text-balance first:mt-0 sm:text-4xl',
+        className
+      )}
+      {...props}
+    >
       {children}
     </h2>
   ),
-  h3: ({ children, ...props }: HTMLAttributes<HTMLHeadingElement>) => (
-    <h3 className="mt-6 mb-3 text-2xl font-semibold tracking-tight" {...props}>
+  h3: ({ children, className, ...props }: HTMLAttributes<HTMLHeadingElement>) => (
+    <h3
+      className={cn(
+        'mt-10 scroll-m-24 text-xl leading-7 font-semibold tracking-[-0.02em] first:mt-0 sm:text-2xl',
+        className
+      )}
+      {...props}
+    >
       {children}
     </h3>
   ),
-  h4: ({ children, ...props }: HTMLAttributes<HTMLHeadingElement>) => (
-    <h4 className="mt-4 mb-2 text-xl font-semibold tracking-tight" {...props}>
+  h4: ({ children, className, ...props }: HTMLAttributes<HTMLHeadingElement>) => (
+    <h4 className={cn('mt-8 scroll-m-24 text-lg font-semibold first:mt-0', className)} {...props}>
       {children}
     </h4>
   ),
-  h5: ({ children, ...props }: HTMLAttributes<HTMLHeadingElement>) => (
-    <h5 className="mt-4 mb-2 text-lg font-semibold tracking-tight" {...props}>
+  h5: ({ children, className, ...props }: HTMLAttributes<HTMLHeadingElement>) => (
+    <h5 className={cn('mt-8 scroll-m-24 text-base font-semibold first:mt-0', className)} {...props}>
       {children}
     </h5>
   ),
-  h6: ({ children, ...props }: HTMLAttributes<HTMLHeadingElement>) => (
-    <h6 className="mt-4 mb-2 text-base font-semibold tracking-tight" {...props}>
+  h6: ({ children, className, ...props }: HTMLAttributes<HTMLHeadingElement>) => (
+    <h6
+      className={cn(
+        'text-muted-foreground mt-8 scroll-m-24 text-sm font-semibold first:mt-0',
+        className
+      )}
+      {...props}
+    >
       {children}
     </h6>
   ),
-
-  // Paragraph
-  p: ({ children, ...props }: HTMLAttributes<HTMLParagraphElement>) => (
-    <p className="mb-4 leading-7 [&:not(:first-child)]:mt-6" {...props}>
+  p: ({ children, className, ...props }: HTMLAttributes<HTMLParagraphElement>) => (
+    <p
+      className={cn('text-foreground/90 mt-5 text-[1.0625rem] leading-8 first:mt-0', className)}
+      {...props}
+    >
       {children}
     </p>
   ),
+  a: ({
+    href,
+    children,
+    className,
+    target,
+    rel,
+    ...props
+  }: AnchorHTMLAttributes<HTMLAnchorElement>) => {
+    const isExternal = /^https?:\/\//.test(href ?? '')
+    const isHeadingAnchor = className?.split(' ').includes('anchor-link')
+    const linkClassName = cn(
+      isHeadingAnchor
+        ? 'text-inherit no-underline'
+        : 'text-primary font-medium underline decoration-current/35 underline-offset-4 transition-colors hover:decoration-current',
+      className
+    )
 
-  // Links
-  a: ({ href, children, ...props }: AnchorHTMLAttributes<HTMLAnchorElement>) => {
-    const isExternal = href?.startsWith('http')
-    const Component = isExternal ? 'a' : Link
+    if (!href) {
+      return (
+        <a className={linkClassName} target={target} rel={rel} {...props}>
+          {children}
+        </a>
+      )
+    }
+
+    if (isExternal) {
+      return (
+        <a
+          href={href}
+          className={linkClassName}
+          target={target ?? '_blank'}
+          rel={rel ?? 'noopener noreferrer'}
+          {...props}
+        >
+          {children}
+        </a>
+      )
+    }
 
     return (
-      <Component
-        href={href ?? '#'}
-        className="text-primary hover:text-primary/80 font-medium underline underline-offset-4"
-        target={isExternal ? '_blank' : undefined}
-        rel={isExternal ? 'noopener noreferrer' : undefined}
-        {...props}
-      >
+      <Link href={href} className={linkClassName} target={target} rel={rel} {...props}>
         {children}
-      </Component>
+      </Link>
     )
   },
-
-  // Lists
-  ul: ({ children, ...props }: HTMLAttributes<HTMLUListElement>) => (
-    <ul className="my-6 ml-6 list-disc space-y-2 [&>li]:mt-2" {...props}>
+  ul: ({ children, className, ...props }: HTMLAttributes<HTMLUListElement>) => (
+    <ul
+      className={cn(
+        'text-foreground/90 marker:text-muted-foreground my-6 ml-5 flex list-disc flex-col gap-2 text-[1.0625rem] leading-8',
+        className
+      )}
+      {...props}
+    >
       {children}
     </ul>
   ),
-  ol: ({ children, ...props }: HTMLAttributes<HTMLOListElement>) => (
-    <ol className="my-6 ml-6 list-decimal space-y-2 [&>li]:mt-2" {...props}>
+  ol: ({ children, className, ...props }: HTMLAttributes<HTMLOListElement>) => (
+    <ol
+      className={cn(
+        'text-foreground/90 marker:text-muted-foreground my-6 ml-5 flex list-decimal flex-col gap-2 text-[1.0625rem] leading-8',
+        className
+      )}
+      {...props}
+    >
       {children}
     </ol>
   ),
-  li: ({ children, ...props }: HTMLAttributes<HTMLLIElement>) => (
-    <li className="leading-7" {...props}>
+  li: ({ children, className, ...props }: HTMLAttributes<HTMLLIElement>) => (
+    <li className={cn('pl-1 [&>ol]:my-3 [&>ul]:my-3', className)} {...props}>
       {children}
     </li>
   ),
-
-  // Blockquote
-  blockquote: ({ children, ...props }: HTMLAttributes<HTMLQuoteElement>) => (
+  blockquote: ({ children, className, ...props }: HTMLAttributes<HTMLQuoteElement>) => (
     <blockquote
-      className="border-primary/40 text-muted-foreground [&>*]:text-muted-foreground border-l-4 pl-6 italic"
+      className={cn(
+        'border-primary [&>p]:font-display [&>p]:text-foreground my-9 border-l-2 pl-5 sm:pl-6 [&>p]:mt-0 [&>p]:text-xl [&>p]:leading-8 [&>p]:font-medium sm:[&>p]:text-2xl',
+        className
+      )}
       {...props}
     >
       {children}
     </blockquote>
   ),
-
-  // Code blocks
-  code: ({ children, className, ...props }: HTMLAttributes<HTMLElement>) => {
-    const isInline = !className
-    if (isInline) {
-      return (
-        <code
-          className="bg-muted relative rounded px-[0.3rem] py-[0.2rem] font-mono text-sm font-semibold"
-          {...props}
-        >
-          {children}
-        </code>
-      )
-    }
-    return (
-      <code className={className} {...props}>
-        {children}
-      </code>
-    )
-  },
-  pre: ({ children, ...props }: HTMLAttributes<HTMLPreElement>) => (
+  code: ({ children, className, ...props }: HTMLAttributes<HTMLElement>) => (
+    <code
+      className={cn('bg-muted rounded px-1.5 py-0.5 font-mono text-[0.9em] font-medium', className)}
+      {...props}
+    >
+      {children}
+    </code>
+  ),
+  pre: ({ children, className, ...props }: HTMLAttributes<HTMLPreElement>) => (
     <pre
-      className="bg-muted mt-6 mb-4 overflow-x-auto rounded-lg border p-4 font-mono text-sm"
+      className={cn(
+        'bg-foreground text-background my-8 overflow-x-auto rounded-lg p-5 font-mono text-sm leading-6 [&>code]:rounded-none [&>code]:bg-transparent [&>code]:p-0 [&>code]:font-normal [&>code.hljs]:p-0',
+        className
+      )}
       {...props}
     >
       {children}
     </pre>
   ),
-
-  // Images with Next.js Image optimization
-  // All images use next/image for automatic optimization
-  // Configure allowed domains in next.config.js under images.remotePatterns
   img: ({
     src,
     alt,
+    className,
     width: _width,
     height: _height,
     ..._props
@@ -136,45 +185,49 @@ export const mdxComponents: MDXComponents = {
       <Image
         src={src}
         alt={alt ?? ''}
-        width={800}
-        height={450}
-        className="my-8 rounded-lg border"
-        sizes="(max-width: 768px) 100vw, 800px"
+        width={1200}
+        height={675}
+        className={cn('my-10 h-auto w-full rounded-xl object-cover', className)}
+        sizes="(max-width: 768px) 100vw, 672px"
       />
     )
   },
-
-  // Horizontal rule
-  hr: (props: HTMLAttributes<HTMLHRElement>) => <hr className="border-border my-8" {...props} />,
-
-  // Table components
-  table: ({ children, ...props }: HTMLAttributes<HTMLTableElement>) => (
-    <div className="my-6 w-full overflow-y-auto">
-      <table className="border-border w-full border-collapse border" {...props}>
+  hr: () => <Separator className="bg-foreground/20 my-12" />,
+  table: ({ children, className, ...props }: HTMLAttributes<HTMLTableElement>) => (
+    <div className="my-8 w-full overflow-x-auto">
+      <table
+        className={cn('w-full min-w-[36rem] border-collapse text-left text-sm', className)}
+        {...props}
+      >
         {children}
       </table>
     </div>
   ),
-  thead: ({ children, ...props }: HTMLAttributes<HTMLTableSectionElement>) => (
-    <thead className="bg-muted" {...props}>
+  thead: ({ children, className, ...props }: HTMLAttributes<HTMLTableSectionElement>) => (
+    <thead className={cn('border-foreground/35 border-b-2', className)} {...props}>
       {children}
     </thead>
   ),
-  tbody: ({ children, ...props }: HTMLAttributes<HTMLTableSectionElement>) => (
-    <tbody {...props}>{children}</tbody>
+  tbody: ({ children, className, ...props }: HTMLAttributes<HTMLTableSectionElement>) => (
+    <tbody className={className} {...props}>
+      {children}
+    </tbody>
   ),
-  tr: ({ children, ...props }: HTMLAttributes<HTMLTableRowElement>) => (
-    <tr className="border-border border-b" {...props}>
+  tr: ({ children, className, ...props }: HTMLAttributes<HTMLTableRowElement>) => (
+    <tr className={cn('border-foreground/18 border-b', className)} {...props}>
       {children}
     </tr>
   ),
-  th: ({ children, ...props }: HTMLAttributes<HTMLTableCellElement>) => (
-    <th className="border-border border px-4 py-2 text-left font-semibold" {...props}>
+  th: ({ children, className, ...props }: HTMLAttributes<HTMLTableCellElement>) => (
+    <th className={cn('px-3 py-3 font-semibold first:pl-0 last:pr-0', className)} {...props}>
       {children}
     </th>
   ),
-  td: ({ children, ...props }: HTMLAttributes<HTMLTableCellElement>) => (
-    <td className="border-border border px-4 py-2" {...props}>
+  td: ({ children, className, ...props }: HTMLAttributes<HTMLTableCellElement>) => (
+    <td
+      className={cn('text-foreground/85 px-3 py-3 align-top first:pl-0 last:pr-0', className)}
+      {...props}
+    >
       {children}
     </td>
   ),

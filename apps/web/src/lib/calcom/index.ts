@@ -1,313 +1,559 @@
 import 'server-only'
 
-import { env } from '~/env'
-import { ExternalApiError } from '~/lib/auth/auth-utils'
+import { z } from 'zod'
+import { CALCOM_API_VERSIONS, calcomRequest } from '~/lib/calcom/client'
 import {
-  CreateCalcomUserResponseSchema,
-  type CreateCalcomUserInput,
-  type CreateCalcomUserResponse,
-  type UpdateCalcomUserInput,
+  CalcomSafeMeetingUrlSchema,
+  GetCalcomSchedulesResponseSchema,
+  type CalcomSchedule,
 } from '~/lib/calcom/schemas'
-import { storeCalcomTokensForUser } from '~/lib/services/calcom-tokens-service'
+import { ExternalApiError } from '~/lib/errors'
 
-/**
- * Add user to college-mentors team (core implementation)
- */
-export const createCalcomUser = async (
-  data: CreateCalcomUserInput & { userId?: string }
-): Promise<{
-  calcomUserId: number
-  username: string
-  accessToken: string
-}> => {
-  try {
-    const { email, name, timeZone, userId } = data
+const SuccessResponseSchema = z.object({ status: z.literal('success') })
 
-    // Step 1: Create managed user in Cal.com
-    const userResponse = await fetch(
-      `${env.NEXT_PUBLIC_CALCOM_API_URL}/oauth-clients/${env.NEXT_PUBLIC_X_CAL_ID}/users`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-cal-secret-key': env.X_CAL_SECRET_KEY,
-        },
-        body: JSON.stringify({
-          email,
-          name,
-          timeZone,
-          timeFormat: 12,
-          weekStart: 'Sunday',
-        }),
-      }
+const CalcomOptionalEmailSchema = z.preprocess(
+  value => (typeof value === 'string' ? value.trim() || undefined : value),
+  z.email().nullish()
+)
+
+const CalcomEventTypeLocationSchema = z
+  .object({
+    type: z.string().trim().min(1),
+  })
+  .passthrough()
+
+const CalcomBookingLookupSchema = z.object({
+  status: z.literal('success'),
+  data: z.array(
+    z.object({
+      id: z.number().int(),
+      uid: z.string(),
+      status: z.string(),
+      start: z.iso.datetime(),
+      end: z.iso.datetime(),
+      metadata: z.record(z.string(), z.unknown()).default({}),
+    })
+  ),
+  pagination: z.object({
+    nextCursor: z.string().nullable(),
+    hasMore: z.boolean(),
+  }),
+})
+
+const MAX_CALCOM_BOOKING_RECONCILIATION_PAGES = 10
+const TERMINAL_CALCOM_BOOKING_STATUSES = new Set(['cancelled', 'rejected'])
+
+export type CalcomBookingIdentity = {
+  id: number
+  uid: string
+  start: string
+  end: string
+  duration: number
+  meetingUrl?: string | null
+  rescheduledFromUid?: string | null
+}
+
+const CalcomEventTypeCompatibilityDataSchema = z.object({
+  lengthInMinutes: z.number().int().positive(),
+  requiresBookerEmailVerification: z.boolean(),
+  bookingRequiresAuthentication: z.boolean(),
+  price: z.number().nonnegative(),
+  currency: z.string().trim().min(1),
+  locations: z.array(CalcomEventTypeLocationSchema),
+  isInstantEvent: z.boolean().default(false),
+  seatsPerTimeSlot: z.number().int().positive().nullish(),
+  seats: z
+    .object({ seatsPerTimeSlot: z.number().int().positive().optional() })
+    .passthrough()
+    .nullish(),
+  recurrence: z.union([z.null(), z.object({ disabled: z.boolean().optional() }).passthrough()]),
+  confirmationPolicy: z.record(z.string(), z.unknown()),
+  bookingFields: z.array(
+    z.object({
+      slug: z.string(),
+      required: z.boolean(),
+      isDefault: z.boolean(),
+    })
+  ),
+})
+
+const CalcomEventTypeBookingCompatibilitySchema = z.object({
+  status: z.literal('success'),
+  data: CalcomEventTypeCompatibilityDataSchema,
+})
+
+// Discuno's booking flow explicitly supplies these required fields. Any other
+// required Cal.com booking question must fail closed until the Discuno form
+// captures and forwards a response for it.
+const SUPPORTED_REQUIRED_CALCOM_BOOKING_FIELDS = new Set([
+  'name',
+  'email',
+  'phone',
+  'attendeePhoneNumber',
+  // Cal.com now exposes the default booking title as a required field. Discuno
+  // captures the student's question and forwards it through
+  // bookingFieldsResponses instead of asking mentors to remove the field.
+  'title',
+])
+const BOOKER_SUPPLIED_LOCATION_TYPES = new Set([
+  'attendeeaddress',
+  'attendee-address',
+  'attendee_address',
+  'attendeephone',
+  'attendee-phone',
+  'attendee_phone',
+  'attendeedefined',
+  'attendee-defined',
+  'attendee_defined',
+  // `unknown` is an event-type output placeholder, not a valid create-booking
+  // input. Never forward it into a paid booking attempt.
+  'unknown',
+])
+
+export type CalcomBookingCompatibilityReason =
+  | 'email_verification_required'
+  | 'cal_authentication_required'
+  | 'recurring_event_type'
+  | 'requires_confirmation'
+  | 'unsupported_required_booking_fields'
+  | 'instant_event_type'
+  | 'seated_event_type'
+  | 'cal_managed_payment'
+  | 'location_selection_required'
+  | 'booker_location_required'
+
+export type CalcomBookingCompatibility = {
+  compatible: boolean
+  reasons: CalcomBookingCompatibilityReason[]
+}
+
+const assessCalcomBookingCompatibility = (
+  data: z.infer<typeof CalcomEventTypeCompatibilityDataSchema>
+): CalcomBookingCompatibility => {
+  const reasons: CalcomBookingCompatibilityReason[] = []
+
+  if (data.requiresBookerEmailVerification) reasons.push('email_verification_required')
+  if (data.bookingRequiresAuthentication) reasons.push('cal_authentication_required')
+  if (data.isInstantEvent) reasons.push('instant_event_type')
+  if (data.seatsPerTimeSlot || data.seats?.seatsPerTimeSlot) reasons.push('seated_event_type')
+  if (data.price > 0) reasons.push('cal_managed_payment')
+  if (data.locations.length > 1) reasons.push('location_selection_required')
+  if (
+    data.locations.some(location => BOOKER_SUPPLIED_LOCATION_TYPES.has(location.type.toLowerCase()))
+  ) {
+    reasons.push('booker_location_required')
+  }
+  if (data.recurrence && data.recurrence.disabled !== true) reasons.push('recurring_event_type')
+  if (data.confirmationPolicy.disabled !== true) reasons.push('requires_confirmation')
+  if (
+    data.bookingFields.some(
+      field =>
+        field.required &&
+        !(field.isDefault && SUPPORTED_REQUIRED_CALCOM_BOOKING_FIELDS.has(field.slug))
     )
+  ) {
+    reasons.push('unsupported_required_booking_fields')
+  }
 
-    if (!userResponse.ok) {
-      const errorText = await userResponse.text()
-      console.error('Cal.com user creation failed:', userResponse.status, errorText)
-      throw new ExternalApiError(`Cal.com API error: ${userResponse.status} - ${errorText}`)
-    }
+  return { compatible: reasons.length === 0, reasons }
+}
 
-    const userResponseData: CreateCalcomUserResponse = await userResponse.json()
+/**
+ * Discuno's custom checkout currently supplies Cal.com's standard attendee fields.
+ * Reject incompatible event types before a booking attempt (and, critically, before
+ * creating a paid Checkout Session) instead of charging for an unfulfillable booking.
+ */
+export const getCalcomBookingCompatibility = async (
+  eventTypeId: number,
+  mentorUserId: string
+): Promise<{ compatible: boolean; reasons: CalcomBookingCompatibilityReason[] }> => {
+  return (await getCalcomBookingConfiguration(eventTypeId, mentorUserId)).compatibility
+}
 
-    const parsedResponse = CreateCalcomUserResponseSchema.safeParse(userResponseData)
+const getCalcomBookingConfiguration = async (eventTypeId: number, mentorUserId: string) => {
+  const response = await calcomRequest<unknown>(`/event-types/${eventTypeId}`, {
+    apiVersion: CALCOM_API_VERSIONS.eventTypes,
+    userId: mentorUserId,
+  })
+  const { data } = CalcomEventTypeBookingCompatibilitySchema.parse(response)
+  return {
+    compatibility: assessCalcomBookingCompatibility(data),
+    lengthInMinutes: data.lengthInMinutes,
+    location: data.locations.length === 1 ? data.locations[0] : undefined,
+  }
+}
 
-    if (!parsedResponse.success) {
-      console.error('Invalid Cal.com user creation response:', parsedResponse.error.flatten())
-      throw new ExternalApiError('Invalid Cal.com user creation response')
-    }
+/** Reconcile an ambiguous create response using unique Discuno metadata. */
+const findCalcomBookingByMetadata = async ({
+  metadataKey,
+  metadataValue,
+  attendeeEmail,
+  eventTypeId,
+  mentorUserId,
+}: {
+  metadataKey: 'paymentId' | 'bookingAttemptId'
+  metadataValue: string
+  attendeeEmail: string
+  eventTypeId: number
+  mentorUserId: string
+}): Promise<(CalcomBookingIdentity & { status: string }) | null> => {
+  let cursor: string | null = null
 
-    const calcomUser = parsedResponse.data.data
+  for (let page = 0; page < MAX_CALCOM_BOOKING_RECONCILIATION_PAGES; page += 1) {
+    const query = new URLSearchParams({
+      attendeeEmail,
+      eventTypeId: eventTypeId.toString(),
+      limit: '100',
+    })
+    if (cursor) query.set('cursor', cursor)
 
-    // Step 2: Add user to college-mentors team
-    console.log(`Adding user ${calcomUser.user.id} to college-mentors team...`)
-    const membershipResponse = await fetch(
-      `${env.NEXT_PUBLIC_CALCOM_API_URL}/organizations/${env.CALCOM_ORG_ID}/teams/${env.COLLEGE_MENTOR_TEAM_ID}/memberships`,
-      {
-        method: 'POST',
-        headers: {
-          'x-cal-secret-key': env.X_CAL_SECRET_KEY,
-          'x-cal-client-id': env.NEXT_PUBLIC_X_CAL_ID,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          role: 'MEMBER',
-          accepted: true,
-          disableImpersonation: false,
-          userId: calcomUser.user.id,
-        }),
+    const response = await calcomRequest<unknown>(`/bookings?${query}`, {
+      apiVersion: CALCOM_API_VERSIONS.bookingList,
+      userId: mentorUserId,
+    })
+    const parsed = CalcomBookingLookupSchema.parse(response)
+    const match = parsed.data.find(item => item.metadata[metadataKey] === metadataValue)
+    if (match) {
+      if (TERMINAL_CALCOM_BOOKING_STATUSES.has(match.status.toLowerCase())) {
+        throw new ExternalApiError('A matching Cal.com booking is already in a terminal state')
       }
-    )
-
-    if (!membershipResponse.ok) {
-      const errorText = await membershipResponse.text()
-      console.error(
-        `Failed to add user ${calcomUser.user.id} to college-mentors team: ${membershipResponse.status} ${errorText}`
-      )
-
-      throw new ExternalApiError(
-        `Cal.com team membership creation failed: ${membershipResponse.status} - ${errorText}`
-      )
-    } else {
-      const membershipData = await membershipResponse.json()
-      console.log(`Successfully added user ${calcomUser.user.id} to college-mentors team`)
-      console.log('Membership data:', membershipData)
+      const duration =
+        (new Date(match.end).getTime() - new Date(match.start).getTime()) / (60 * 1000)
+      if (!Number.isSafeInteger(duration) || duration <= 0) {
+        throw new ExternalApiError('A matching Cal.com booking has an invalid duration')
+      }
+      return { ...match, duration }
     }
 
-    // Step 3: Store Cal.com tokens if userId is provided
-    if (userId) {
-      await storeCalcomTokensForUser({
-        userId,
-        calcomUserId: calcomUser.user.id,
-        calcomUsername: calcomUser.user.username,
-        accessToken: calcomUser.accessToken,
-        refreshToken: calcomUser.refreshToken,
-        accessTokenExpiresAt: new Date(calcomUser.accessTokenExpiresAt),
-        refreshTokenExpiresAt: new Date(calcomUser.refreshTokenExpiresAt),
-      })
-
-      console.log(`Stored Cal.com tokens for user ${userId}`)
+    if (!parsed.pagination.hasMore) return null
+    if (!parsed.pagination.nextCursor || parsed.pagination.nextCursor === cursor) {
+      throw new ExternalApiError('Cal.com returned an invalid booking pagination cursor')
     }
-
-    return {
-      calcomUserId: calcomUser.user.id,
-      username: calcomUser.user.username,
-      accessToken: calcomUser.accessToken,
-    }
-  } catch (error) {
-    console.error('Error in createCalcomUser:', error)
-    throw error
-  }
-}
-
-/**
- * Update Cal.com user (core implementation)
- */
-export const updateCalcomUser = async (data: UpdateCalcomUserInput): Promise<void> => {
-  const { calcomUserId, email, ...rest } = data
-
-  const response = await fetch(
-    `${env.NEXT_PUBLIC_CALCOM_API_URL}/oauth-clients/${env.NEXT_PUBLIC_X_CAL_ID}/users/${calcomUserId}`,
-    {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-cal-secret-key': env.X_CAL_SECRET_KEY,
-      },
-      body: JSON.stringify({ email, ...rest }),
-    }
-  )
-
-  const responseData = await response.json()
-
-  if (responseData.status !== 'success') {
-    throw new ExternalApiError(`Cal.com API error: ${responseData.error}`)
+    cursor = parsed.pagination.nextCursor
   }
 
-  // User's .edu email is already verified through the auth process
+  // A bounded scan must fail closed. Posting after an incomplete reconciliation
+  // could create a duplicate booking beyond the scanned window.
+  throw new ExternalApiError('Cal.com booking reconciliation exceeded its safe page limit')
 }
 
-/**
- * Delete Cal.com user (core implementation)
- */
-export const deleteCalcomUser = async (calcomUserId: number): Promise<void> => {
-  const response = await fetch(
-    `${env.NEXT_PUBLIC_CALCOM_API_URL}/oauth-clients/${env.NEXT_PUBLIC_X_CAL_ID}/users/${calcomUserId}`,
-    {
-      method: 'DELETE',
-      headers: {
-        'x-cal-secret-key': env.X_CAL_SECRET_KEY,
-      },
-    }
-  )
+export const findCalcomBookingByPaymentId = async ({
+  paymentId,
+  attendeeEmail,
+  eventTypeId,
+  mentorUserId,
+}: {
+  paymentId: number
+  attendeeEmail: string
+  eventTypeId: number
+  mentorUserId: string
+}) =>
+  findCalcomBookingByMetadata({
+    metadataKey: 'paymentId',
+    metadataValue: paymentId.toString(),
+    attendeeEmail,
+    eventTypeId,
+    mentorUserId,
+  })
 
-  if (!response.ok) {
-    const errorText = await response.text()
-    console.error(`Cal.com user deletion failed: ${response.status} ${errorText}`)
-    throw new ExternalApiError(`Cal.com API error: ${response.status} - ${errorText}`)
-  }
-
-  console.log(`Successfully deleted Cal.com user ${calcomUserId}`)
-}
-/**
- * Create a booking via Cal.com API
- */
+/** Create a booking for the connected mentor. Paid retries first reconcile by payment ID. */
 export const createCalcomBooking = async (input: {
   calcomEventTypeId: number
   start: string
   attendeeName: string
   attendeeEmail: string
   attendeePhone?: string
+  bookingTitle: string
   timeZone: string
   paymentId?: number
   mentorUserId: string
-}): Promise<{ id: number; uid: string }> => {
-  const {
-    calcomEventTypeId,
-    start,
-    attendeeName,
-    attendeeEmail,
-    attendeePhone,
-    timeZone,
-    paymentId,
-    mentorUserId,
-  } = input
-
-  const calcomPayload = {
-    start, // ISO string in UTC
-    attendee: {
-      name: attendeeName,
-      email: attendeeEmail,
-      phoneNumber: attendeePhone,
-      timeZone: timeZone,
-      language: 'en', // Default language
-    },
-    eventTypeId: calcomEventTypeId,
-    metadata: {
-      paymentId: paymentId?.toString() ?? '',
-      mentorUserId,
-    },
+  actorUserId?: string
+  bookingAttemptId?: string
+  lengthInMinutes?: number
+  /** A prior POST crossed the network boundary; a miss is reconciliation-only. */
+  providerMutationMayBeInFlight?: boolean
+  onBeforeCreateAttempt?: () => Promise<void>
+  onDefinitiveCreateRejection?: () => Promise<void>
+}): Promise<CalcomBookingIdentity> => {
+  const attendeePhone = input.attendeePhone?.trim()
+  const bookingTitle = input.bookingTitle.trim()
+  if (bookingTitle.length < 3 || bookingTitle.length > 200) {
+    throw new ExternalApiError('Cal.com booking title must be between 3 and 200 characters')
+  }
+  const reconciliationKey = input.paymentId
+    ? { metadataKey: 'paymentId' as const, metadataValue: input.paymentId.toString() }
+    : input.bookingAttemptId
+      ? { metadataKey: 'bookingAttemptId' as const, metadataValue: input.bookingAttemptId }
+      : null
+  if (reconciliationKey) {
+    const existing = await findCalcomBookingByMetadata({
+      ...reconciliationKey,
+      attendeeEmail: input.attendeeEmail,
+      eventTypeId: input.calcomEventTypeId,
+      mentorUserId: input.mentorUserId,
+    })
+    if (existing) {
+      if (new Date(existing.start).toISOString() !== new Date(input.start).toISOString()) {
+        throw new ExternalApiError('A matching Cal.com booking has conflicting schedule details')
+      }
+      if (
+        input.lengthInMinutes !== undefined &&
+        new Date(existing.end).getTime() - new Date(existing.start).getTime() !==
+          input.lengthInMinutes * 60 * 1000
+      ) {
+        throw new ExternalApiError('A matching Cal.com booking has a conflicting duration')
+      }
+      return existing
+    }
   }
 
-  const response = await fetch(`${env.NEXT_PUBLIC_CALCOM_API_URL}/bookings`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'cal-api-version': '2024-08-13',
-      'x-cal-client-id': env.NEXT_PUBLIC_X_CAL_ID,
-      'x-cal-secret-key': env.X_CAL_SECRET_KEY,
-    },
-    body: JSON.stringify(calcomPayload),
-  })
-
-  if (!response.ok) {
-    const err = await response.text()
-    throw new ExternalApiError(`Failed to create Cal.com booking: ${response.status} ${err}`)
+  if (input.providerMutationMayBeInFlight) {
+    throw new ExternalApiError(
+      'A prior Cal.com booking create attempt still requires provider reconciliation'
+    )
   }
 
-  const data = await response.json()
-
-  if (data.status === 'success' && data.data?.uid) {
-    return { id: data.data.id, uid: data.data.uid }
+  const configuration = await getCalcomBookingConfiguration(
+    input.calcomEventTypeId,
+    input.mentorUserId
+  )
+  const { compatibility } = configuration
+  if (!compatibility.compatible) {
+    throw new ExternalApiError(
+      `Cal.com event type is incompatible with Discuno booking: ${compatibility.reasons.join(', ')}`
+    )
+  }
+  if (
+    input.lengthInMinutes !== undefined &&
+    configuration.lengthInMinutes !== input.lengthInMinutes
+  ) {
+    throw new ExternalApiError('The Cal.com event duration changed before booking')
   }
 
-  throw new ExternalApiError(data.error ?? 'Unknown Cal.com booking error')
+  const createAttemptState = { marked: false }
+  let response: unknown
+  try {
+    response = await calcomRequest<unknown>('/bookings', {
+      method: 'POST',
+      apiVersion: CALCOM_API_VERSIONS.bookings,
+      userId: input.mentorUserId,
+      onBeforeRequest: input.onBeforeCreateAttempt
+        ? async () => {
+            await input.onBeforeCreateAttempt?.()
+            createAttemptState.marked = true
+          }
+        : undefined,
+      onDefinitiveResponseBeforeRetry: input.onDefinitiveCreateRejection
+        ? async () => {
+            await input.onDefinitiveCreateRejection?.()
+            createAttemptState.marked = false
+          }
+        : undefined,
+      body: JSON.stringify({
+        start: input.start,
+        attendee: {
+          name: input.attendeeName,
+          email: input.attendeeEmail,
+          ...(attendeePhone ? { phoneNumber: attendeePhone } : {}),
+          timeZone: input.timeZone,
+          language: 'en',
+        },
+        bookingFieldsResponses: { title: bookingTitle },
+        eventTypeId: input.calcomEventTypeId,
+        // `lengthInMinutes` is only valid for Cal.com event types configured
+        // with multiple selectable durations. Discuno currently supports the
+        // fixed event duration, which we verify against the Checkout snapshot
+        // above and again against the create response below. Let Cal.com apply
+        // that fixed duration instead of sending the variable-duration field.
+        ...(configuration.location ? { location: configuration.location } : {}),
+        metadata: {
+          ...(input.paymentId !== undefined ? { paymentId: input.paymentId.toString() } : {}),
+          mentorUserId: input.mentorUserId,
+          ...(input.actorUserId ? { actorUserId: input.actorUserId } : {}),
+          ...(input.bookingAttemptId ? { bookingAttemptId: input.bookingAttemptId } : {}),
+        },
+      }),
+    })
+  } catch (error) {
+    const providerStatus = error instanceof ExternalApiError ? error.providerStatus : undefined
+    const isDefinitiveProviderRejection =
+      createAttemptState.marked &&
+      typeof providerStatus === 'number' &&
+      providerStatus >= 400 &&
+      providerStatus < 500 &&
+      providerStatus !== 408
+    if (isDefinitiveProviderRejection) {
+      await input.onDefinitiveCreateRejection?.()
+    }
+    throw error
+  }
+  const parsed = z
+    .object({
+      status: z.literal('success'),
+      data: z.object({
+        id: z.number().int(),
+        uid: z.string(),
+        start: z.iso.datetime(),
+        end: z.iso.datetime(),
+        duration: z.number().int().positive(),
+        meetingUrl: CalcomSafeMeetingUrlSchema,
+      }),
+    })
+    .parse(response)
+  if (new Date(parsed.data.start).toISOString() !== new Date(input.start).toISOString()) {
+    throw new ExternalApiError('Cal.com created the booking at an unexpected start time')
+  }
+  if (
+    input.lengthInMinutes !== undefined &&
+    (parsed.data.duration !== input.lengthInMinutes ||
+      new Date(parsed.data.end).getTime() - new Date(parsed.data.start).getTime() !==
+        input.lengthInMinutes * 60 * 1000)
+  ) {
+    throw new ExternalApiError('Cal.com created the booking with an unexpected duration')
+  }
+  return parsed.data
 }
 
-/**
- * Fetch Cal.com event types for any username
- */
-export const fetchCalcomEventTypesByUsername = async (
-  username: string,
-  accessToken: string
+/** Fetch event types for the connected regular Cal.com account. */
+export const fetchCalcomEventTypesForUser = async (
+  userId: string,
+  options: { accessToken?: string } = {}
 ): Promise<
   Array<{
     id: number
     title: string
     lengthInMinutes: number
     description?: string
+    bookingCompatibility: CalcomBookingCompatibility
   }>
 > => {
-  const response = await fetch(
-    `${env.NEXT_PUBLIC_CALCOM_API_URL}/event-types?username=${encodeURIComponent(username)}`,
-    {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'cal-api-version': '2024-06-14',
-      },
-    }
-  )
+  const response = await calcomRequest<unknown>('/event-types', {
+    apiVersion: CALCOM_API_VERSIONS.eventTypes,
+    ...(options.accessToken ? { accessToken: options.accessToken } : { userId }),
+  })
+  const parsed = z
+    .object({
+      status: z.literal('success'),
+      data: z.array(
+        z
+          .object({
+            id: z.number().int(),
+            title: z.string(),
+            lengthInMinutes: z.number().int(),
+            description: z.string().nullable().optional(),
+          })
+          .extend(CalcomEventTypeCompatibilityDataSchema.shape)
+      ),
+    })
+    .parse(response)
 
-  if (!response.ok) {
-    const errorText = await response.text()
-    throw new ExternalApiError(
-      `Failed to fetch event types from Cal.com: ${response.status} ${errorText}`
-    )
-  }
-
-  const data = await response.json()
-
-  if (data.status !== 'success' || !Array.isArray(data.data)) {
-    throw new ExternalApiError('Invalid Cal.com event types response')
-  }
-
-  return data.data as Array<{
-    id: number
-    title: string
-    lengthInMinutes: number
-    description?: string
-  }>
+  return parsed.data.map(eventType => ({
+    id: eventType.id,
+    title: eventType.title,
+    lengthInMinutes: eventType.lengthInMinutes,
+    description: eventType.description ?? undefined,
+    bookingCompatibility: assessCalcomBookingCompatibility(eventType),
+  }))
 }
 
-/**
- * Mark a booking as a no-show in Cal.com
- */
-export const markAsNoShow = async (
-  bookingUid: string,
-  attendees: { email: string; absent: boolean }[],
-  host: boolean
+export const getCalcomSchedules = async (userId: string): Promise<CalcomSchedule[]> => {
+  const response = await calcomRequest<unknown>('/schedules', {
+    apiVersion: CALCOM_API_VERSIONS.schedules,
+    userId,
+  })
+  return GetCalcomSchedulesResponseSchema.parse(response).data
+}
+
+export const updateCalcomSchedule = async (
+  userId: string,
+  scheduleId: number,
+  payload: Pick<CalcomSchedule, 'availability' | 'overrides'>
 ): Promise<void> => {
-  const response = await fetch(
-    `${env.NEXT_PUBLIC_CALCOM_API_URL}/bookings/${bookingUid}/mark-absent`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'cal-api-version': '2024-08-13',
-        Authorization: `Bearer ${env.X_CAL_SECRET_KEY}`,
-      },
-      body: JSON.stringify({
-        attendees,
-        host,
-      }),
-    }
-  )
+  const response = await calcomRequest<unknown>(`/schedules/${scheduleId}`, {
+    method: 'PATCH',
+    apiVersion: CALCOM_API_VERSIONS.schedules,
+    userId,
+    body: JSON.stringify(payload),
+  })
+  SuccessResponseSchema.parse(response)
+}
 
-  if (!response.ok) {
-    const errorText = await response.text()
-    console.error(`Cal.com mark as no-show failed: ${response.status} ${errorText}`)
-    throw new ExternalApiError(`Cal.com API error: ${response.status} - ${errorText}`)
-  }
+export const cancelCalcomBooking = async (
+  mentorUserId: string,
+  bookingUid: string,
+  cancellationReason: string
+): Promise<void> => {
+  const response = await calcomRequest<unknown>(`/bookings/${bookingUid}/cancel`, {
+    method: 'POST',
+    apiVersion: CALCOM_API_VERSIONS.bookings,
+    userId: mentorUserId,
+    body: JSON.stringify({ cancellationReason }),
+  })
+  SuccessResponseSchema.parse(response)
+}
 
-  console.log(`Successfully marked booking ${bookingUid} as no-show in Cal.com`)
+const CalcomBookingDetailsSchema = z.object({
+  id: z.number().int().positive(),
+  uid: z.string(),
+  status: z.string(),
+  start: z.iso.datetime(),
+  end: z.iso.datetime(),
+  duration: z.number().int().positive(),
+  eventTypeId: z.number().int().positive(),
+  updatedAt: z.iso.datetime(),
+  rescheduledFromUid: z.string().nullish(),
+  rescheduledToUid: z.string().nullish(),
+  absentHost: z.boolean().default(false),
+  cancelledByEmail: CalcomOptionalEmailSchema,
+  hosts: z
+    .array(
+      z
+        .object({
+          id: z.number().int().optional(),
+          name: z.string().optional(),
+          email: z.email(),
+          username: z.string().optional(),
+          timeZone: z.string().optional(),
+        })
+        .passthrough()
+    )
+    .default([]),
+  attendees: z
+    .array(
+      z
+        .object({
+          name: z.string().optional(),
+          email: z.email(),
+          timeZone: z.string().optional(),
+          phoneNumber: z.string().nullish(),
+          absent: z.boolean().default(false),
+        })
+        .passthrough()
+    )
+    .default([]),
+  title: z.string().optional(),
+  description: z.string().nullish(),
+  meetingUrl: CalcomSafeMeetingUrlSchema,
+  metadata: z.record(z.string(), z.unknown()).default({}),
+})
+
+export type CalcomBookingDetails = z.infer<typeof CalcomBookingDetailsSchema>
+
+/** Fetch the current Cal.com booking state, including cancellation attribution. */
+export const getCalcomBooking = async (bookingUid: string, mentorUserId: string) => {
+  const response = await calcomRequest<unknown>(`/bookings/${bookingUid}`, {
+    apiVersion: CALCOM_API_VERSIONS.bookings,
+    userId: mentorUserId,
+  })
+  const parsed = z
+    .object({
+      status: z.literal('success'),
+      data: z.union([CalcomBookingDetailsSchema, z.array(CalcomBookingDetailsSchema)]),
+    })
+    .parse(response)
+  const booking = Array.isArray(parsed.data)
+    ? parsed.data.find(item => item.uid === bookingUid)
+    : parsed.data
+  if (!booking) throw new ExternalApiError('Cal.com booking was not found')
+  return booking
 }

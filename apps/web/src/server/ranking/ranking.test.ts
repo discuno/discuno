@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm'
-import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import * as schema from '~/server/db/schema/index'
 import { testDb } from '~/server/db/test-db'
 import { processAnalyticsEvents } from './service'
@@ -36,7 +36,7 @@ describe('Ranking System', () => {
     await testDb.insert(schema.userProfile).values({
       userId: testUser.id,
       schoolYear: 'Senior',
-      graduationYear: 2025,
+      graduationYear: new Date().getFullYear(),
       rankingScore: 0,
     })
   })

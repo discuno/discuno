@@ -1,49 +1,46 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
 
 @custom-variant dark (&:is(.dark *));
 
 @theme {
   --font-sans:
     var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
-    Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-    'Segoe UI Symbol', 'Noto Color Emoji';
+    sans-serif;
+  --font-display: 'Newsreader Variable', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
 
-  --radius-lg: var(--radius);
-  --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 2px);
+  --radius-2xl: calc(var(--radius) + 6px);
 
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
-
   --color-card: hsl(var(--card));
   --color-card-foreground: hsl(var(--card-foreground));
-
   --color-popover: hsl(var(--popover));
   --color-popover-foreground: hsl(var(--popover-foreground));
-
   --color-primary: hsl(var(--primary));
   --color-primary-foreground: hsl(var(--primary-foreground));
-
   --color-secondary: hsl(var(--secondary));
   --color-secondary-foreground: hsl(var(--secondary-foreground));
-
   --color-muted: hsl(var(--muted));
   --color-muted-foreground: hsl(var(--muted-foreground));
-
   --color-accent: hsl(var(--accent));
   --color-accent-foreground: hsl(var(--accent-foreground));
-
   --color-destructive: hsl(var(--destructive));
   --color-destructive-foreground: hsl(var(--destructive-foreground));
-
   --color-success: hsl(var(--success));
   --color-success-foreground: hsl(var(--success-foreground));
-
+  --color-warning: hsl(var(--warning));
+  --color-warning-foreground: hsl(var(--warning-foreground));
   --color-border: hsl(var(--border));
   --color-input: hsl(var(--input));
   --color-ring: hsl(var(--ring));
-
+  --color-highlight: hsl(var(--highlight));
+  --color-highlight-foreground: hsl(var(--highlight-foreground));
   --color-chart-1: hsl(var(--chart-1));
   --color-chart-2: hsl(var(--chart-2));
   --color-chart-3: hsl(var(--chart-3));
@@ -51,261 +48,270 @@
   --color-chart-5: hsl(var(--chart-5));
 }
 
-/*
-  The default border color has changed to `currentColor` in Tailwind CSS v4,
-  so we've added these compatibility styles to make sure everything still
-  looks the same as it did with Tailwind CSS v3.
-
-  If we ever want to remove these styles, we need to add an explicit border
-  color utility to any element that depends on these defaults.
-*/
 @layer base {
+  :root {
+    color-scheme: light;
+
+    --background: 43 45% 97%;
+    --foreground: 225 46% 12%;
+    --card: 45 60% 99%;
+    --card-foreground: 225 47% 13%;
+    --popover: 42 50% 99%;
+    --popover-foreground: 225 47% 13%;
+    --primary: 229 78% 43%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 44 32% 92%;
+    --secondary-foreground: 225 40% 21%;
+    --muted: 44 28% 93%;
+    --muted-foreground: 224 17% 33%;
+    --accent: 70 83% 84%;
+    --accent-foreground: 225 47% 13%;
+    --destructive: 0 72% 47%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 154 54% 29%;
+    --success-foreground: 0 0% 100%;
+    --warning: 36 92% 46%;
+    --warning-foreground: 28 75% 15%;
+    --border: 226 22% 74%;
+    --input: 225 20% 58%;
+    --ring: 229 78% 43%;
+    --highlight: 70 93% 65%;
+    --highlight-foreground: 225 47% 13%;
+    --radius: 0.625rem;
+
+    --chart-1: 232 76% 52%;
+    --chart-2: 154 54% 31%;
+    --chart-3: 36 92% 49%;
+    --chart-4: 196 58% 42%;
+    --chart-5: 16 65% 48%;
+
+    --sidebar: 43 42% 96%;
+    --sidebar-foreground: 225 47% 13%;
+    --sidebar-primary: 229 78% 43%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 70 83% 84%;
+    --sidebar-accent-foreground: 225 47% 13%;
+    --sidebar-border: 226 19% 75%;
+    --sidebar-ring: 229 78% 43%;
+  }
+
+  .dark {
+    color-scheme: dark;
+
+    --background: 225 42% 8%;
+    --foreground: 43 35% 95%;
+    --card: 225 34% 12%;
+    --card-foreground: 43 35% 95%;
+    --popover: 225 34% 12%;
+    --popover-foreground: 43 35% 95%;
+    --primary: 230 92% 72%;
+    --primary-foreground: 225 47% 10%;
+    --secondary: 225 22% 18%;
+    --secondary-foreground: 43 35% 95%;
+    --muted: 225 22% 17%;
+    --muted-foreground: 42 12% 72%;
+    --accent: 70 38% 23%;
+    --accent-foreground: 69 85% 82%;
+    --destructive: 0 72% 61%;
+    --destructive-foreground: 225 47% 10%;
+    --success: 155 49% 55%;
+    --success-foreground: 222 47% 10%;
+    --warning: 38 88% 61%;
+    --warning-foreground: 28 75% 12%;
+    --border: 225 18% 30%;
+    --input: 225 17% 38%;
+    --ring: 230 92% 72%;
+    --highlight: 70 87% 61%;
+    --highlight-foreground: 225 47% 10%;
+
+    --sidebar: 225 42% 8%;
+    --sidebar-foreground: 43 35% 95%;
+    --sidebar-primary: 230 92% 72%;
+    --sidebar-primary-foreground: 225 47% 10%;
+    --sidebar-accent: 70 38% 23%;
+    --sidebar-accent-foreground: 69 85% 82%;
+    --sidebar-border: 225 18% 30%;
+    --sidebar-ring: 230 92% 72%;
+  }
+
   *,
   ::after,
   ::before,
   ::backdrop,
   ::file-selector-button {
-    border-color: var(--color-gray-200, currentColor);
-  }
-}
-
-@layer base {
-  :root {
-    /* Default theme — Apple-inspired (light) */
-    --background: 240 6% 97%; /* #F5F5F7 */
-    --foreground: 224 14% 12%; /* near-black text */
-
-    --card: 0 0% 100%;
-    --card-foreground: 224 14% 12%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 224 14% 12%;
-
-    --primary: 212 100% 50%; /* iOS system blue (#0A84FF) */
-    --primary-foreground: 0 0% 100%;
-
-    /* Secondary = neutral gray block from your spec */
-    --secondary: 220 8% 64%; /* ~#9aa0a8 */
-    --secondary-foreground: 224 14% 12%;
-
-    --muted: 240 5% 96%;
-    --muted-foreground: 224 10% 45%;
-
-    --accent: 212 100% 50%;
-    --accent-foreground: 0 0% 100%;
-
-    --destructive: 3 100% 60%; /* system red */
-    --destructive-foreground: 0 0% 100%;
-
-    --success: 142.1 76.2% 36.3%;
-    --success-foreground: 355.7 100% 97.3%;
-
-    --error: 0 84.2% 60.2%;
-    --error-foreground: 210 40% 98%;
-
-    --border: 240 6% 90%; /* subtle hairline */
-    --input: 240 6% 90%;
-    --ring: 212 100% 50%; /* focus ring matches primary */
-
-    --radius: 0.75rem;
-
-
-
-    /* Keep charts harmonious with new palette */
-    --chart-1: 212 100% 50%;
-    --chart-2: 224 10% 45%;
-    --chart-3: 210 30% 45%;
-    --chart-4: 200 65% 45%;
-    --chart-5: 190 85% 45%;
+    @apply border-border;
   }
 
-  .dark {
-    /* Apple-inspired (dark) */
-    --background: 240 7% 12%; /* #1C1C1E */
-    --foreground: 210 40% 98%; /* #F2F2F7 */
+  html {
+    scroll-behavior: smooth;
+  }
 
-    --card: 240 6% 18%; /* slightly brighter than bg for contrast */
-    --card-foreground: 210 40% 98%;
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    min-height: 100dvh;
+    font-feature-settings:
+      'cv02' 1,
+      'cv03' 1,
+      'cv04' 1,
+      'cv11' 1;
+    text-rendering: optimizeLegibility;
+  }
 
-    --popover: 240 6% 15%;
-    --popover-foreground: 210 40% 98%;
+  ::selection {
+    @apply bg-highlight text-highlight-foreground;
+  }
 
-    --primary: 212 100% 62%; /* brighter system blue */
-    --primary-foreground: 0 0% 100%;
+  a,
+  button,
+  input,
+  select,
+  textarea {
+    -webkit-tap-highlight-color: transparent;
+  }
 
-    /* Secondary = darker neutral from your spec */
-    --secondary: 220 6% 30%; /* ~#4c4f54 */
-    --secondary-foreground: 210 40% 98%;
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
 
-    --muted: 240 6% 20%;
-    --muted-foreground: 0 0% 85%;
-
-    --accent: 212 100% 62%;
-    --accent-foreground: 0 0% 100%;
-
-    --destructive: 3 100% 60%; /* system red */
-    --destructive-foreground: 210 40% 98%;
-
-    --success: 142.1 70.2% 45.3%;
-    --success-foreground: 355.7 100% 97.3%;
-
-    --error: 0 62.8% 30.6%;
-    --error-foreground: 210 40% 98%;
-
-    --border: 240 6% 23%;
-    --input: 240 6% 23%;
-    --ring: 212 100% 62%;
+  :focus-visible {
+    @apply outline-ring outline-2 outline-offset-2;
   }
 }
-
-.theme-discuno {
-  /* Align brand theme with Apple-inspired palette (light) */
-  --background: 240 6% 97%;
-  --foreground: 224 14% 12%;
-
-  --card: 0 0% 100%;
-  --card-foreground: 224 14% 12%;
-
-  --popover: 0 0% 100%;
-  --popover-foreground: 224 14% 12%;
-
-  --primary: 212 100% 50%; /* system blue */
-  --primary-foreground: 0 0% 100%;
-
-  --secondary: 220 8% 64%;
-  --secondary-foreground: 224 14% 12%;
-
-  --muted: 240 5% 96%;
-  --muted-foreground: 224 10% 45%;
-
-  --accent: 212 100% 50%;
-  --accent-foreground: 0 0% 100%;
-
-  --destructive: 3 100% 60%;
-  --destructive-foreground: 0 0% 100%;
-
-  --border: 240 6% 90%;
-  --input: 240 6% 90%;
-  --ring: 212 100% 50%;
-}
-
-.theme-discuno.dark {
-  /* Apple-inspired palette (dark) */
-  --background: 252 8% 12%;
-  --foreground: 0 0% 99%;
-
-  --card: 252 5% 18%;
-  --card-foreground: 0 0% 99%;
-
-  --popover: 252 5% 18%;
-  --popover-foreground: 0 0% 99%;
-
-  --primary: 212 100% 62%;
-  --primary-foreground: 0 0% 100%;
-
-  --secondary: 220 6% 30%;
-  --secondary-foreground: 210 40% 98%;
-
-  --muted: 240 6% 20%;
-  --muted-foreground: 0 0% 85%;
-
-  --accent: 212 100% 62%;
-  --accent-foreground: 0 0% 100%;
-
-  --destructive: 3 100% 60%;
-  --destructive-foreground: 210 40% 98%;
-
-  --border: 240 6% 23%;
-  --input: 240 6% 23%;
-  --ring: 212 100% 62%;
-}
-
-/*
-  ---break---
-*/
-
-:root {
-  --sidebar: hsl(0 0% 98%);
-  --sidebar-foreground: hsl(240 5.3% 26.1%);
-  --sidebar-primary: hsl(240 5.9% 10%);
-  --sidebar-primary-foreground: hsl(0 0% 98%);
-  --sidebar-accent: hsl(240 4.8% 95.9%);
-  --sidebar-accent-foreground: hsl(240 5.9% 10%);
-  --sidebar-border: hsl(220 13% 91%);
-  --sidebar-ring: hsl(217.2 91.2% 59.8%);
-}
-
-/*
-  ---break---
-*/
-
-.dark {
-  --sidebar: hsl(240 5.9% 10%);
-  --sidebar-foreground: hsl(240 4.8% 95.9%);
-  --sidebar-primary: hsl(224.3 76.3% 48%);
-  --sidebar-primary-foreground: hsl(0 0% 100%);
-  --sidebar-accent: hsl(240 3.7% 15.9%);
-  --sidebar-accent-foreground: hsl(240 4.8% 95.9%);
-  --sidebar-border: hsl(240 3.7% 15.9%);
-  --sidebar-ring: hsl(217.2 91.2% 59.8%);
-}
-
-/*
-  ---break---
-*/
 
 @theme inline {
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
-}
-
-/*
-  ---break---
-*/
-
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
-    background-image: radial-gradient(circle at 1px 1px, rgba(0, 0, 0, 0.2) 1px, transparent 0);
-    background-size: 30px 30px;
-  }
-
-  .dark body {
-    background-image: radial-gradient(
-      circle at 1px 1px,
-      rgba(255, 255, 255, 0.2) 1px,
-      transparent 0
-    );
-    background-size: 30px 30px;
-  }
+  --color-sidebar: hsl(var(--sidebar));
+  --color-sidebar-foreground: hsl(var(--sidebar-foreground));
+  --color-sidebar-primary: hsl(var(--sidebar-primary));
+  --color-sidebar-primary-foreground: hsl(var(--sidebar-primary-foreground));
+  --color-sidebar-accent: hsl(var(--sidebar-accent));
+  --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
+  --color-sidebar-border: hsl(var(--sidebar-border));
+  --color-sidebar-ring: hsl(var(--sidebar-ring));
 }
 
 @layer components {
-  /* Reusable animation utilities */
-  .slide-in-up {
-    @apply animate-in fade-in slide-in-from-bottom-2 duration-200;
+  .page-container,
+  .page-shell {
+    @apply mx-auto w-full max-w-[76rem] px-4 sm:px-6 lg:px-8;
   }
 
-  .slide-in-down {
-    @apply animate-in fade-in slide-in-from-top-2 duration-200;
+  .reading-measure {
+    max-width: 42rem;
   }
 
-  /* Avatar pattern */
-  .avatar-ring {
-    @apply ring-border rounded-full object-cover shadow-sm ring-1;
+  .display-hero {
+    @apply font-display text-[clamp(2.75rem,6vw,4.5rem)] leading-[0.98] font-medium tracking-[-0.045em] text-balance;
+    font-optical-sizing: auto;
+    font-variation-settings: 'opsz' 72;
   }
 
-  /* Success badge pattern */
-  .badge-success-muted {
-    @apply bg-success/20 text-success dark:bg-success/30;
+  .display-heading {
+    @apply font-display text-[clamp(2rem,4vw,3rem)] leading-[1.02] font-medium tracking-[-0.035em] text-balance;
+    font-optical-sizing: auto;
+    font-variation-settings: 'opsz' 64;
+  }
+
+  .section-rule {
+    @apply border-foreground/18 border-t;
+  }
+
+  .marker-highlight {
+    background-image: linear-gradient(
+      transparent 63%,
+      hsl(var(--highlight) / 0.86) 63%,
+      hsl(var(--highlight) / 0.86) 91%,
+      transparent 91%
+    );
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+    padding-inline: 0.04em;
+  }
+
+  .legal-document {
+    @apply mx-auto max-w-3xl;
+  }
+
+  .public-enter {
+    animation: none;
+  }
+
+  .public-enter-delayed {
+    animation: none;
+  }
+
+  .decision-context-enter {
+    animation: decision-context-enter 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .editorial-row {
+    @apply border-foreground/18 border-b transition-[border-color,background-color,transform] duration-200;
+  }
+
+  .editorial-row:hover {
+    @apply border-foreground/45;
+  }
+}
+
+/* Legal documents are continuous reading surfaces, not stacks of cards. */
+.legal-document [data-slot='card'] {
+  gap: 0;
+  padding-block: 0;
+  border: 0;
+  border-top: 1px solid hsl(var(--foreground) / 0.2);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.legal-document [data-slot='card-header'] {
+  gap: 0;
+  padding: 2.5rem 0 0;
+}
+
+.legal-document [data-slot='card-title'] {
+  font-size: 1.5rem;
+  line-height: 2rem;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+
+.legal-document [data-slot='card-content'] {
+  padding: 1.25rem 0 2.5rem;
+  font-size: 0.975rem;
+  line-height: 1.75rem;
+}
+
+@keyframes decision-context-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (forced-colors: active) {
+  .marker-highlight {
+    text-decoration: underline;
+    text-decoration-thickness: 0.12em;
+    background-image: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
   }
 }

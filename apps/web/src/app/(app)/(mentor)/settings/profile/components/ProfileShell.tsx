@@ -9,24 +9,22 @@ interface ProfileShellProps {
 
 export const ProfileShell = ({ title, description, children }: ProfileShellProps) => {
   return (
-    <>
-      {/* Static header that renders immediately */}
-      <div className="mb-8">
-        <h1 className="text-foreground text-4xl font-bold tracking-tight">{title}</h1>
-        <p className="text-muted-foreground mt-2 text-lg">{description}</p>
-      </div>
+    <div className="flex flex-col gap-7">
+      <header className="max-w-2xl">
+        <h1 className="text-2xl leading-tight font-semibold tracking-tight">{title}</h1>
+        <p className="text-muted-foreground mt-1.5 text-sm leading-6">{description}</p>
+      </header>
 
-      {/* Dynamic content wrapped in Suspense */}
       <Suspense
         fallback={
-          <div className="flex items-center justify-center gap-2 py-16">
+          <div className="flex items-center gap-2 py-12">
             <Spinner />
-            <span className="text-muted-foreground">Loading...</span>
+            <span className="text-muted-foreground">Loading your profile…</span>
           </div>
         }
       >
         {children}
       </Suspense>
-    </>
+    </div>
   )
 }

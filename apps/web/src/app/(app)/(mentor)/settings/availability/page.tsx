@@ -11,6 +11,6 @@ export default async function AvailabilityPage() {
 }
 
 export const metadata: Metadata = {
-  title: 'Availability Settings | Discuno',
-  description: 'Manage your availability, event types, and booking preferences',
+  title: 'Availability | Discuno',
+  description: 'Choose when students can book conversations with you.',
 }

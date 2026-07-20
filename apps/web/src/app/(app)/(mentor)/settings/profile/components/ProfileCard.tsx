@@ -1,24 +1,19 @@
-import { type LucideIcon } from 'lucide-react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
-
 interface ProfileCardProps {
   title: string
   description?: string
-  icon: LucideIcon
   children: React.ReactNode
 }
 
-export const ProfileCard = ({ title, description, icon: Icon, children }: ProfileCardProps) => {
+export const ProfileCard = ({ title, description, children }: ProfileCardProps) => {
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <Icon className="text-muted-foreground h-5 w-5" />
-          <CardTitle className="text-lg font-semibold">{title}</CardTitle>
-        </div>
-        {description && <CardDescription>{description}</CardDescription>}
-      </CardHeader>
-      <CardContent>{children}</CardContent>
-    </Card>
+    <section>
+      <header className="mb-6">
+        <h2 className="text-lg font-semibold">{title}</h2>
+        {description && (
+          <p className="text-muted-foreground mt-1.5 max-w-2xl text-sm leading-6">{description}</p>
+        )}
+      </header>
+      {children}
+    </section>
   )
 }

@@ -60,43 +60,30 @@ const main = async () => {
   const configFile = `../../drizzle.${environment}.config.ts`
 
   try {
-    const result = await new Promise<{ code: number; stdout: string; stderr: string }>(
-      (resolve, reject) => {
-        const childProcess = spawn('pnpm', ['drizzle-kit', 'push', `--config=${configFile}`], {
-          stdio: ['inherit', 'pipe', 'pipe'],
-          cwd: process.cwd(),
-          env: { ...process.env },
-        })
+    const exitCode = await new Promise<number>((resolve, reject) => {
+      const childProcess = spawn('pnpm', ['drizzle-kit', 'push', `--config=${configFile}`], {
+        stdio: 'inherit',
+        cwd: process.cwd(),
+        env: { ...process.env },
+      })
 
-        let stdout = ''
-        let stderr = ''
+      childProcess.on('close', (code: number | null) => {
+        resolve(code ?? 1)
+      })
 
-        childProcess.stdout.on('data', (data: Buffer) => {
-          stdout += data.toString()
-          console.log(data.toString())
-        })
+      childProcess.on('error', (error: Error) => {
+        reject(error)
+      })
+    })
 
-        childProcess.stderr.on('data', (data: Buffer) => {
-          stderr += data.toString()
-          console.error(data.toString())
-        })
-
-        childProcess.on('close', (code: number | null) => {
-          resolve({ code: code ?? 0, stdout, stderr })
-        })
-
-        childProcess.on('error', (error: Error) => {
-          reject(error)
-        })
-      }
-    )
-
-    if (result.code !== 0) {
-      throw new Error(`Schema push failed with exit code ${result.code}`)
+    if (exitCode !== 0) {
+      throw new Error(`Schema push failed with exit code ${exitCode}`)
     }
 
     console.log('─'.repeat(50))
-    console.log(`✨ Schema push completed successfully for ${environment}`)
+    // drizzle-kit exits with code 0 for both a successful push and a user-aborted
+    // interactive prompt, so do not claim that changes were necessarily applied.
+    console.log(`✨ Schema push process finished for ${environment}`)
   } catch (error) {
     console.log('─'.repeat(50))
     console.error(`💥 Schema push failed for ${environment}:`, error)

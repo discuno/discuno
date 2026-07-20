@@ -2,65 +2,102 @@
 
 import { TZDate } from '@date-fns/tz'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { addDays, endOfMonth, endOfWeek, format, startOfMonth, startOfWeek } from 'date-fns'
-import { CalendarIcon } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { addDays, endOfMonth, format, startOfMonth } from 'date-fns'
+import { CircleAlert } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { toast } from 'sonner'
 import { BookingSidebar } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingSidebar'
 
-import type {
-  BookingFormInput,
-  TimeSlot,
-} from '~/app/(app)/(public)/mentor/[username]/book/actions'
+import type { BookingFormInput } from '~/app/(app)/(public)/mentor/[username]/book/actions'
 import {
   createBooking as createBookingAction,
   createStripeCheckoutSession,
-  fetchEventTypes as fetchEventTypesAction,
   fetchAvailableSlots as fetchSlotsAction,
   type EventType,
 } from '~/app/(app)/(public)/mentor/[username]/book/actions'
 import { AttendeeDetailsStep } from '~/app/(app)/(public)/mentor/[username]/book/components/AttendeeDetailsStep'
-import { AuthStep } from '~/app/(app)/(public)/mentor/[username]/book/components/AuthStep'
 import { BookingCalendar } from '~/app/(app)/(public)/mentor/[username]/book/components/booking-calendar/BookingCalendar'
 import { BookingConfirmationStep } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingConfirmationStep'
-import { BookingEmbedSkeleton } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingEmbedSkeleton'
-import type { BookingData } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingModal'
+import type { BookingData } from '~/app/(app)/(public)/mentor/[username]/book/types'
 
 import { useSession } from '~/lib/auth-client'
-import { BadRequestError, ExternalApiError } from '~/lib/errors'
+import { MINIMUM_PAID_BOOKING_LEAD_MINUTES } from '~/lib/constants'
+import { BadRequestError } from '~/lib/errors'
+import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert'
+import { Button } from '~/components/ui/button'
+import { useDecisionQuestion } from '~/hooks/use-decision-question'
 
 export interface BookingFormData {
   name: string
   email: string
-  phone?: string
+  phone: string
+  topic: string
 }
 
-type BookingStep = 'calendar' | 'auth' | 'booking' | 'confirmation'
+type BookingStep = 'calendar' | 'booking' | 'confirmation'
+
+const subscribeToBrowserEnvironment = () => () => undefined
+const getBrowserReady = () => true
+const getServerReady = () => false
+const getBrowserTimeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
+const getServerTimeZone = () => 'UTC'
 
 export const BookingEmbed = ({
   bookingData,
-  isFullPage = false,
+  initialNowIso,
+  initialEventTypeId,
 }: {
   bookingData: BookingData
-  isFullPage?: boolean
+  initialNowIso?: string
+  initialEventTypeId?: number
 }) => {
-  const { calcomUsername } = bookingData
-  const timeZone = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC', [])
-  const today = useMemo(() => new TZDate(new Date(), timeZone), [timeZone])
+  // Hydrate with the same UTC snapshot the server rendered, then switch to the
+  // browser's zone. Reading Intl directly during render makes the server's UTC
+  // text disagree with the student's local zone during hydration.
+  const timeZone = useSyncExternalStore(
+    subscribeToBrowserEnvironment,
+    getBrowserTimeZone,
+    getServerTimeZone
+  )
+  const isBrowserReady = useSyncExternalStore(
+    subscribeToBrowserEnvironment,
+    getBrowserReady,
+    getServerReady
+  )
+  const today = useMemo(
+    () => new TZDate(initialNowIso ? new Date(initialNowIso) : new Date(), timeZone),
+    [initialNowIso, timeZone]
+  )
   const { data: session } = useSession()
+  const { question: storedDecisionQuestion, saveQuestion } = useDecisionQuestion()
 
   // State management
-  const [selectedEventType, setSelectedEventType] = useState<EventType | null>(null)
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(today)
-  const [currentMonth, setCurrentMonth] = useState(today)
+  const [selectedEventTypeOverride, setSelectedEventTypeOverride] = useState<EventType | null>(
+    () => bookingData.eventTypes.find(eventType => eventType.id === initialEventTypeId) ?? null
+  )
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>()
+  const [currentMonthOverride, setCurrentMonthOverride] = useState<Date | undefined>()
+  const currentMonth = currentMonthOverride ?? today
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string | null>(null)
+  const [bookingAttemptId, setBookingAttemptId] = useState(() => crypto.randomUUID())
+  const [paidAttemptSubmitted, setPaidAttemptSubmitted] = useState(false)
   const [currentStep, setCurrentStep] = useState<BookingStep>('calendar')
+  const [detailsStage, setDetailsStage] = useState<'details' | 'review'>('details')
+  const [browserNowMs, setBrowserNowMs] = useState(() =>
+    initialNowIso ? Date.parse(initialNowIso) : 0
+  )
+  const bookingSurfaceRef = useRef<HTMLDivElement>(null)
   const [formData, setFormData] = useState<BookingFormData>({
     name: '',
     email: '',
     phone: '',
+    topic: storedDecisionQuestion,
   })
-  const [monthlyAvailability, setMonthlyAvailability] = useState<Record<string, TimeSlot[]>>({})
+  const previousStepRef = useRef<BookingStep>(currentStep)
+
+  useEffect(() => {
+    saveQuestion(formData.topic)
+  }, [formData.topic, saveQuestion])
 
   // Date range for calendar
   const { startMonth, endMonth } = useMemo(
@@ -71,101 +108,96 @@ export const BookingEmbed = ({
     [today]
   )
 
-  // Initialize selected date
-  useEffect(() => {
-    setSelectedDate(today)
-  }, [today])
-
   // Queries
-  const {
-    data: eventTypes = [],
-    isPending: eventTypesLoading,
-    error: eventTypesError,
-  } = useQuery({
-    queryKey: ['event-types', calcomUsername],
-    queryFn: () => fetchEventTypesAction(calcomUsername),
-    staleTime: 1000 * 60 * 5, // 5 minutes
-  })
+  const { eventTypes } = bookingData
 
-  // Auto-select first event type to skip selection step
-  useEffect(() => {
-    const firstEvent = eventTypes[0]
-    if (eventTypes.length > 0 && !selectedEventType && firstEvent) {
-      setSelectedEventType(firstEvent)
-    }
-  }, [eventTypes, selectedEventType])
+  // Default to the first event type while preserving an explicit user selection.
+  const selectedEventType = selectedEventTypeOverride ?? eventTypes[0] ?? null
+  const displayedFormData = useMemo<BookingFormData>(
+    () => ({
+      ...formData,
+      name: formData.name || (session && !session.user.isAnonymous ? session.user.name : ''),
+      email: formData.email || (session && !session.user.isAnonymous ? session.user.email : ''),
+    }),
+    [formData, session]
+  )
 
   const currentEventId = selectedEventType?.id
   const {
-    data: availableSlots,
-    isSuccess: isSlotsFetched,
+    data: monthlyAvailability = {},
+    dataUpdatedAt,
     isFetching,
     error,
+    refetch,
   } = useQuery({
-    queryKey: ['available-slots', currentEventId, format(currentMonth, 'yyyy-MM')],
+    queryKey: ['available-slots', currentEventId, format(currentMonth, 'yyyy-MM'), timeZone],
     queryFn: () => {
       if (!currentEventId) throw new BadRequestError('No event type selected')
-      const monthStart = startOfMonth(currentMonth)
-      const monthEnd = endOfMonth(currentMonth)
-      const startDate = startOfWeek(monthStart)
-      const endDate = endOfWeek(monthEnd)
-
-      console.log('Client TimeZone:', timeZone)
-      console.log('Fetching slots from (client):', startDate.toISOString())
-      console.log('Fetching slots to (client):', endDate.toISOString())
+      const startDate = startOfMonth(currentMonth)
+      const endDate = endOfMonth(currentMonth)
 
       return fetchSlotsAction(currentEventId, startDate, endDate, timeZone)
     },
     staleTime: 1000 * 60, // 1 minute
-    enabled: currentStep === 'calendar' && !!currentEventId,
+    enabled: isBrowserReady && currentStep === 'calendar' && !!currentEventId,
   })
 
-  // Update monthly availability when slots are fetched
-  useEffect(() => {
-    if (isSlotsFetched) {
-      setMonthlyAvailability(availableSlots)
-    }
-  }, [isSlotsFetched, availableSlots])
-
-  // Auto-advance to booking step when authenticated
-  useEffect(() => {
-    if (currentStep === 'auth' && session && !session.user.isAnonymous) {
-      console.log('[BookingEmbed] User authenticated, advancing to booking step')
-      setCurrentStep('booking')
-    }
-  }, [currentStep, session])
-
-  // Prefill form with user's name and email when logged in
-  useEffect(() => {
-    if (!session || session.user.isAnonymous) return
-
-    setFormData(prev => ({
-      ...prev,
-      name: prev.name || session.user.name || '',
-      email: prev.email || session.user.email || '',
-    }))
-  }, [session])
+  const displayedAvailability = useMemo(() => {
+    if ((selectedEventType?.price ?? 0) <= 0) return monthlyAvailability
+    const earliestPaidStart =
+      Math.max(browserNowMs, dataUpdatedAt) + MINIMUM_PAID_BOOKING_LEAD_MINUTES * 60 * 1000
+    return Object.fromEntries(
+      Object.entries(monthlyAvailability).map(([date, slots]) => [
+        date,
+        slots.filter(slot => Date.parse(slot.time) >= earliestPaidStart),
+      ])
+    )
+  }, [browserNowMs, dataUpdatedAt, monthlyAvailability, selectedEventType?.price])
 
   // Event handlers
   const handleEventTypeSelect = useCallback((eventType: EventType | null) => {
-    setSelectedEventType(eventType)
+    setSelectedEventTypeOverride(eventType)
+    setSelectedDate(undefined)
     setSelectedTimeSlot(null)
+    setBookingAttemptId(crypto.randomUUID())
+    setPaidAttemptSubmitted(false)
+    setDetailsStage('details')
   }, [])
 
   const handleTimeSlotSelect = useCallback(
     (timeSlot: string | null) => {
       setSelectedTimeSlot(timeSlot)
       if (timeSlot) {
-        // Check if user is anonymous - if so, show auth step
-        if (session?.user.isAnonymous) {
-          setCurrentStep('auth')
-        } else {
-          setCurrentStep('booking')
-        }
+        setFormData(current =>
+          current.topic || !storedDecisionQuestion
+            ? current
+            : { ...current, topic: storedDecisionQuestion }
+        )
+        setBookingAttemptId(crypto.randomUUID())
+        setPaidAttemptSubmitted(false)
+        setDetailsStage('details')
+        setCurrentStep('booking')
       }
     },
-    [session]
+    [storedDecisionQuestion]
   )
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setBrowserNowMs(Date.now()), 30_000)
+    return () => window.clearInterval(timer)
+  }, [])
+
+  useEffect(() => {
+    if (previousStepRef.current === currentStep) return
+    previousStepRef.current = currentStep
+    bookingSurfaceRef.current?.scrollIntoView({ block: 'start' })
+    const frame = requestAnimationFrame(() => {
+      bookingSurfaceRef.current
+        ?.querySelector<HTMLElement>('[data-booking-step-heading]')
+        ?.focus({ preventScroll: true })
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [currentStep])
 
   // Mutations
   const createBookingMutation = useMutation({
@@ -175,23 +207,22 @@ export const BookingEmbed = ({
       }
 
       const startTime = new TZDate(selectedTimeSlot, timeZone)
-      console.log('Booking startTime:', startTime.toISOString())
-
       // For paid sessions, redirect to Stripe Hosted Checkout
       if ((selectedEventType.price ?? 0) > 0) {
-        toast.loading('Redirecting to secure checkout...')
-
+        // An ambiguous Stripe response must replay this attempt's exact server
+        // snapshot. Freeze recipient details until the student selects a new
+        // time (and therefore a new attempt ID) instead of implying edits took.
+        setPaidAttemptSubmitted(true)
         const bookingPayload: BookingFormInput = {
           eventTypeId: selectedEventType.id,
           startTimeIso: startTime.toISOString(),
-          attendeeName: formData.name,
-          attendeeEmail: formData.email,
-          attendeePhone: formData.phone,
+          attendeeName: displayedFormData.name,
+          attendeeEmail: displayedFormData.email,
+          attendeePhone: displayedFormData.phone,
+          attendeeTopic: displayedFormData.topic,
           mentorUsername: bookingData.username,
-          mentorUserId: bookingData.userId,
-          price: selectedEventType.price ?? 0,
-          currency: selectedEventType.currency ?? 'USD',
           timeZone: timeZone,
+          bookingAttemptId,
         }
 
         const response = await createStripeCheckoutSession(bookingPayload)
@@ -206,20 +237,21 @@ export const BookingEmbed = ({
 
       // For free bookings, create the booking directly
       await createBookingAction({
-        username: calcomUsername,
+        username: bookingData.username,
         eventTypeId: selectedEventType.id,
         startTime: startTime.toISOString(),
+        bookingAttemptId,
         attendee: {
-          name: formData.name,
-          email: formData.email,
+          name: displayedFormData.name,
+          email: displayedFormData.email,
+          phone: displayedFormData.phone,
+          topic: displayedFormData.topic,
           timeZone,
         },
-        mentorUserId: bookingData.userId,
       })
     },
     onSuccess: () => {
       if ((selectedEventType?.price ?? 0) === 0) {
-        toast.success('Booking successful! You will receive a confirmation email shortly.')
         setCurrentStep('confirmation')
       }
     },
@@ -228,32 +260,20 @@ export const BookingEmbed = ({
     },
   })
 
-  // Error handling
-  if (error) {
-    throw new ExternalApiError(error.message)
-  }
-
-  // Loading states
-  if (eventTypesLoading) {
-    return <BookingEmbedSkeleton />
-  }
-
-  if (eventTypesError) {
-    return (
-      <div className="flex min-h-[600px] items-center justify-center">
-        <div className="text-center">
-          <CalendarIcon className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
-          <h3 className="mb-2 text-lg font-semibold">Booking Unavailable</h3>
-          <p className="text-muted-foreground">
-            Failed to load booking calendar. Please try again later.
-          </p>
-        </div>
-      </div>
-    )
-  }
-
   const renderContent = () => (
-    <div className="bg-background flex min-h-full w-full flex-col">
+    <div className="flex min-h-[32rem] w-full flex-col">
+      {error && currentStep === 'calendar' && (
+        <Alert variant="destructive" className="m-4 w-auto sm:m-6">
+          <CircleAlert />
+          <AlertTitle>Available times did not load</AlertTitle>
+          <AlertDescription>
+            <p>Check your connection and try again. Nothing has been booked.</p>
+            <Button variant="outline" size="sm" className="mt-2" onClick={() => void refetch()}>
+              Try again
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
       {currentStep === 'calendar' ? (
         <BookingCalendar
           selectedEventType={selectedEventType}
@@ -263,36 +283,25 @@ export const BookingEmbed = ({
           bookingData={bookingData}
           startMonth={startMonth}
           endMonth={endMonth}
-          monthlyAvailability={monthlyAvailability}
+          monthlyAvailability={displayedAvailability}
           isFetchingSlots={isFetching}
           onSelectEventType={handleEventTypeSelect}
-          onChangeMonth={month => setCurrentMonth(new TZDate(month, timeZone))}
+          onChangeMonth={month => setCurrentMonthOverride(new TZDate(month, timeZone))}
           onSelectDate={setSelectedDate}
           onSelectTimeSlot={handleTimeSlotSelect}
           timeZone={timeZone}
         />
-      ) : currentStep === 'auth' && selectedEventType && selectedTimeSlot && selectedDate ? (
-        <AuthStep
-          selectedEventType={selectedEventType}
-          selectedTimeSlot={selectedTimeSlot}
-          selectedDate={selectedDate}
-          mentorUsername={bookingData.username}
-          formData={formData}
-          onBack={() => setCurrentStep('calendar')}
-          onSuccess={() => {
-            console.log('[BookingEmbed] AuthStep reported success')
-            setCurrentStep('booking')
-          }}
-        />
       ) : currentStep === 'booking' ? (
         <AttendeeDetailsStep
           selectedEventType={selectedEventType}
-          selectedDate={selectedDate}
           selectedTimeSlot={selectedTimeSlot}
-          formData={formData}
+          timeZone={timeZone}
+          formData={displayedFormData}
           setFormData={setFormData}
           setCurrentStep={setCurrentStep}
+          onReviewChange={isReviewing => setDetailsStage(isReviewing ? 'review' : 'details')}
           createBookingMutation={createBookingMutation}
+          detailsLocked={paidAttemptSubmitted}
         />
       ) : (
         <BookingConfirmationStep />
@@ -300,29 +309,23 @@ export const BookingEmbed = ({
     </div>
   )
 
-  if (isFullPage) {
-    // Import dynamically or assume it's available (since I can't strict mode imports in this tool easily without top-level)
-    // Actually I need to add import at top. I'll rely on the previous content helper to be just a function.
-    // I can't easily add top-level imports with replace_file_content if I only replace specific specific section.
-    // I'm replacing lines 43-end, so the top level imports (1-42) are untouched.
-    // I need to add BookingSidebar import.
-    // I'll do a MultiReplace to add import and change body.
-    return (
-      <div className="flex h-[800px] w-full flex-col overflow-hidden rounded-2xl border shadow-xl lg:flex-row">
-        <div className="bg-muted/30 hidden w-full shrink-0 border-r lg:block lg:w-[320px] xl:w-[380px]">
-          <BookingSidebar
-            bookingData={bookingData}
-            selectedEventType={selectedEventType}
-            selectedDate={selectedDate}
-            selectedTimeSlot={selectedTimeSlot}
-            currentStep={currentStep}
-            timeZone={timeZone}
-          />
-        </div>
-        <div className="flex-1 overflow-y-auto">{renderContent()}</div>
-      </div>
-    )
-  }
-
-  return renderContent()
+  return (
+    <div
+      ref={bookingSurfaceRef}
+      className="grid w-full scroll-mt-20 grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(18rem,0.55fr)] lg:items-start lg:gap-8"
+    >
+      <section className="bg-card min-w-0 overflow-hidden rounded-lg border">
+        {renderContent()}
+      </section>
+      <BookingSidebar
+        bookingData={bookingData}
+        selectedEventType={selectedEventType}
+        selectedDate={selectedDate}
+        selectedTimeSlot={selectedTimeSlot}
+        currentStep={currentStep}
+        detailsStage={detailsStage}
+        timeZone={timeZone}
+      />
+    </div>
+  )
 }

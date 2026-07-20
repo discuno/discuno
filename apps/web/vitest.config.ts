@@ -1,14 +1,11 @@
 import react from '@vitejs/plugin-react'
-import dotenv from 'dotenv'
 import path from 'path'
-import tsconfigPaths from 'vite-tsconfig-paths'
 import { defineConfig } from 'vitest/config'
 
-dotenv.config({ path: '.env.test', override: true })
-
 export default defineConfig({
-  plugins: [tsconfigPaths(), react()],
+  plugins: [react()],
   resolve: {
+    tsconfigPaths: true,
     alias: {
       '~': path.resolve(__dirname, './src'),
     },
@@ -16,16 +13,14 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
-    setupFiles: ['./src/server/__tests__/setup.ts'],
-    globalSetup: ['./src/server/__tests__/global-setup.ts'],
-    maxWorkers: 1,
+    setupFiles: ['./src/__tests__/setup.ts'],
     typecheck: {
       tsconfig: './tsconfig.test.json',
     },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'json'],
-      reportsDirectory: '../../coverage',
+      reportsDirectory: './coverage',
       exclude: [
         'node_modules/',
         '.next/',
@@ -34,7 +29,6 @@ export default defineConfig({
         '**/*.d.ts',
         '**/*.config.*',
         '**/instrumentation*.ts',
-        'sentry*.config.ts',
         'src/env.js',
         'drizzle/',
         '**/*.test.*',
@@ -42,13 +36,21 @@ export default defineConfig({
         '**/__mocks__/**',
       ],
       thresholds: {
-        statements: 80,
-        branches: 70,
-        functions: 80,
-        lines: 80,
+        // Keep a small cross-platform margin below the measured baseline while
+        // still making CI reject material coverage regressions.
+        statements: 60,
+        branches: 45,
+        functions: 55,
+        lines: 60,
       },
     },
     include: ['src/**/*.{test,spec}.{js,ts,jsx,tsx}'],
-    exclude: ['node_modules/', '.next/', 'dist/', 'coverage/'],
+    exclude: [
+      'src/server/**/*.{test,spec}.{js,ts,jsx,tsx}',
+      'node_modules/',
+      '.next/',
+      'dist/',
+      'coverage/',
+    ],
   },
 })

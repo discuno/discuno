@@ -16,7 +16,6 @@ export const logAnalyticsEvent = async (input: ClientAnalyticsEvent) => {
   await createAnalyticsEvent({
     ...input,
     actorUserId,
-    distinctId: input.distinctId,
   })
 }
 

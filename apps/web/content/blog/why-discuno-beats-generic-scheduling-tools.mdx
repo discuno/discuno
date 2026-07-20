@@ -4,7 +4,7 @@ description: 'Understand why Discuno’s Cal.com orchestration, Stripe-powered b
 date: '2025-01-15'
 author: 'Discuno Team'
 tags: ['mentorship', 'platform', 'cal.com', 'stripe', 'scheduling']
-published: true
+published: false
 ---
 
 High-impact mentorship programs live or die on the details—matching the right people, automating busywork, and proving measurable outcomes. Generic scheduling tools were built for quick meetings, not longitudinal coaching relationships. Discuno closes that gap with a stack engineered for universities, accelerators, and workforce programs that need accountable mentoring at scale.
@@ -15,14 +15,14 @@ High-impact mentorship programs live or die on the details—matching the right 
 - **No revenue controls:** Upgrades and invoicing lag behind real-world mentorship pricing models, making it hard to charge per session or package.
 - **Zero context:** Meetings happen, but there’s no canonical record of goals, feedback, or follow-up actions.
 - **Limited automation:** Webhooks are brittle, data collection is shallow, and reporting requires downstream scripts or copy/paste.
-- **Compliance gaps:** Platforms built for coffee chats rarely handle FERPA, SOC2, or payout regulations.
+- **Payment gaps:** Platforms built for coffee chats rarely coordinate connected-account onboarding, refund state, disputes, and delayed mentor transfers.
 
 ## Discuno’s Mentorship-First Platform
 
 Discuno combines scheduling, payments, analytics, and credentialing into one mentorship-native workflow:
 
 1. **Cal.com orchestration** keeps availability, buffers, and program rules in sync so mentees always see the right mentor at the right time.
-2. **Stripe Connect automations** handle platform fees, delayed transfers, and refunds while keeping the business compliant in every state.
+2. **Stripe Connect automations** coordinate Discuno’s 15% commission, delayed mentor transfers, refunds, and dispute holds.
 3. **Drizzle-backed data model** maintains a single source of truth for mentor bios, areas of expertise, and booking histories that power better matches over time.
 4. **PostHog analytics** ship actionable insights—conversion funnels, drop-off points, and engagement scoring—to your operations team.
 5. **Better-auth security** keeps sign-ins, verification, and domain-restricted onboarding safe without adding friction.
@@ -32,31 +32,31 @@ Discuno combines scheduling, payments, analytics, and credentialing into one men
 - **Unified dashboard:** Mentors confirm bookings, view mentee prep notes, and update availability without switching tabs.
 - **Automated reminders:** Email and SMS nudges reduce no-shows and capture end-of-session feedback.
 - **Transparent payouts:** Stripe dashboards expose transfer timelines, taxes, and supporting documents—critical for professional mentors and advisors.
-- **Flexible packaging:** Offer paid consultations, subscription hours, or grant-funded sessions with clear eligibility rules.
+- **Simple pricing:** Offer free sessions or a clearly listed per-session price, with no Discuno buyer fee.
 
 ## Proving ROI With Real Analytics
 
 - Track conversion from application → onboarding → first booking with PostHog dashboards.
 - Use Discuno’s ranking algorithms to surface mentors with the highest satisfaction scores for high-priority mentees.
-- Export clean datasets for board reports or accreditation reviews—no manual CSV wrangling required.
+- Use the stored booking and payment records as a clean base for your own reporting workflows.
 
 ## Implementation Blueprint
 
-1. **Import your mentors:** Bulk-load spreadsheets or sync directly from your HRIS using Discuno scripts.
-2. **Configure programs:** Define coaching tracks, eligibility rules, and session lengths inside the admin console.
-3. **Connect payments:** Link Stripe Connect to collect fees, fund scholarships, or pay mentors automatically after the dispute window.
-4. **Launch onboarding flows:** Invite mentors and mentees with tailored email sequences and application forms.
-5. **Monitor and iterate:** Review PostHog funnels weekly, adjust ranking rules, and push updates without downtime.
+1. **Onboard mentors:** Mentors create a profile, connect their Cal.com availability, and complete Stripe onboarding for paid sessions.
+2. **Set session options:** Each enabled event type has a duration and either a free or paid price.
+3. **Open booking:** Mentees select a live time slot and can continue as a guest.
+4. **Coordinate fulfillment:** Cal.com creates the meeting while Stripe and Inngest handle paid-session state.
+5. **Monitor and iterate:** Review booking behavior and integration health as the marketplace grows.
 
 ## Frequently Asked Questions
 
 **Can Discuno integrate with our LMS or CRM?**  
-Yes. Discuno exposes webhooks, API routes, and scheduled cron jobs that help you sync milestones back to Salesforce, Slate, or Canvas.
+The TypeScript codebase and webhook-driven data model are designed to be extended, but packaged LMS and CRM connectors are not part of the current product.
 
 **What about data privacy?**  
-Discuno’s Drizzle ORM schema enforces field-level access controls, soft deletes, and audit trails so you stay confident about compliance.
+Discuno uses authenticated server actions, permission checks, signed provider webhooks, and soft-deleted application records. Organizations should assess the controls they require for their own regulatory obligations.
 
 **Do mentors need to manage their own payouts?**  
-No. Stripe Connect handles tax forms, verification, and payout schedules. Mentors get status updates automatically through the dashboard.
+Mentors complete Stripe Connect onboarding and manage bank payout details through Stripe. Discuno sends the mentor share after the session and 72-hour support window.
 
 Ready to deliver mentorship that outperforms ad-hoc scheduling links? [Book a demo](https://discuno.com/demo) and see how Discuno turns chaotic mentoring into a repeatable growth engine.

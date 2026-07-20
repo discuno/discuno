@@ -22,8 +22,8 @@ By participating in this project, you agree to abide by our [Code of Conduct](CO
 
 ### Prerequisites
 
-- Node.js 18+
-- pnpm 8+
+- Node.js 24.x
+- pnpm 11.13+
 - Git
 
 ### Development Setup
@@ -159,7 +159,7 @@ This is a monorepo containing the main Next.js application.
 
 ### Key Technologies
 
-- **Frontend**: Next.js 15, React 19, TypeScript
+- **Frontend**: Next.js 16, React 19, TypeScript
 - **Styling**: Tailwind CSS, Radix UI
 - **Database**: Drizzle ORM
 - **Build**: Turbo
@@ -171,7 +171,11 @@ This is a monorepo containing the main Next.js application.
 
 ```bash
 # Run all tests
-pnpm test
+pnpm test:run
+
+# Run guarded database integration tests (requires the dedicated Railway test database)
+railway run --environment test --service Postgres zsh -c \
+  'export DATABASE_URL="$DATABASE_PUBLIC_URL"; pnpm test:integration'
 
 # Run tests in watch mode
 pnpm test:watch

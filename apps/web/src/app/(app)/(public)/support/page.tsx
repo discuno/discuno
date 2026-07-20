@@ -1,337 +1,264 @@
-import { type Metadata } from 'next'
+import { ArrowRight, Mail } from 'lucide-react'
+import type { Metadata } from 'next'
 import Link from 'next/link'
-import {
-  BookOpen,
-  CreditCard,
-  GraduationCap,
-  HeadphonesIcon,
-  LifeBuoy,
-  Mail,
-  MessageSquare,
-  Shield,
-  Users,
-} from 'lucide-react'
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from '~/components/ui/accordion'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
+import { buttonVariants } from '~/components/ui/button'
 import { createMetadata } from '~/lib/metadata'
 
 export const metadata: Metadata = createMetadata({
-  title: 'Support & Help Center',
+  title: 'Support and Help Center',
   description:
-    'Get help with Discuno. Find answers to FAQs about mentorship, payments, safety, and more. Contact our support team for assistance.',
+    'Get clear answers about booking, cancellations, refunds, scheduling, school-email confirmation, accounts, and safety on Discuno.',
+  alternates: { canonical: '/support' },
   openGraph: {
-    title: 'Discuno Support - Get Help With Mentorship Platform',
+    title: 'Discuno Support and Help Center',
     description:
-      'Find answers to common questions about finding mentors, booking sessions, payments, and platform safety. Our support team is here to help.',
+      'Practical help for booking sessions, managing payments, scheduling, accounts, and using Discuno safely.',
   },
 })
 
-const supportCategories = [
+const supportGroups = [
   {
-    icon: Users,
-    title: 'Getting Started',
-    description: 'Learn the basics of using Discuno',
+    id: 'booking',
+    title: 'Booking a session',
+    description: 'Find the right person and know what happens before you confirm.',
+    items: [
+      {
+        question: 'What is Discuno?',
+        answer:
+          'Discuno helps a student talk through a college decision with another student who has relevant firsthand context. You can compare public profiles, choose a session and time, then book with the required contact details.',
+      },
+      {
+        question: 'How do I find the right mentor?',
+        answer:
+          'Start with the question you are trying to answer. Discovery can narrow mentors by school, field, and graduation year. It does not analyze your question or claim to calculate the best match. Read each mentor’s own context and session options before choosing.',
+      },
+      {
+        question: 'Do I need an account to browse or book?',
+        answer:
+          'No. Public profiles and booking are available without an account. You will provide the contact details required for the session during booking.',
+      },
+      {
+        question: 'What happens after paid checkout?',
+        answer:
+          'Payment received and booking confirmed are separate states. Follow the result shown after checkout. Do not assume a paid checkout is confirmed until Discuno states that the session is booked.',
+      },
+    ],
   },
   {
-    icon: CreditCard,
-    title: 'Billing & Payments',
-    description: 'Payment processing and refunds',
+    id: 'cancellations',
+    title: 'Cancellations and refunds',
+    description: 'Understand timing, refund eligibility, and paid-session handling.',
+    items: [
+      {
+        question: 'Can I cancel or reschedule a session?',
+        answer:
+          'Use the cancellation or rescheduling options in your booking message when available, or contact support with the booking email and session date. Rescheduling depends on the mentor’s current availability.',
+      },
+      {
+        question: 'What is the refund policy?',
+        answer:
+          'Mentor cancellations and mentor no-shows receive a full refund. Student cancellations made at least 24 hours before the scheduled start also receive a full refund. Later student cancellations and student no-shows are normally non-refundable unless Discuno approves an exception. Contact support within 48 hours of a material delivery or conduct issue. The Terms of Service govern the complete policy.',
+      },
+      {
+        question: 'How are card payments handled?',
+        answer:
+          'Stripe handles card payment for paid sessions. Discuno does not store full card details on its servers. You pay the displayed session price plus applicable tax, with no additional Discuno buyer service fee.',
+      },
+      {
+        question: 'How and when do mentors get paid?',
+        answer:
+          'Discuno retains a 15% commission and schedules the remaining 85% for transfer 72 hours after the session ends. Delivered sessions, student no-shows, and late student cancellations that remain non-refundable can qualify. Refunds, disputes, payment processing, account restrictions, or review can delay or prevent a transfer.',
+      },
+    ],
   },
   {
-    icon: Shield,
-    title: 'Safety & Security',
-    description: 'Keeping your account secure',
+    id: 'scheduling',
+    title: 'Scheduling',
+    description: 'Work with available times, invitations, cancellations, and meeting details.',
+    items: [
+      {
+        question: 'How does calendar scheduling work?',
+        answer:
+          'Discuno uses Cal.com to show the mentor’s available times. Once a booking is confirmed, the student and mentor receive booking details, including a calendar invitation and the session meeting link.',
+      },
+      {
+        question: 'Why did the time I selected become unavailable?',
+        answer:
+          'Availability can change while you are choosing a time or completing checkout. If the session cannot be confirmed, follow the result page and choose another available time when it is safe to do so.',
+      },
+      {
+        question: 'My school is not listed. What should I do?',
+        answer:
+          'Email support with the institution’s name, location, and .edu email domain. We review requests as school coverage expands. Do not include passwords or other sensitive account information.',
+      },
+    ],
   },
   {
-    icon: GraduationCap,
-    title: 'For Mentors',
-    description: 'Resources for mentors',
+    id: 'accounts',
+    title: 'School email and accounts',
+    description: 'Know what the school-email check means and how mentor access works.',
+    items: [
+      {
+        question: 'What does “School email confirmed” mean?',
+        answer:
+          'It means the mentor demonstrated access to a supported institutional email address, supporting the stated school affiliation at the time of the check. It is not an identity check, background check, credential validation, endorsement, or guarantee of session quality.',
+      },
+      {
+        question: 'How do I become a mentor?',
+        answer:
+          'Choose “Start mentoring” and sign in with an eligible school-issued .edu address. Then create your public profile, connect your calendar, set availability, and publish session options. Payout setup is optional for free sessions and required for paid bookings.',
+      },
+      {
+        question: 'Can I use a personal email for mentor access?',
+        answer:
+          'Mentor tools currently require a supported school-issued .edu address. A personal account can still browse and book without mentor access.',
+      },
+    ],
+  },
+  {
+    id: 'safety',
+    title: 'Safety',
+    description: 'Protect your information and report a session concern.',
+    items: [
+      {
+        question: 'How can I have a safe and productive session?',
+        answer:
+          'Use the meeting link in your booking confirmation, keep payment within Discuno, and never share card details, passwords, or other sensitive financial information. Leave the call if something feels unsafe.',
+      },
+      {
+        question: 'How do I report a concern?',
+        answer:
+          'Email support@discuno.com with the booking email, session date, and a concise description of what happened. Discuno support is not an emergency service. Contact local emergency services if anyone is in immediate danger.',
+      },
+    ],
   },
 ]
 
 export default function SupportPage() {
   return (
-    <div className="text-foreground min-h-screen">
-      {/* Hero Section */}
-      <div className="from-primary/5 to-background border-b bg-gradient-to-b">
-        <div className="container mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <div className="bg-primary/10 mx-auto flex h-16 w-16 items-center justify-center rounded-full">
-              <LifeBuoy className="text-primary h-8 w-8" />
-            </div>
-            <h1 className="mt-6 text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
-              How can we help you?
-            </h1>
-            <p className="text-muted-foreground mx-auto mt-4 max-w-2xl text-lg sm:text-xl">
-              Find answers to common questions, explore our resources, or get in touch with our
-              support team.
-            </p>
-          </div>
-
-          {/* Quick Links */}
-          <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {supportCategories.map(category => {
-              const Icon = category.icon
-              return (
-                <Card
-                  key={category.title}
-                  className="border-border/50 bg-card/50 hover:bg-card/80 transition-colors"
-                >
-                  <CardHeader>
-                    <div className="bg-primary/10 flex h-10 w-10 items-center justify-center rounded-lg">
-                      <Icon className="text-primary h-5 w-5" />
-                    </div>
-                    <CardTitle className="mt-4 text-lg">{category.title}</CardTitle>
-                    <CardDescription className="text-sm">{category.description}</CardDescription>
-                  </CardHeader>
-                </Card>
-              )
-            })}
-          </div>
+    <div className="min-h-screen">
+      <section className="border-b">
+        <div className="page-shell py-14 sm:py-20 lg:py-24">
+          <h1 className="max-w-3xl text-4xl font-semibold tracking-tight sm:text-5xl">
+            What do you need help with?
+          </h1>
+          <p className="text-muted-foreground mt-5 max-w-xl text-lg leading-8">
+            Choose the task below, or email us with the booking details that matter.
+          </p>
         </div>
-      </div>
+      </section>
 
-      {/* Main Content */}
-      <div className="container mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
-        {/* FAQ Section */}
-        <div className="mb-16">
-          <div className="mb-8 text-center">
-            <h2 className="text-3xl font-bold tracking-tight">Frequently Asked Questions</h2>
-            <p className="text-muted-foreground mt-2 text-lg">
-              Quick answers to questions you may have
-            </p>
-          </div>
-
-          <Card>
-            <CardContent className="pt-6">
-              <Accordion type="single" collapsible className="w-full">
-                {/* Getting Started */}
-                <AccordionItem value="what-is-discuno">
-                  <AccordionTrigger className="text-left text-base font-medium">
-                    What is Discuno and how does it work?
-                  </AccordionTrigger>
-                  <AccordionContent className="text-muted-foreground text-base leading-relaxed">
-                    Discuno is a peer-to-peer mentorship platform that connects college students
-                    with experienced mentors from their schools. Browse mentor profiles, book
-                    one-on-one sessions, and get personalized guidance on academics, career
-                    planning, internships, and more. All payments are processed securely through
-                    Stripe, and sessions are scheduled via integrated calendar management.
-                  </AccordionContent>
-                </AccordionItem>
-
-                <AccordionItem value="become-mentor">
-                  <AccordionTrigger className="text-left text-base font-medium">
-                    How do I become a mentor?
-                  </AccordionTrigger>
-                  <AccordionContent className="text-muted-foreground text-base leading-relaxed">
-                    To become a mentor, you must have a valid .edu email address from an accredited
-                    institution. Click the &quot;Mentor Sign In&quot; button in the top navigation
-                    to get started. You&apos;ll create your profile, set your availability and
-                    pricing, and connect your Stripe account to receive payments. Once your profile
-                    is complete, you&apos;ll be visible to students seeking mentorship.
-                  </AccordionContent>
-                </AccordionItem>
-
-                <AccordionItem value="finding-mentor">
-                  <AccordionTrigger className="text-left text-base font-medium">
-                    How do I find the right mentor for me?
-                  </AccordionTrigger>
-                  <AccordionContent className="text-muted-foreground text-base leading-relaxed">
-                    Use our filter system to search by school, major, or graduation year. Browse
-                    mentor profiles to view their experience, expertise, pricing, and student
-                    reviews. Each mentor&apos;s profile includes their background, areas of
-                    expertise, and availability. Take your time to find someone whose experience
-                    aligns with your goals.
-                  </AccordionContent>
-                </AccordionItem>
-
-                {/* Billing & Payments */}
-                <AccordionItem value="payment-security">
-                  <AccordionTrigger className="text-left text-base font-medium">
-                    How are payments processed? Is it secure?
-                  </AccordionTrigger>
-                  <AccordionContent className="text-muted-foreground text-base leading-relaxed">
-                    All payments are processed through Stripe, an industry-leading payment platform
-                    trusted by millions of businesses worldwide. We never store your credit card
-                    information on our servers. Payments are held securely and only released to
-                    mentors after the session is completed. We use bank-level encryption to protect
-                    all financial transactions.
-                  </AccordionContent>
-                </AccordionItem>
-
-                <AccordionItem value="refund-policy">
-                  <AccordionTrigger className="text-left text-base font-medium">
-                    What is your refund policy?
-                  </AccordionTrigger>
-                  <AccordionContent className="text-muted-foreground text-base leading-relaxed">
-                    We want you to have a great experience. If your mentor is a no-show or the
-                    session is significantly unsatisfactory, you are eligible for a full refund.
-                    Contact our support team within 48 hours of the session with details. We review
-                    each case individually and work quickly to resolve issues. Mentors who
-                    repeatedly fail to show up or provide poor service may be removed from the
-                    platform.
-                  </AccordionContent>
-                </AccordionItem>
-
-                <AccordionItem value="mentor-payment">
-                  <AccordionTrigger className="text-left text-base font-medium">
-                    How and when do mentors get paid?
-                  </AccordionTrigger>
-                  <AccordionContent className="text-muted-foreground text-base leading-relaxed">
-                    Mentors receive payment through Stripe Connect to their connected bank account.
-                    Payments are automatically transferred after a 7-day dispute period following
-                    session completion. This protects both mentors and students by ensuring session
-                    quality. You can track your earnings and payout schedule in your mentor
-                    dashboard.
-                  </AccordionContent>
-                </AccordionItem>
-
-                {/* Safety & Trust */}
-                <AccordionItem value="safety">
-                  <AccordionTrigger className="text-left text-base font-medium">
-                    How can I ensure a safe and productive mentorship experience?
-                  </AccordionTrigger>
-                  <AccordionContent className="text-muted-foreground text-base leading-relaxed">
-                    Your safety is our top priority. All mentors are verified through their .edu
-                    email addresses. We recommend keeping all communication and payments within the
-                    platform. Never share personal financial information, and report any suspicious
-                    behavior immediately. Sessions are conducted via video call using your preferred
-                    platform. If you experience any issues, contact our support team right away.
-                  </AccordionContent>
-                </AccordionItem>
-
-                <AccordionItem value="verification">
-                  <AccordionTrigger className="text-left text-base font-medium">
-                    How do you verify mentors?
-                  </AccordionTrigger>
-                  <AccordionContent className="text-muted-foreground text-base leading-relaxed">
-                    All mentors must sign up using a verified .edu email address from their
-                    institution. We also verify their Stripe Connect accounts for payment
-                    processing. While we verify institutional affiliation, we encourage students to
-                    read reviews and check mentor profiles carefully before booking. The review
-                    system helps maintain quality and accountability across the platform.
-                  </AccordionContent>
-                </AccordionItem>
-
-                {/* Technical */}
-                <AccordionItem value="missing-school">
-                  <AccordionTrigger className="text-left text-base font-medium">
-                    My school isn&apos;t listed. What should I do?
-                  </AccordionTrigger>
-                  <AccordionContent className="text-muted-foreground text-base leading-relaxed">
-                    We&apos;re constantly expanding our network of schools. If your institution
-                    isn&apos;t listed, please email support@discuno.com with the school&apos;s name,
-                    location, and your .edu email domain. We prioritize adding schools based on
-                    demand and will notify you once your school is added. Your feedback helps us
-                    grow and better serve the student community.
-                  </AccordionContent>
-                </AccordionItem>
-
-                <AccordionItem value="calendar-integration">
-                  <AccordionTrigger className="text-left text-base font-medium">
-                    How does calendar scheduling work?
-                  </AccordionTrigger>
-                  <AccordionContent className="text-muted-foreground text-base leading-relaxed">
-                    Our platform integrates with Cal.com for seamless calendar management. Mentors
-                    set their availability, and students can book sessions based on open time slots.
-                    Once booked, both parties receive calendar invitations and email confirmations.
-                    You&apos;ll get reminder notifications before your session. If you need to
-                    reschedule, contact the other party as soon as possible.
-                  </AccordionContent>
-                </AccordionItem>
-
-                <AccordionItem value="cancel-session">
-                  <AccordionTrigger className="text-left text-base font-medium">
-                    Can I cancel or reschedule a session?
-                  </AccordionTrigger>
-                  <AccordionContent className="text-muted-foreground text-base leading-relaxed">
-                    Life happens, and we understand. Please communicate with your mentor or student
-                    as early as possible if you need to cancel or reschedule. Our cancellation
-                    policy requires at least 24 hours notice for a full refund. Last-minute
-                    cancellations may not be eligible for refunds, as mentors have already reserved
-                    that time. Repeated cancellations may affect your account standing.
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Contact Section */}
-        <div className="text-center">
-          <Card className="border-primary/20 bg-primary/5">
-            <CardHeader className="pb-4">
-              <div className="bg-primary/10 mx-auto flex h-12 w-12 items-center justify-center rounded-full">
-                <HeadphonesIcon className="text-primary h-6 w-6" />
-              </div>
-              <CardTitle className="mt-4 text-2xl">Still need help?</CardTitle>
-              <CardDescription className="text-base">
-                Our support team typically responds within 24 hours
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4 pb-8">
-              <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
+      <div className="page-shell py-12 sm:py-16">
+        <nav aria-label="Support topics" className="border-foreground/20 border-y py-5 lg:hidden">
+          <p className="text-sm font-semibold">Help topics</p>
+          <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-3">
+            {supportGroups.map(group => (
+              <li key={group.id}>
                 <a
-                  href="mailto:support@discuno.com"
-                  className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center justify-center rounded-lg px-6 py-3 text-base font-medium shadow-sm transition-colors"
+                  href={`#${group.id}`}
+                  className="hover:text-primary focus-visible:ring-ring rounded-sm text-sm underline underline-offset-4 focus-visible:ring-2 focus-visible:outline-none"
                 >
-                  <Mail className="mr-2 h-5 w-5" />
-                  Email Support
+                  {group.title}
                 </a>
-                <a
-                  href="mailto:support@discuno.com?subject=Report%20an%20Issue"
-                  className="border-border bg-background hover:bg-accent inline-flex items-center justify-center rounded-lg border px-6 py-3 text-base font-medium shadow-sm transition-colors"
-                >
-                  <MessageSquare className="mr-2 h-5 w-5" />
-                  Report an Issue
+              </li>
+            ))}
+          </ul>
+        </nav>
+
+        <div className="grid gap-12 lg:grid-cols-[14rem_minmax(0,1fr)] lg:gap-18">
+          <aside className="hidden lg:block">
+            <nav aria-label="Support topics" className="sticky top-28">
+              <p className="font-semibold">Help topics</p>
+              <ul className="mt-4 flex flex-col gap-1">
+                {supportGroups.map(group => (
+                  <li key={group.id}>
+                    <a
+                      href={`#${group.id}`}
+                      className="text-muted-foreground hover:text-foreground focus-visible:ring-ring hover:bg-muted block rounded-md px-3 py-2.5 text-sm font-medium focus-visible:ring-2 focus-visible:outline-none"
+                    >
+                      {group.title}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          </aside>
+
+          <div className="min-w-0">
+            {supportGroups.map((group, groupIndex) => (
+              <section
+                key={group.id}
+                id={group.id}
+                className={groupIndex === 0 ? 'scroll-mt-28' : 'mt-16 scroll-mt-28'}
+                aria-labelledby={`${group.id}-heading`}
+              >
+                <div className="max-w-2xl">
+                  <h2 id={`${group.id}-heading`} className="text-2xl font-semibold tracking-tight">
+                    {group.title}
+                  </h2>
+                  <p className="text-muted-foreground mt-2 text-sm leading-6">
+                    {group.description}
+                  </p>
+                </div>
+
+                <Accordion className="border-foreground/20 mt-5 border-t">
+                  {group.items.map((item, itemIndex) => (
+                    <AccordionItem key={item.question} value={`${group.id}-${itemIndex}`}>
+                      <AccordionTrigger className="py-5 text-left text-base leading-6 font-medium hover:no-underline">
+                        {item.question}
+                      </AccordionTrigger>
+                      <AccordionContent className="text-muted-foreground max-w-3xl pb-5 text-base leading-7">
+                        {item.answer}
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+              </section>
+            ))}
+
+            <section className="border-foreground/20 mt-16 border-y py-8">
+              <div className="grid gap-7 sm:grid-cols-[1fr_auto] sm:items-center">
+                <div>
+                  <h2 className="text-2xl font-semibold">Still need help?</h2>
+                  <p className="text-muted-foreground mt-3 max-w-xl text-sm leading-6">
+                    Include the booking email and session date so we can find the right record
+                    without extra back-and-forth.
+                  </p>
+                </div>
+                <a href="mailto:support@discuno.com" className={buttonVariants({ size: 'lg' })}>
+                  <Mail data-icon="inline-start" />
+                  Email support
                 </a>
               </div>
-              <p className="text-muted-foreground text-sm">
-                For urgent safety concerns, please email us immediately at support@discuno.com
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+            </section>
 
-        {/* Additional Resources */}
-        <div className="mt-16 border-t pt-12">
-          <h3 className="mb-6 text-center text-xl font-semibold">Additional Resources</h3>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Link href="/terms">
-              <Card className="border-border/50 hover:border-primary/50 transition-colors">
-                <CardHeader>
-                  <div className="flex items-center gap-3">
-                    <div className="bg-primary/10 flex h-8 w-8 items-center justify-center rounded-lg">
-                      <BookOpen className="text-primary h-4 w-4" />
-                    </div>
-                    <CardTitle className="text-base">Terms of Service</CardTitle>
-                  </div>
-                  <CardDescription className="text-sm">
-                    Review our platform guidelines, policies, and user agreements
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-            </Link>
-            <Link href="/privacy">
-              <Card className="border-border/50 hover:border-primary/50 transition-colors">
-                <CardHeader>
-                  <div className="flex items-center gap-3">
-                    <div className="bg-primary/10 flex h-8 w-8 items-center justify-center rounded-lg">
-                      <Shield className="text-primary h-4 w-4" />
-                    </div>
-                    <CardTitle className="text-base">Privacy Policy</CardTitle>
-                  </div>
-                  <CardDescription className="text-sm">
-                    Learn how we protect your data and ensure secure transactions
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-            </Link>
+            <section className="mt-12" aria-labelledby="policies-heading">
+              <h2 id="policies-heading" className="text-lg font-semibold">
+                Policies and privacy
+              </h2>
+              <div className="border-foreground/20 mt-5 divide-y border-y">
+                <Link
+                  href="/terms"
+                  className="hover:text-primary focus-visible:ring-ring flex items-center justify-between gap-5 py-5 font-medium focus-visible:ring-2 focus-visible:outline-none"
+                >
+                  Terms of Service
+                  <ArrowRight data-icon="inline-end" />
+                </Link>
+                <Link
+                  href="/privacy"
+                  className="hover:text-primary focus-visible:ring-ring flex items-center justify-between gap-5 py-5 font-medium focus-visible:ring-2 focus-visible:outline-none"
+                >
+                  Privacy Policy
+                  <ArrowRight data-icon="inline-end" />
+                </Link>
+              </div>
+            </section>
           </div>
         </div>
       </div>

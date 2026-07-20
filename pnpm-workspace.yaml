@@ -1,2 +1,45 @@
 packages:
   - 'apps/*'
+
+autoInstallPeers: false
+dedupePeerDependents: false
+enablePrePostScripts: true
+gitChecks: true
+nodeOptions: '--max-old-space-size=4096'
+preferWorkspacePackages: true
+resolutionMode: highest
+sharedWorkspaceLockfile: true
+strictPeerDependencies: true
+supportedArchitectures:
+  os:
+    - current
+    - linux
+  cpu:
+    - current
+    - x64
+  libc:
+    - current
+    - glibc
+
+# Hold newly published dependency versions for 24 hours. Explicit exceptions
+# below are versions already reviewed for the current Stripe and Vitest stacks.
+minimumReleaseAge: 1440
+minimumReleaseAgeExclude:
+  - '@stripe/stripe-js@9.10.0'
+  - ast-v8-to-istanbul@1.0.5
+
+overrides:
+  esbuild: ^0.28.1
+  postcss: ^8.5.10
+  react-is: ^19.2.0
+  '@types/react': ^19.2.2
+  '@types/react-dom': ^19.2.2
+
+# pnpm 11 blocks unreviewed dependency install scripts. Native packages needed
+# by the build are approved explicitly; informational legacy scripts stay off.
+allowBuilds:
+  core-js: false
+  esbuild: true
+  protobufjs: false
+  sharp: true
+  unrs-resolver: true

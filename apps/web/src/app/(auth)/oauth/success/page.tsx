@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import { Spinner } from '~/components/ui/spinner'
 
 export default function OAuthSuccessPage() {
   useEffect(() => {
@@ -14,9 +15,10 @@ export default function OAuthSuccessPage() {
   }, [])
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4 text-center">
-      <h1 className="text-2xl font-bold">Sign In Successful</h1>
-      <p className="text-muted-foreground mt-2">
+    <main className="bg-background flex min-h-screen flex-col items-center justify-center p-6 text-center">
+      <Spinner className="text-primary mb-5 size-5" />
+      <h1 className="text-2xl font-semibold tracking-tight">You&apos;re signed in</h1>
+      <p className="text-muted-foreground mt-2 max-w-sm leading-6">
         You can now close this window and continue your booking.
       </p>
       <script
@@ -30,6 +32,6 @@ export default function OAuthSuccessPage() {
           `,
         }}
       />
-    </div>
+    </main>
   )
 }

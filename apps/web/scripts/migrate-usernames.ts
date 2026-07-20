@@ -71,14 +71,14 @@ async function migrateUsernames() {
 
   for (const u of users) {
     // Skip anonymous users (check email domain) or users without email
-    if (!u.email || u.email.includes('@discuno.com')) {
-      console.log(`Skipping anonymous user: ${u.email ?? u.id}`)
+    if (u.email.length === 0 || u.email.includes('@discuno.com')) {
+      console.log(`Skipping anonymous user: ${u.email.length > 0 ? u.email : u.id}`)
       skipped++
       continue
     }
 
     const username = await generateUsername(u.name, u.email)
-    const displayUsername = u.name ?? username
+    const displayUsername = u.name
 
     await db.update(user).set({ username, displayUsername }).where(eq(user.id, u.id))
 

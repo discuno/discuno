@@ -1,16 +1,18 @@
+import { ArrowLeftIcon, ArrowRightIcon } from 'lucide-react'
 import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { IconArrowLeft, IconCalendar, IconClock, IconTag } from '@tabler/icons-react'
 import { MDXRemote } from 'next-mdx-remote/rsc'
+import rehypeAutolinkHeadings from 'rehype-autolink-headings'
 import rehypeHighlight from 'rehype-highlight'
 import rehypeSlug from 'rehype-slug'
-import rehypeAutolinkHeadings from 'rehype-autolink-headings'
 import remarkGfm from 'remark-gfm'
-import { getAllPostSlugs, getPostBySlug, formatDate } from '~/lib/blog'
-import { createMetadata, siteConfig } from '~/lib/metadata'
+
 import { mdxComponents } from '~/components/shared/mdx-components'
+import { buttonVariants } from '~/components/ui/button'
+import { formatDate, getAllPosts, getPostBySlug } from '~/lib/blog'
+import { absoluteUrl, createMetadata, siteConfig } from '~/lib/metadata'
 
 import 'highlight.js/styles/github-dark.css'
 
@@ -19,9 +21,9 @@ type Props = {
 }
 
 export const generateStaticParams = async () => {
-  const slugs = getAllPostSlugs()
-  return slugs.map(slug => ({
-    slug,
+  const posts = getAllPosts()
+  return posts.map(post => ({
+    slug: post.slug,
   }))
 }
 
@@ -29,16 +31,23 @@ export const generateMetadata = async ({ params }: Props): Promise<Metadata> => 
   const { slug } = await params
   const post = getPostBySlug(slug)
 
-  if (!post) {
-    return {}
+  if (!post || !post.published) {
+    return {
+      title: 'Article not found',
+      robots: {
+        index: false,
+        follow: false,
+      },
+    }
   }
 
   const publishedTime = new Date(post.date).toISOString()
-  const url = `${siteConfig.url}/blog/${slug}`
+  const url = `/blog/${slug}`
 
   return createMetadata({
     title: post.title,
     description: post.description,
+    authors: [{ name: post.author }],
     openGraph: {
       title: post.title,
       description: post.description,
@@ -77,17 +86,18 @@ const BlogPostPage = async ({ params }: Props) => {
     notFound()
   }
 
-  // JSON-LD structured data for blog post
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'BlogPosting',
+    '@id': absoluteUrl(`/blog/${slug}#article`),
+    url: absoluteUrl(`/blog/${slug}`),
     headline: post.title,
     description: post.description,
-    image: post.image ? `${siteConfig.url}${post.image}` : siteConfig.ogImage,
+    image: absoluteUrl(post.image ?? siteConfig.ogImage),
     datePublished: post.date,
-    dateModified: post.date,
+    dateModified: post.lastModified.toISOString(),
     author: {
-      '@type': 'Person',
+      '@type': post.author === 'Discuno Team' ? 'Organization' : 'Person',
       name: post.author,
     },
     publisher: {
@@ -95,87 +105,80 @@ const BlogPostPage = async ({ params }: Props) => {
       name: siteConfig.name,
       logo: {
         '@type': 'ImageObject',
-        url: `${siteConfig.url}/logos/black-icon-logo.svg`,
+        url: absoluteUrl('/logos/black-icon-logo.png'),
       },
     },
     mainEntityOfPage: {
       '@type': 'WebPage',
-      '@id': `${siteConfig.url}/blog/${slug}`,
+      '@id': absoluteUrl(`/blog/${slug}`),
     },
     keywords: post.tags.join(', '),
+    isAccessibleForFree: true,
+    inLanguage: 'en-US',
   }
 
   return (
     <>
-      {/* JSON-LD structured data */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <article className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
-        {/* Back link */}
-        <Link
-          href="/blog"
-          className="text-muted-foreground hover:text-foreground mb-8 inline-flex items-center gap-2 text-sm transition-colors"
-        >
-          <IconArrowLeft size={16} />
-          Back to Blog
-        </Link>
+      <article className="page-shell py-10 sm:py-14 lg:py-18">
+        <div className="mx-auto max-w-4xl">
+          <Link
+            href="/blog"
+            className={buttonVariants({
+              variant: 'ghost',
+              size: 'sm',
+              className: '-ml-3',
+            })}
+          >
+            <ArrowLeftIcon data-icon="inline-start" />
+            All college guides
+          </Link>
 
-        {/* Article Header */}
-        <header className="mb-8 space-y-4">
-          {/* Tags */}
-          {post.tags.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {post.tags.map(tag => (
-                <span
-                  key={tag}
-                  className="bg-primary/10 text-primary inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium"
-                >
-                  <IconTag size={12} />
-                  {tag}
-                </span>
-              ))}
-            </div>
-          )}
+          <header className="mt-8 border-b pb-9 sm:pb-12">
+            <h1 className="font-display text-5xl leading-[0.96] font-medium tracking-[-0.045em] text-balance sm:text-6xl lg:text-7xl">
+              {post.title}
+            </h1>
+            <p className="text-muted-foreground mt-6 max-w-[42rem] text-lg leading-8 sm:text-xl">
+              {post.description}
+            </p>
 
-          {/* Title */}
-          <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">{post.title}</h1>
+            <dl className="text-muted-foreground mt-8 flex flex-wrap gap-x-5 gap-y-2 text-sm">
+              <div>
+                <dt className="sr-only">Author</dt>
+                <dd className="text-foreground font-medium">By {post.author}</dd>
+              </div>
+              <div>
+                <dt className="sr-only">Published</dt>
+                <dd>
+                  <time dateTime={post.date}>{formatDate(post.date)}</time>
+                </dd>
+              </div>
+              <div>
+                <dt className="sr-only">Reading time</dt>
+                <dd>{post.readingTime}</dd>
+              </div>
+            </dl>
+          </header>
+        </div>
 
-          {/* Description */}
-          <p className="text-muted-foreground text-xl">{post.description}</p>
-
-          {/* Meta information */}
-          <div className="text-muted-foreground flex flex-wrap items-center gap-4 border-y py-4 text-sm">
-            <div className="flex items-center gap-1">
-              <IconCalendar size={16} />
-              <time dateTime={post.date}>{formatDate(post.date)}</time>
-            </div>
-            <div className="flex items-center gap-1">
-              <IconClock size={16} />
-              <span>{post.readingTime}</span>
-            </div>
-            <div className="text-foreground font-medium">By {post.author}</div>
-          </div>
-        </header>
-
-        {/* Featured Image */}
         {post.image && (
-          <div className="relative mb-12 aspect-video overflow-hidden rounded-lg">
+          <div className="relative mx-auto mt-10 aspect-video max-w-5xl overflow-hidden rounded-xl sm:mt-12">
             <Image
               src={post.image}
               alt={post.title}
               fill
               className="object-cover"
-              priority
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1200px"
+              preload
+              sizes="(max-width: 768px) 100vw, (max-width: 1280px) 80vw, 1024px"
             />
           </div>
         )}
 
-        {/* Article Content */}
-        <div className="prose prose-slate dark:prose-invert max-w-none">
+        <div className="reading-measure mx-auto mt-12 sm:mt-16">
           <MDXRemote
             source={post.content}
             components={mdxComponents}
@@ -198,23 +201,23 @@ const BlogPostPage = async ({ params }: Props) => {
               },
             }}
           />
-        </div>
 
-        {/* Article Footer */}
-        <footer className="mt-12 border-t pt-8">
-          <div className="space-y-4">
-            <p className="text-muted-foreground text-sm">
-              Want to learn more? Connect with verified student mentors on Discuno for personalized
-              guidance.
+          <footer className="section-rule mt-16 pt-8">
+            <p className="text-muted-foreground max-w-xl text-base leading-7">
+              Still sorting out the decision? Talk it through with a student who has firsthand
+              context.
             </p>
             <Link
-              href="/"
-              className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors"
+              href="/find"
+              className={buttonVariants({
+                className: 'mt-5',
+              })}
             >
-              Find a Mentor
+              Find someone who&apos;s been there
+              <ArrowRightIcon data-icon="inline-end" />
             </Link>
-          </div>
-        </footer>
+          </footer>
+        </div>
       </article>
     </>
   )

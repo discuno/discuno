@@ -1,208 +1,147 @@
 'use client'
 
-import { BookOpen, LayoutDashboard, LogOut, Menu, Search, User, X } from 'lucide-react'
+import { ArrowRight, LayoutDashboard, Menu } from 'lucide-react'
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { usePathname } from 'next/navigation'
+import { useState } from 'react'
 import { LoginModal } from '~/components/auth/LoginModal'
-import { ThemeAwareIconLogo } from '~/components/shared/ThemeAwareIconLogo'
+import { Brand } from '~/components/shared/Brand'
 import { AvatarIcon } from '~/components/shared/UserAvatar'
-import { Badge } from '~/components/ui/badge'
-import { Button } from '~/components/ui/button'
+import { Button, buttonVariants } from '~/components/ui/button'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '~/components/ui/dropdown-menu'
+  Sheet,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '~/components/ui/sheet'
+import { Skeleton } from '~/components/ui/skeleton'
 import { cn } from '~/lib/utils'
-
-interface OnboardingStatus {
-  isComplete: boolean
-  completedSteps: number
-  totalSteps: number
-  steps: Array<{
-    id: string
-    title: string
-    description: string
-    completed: boolean
-    actionUrl: string
-    actionLabel: string
-    iconName: string
-  }>
-}
 
 interface NavBarBaseProps {
   profilePic: string | null
   isAuthenticated: boolean
   isMentor: boolean
-  onboardingStatus: OnboardingStatus | null
 }
 
-export function NavBarBase({
-  profilePic,
-  isAuthenticated,
-  isMentor,
-  onboardingStatus,
-}: NavBarBaseProps) {
-  const [isScrolled, setIsScrolled] = useState(false)
+type Audience = 'student' | 'mentor'
+
+const publicLinks = [
+  { href: '/#how-it-works', label: 'How it works' },
+  { href: '/blog', label: 'College guides' },
+  { href: '/for-mentors', label: 'Start mentoring' },
+]
+
+const mobileLinks = [...publicLinks, { href: '/about', label: 'About Discuno' }]
+
+function isActiveLink(pathname: string, href: string) {
+  if (href.includes('#')) return false
+  return pathname === href || (href !== '/' && pathname.startsWith(`${href}/`))
+}
+
+export function NavBarBase({ profilePic, isAuthenticated, isMentor }: NavBarBaseProps) {
+  const pathname = usePathname()
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false)
   const [loginMode, setLoginMode] = useState<'signin' | 'signup'>('signin')
+  const [loginAudience, setLoginAudience] = useState<Audience>('student')
 
-  const openLoginModal = (mode: 'signin' | 'signup') => {
+  const openLoginModal = (mode: 'signin' | 'signup', audience: Audience) => {
     setLoginMode(mode)
+    setLoginAudience(audience)
     setIsLoginModalOpen(true)
   }
 
-  // Detect scroll for subtle styling changes
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20)
-    }
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
-
   return (
     <>
-      <LoginModal isOpen={isLoginModalOpen} onOpenChange={setIsLoginModalOpen} mode={loginMode} />
+      <LoginModal
+        isOpen={isLoginModalOpen}
+        onOpenChange={setIsLoginModalOpen}
+        mode={loginMode}
+        defaultUserType={loginAudience}
+      />
 
-      {/*
-        Floating "Pill" Navbar
-        Centered, detached from edges, high z-index.
-      */}
-      <div className="pointer-events-none fixed inset-x-0 top-4 z-50 flex justify-center px-4">
+      <header className="border-foreground/15 bg-background sticky top-0 z-40 border-b">
         <nav
-          className={cn(
-            'pointer-events-auto flex items-center justify-between gap-2 p-1.5 transition-all duration-500 ease-out',
-            'border-border/40 bg-background/80 supports-[backdrop-filter]:bg-background/60 shadow-lg backdrop-blur-xl',
-            'w-full max-w-4xl rounded-full', // Pill shape
-            isScrolled ? 'border-border/60 shadow-xl' : 'border-border/20'
-          )}
+          className="page-shell flex h-[4.25rem] items-center gap-6"
+          aria-label="Main navigation"
         >
-          {/* Logo Section */}
-          <Link
-            href="/"
-            className="group bg-background/50 hover:bg-accent flex aspect-square h-10 w-10 items-center justify-center rounded-full transition-colors"
-          >
-            <ThemeAwareIconLogo />
-            <span className="sr-only">Home</span>
-          </Link>
+          <Brand className="shrink-0" />
 
-          {/* Desktop Links - Managed as a clean row */}
-          <div className="hidden items-center gap-1 md:flex">
-            <NavLink href="/" icon={<Search className="h-4 w-4" />} label="Find Mentors" />
-            <div className="bg-border/50 mx-1 h-4 w-px" />
-            <NavLink
-              href="/resources"
-              icon={<BookOpen className="h-4 w-4" />}
-              label="Resources"
-              disabled
-              badge="Soon"
-            />
+          <div className="hidden flex-1 items-center justify-center gap-8 lg:flex">
+            {publicLinks.map(link => (
+              <Link
+                key={link.href}
+                href={link.href}
+                aria-current={isActiveLink(pathname, link.href) ? 'page' : undefined}
+                className={cn(
+                  'hover:text-foreground focus-visible:ring-ring/30 rounded-sm text-sm font-medium transition-colors focus-visible:ring-3 focus-visible:outline-none',
+                  isActiveLink(pathname, link.href) ? 'text-foreground' : 'text-muted-foreground'
+                )}
+              >
+                {link.label}
+              </Link>
+            ))}
           </div>
 
-          {/* Mobile Spacer / Center replacement */}
-          <div className="flex flex-1 md:hidden" />
-
-          {/* Right Action Section */}
-          <div className="flex items-center gap-2 pl-2">
+          <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
             {!isAuthenticated ? (
               <>
-                <div className="hidden sm:block">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-muted-foreground hover:text-foreground rounded-full px-4"
-                    onClick={() => openLoginModal('signin')}
-                  >
-                    Sign In
-                  </Button>
-                </div>
-                <div onClick={() => openLoginModal('signup')}>
-                  <Button size="sm" className="rounded-full px-5 font-medium shadow-sm">
-                    Get Started
-                  </Button>
-                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="hidden sm:inline-flex"
+                  onClick={() => openLoginModal('signin', 'student')}
+                >
+                  Sign in
+                </Button>
+                <Link
+                  href="/find"
+                  className={cn(buttonVariants({ size: 'sm' }), 'hidden md:inline-flex')}
+                >
+                  Find a mentor
+                  <ArrowRight data-icon="inline-end" />
+                </Link>
               </>
             ) : (
               <>
-                {isMentor && (
-                  <Link href="/settings" className="hidden sm:block">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-muted-foreground hover:bg-accent hover:text-foreground h-9 w-9 rounded-full"
-                      title="Dashboard"
-                    >
-                      <LayoutDashboard className="h-4 w-4" />
-                    </Button>
+                {isMentor ? (
+                  <Link
+                    href="/settings"
+                    className={cn(buttonVariants({ size: 'sm' }), 'hidden sm:inline-flex')}
+                  >
+                    <LayoutDashboard data-icon="inline-start" />
+                    Open workspace
+                  </Link>
+                ) : (
+                  <Link
+                    href="/find"
+                    className={cn(buttonVariants({ size: 'sm' }), 'hidden sm:inline-flex')}
+                  >
+                    Find a mentor
+                    <ArrowRight data-icon="inline-end" />
                   </Link>
                 )}
                 <AvatarIcon
                   profilePic={profilePic}
                   isAuthenticated={isAuthenticated}
-                  onboardingStatus={onboardingStatus}
+                  isMentor={isMentor}
                 />
               </>
             )}
 
-            {/* Mobile Menu Trigger */}
-            <div className="md:hidden">
-              <MobileMenu
-                isAuthenticated={isAuthenticated}
-                isMentor={isMentor}
-                onLoginClick={openLoginModal}
-              />
-            </div>
+            <MobileMenu
+              isAuthenticated={isAuthenticated}
+              isMentor={isMentor}
+              onLoginClick={openLoginModal}
+            />
           </div>
         </nav>
-      </div>
+      </header>
     </>
   )
 }
 
-function NavLink({
-  href,
-  icon,
-  label,
-  disabled,
-  badge,
-}: {
-  href: string
-  icon: React.ReactNode
-  label: string
-  disabled?: boolean
-  badge?: string
-}) {
-  if (disabled) {
-    return (
-      <div className="text-muted-foreground/50 flex cursor-not-allowed items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors">
-        {icon}
-        <span>{label}</span>
-        {badge && (
-          <Badge
-            variant="outline"
-            className="border-muted-foreground/20 text-muted-foreground/50 ml-0.5 h-4 px-1 text-[9px]"
-          >
-            {badge}
-          </Badge>
-        )}
-      </div>
-    )
-  }
-  return (
-    <Link
-      href={href}
-      className="text-muted-foreground hover:bg-accent hover:text-foreground flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors"
-    >
-      {icon}
-      <span>{label}</span>
-    </Link>
-  )
-}
-
-// Simplified Mobile Menu
 function MobileMenu({
   isAuthenticated,
   isMentor,
@@ -210,95 +149,103 @@ function MobileMenu({
 }: {
   isAuthenticated: boolean
   isMentor: boolean
-  onLoginClick: (mode: 'signin' | 'signup') => void
+  onLoginClick: (mode: 'signin' | 'signup', audience: Audience) => void
 }) {
+  const pathname = usePathname()
   const [open, setOpen] = useState(false)
 
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
-      <DropdownMenuTrigger asChild>
-        <Button size="icon" variant="ghost" className="h-9 w-9 rounded-full" aria-label="Menu">
-          {open ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" sideOffset={10} className="w-64 rounded-xl p-2">
-        <DropdownMenuItem asChild>
-          <Link href="/" className="flex w-full items-center gap-2 rounded-lg p-2 font-medium">
-            <Search className="h-4 w-4" />
-            Find Mentors
-          </Link>
-        </DropdownMenuItem>
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger
+        render={
+          <Button
+            size="icon-sm"
+            variant="ghost"
+            className="lg:hidden"
+            aria-label="Open navigation menu"
+          />
+        }
+      >
+        <Menu />
+      </SheetTrigger>
+      <SheetContent className="w-[min(90vw,25rem)]">
+        <SheetHeader>
+          <SheetTitle>Explore Discuno</SheetTitle>
+        </SheetHeader>
 
-        <DropdownMenuItem
-          disabled
-          className="flex w-full items-center gap-2 rounded-lg p-2 font-medium opacity-50"
-        >
-          <BookOpen className="h-4 w-4" />
-          Resources
-          <Badge variant="outline" className="ml-auto h-5">
-            Soon
-          </Badge>
-        </DropdownMenuItem>
+        <nav className="flex flex-col px-5" aria-label="Mobile navigation">
+          {mobileLinks.map(link => (
+            <Link
+              key={link.href}
+              href={link.href}
+              aria-current={isActiveLink(pathname, link.href) ? 'page' : undefined}
+              className={cn(
+                'border-foreground/15 focus-visible:ring-ring/30 flex min-h-14 items-center border-b text-lg font-medium transition-colors outline-none focus-visible:ring-3',
+                isActiveLink(pathname, link.href)
+                  ? 'text-primary'
+                  : 'text-foreground hover:text-primary'
+              )}
+              onClick={() => setOpen(false)}
+            >
+              {link.label}
+            </Link>
+          ))}
+        </nav>
 
-        <DropdownMenuSeparator className="my-1" />
-
-        {isAuthenticated ? (
-          <>
-            {isMentor && (
-              <DropdownMenuItem asChild>
-                <Link
-                  href="/settings"
-                  className="flex w-full items-center gap-2 rounded-lg p-2 font-medium"
-                >
-                  <LayoutDashboard className="h-4 w-4" />
-                  Mentor Dashboard
-                </Link>
-              </DropdownMenuItem>
-            )}
-            <DropdownMenuItem asChild>
-              <Link
-                href="/dashboard"
-                className="flex w-full items-center gap-2 rounded-lg p-2 font-medium"
+        <SheetFooter>
+          {!isAuthenticated ? (
+            <>
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={() => {
+                  onLoginClick('signin', 'student')
+                  setOpen(false)
+                }}
               >
-                <User className="h-4 w-4" />
-                My Account
+                Sign in
+              </Button>
+              <Link
+                href="/find"
+                className={buttonVariants({ size: 'lg' })}
+                onClick={() => setOpen(false)}
+              >
+                Find a mentor
+                <ArrowRight data-icon="inline-end" />
               </Link>
-            </DropdownMenuItem>
-          </>
-        ) : (
-          <>
-            <DropdownMenuItem
-              className="flex w-full cursor-pointer items-center gap-2 rounded-lg p-2 font-medium"
-              onClick={() => {
-                onLoginClick('signup')
-                setOpen(false)
-              }}
+            </>
+          ) : isMentor ? (
+            <Link
+              href="/settings"
+              className={buttonVariants({ size: 'lg' })}
+              onClick={() => setOpen(false)}
             >
-              <User className="h-4 w-4" />
-              Get Started
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              className="flex w-full cursor-pointer items-center gap-2 rounded-lg p-2 font-medium"
-              onClick={() => {
-                onLoginClick('signin')
-                setOpen(false)
-              }}
+              <LayoutDashboard data-icon="inline-start" />
+              Open workspace
+            </Link>
+          ) : (
+            <Link
+              href="/find"
+              className={buttonVariants({ size: 'lg' })}
+              onClick={() => setOpen(false)}
             >
-              <LogOut className="h-4 w-4" />
-              Sign In
-            </DropdownMenuItem>
-          </>
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
+              Find a mentor
+              <ArrowRight data-icon="inline-end" />
+            </Link>
+          )}
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   )
 }
 
-// Minimal Skeleton for the Pill
 export function NavBarSkeleton() {
   return (
-    <div className="fixed inset-x-0 top-4 z-50 flex justify-center px-4">
-      <div className="border-border/20 bg-background/80 h-14 w-full max-w-4xl rounded-full border shadow-lg backdrop-blur-xl" />
+    <div className="border-foreground/15 bg-background h-[4.25rem] border-b">
+      <div className="page-shell flex h-full items-center justify-between">
+        <Skeleton className="h-6 w-28" />
+        <Skeleton className="h-9 w-24" />
+      </div>
     </div>
   )
 }

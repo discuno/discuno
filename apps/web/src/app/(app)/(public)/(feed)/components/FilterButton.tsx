@@ -1,8 +1,7 @@
 'use client'
 
-import { Check, ChevronsUpDown, X } from 'lucide-react'
-import { useState } from 'react'
-
+import { Check, ChevronsUpDown, X, type LucideIcon } from 'lucide-react'
+import { startTransition, useOptimistic, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '~/components/ui/button'
 import {
@@ -16,18 +15,46 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '~/components/ui/popover'
 import { cn, decodeUrlParam } from '~/lib/utils'
 
-interface FilterValue {
+export interface FilterValue {
   value: string
   label: string
   id: number
 }
 
+export type DiscoveryFilterQueryName = 'school' | 'major' | 'gradYear'
+
+const DISCOVERY_FILTER_QUERY_NAMES: DiscoveryFilterQueryName[] = ['school', 'major', 'gradYear']
+
+export function createFindHref(
+  currentSearch: string,
+  queryName: DiscoveryFilterQueryName,
+  nextValue: string
+) {
+  const currentParams = new URLSearchParams(currentSearch)
+  const nextParams = new URLSearchParams()
+
+  for (const allowedQueryName of DISCOVERY_FILTER_QUERY_NAMES) {
+    const currentValue = currentParams.get(allowedQueryName)
+    if (currentValue) nextParams.set(allowedQueryName, currentValue)
+  }
+
+  if (nextValue) {
+    nextParams.set(queryName, nextValue)
+  } else {
+    nextParams.delete(queryName)
+  }
+
+  const query = nextParams.toString()
+  return `/find${query ? `?${query}` : ''}#mentors`
+}
+
 interface FilterProps {
   filterItems: FilterValue[]
-  queryName: string
+  queryName: DiscoveryFilterQueryName
   startValue: string
   label?: string
   className?: string
+  icon?: LucideIcon
 }
 
 export const FilterButton = ({
@@ -36,78 +63,79 @@ export const FilterButton = ({
   startValue,
   label,
   className,
+  icon: Icon,
 }: FilterProps) => {
   const decodedStartValue = decodeUrlParam(startValue)
   const foundItem = filterItems.find(item => item.value === decodedStartValue)
 
   const [open, setOpen] = useState(false)
-  const [value, setValue] = useState(foundItem?.value ?? '')
+  const [value, setOptimisticValue] = useOptimistic(foundItem?.value ?? '')
   const router = useRouter()
+  const selectedItem = filterItems.find(item => item.value === value)
+  const controlLabel = label ?? `Select ${queryName}`
 
   const handleFilterChange = (itemId: number) => {
-    const selectedItem = filterItems.find(item => item.id === itemId)
-    const selectedValue = selectedItem?.value ?? ''
-    const url = new URL(window.location.href)
+    const nextItem = filterItems.find(item => item.id === itemId)
+    const selectedValue = nextItem?.value ?? ''
+    const nextValue = selectedValue === value ? '' : selectedValue
 
-    if (selectedValue === value) {
-      url.searchParams.delete(queryName)
-      setValue('')
-    } else {
-      setValue(selectedValue)
-      url.searchParams.set(queryName, selectedItem?.value ?? '')
-    }
-
-    router.push(url.pathname + url.search)
+    startTransition(() => {
+      setOptimisticValue(nextValue)
+      router.push(createFindHref(window.location.search, queryName, nextValue))
+    })
     setOpen(false)
   }
 
-  const handleClearFilter = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    const url = new URL(window.location.href)
-    url.searchParams.delete(queryName)
-    setValue('')
-    router.push(url.pathname + url.search)
+  const handleClearFilter = (event: React.MouseEvent) => {
+    event.stopPropagation()
+    startTransition(() => {
+      setOptimisticValue('')
+      router.push(createFindHref(window.location.search, queryName, ''))
+    })
   }
 
   return (
-    <div className={cn('flex items-center gap-1', className)}>
+    <div className={cn('flex min-w-0 items-center gap-1', className)}>
       <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            className="focus:ring-primary w-full justify-between focus:ring-2 dark:bg-gray-700 dark:text-gray-200"
-          >
-            <span className="truncate">
-              {value
-                ? filterItems.find(item => item.value === value)?.label
-                : (label ?? `Select ${queryName}...`)}
+        <PopoverTrigger
+          render={
+            <Button
+              variant={value ? 'secondary' : 'outline'}
+              role="combobox"
+              aria-expanded={open}
+              aria-label={selectedItem ? `${controlLabel}: ${selectedItem.label}` : controlLabel}
+              className="h-11 min-w-0 flex-1 justify-between"
+            />
+          }
+        >
+          <span className="flex min-w-0 items-center gap-2">
+            {Icon && <Icon data-icon="inline-start" aria-hidden="true" />}
+            <span className={cn('truncate', !value && 'text-muted-foreground')}>
+              {selectedItem?.label ?? controlLabel}
             </span>
-            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
+          </span>
+          <ChevronsUpDown data-icon="inline-end" aria-hidden="true" />
         </PopoverTrigger>
-        <PopoverContent className="border/40 bg-background/60 w-[225px] p-0 backdrop-blur-md">
+        <PopoverContent
+          className="w-(--anchor-width) min-w-[260px] p-0"
+          align="start"
+          sideOffset={6}
+        >
           <Command>
-            <CommandInput placeholder={`Search ${queryName}...`} className="bg-transparent" />
+            <CommandInput placeholder={`Search ${controlLabel.toLowerCase()}`} />
             <CommandList>
-              <CommandEmpty>No {queryName} found.</CommandEmpty>
-              <CommandGroup>
+              <CommandEmpty>No matching options.</CommandEmpty>
+              <CommandGroup heading={controlLabel}>
                 {filterItems.map(item => (
                   <CommandItem
                     key={item.value}
                     value={item.value}
                     keywords={[item.label]}
-                    onSelect={() => {
-                      handleFilterChange(item.id)
-                    }}
-                    className="text-foreground hover:bg-muted"
+                    onSelect={() => handleFilterChange(item.id)}
                   >
                     <Check
-                      className={cn(
-                        'mr-2 h-4 w-4',
-                        value === item.value ? 'opacity-100' : 'opacity-0'
-                      )}
+                      className={cn(value === item.value ? 'opacity-100' : 'opacity-0')}
+                      aria-hidden="true"
                     />
                     {item.label}
                   </CommandItem>
@@ -122,10 +150,10 @@ export const FilterButton = ({
           variant="ghost"
           size="icon"
           onClick={handleClearFilter}
-          className="text-muted-foreground hover:text-foreground h-9 w-9 shrink-0"
-          aria-label={`Clear ${queryName} filter`}
+          className="shrink-0"
+          aria-label={`Clear ${controlLabel.toLowerCase()}`}
         >
-          <X className="h-4 w-4" />
+          <X aria-hidden="true" />
         </Button>
       )}
     </div>

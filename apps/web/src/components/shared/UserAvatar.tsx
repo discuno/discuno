@@ -1,186 +1,100 @@
 'use client'
 
-import { HelpCircle, Info, LayoutDashboard, LogIn, Moon, Settings, Sun, User } from 'lucide-react'
+import { HelpCircle, LayoutDashboard, LogOut, Moon, Sun, User } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { Button } from '~/components/ui/button'
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from '~/components/ui/dropdown-menu'
-import { StatusDot } from '~/components/ui/status-dot'
 import { authClient } from '~/lib/auth-client'
-
-const AvatarPic = ({
-  profilePic,
-  showStatusDot,
-  isActive,
-}: {
-  profilePic: string | null
-  showStatusDot?: boolean
-  isActive?: boolean
-}) => {
-  return (
-    <div className="relative h-10 w-10">
-      <Avatar>
-        <AvatarImage src={profilePic ?? undefined} alt="Profile Picture" width={40} height={40} />
-        <AvatarFallback>
-          <User className="h-5 w-5" />
-        </AvatarFallback>
-      </Avatar>
-      {showStatusDot && (
-        <div className="absolute -top-1 -right-0.5">
-          <StatusDot status={isActive ? 'active' : 'inactive'} size="md" />
-        </div>
-      )}
-    </div>
-  )
-}
 
 interface AvatarIconProps {
   profilePic: string | null
   isAuthenticated?: boolean
-  onboardingStatus?: { isComplete: boolean } | null
+  isMentor?: boolean
 }
 
 export const AvatarIcon = ({
   profilePic,
   isAuthenticated = false,
-  onboardingStatus,
+  isMentor = false,
 }: AvatarIconProps) => {
   const router = useRouter()
-  // Show login button for unauthenticated users
-  if (!isAuthenticated) {
-    return (
-      <div className="flex flex-row items-center justify-end space-x-4">
-        <SettingsDropdown />
-        <Button asChild variant="default" size="sm">
-          <Link href="/auth" className="flex items-center gap-2">
-            <LogIn className="h-4 w-4" />
-            Mentor Sign In
-          </Link>
-        </Button>
-      </div>
-    )
-  }
+  const { resolvedTheme, setTheme } = useTheme()
 
-  return (
-    <div className="flex flex-row items-center justify-end space-x-4">
-      <SettingsDropdown />
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="outline"
-            size="icon"
-            className="focus:ring-primary h-10 w-10 rounded-full focus:ring-2"
-            aria-label="User menu"
-          >
-            <AvatarPic
-              profilePic={profilePic}
-              showStatusDot={!!onboardingStatus}
-              isActive={onboardingStatus?.isComplete ?? false}
-            />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-56" align="end">
-          <DropdownMenuLabel>My Account</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <Link href="/settings">
-            <DropdownMenuItem>
-              <div className="flex w-full items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <LayoutDashboard className="h-4 w-4" />
-                  <span>Dashboard</span>
-                </div>
-                {onboardingStatus && !onboardingStatus.isComplete && (
-                  <StatusDot status="inactive" size="sm" />
-                )}
-              </div>
-            </DropdownMenuItem>
-          </Link>
-          <Link href="/support">
-            <DropdownMenuItem>
-              <HelpCircle className="mr-2 h-4 w-4" />
-              Support
-            </DropdownMenuItem>
-          </Link>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            onClick={async () => {
-              try {
-                await authClient.signOut({
-                  fetchOptions: {
-                    onSuccess: () => {
-                      router.push('/')
-                      router.refresh()
-                    },
-                  },
-                })
-              } catch (error) {
-                console.error('Sign out error:', error)
-                // Fallback redirect
-                router.push('/')
-                router.refresh()
-              }
-            }}
-            className="text-red-600 focus:text-red-600 dark:text-red-400 dark:focus:text-red-400"
-          >
-            Log out
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
-  )
-}
-
-const SettingsDropdown = () => {
-  const { theme, setTheme } = useTheme()
-
-  const toggleTheme = () => {
-    setTheme(theme === 'light' ? 'dark' : 'light')
-  }
+  if (!isAuthenticated) return null
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label="Settings" className="h-10 w-10">
-          <Settings className="h-6 w-6" />
-        </Button>
+      <DropdownMenuTrigger
+        render={
+          <Button
+            variant="ghost"
+            size="icon"
+            className="relative rounded-full"
+            aria-label="Open account menu"
+          />
+        }
+      >
+        <Avatar className="border-border h-9 w-9 border">
+          <AvatarImage src={profilePic ?? undefined} alt="Your profile" />
+          <AvatarFallback className="bg-secondary text-secondary-foreground">
+            <User className="h-4 w-4" />
+          </AvatarFallback>
+        </Avatar>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuLabel>Help</DropdownMenuLabel>
-        <Link href="/support">
-          <DropdownMenuItem>
-            <HelpCircle className="mr-2 h-4 w-4" />
-            <span>Support</span>
+      <DropdownMenuContent className="w-60 rounded-xl p-2" align="end" sideOffset={8}>
+        <DropdownMenuLabel className="text-muted-foreground px-2 py-1.5 text-xs font-medium">
+          Your account
+        </DropdownMenuLabel>
+        {isMentor && (
+          <DropdownMenuItem render={<Link href="/settings" className="gap-3 py-2.5" />}>
+            <LayoutDashboard />
+            <span className="flex-1">Open workspace</span>
           </DropdownMenuItem>
-        </Link>
-        <Link href="/about">
-          <DropdownMenuItem>
-            <Info className="mr-2 h-4 w-4" />
-            <span>About Us</span>
-          </DropdownMenuItem>
-        </Link>
+        )}
+        <DropdownMenuItem render={<Link href="/support" className="gap-3 py-2.5" />}>
+          <HelpCircle />
+          Help and support
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          className="gap-3 py-2.5"
+          onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+        >
+          {resolvedTheme === 'dark' ? <Sun /> : <Moon />}
+          {resolvedTheme === 'dark' ? 'Use light theme' : 'Use dark theme'}
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuLabel>Theme</DropdownMenuLabel>
-        <DropdownMenuItem onClick={toggleTheme}>
-          {theme === 'light' ? (
-            <>
-              <Moon className="mr-2 h-4 w-4" />
-              <span>Dark</span>
-            </>
-          ) : (
-            <>
-              <Sun className="mr-2 h-4 w-4" />
-              <span>Light</span>
-            </>
-          )}
+        <DropdownMenuItem
+          variant="destructive"
+          className="gap-3 py-2.5"
+          onClick={async () => {
+            try {
+              await authClient.signOut({
+                fetchOptions: {
+                  onSuccess: () => {
+                    router.push('/')
+                    router.refresh()
+                  },
+                },
+              })
+            } catch (error) {
+              console.error('Sign out error:', error)
+              router.push('/')
+              router.refresh()
+            }
+          }}
+        >
+          <LogOut />
+          Sign out
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

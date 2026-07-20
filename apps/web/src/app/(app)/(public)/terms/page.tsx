@@ -1,4 +1,3 @@
-import { Scale } from 'lucide-react'
 import type { Metadata } from 'next'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
 import { createMetadata } from '~/lib/metadata'
@@ -7,33 +6,27 @@ export const metadata: Metadata = createMetadata({
   title: 'Terms of Service',
   description:
     "Read Discuno's terms of service covering user agreements, platform guidelines, mentor policies, payment terms, and user responsibilities.",
+  alternates: { canonical: '/terms' },
   openGraph: {
-    title: 'Terms of Service - Discuno',
-    description: 'Platform guidelines and user agreements for our mentorship community.',
+    title: 'Terms of Service | Discuno',
+    description: 'The agreement governing accounts, sessions, payments, and use of Discuno.',
   },
 })
 
 export default function TermsPage() {
   return (
-    <div className="text-foreground min-h-screen">
-      {/* Hero Section */}
-      <div className="from-primary/5 to-background border-b bg-gradient-to-b">
-        <div className="container mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <div className="bg-primary/10 mx-auto flex h-16 w-16 items-center justify-center rounded-full">
-              <Scale className="text-primary h-8 w-8" />
-            </div>
-            <h1 className="mt-6 text-4xl font-bold tracking-tight sm:text-5xl">Terms of Service</h1>
-            <p className="text-muted-foreground mx-auto mt-4 max-w-2xl text-lg">
-              Effective Date: January 15, 2025
-            </p>
-          </div>
+    <div className="min-h-screen">
+      <header className="border-border border-b">
+        <div className="page-shell max-w-5xl py-14 sm:py-20">
+          <h1 className="text-4xl leading-tight font-semibold tracking-tight sm:text-5xl">
+            Terms of Service
+          </h1>
+          <p className="text-muted-foreground mt-4 text-sm">Effective July 14, 2026</p>
         </div>
-      </div>
+      </header>
 
-      {/* Content */}
-      <div className="container mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
-        <div className="prose prose-slate dark:prose-invert max-w-none space-y-8">
+      <div className="page-shell max-w-5xl py-10 sm:py-16">
+        <div className="legal-document">
           <Card>
             <CardHeader>
               <CardTitle>Definitions</CardTitle>
@@ -46,8 +39,9 @@ export default function TermsPage() {
                   related services.
                 </li>
                 <li>
-                  <strong>&quot;Mentor&quot;</strong> means a verified user with a .edu email
-                  address offering mentorship services through the Platform.
+                  <strong>&quot;Mentor&quot;</strong> means a user who has demonstrated access to a
+                  supported school-issued .edu email address and offers mentorship services through
+                  the Platform.
                 </li>
                 <li>
                   <strong>&quot;Mentee&quot;</strong> means a user booking and receiving mentorship
@@ -58,8 +52,8 @@ export default function TermsPage() {
                   Platform, including Mentors, Mentees, and visitors.
                 </li>
                 <li>
-                  <strong>&quot;Content&quot;</strong> means text, images, profiles, posts, reviews,
-                  and any other materials posted on the Platform.
+                  <strong>&quot;Content&quot;</strong> means text, images, profiles, posts, and any
+                  other materials posted on the Platform.
                 </li>
                 <li>
                   <strong>&quot;Session&quot;</strong> means a scheduled mentorship meeting between
@@ -105,10 +99,7 @@ export default function TermsPage() {
               <p>To use the Platform, you must:</p>
               <ul className="ml-6 list-disc space-y-2">
                 <li>Be at least 18 years of age or the age of majority in your jurisdiction</li>
-                <li>
-                  For Mentors: Have a valid .edu email address from an accredited educational
-                  institution
-                </li>
+                <li>For Mentors: Have access to a supported school-issued .edu email address</li>
                 <li>Provide accurate, complete, and current information during registration</li>
                 <li>
                   Maintain the security of your account credentials and be responsible for all
@@ -134,9 +125,10 @@ export default function TermsPage() {
                 are responsible for maintaining the confidentiality of your account credentials.
               </p>
               <p>
-                <strong>3.2 Account Verification:</strong> Mentors must verify their identity
-                through their .edu email address. We may request additional verification at any
-                time.
+                <strong>3.2 School Email Check:</strong> Mentors must demonstrate access to a
+                supported school-issued .edu email address. This check supports an affiliation
+                claim; it does not verify identity, current enrollment or employment, background,
+                expertise, or outcomes. We may request additional verification at any time.
               </p>
               <p>
                 <strong>3.3 Account Security:</strong> You must immediately notify us of any
@@ -144,8 +136,10 @@ export default function TermsPage() {
                 from your failure to protect your account credentials.
               </p>
               <p>
-                <strong>3.4 Account Termination:</strong> You may terminate your account at any time
-                through your account settings. We may suspend or terminate your account for
+                <strong>3.4 Account Termination:</strong> You may request account termination at any
+                time by contacting support@discuno.com from the email address associated with your
+                account. We may need to verify the request and retain records where required by law
+                or legitimate business obligations. We may suspend or terminate your account for
                 violation of these Terms, fraudulent activity, or any other reason at our
                 discretion.
               </p>
@@ -176,11 +170,6 @@ export default function TermsPage() {
                 processed through Stripe Connect. You must maintain an active Stripe account to
                 receive payments. Platform fees are deducted from each session payment as described
                 in Section 6.
-              </p>
-              <p>
-                <strong>4.3 Mentor Reviews:</strong> Mentees may leave reviews and ratings. Reviews
-                must be honest and accurate. We reserve the right to remove reviews that violate our
-                policies.
               </p>
             </CardContent>
           </Card>
@@ -225,25 +214,34 @@ export default function TermsPage() {
                 Privacy Policy.
               </p>
               <p>
-                <strong>6.2 Platform Fees:</strong> Discuno charges a platform fee on each
-                transaction. The fee structure is as follows:
-              </p>
-              <ul className="ml-6 list-disc space-y-2">
-                <li>Platform retains a percentage of each session payment</li>
-                <li>Stripe processing fees are deducted separately</li>
-                <li>Fee percentages are subject to change with 30 days notice</li>
-              </ul>
-              <p>
-                <strong>6.3 Payout Schedule:</strong> Mentor payments are held for a 7-day dispute
-                period after session completion, then automatically transferred to your connected
-                Stripe account.
+                <strong>6.2 Prices and Service Commission:</strong> Mentees pay the session price
+                displayed before checkout plus any applicable taxes. Discuno does not add a buyer
+                service fee. For paid sessions, Discuno retains 15% of the listed session price from
+                the Mentor&apos;s gross earnings and the Mentor receives 85%. Discuno currently
+                covers standard Stripe payment-processing costs.
               </p>
               <p>
-                <strong>6.4 Taxes:</strong> You are responsible for all applicable taxes. Mentors
+                <strong>6.3 Payout Schedule:</strong> The Mentor&apos;s share becomes eligible for
+                transfer to the Mentor&apos;s connected Stripe account 72 hours after the scheduled
+                session ends. Discuno may pause or cancel a transfer when the booking is cancelled,
+                refunded, disputed, not delivered, or under review. Arrival in the Mentor&apos;s
+                bank account is governed by Stripe&apos;s availability and payout schedule.
+              </p>
+              <p>
+                <strong>6.4 Transfer Recovery:</strong> Refunds, disputes, chargebacks, fraud,
+                duplicate transfers, and processing errors can arise after a transfer is initiated.
+                To correct those events, the Mentor authorizes Discuno and Stripe to reverse an
+                associated transfer, debit an available connected-account balance where permitted,
+                offset the amount against future transfers, or place the payment under manual
+                review. The Mentor remains responsible for amounts properly recoverable under this
+                section.
+              </p>
+              <p>
+                <strong>6.5 Taxes:</strong> You are responsible for all applicable taxes. Mentors
                 are independent contractors and must report their earnings for tax purposes.
               </p>
               <p>
-                <strong>6.5 Currency:</strong> All transactions are processed in USD unless
+                <strong>6.6 Currency:</strong> All transactions are processed in USD unless
                 otherwise specified.
               </p>
             </CardContent>
@@ -258,23 +256,34 @@ export default function TermsPage() {
                 <strong>7.1 Cancellation Policy:</strong>
               </p>
               <ul className="ml-6 list-disc space-y-2">
-                <li>Cancellations made 24+ hours before the session: Full refund to the Mentee</li>
+                <li>Mentor cancellations at any time: Full refund to the Mentee</li>
+                <li>Mentee cancellations made 24+ hours before the session: Full refund</li>
                 <li>
-                  Cancellations made less than 24 hours before: No refund unless exceptional
-                  circumstances
+                  Mentee cancellations made less than 24 hours before: Normally non-refundable
+                  unless Discuno approves an exception
                 </li>
                 <li>
                   Mentor no-shows: Full refund to the Mentee, potential account action against
                   Mentor
                 </li>
-                <li>Mentee no-shows: Payment released to Mentor after 15-minute grace period</li>
+                <li>
+                  Mentee no-shows: Normally non-refundable; any Mentor transfer remains subject to
+                  the session-end plus 72-hour payout window
+                </li>
               </ul>
               <p>
-                <strong>7.2 Refund Process:</strong> Approved refunds are processed within 5-10
-                business days to the original payment method.
+                <strong>7.2 Refund Process:</strong> Approved refunds are initiated to the original
+                payment method. Your bank or payment provider controls when the credit appears; most
+                refunds arrive within 5-10 business days.
               </p>
               <p>
-                <strong>7.3 Disputes:</strong> If you have an issue with a session, contact us
+                <strong>7.3 Presumptive Completion:</strong> When a booking reaches its scheduled
+                end without a recorded cancellation, mentor no-show, refund, or active dispute,
+                Discuno may treat it as delivered for payout purposes. The 72-hour support window
+                gives users time to report a material delivery or conduct issue before transfer.
+              </p>
+              <p>
+                <strong>7.4 Disputes:</strong> If you have an issue with a session, contact us
                 within 48 hours at support@discuno.com. We will review the situation and make a
                 determination at our sole discretion.
               </p>
@@ -288,7 +297,7 @@ export default function TermsPage() {
             <CardContent className="text-muted-foreground space-y-4">
               <p>
                 <strong>8.1 User Content:</strong> You retain ownership of content you post (profile
-                information, reviews, posts, etc.). By posting content, you grant us a worldwide,
+                information, posts, etc.). By posting content, you grant us a worldwide,
                 non-exclusive, royalty-free license to use, display, and distribute your content on
                 the Platform.
               </p>
@@ -317,19 +326,18 @@ export default function TermsPage() {
             <CardContent className="text-muted-foreground space-y-4">
               <p>
                 Your privacy is important to us. Our Privacy Policy explains how we collect, use,
-                and protect your personal information. By using the Platform, you consent to our
-                data practices as described in the Privacy Policy.
+                and protect your personal information and the choices available to you.
               </p>
               <p>
-                We use analytics services (PostHog) to improve our Platform. We do not sell your
-                personal information to third parties.
+                Optional product analytics through PostHog can be controlled from the Privacy Policy
+                page. We do not sell your personal information to third parties.
               </p>
               <p>
                 <strong>Data Retention:</strong> We retain user data only as long as necessary to
                 provide the Platform, comply with legal obligations, resolve disputes, and enforce
-                our agreements. When you delete your account, we will delete or anonymize your
-                personal information within 30 days, except where we are required to retain it for
-                legal, tax, or regulatory purposes.
+                our agreements. After we verify an account-deletion request, we will delete or
+                anonymize your personal information within 30 days, except where we are required to
+                retain it for legal, tax, or regulatory purposes.
               </p>
             </CardContent>
           </Card>

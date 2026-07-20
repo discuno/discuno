@@ -2,6 +2,8 @@ import { config } from 'dotenv'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 import Stripe from 'stripe'
+import { createSeedMentorUser } from '~/lib/db/seed-user'
+import { deriveStripeAccountStatus } from '~/lib/stripe/account-status'
 import * as schema from '~/server/db/schema/index'
 
 /**
@@ -9,7 +11,7 @@ import * as schema from '~/server/db/schema/index'
  * Only runs for development and preview environments for safety
  *
  * This seeder creates comprehensive, realistic data including:
- * - 50 mentor users with detailed profiles and diverse backgrounds (all with Cal.com accounts)
+ * - 50 mentor users with detailed profiles and diverse backgrounds
  * - 40+ majors across STEM, liberal arts, business, and other fields
  * - 15 prestigious schools with locations and images
  * - User-school and user-major relationships (30% double majors)
@@ -18,7 +20,9 @@ import * as schema from '~/server/db/schema/index'
  * - Realistic mentor review ratings (70% 5-star, 20% 4-star, 10% lower)
  * - Smart graduation year calculation based on current school year
  * - Diverse, realistic user bios covering different academic paths
- * - Cal.com managed user accounts and tokens for all users
+ *
+ * Seeded mentors intentionally have no calendar connection. Cal.com accounts are
+ * user-owned and must be connected through the standard OAuth onboarding flow.
  */
 
 type Environment = 'local' | 'preview' | 'production' | 'test'
@@ -313,16 +317,15 @@ const getRandomElements = <T>(array: readonly T[], count: number): T[] => {
 const generateUserData = (count: number) => {
   const users = []
   for (let i = 0; i < count; i++) {
-    const first = getRandomElement(firstName)
-    const last = getRandomElement(lastName)
-    const name = `${first} ${last}`
-    const email = `${first.toLowerCase()}.${last.toLowerCase()}${i + 1}@university.edu`
+    const first = firstName[i % firstName.length]
+    const last = lastName[i % lastName.length]
+    const image = userImages[i % userImages.length]
 
-    users.push({
-      name,
-      email,
-      image: getRandomElement(userImages),
-    })
+    if (!first || !last || !image) {
+      throw new Error('Seed mentor source data cannot be empty')
+    }
+
+    users.push(createSeedMentorUser({ firstName: first, lastName: last, index: i, image }))
   }
   return users
 }
@@ -349,6 +352,7 @@ const generateGraduationYear = (schoolYear: string): number => {
 
 export const seedDatabase = async (environment?: Environment) => {
   const targetEnv = environment
+  const seedExternalAccounts = process.env.SEED_EXTERNAL_ACCOUNTS === 'true'
 
   if (targetEnv === 'test') {
     console.log('🌱 Skipping database seeding for test environment')
@@ -362,6 +366,10 @@ export const seedDatabase = async (environment?: Environment) => {
       throw new Error('❌ Production seeding is disabled. Set ALLOW_PROD_SEEDING=true to enable.')
     }
     console.log('⚠️  PRODUCTION SEEDING ENABLED - Proceeding with caution')
+  }
+
+  if (seedExternalAccounts && !process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_')) {
+    throw new Error('External seed accounts require a Stripe test-mode secret key.')
   }
 
   console.log(`🌱 Starting database seeding for environment: ${targetEnv}`)
@@ -381,9 +389,7 @@ export const seedDatabase = async (environment?: Environment) => {
       userSchools: false,
       posts: false,
       mentorReviews: false,
-      calcomTokens: false,
       stripeAccounts: false,
-      mentorEventTypes: false,
       // Note: bookings, attendees, organizers, and payments will be created via webhooks/API, not seeded
     }
 
@@ -549,130 +555,14 @@ export const seedDatabase = async (environment?: Environment) => {
       }
     }
 
-    // Step 9: Create Cal.com managed users and add them to college-mentors team
-    if (insertedUsers.length > 0) {
-      try {
-        console.log('🌐 Creating Cal.com managed users and adding to college-mentors team...')
-        const calcomApiBase = process.env.NEXT_PUBLIC_CALCOM_API_URL
-        const calcomClientId = process.env.NEXT_PUBLIC_X_CAL_ID
-        const calcomSecretKey = process.env.X_CAL_SECRET_KEY
-        const calcomOrgId = process.env.CALCOM_ORG_ID
-        const collegeMentorTeamId = process.env.COLLEGE_MENTOR_TEAM_ID
-        if (!calcomClientId || !calcomSecretKey || !calcomOrgId || !collegeMentorTeamId) {
-          throw new Error(
-            'Missing Cal.com credentials: NEXT_PUBLIC_X_CAL_ID, X_CAL_SECRET_KEY, CALCOM_ORG_ID, and/or COLLEGE_MENTOR_TEAM_ID'
-          )
-        }
-        const calcomTokenData: Array<{
-          userId: string
-          calcomUserId: number
-          calcomUsername: string
-          accessToken: string
-          refreshToken: string
-          accessTokenExpiresAt: Date
-          refreshTokenExpiresAt: Date
-        }> = []
-
-        const mentors = insertedUsers // All users are mentors
-        for (const mentor of mentors) {
-          try {
-            // Step 9a: Create Cal.com managed user
-            const userResponse = await fetch(
-              `${calcomApiBase}/oauth-clients/${calcomClientId}/users`,
-              {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'x-cal-secret-key': calcomSecretKey,
-                },
-                body: JSON.stringify({
-                  email: mentor.email,
-                  name: mentor.name ?? '',
-                  timeFormat: 12,
-                  weekStart: 'Monday',
-                  timeZone: 'UTC',
-                  locale: 'en',
-                  avatarUrl: mentor.image ?? undefined,
-                  bio: '',
-                  metadata: {},
-                }),
-              }
-            )
-
-            if (!userResponse.ok) {
-              const errText = await userResponse.text()
-              throw new Error(
-                `Failed to create Cal.com user for ${mentor.email}: ${userResponse.status} ${errText}`
-              )
-            }
-
-            const userJson = await userResponse.json()
-            const {
-              accessToken,
-              refreshToken,
-              accessTokenExpiresAt,
-              refreshTokenExpiresAt,
-              user: calUser,
-            } = userJson.data
-
-            // Step 9b: Add user to college-mentors team
-            const membershipResponse = await fetch(
-              `${calcomApiBase}/organizations/${calcomOrgId}/teams/${collegeMentorTeamId}/memberships`,
-              {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'x-cal-secret-key': calcomSecretKey,
-                  'x-cal-client-id': calcomClientId,
-                },
-                body: JSON.stringify({
-                  role: 'MEMBER',
-                  accepted: true,
-                  disableImpersonation: false,
-                  userId: calUser.id,
-                }),
-              }
-            )
-
-            if (!membershipResponse.ok) {
-              const membershipErrorText = await membershipResponse.text()
-              console.error(
-                `Failed to add user ${calUser.id} to college-mentors team: ${membershipResponse.status} ${membershipErrorText}`
-              )
-              // Continue anyway - user is created even if team membership fails
-            } else {
-              const membershipData = await membershipResponse.json()
-              console.log(`Successfully added user ${calUser.id} to college-mentors team`)
-              console.log('Team membership data:', membershipData)
-            }
-
-            calcomTokenData.push({
-              userId: mentor.id,
-              calcomUserId: calUser.id,
-              calcomUsername: calUser.username,
-              accessToken,
-              refreshToken,
-              accessTokenExpiresAt: new Date(accessTokenExpiresAt),
-              refreshTokenExpiresAt: new Date(refreshTokenExpiresAt),
-            })
-          } catch (error) {
-            console.error(`Error processing mentor ${mentor.email}:`, error)
-          }
-        }
-
-        if (calcomTokenData.length > 0) {
-          console.log('📑 Inserting Cal.com tokens into DB...')
-          await db.insert(schema.calcomToken).values(calcomTokenData)
-        }
-        seedResults.calcomTokens = true
-        console.log('✅ Cal.com tokens seeded successfully')
-      } catch (error) {
-        console.error('❌ Failed to seed Cal.com tokens:', error)
-      }
+    // External Stripe test accounts are opt-in. Cal.com now requires each mentor
+    // to explicitly authorize a regular account through the application OAuth flow.
+    if (!seedExternalAccounts) {
+      console.log('ℹ️  Skipping external Stripe accounts (opt in explicitly).')
     }
 
-    // Step 10: Seed Stripe Connect accounts for mentors
-    if (insertedUsers.length > 0) {
+    // Step 9: Seed Stripe Connect accounts for mentors
+    if (insertedUsers.length > 0 && seedExternalAccounts) {
       try {
         console.log('💳 Creating Stripe Connect test accounts for mentors...')
         type StripeAccountData = typeof schema.mentorStripeAccount.$inferInsert
@@ -682,20 +572,25 @@ export const seedDatabase = async (environment?: Environment) => {
         if (!stripeSecretKey) {
           throw new Error('STRIPE_SECRET_KEY environment variable is not set')
         }
-        const stripe = new Stripe(stripeSecretKey)
+        const stripe = new Stripe(stripeSecretKey, { apiVersion: '2026-06-24.dahlia' })
 
         for (const user of insertedUsers) {
           try {
             const acct = await stripe.accounts.create({
-              type: 'express',
+              controller: {
+                fees: { payer: 'application' },
+                losses: { payments: 'application' },
+                requirement_collection: 'stripe',
+                stripe_dashboard: { type: 'express' },
+              },
               country: 'US',
-              email: user.email ?? undefined,
+              email: user.email,
               metadata: { userId: user.id },
               business_type: 'individual',
               individual: {
-                first_name: user.name?.split(' ')[0] ?? 'Test',
-                last_name: user.name?.split(' ')[1] ?? 'User',
-                email: user.email ?? undefined,
+                first_name: user.name.split(' ')[0] ?? 'Test',
+                last_name: user.name.split(' ')[1] ?? 'User',
+                email: user.email,
                 address: {
                   line1: '123 Test Street',
                   city: 'San Francisco',
@@ -728,12 +623,14 @@ export const seedDatabase = async (environment?: Environment) => {
             stripeAccountData.push({
               userId: user.id,
               stripeAccountId: acct.id,
-              stripeAccountStatus: 'active',
-              onboardingCompleted: acct.created ? new Date(acct.created * 1000) : undefined,
-              payoutsEnabled: true,
-              chargesEnabled: true,
-              detailsSubmitted: true,
-              requirements: {},
+              stripeAccountStatus: deriveStripeAccountStatus(acct),
+              onboardingCompleted:
+                acct.details_submitted && acct.created ? new Date(acct.created * 1000) : undefined,
+              payoutsEnabled: acct.payouts_enabled,
+              chargesEnabled: acct.charges_enabled,
+              transfersEnabled: acct.capabilities?.transfers === 'active',
+              detailsSubmitted: acct.details_submitted,
+              requirements: acct.requirements ?? {},
             })
           } catch (err) {
             console.error(`Failed to create Stripe account for user ${user.id}:`, err)
@@ -751,98 +648,20 @@ export const seedDatabase = async (environment?: Environment) => {
       }
     }
 
-    // Step 11: Populate mentor event types from Cal.com team defaults
-    if (insertedUsers.length > 0) {
-      try {
-        console.log('🔄 Populating mentor event types from Cal.com...')
-        const calcomApiBase = process.env.NEXT_PUBLIC_CALCOM_API_URL
-        const allCalcomTokens = await db.select().from(schema.calcomToken)
-
-        const userToCalcomInfoMap = new Map(
-          allCalcomTokens.map(token => [
-            token.userId,
-            { username: token.calcomUsername, accessToken: token.accessToken },
-          ])
-        )
-
-        const mentorEventTypesData = []
-        let totalFetched = 0
-
-        for (const user of insertedUsers) {
-          const calcomInfo = userToCalcomInfoMap.get(user.id)
-          if (!calcomInfo) {
-            console.warn(`⚠️ No Cal.com info for user ${user.id}, skipping event type sync.`)
-            continue
-          }
-
-          try {
-            const response = await fetch(
-              `${calcomApiBase}/event-types?username=${calcomInfo.username}`,
-              {
-                headers: {
-                  'cal-api-version': '2024-06-14',
-                },
-              }
-            )
-
-            if (!response.ok) {
-              const errText = await response.text()
-              throw new Error(
-                `Failed to fetch event types for ${calcomInfo.username}: ${response.status} ${errText}`
-              )
-            }
-
-            const calcomEventTypesData = await response.json()
-            const calcomEventTypes = calcomEventTypesData.data as Array<{
-              id: number
-              title: string
-              description: string | null
-              lengthInMinutes: number
-            }>
-
-            for (const eventType of calcomEventTypes) {
-              mentorEventTypesData.push({
-                mentorUserId: user.id,
-                calcomEventTypeId: eventType.id,
-                title: eventType.title,
-                description: eventType.description,
-                duration: eventType.lengthInMinutes,
-                isEnabled: true, // Enable by default
-                customPrice: Math.floor(Math.random() * 20000) + 2500, // $25-$225 in cents
-                currency: 'USD',
-              })
-              totalFetched++
-            }
-          } catch (error) {
-            console.error(`❌ Error fetching event types for user ${user.id}:`, error)
-          }
-        }
-
-        if (mentorEventTypesData.length > 0) {
-          await db.insert(schema.mentorEventType).values(mentorEventTypesData)
-        }
-
-        seedResults.mentorEventTypes = true
-        console.log(`✅ Populated ${totalFetched} mentor event types from Cal.com successfully`)
-      } catch (error) {
-        console.error('❌ Failed to populate mentor event types from Cal.com:', error)
-      }
-    }
-
     console.log('🎉 Database seeding completed!')
     console.log('📊 Seeding Results:')
     Object.entries(seedResults).forEach(([key, success]) => {
       console.log(`  ${success ? '✅' : '❌'} ${key}`)
     })
     console.log('📊 Generated comprehensive realistic data including:')
-    console.log(`  - 50 mentor users with detailed profiles (all added to college-mentors team)`)
+    console.log(`  - 50 mentor users with detailed profiles`)
     console.log(`  - Posts with engaging content for all users`)
     console.log(`  - ${majorNames.length} majors and ${schoolData.length} schools`)
     console.log(`  - Mentor reviews with ratings for all users`)
     console.log('  - Complete relationship mappings between all entities')
     console.log('  - Realistic graduation years based on school year')
     console.log('  - Diverse bio content and user backgrounds')
-    console.log('  - Cal.com managed users added to college-mentors team')
+    console.log('  - Mentors connect their own Cal.com accounts through OAuth')
     console.log('  - Stripe Connect test accounts created for all mentors')
   } catch (error) {
     console.error(`❌ Seeding failed for ${targetEnv}:`, error)

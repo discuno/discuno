@@ -10,7 +10,9 @@ export const post = pgTable(
     createdById: uuid('created_by_id')
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
-    random_sort_key: real('random_sort_key').default(Math.random()).notNull(),
+    random_sort_key: real('random_sort_key')
+      .default(sql`random()`)
+      .notNull(),
     ...softDeleteTimestamps,
   },
   example => [

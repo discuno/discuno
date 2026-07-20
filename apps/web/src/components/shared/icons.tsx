@@ -1,9 +1,15 @@
-import { GraduationCap, Github, Linkedin, Instagram, Twitter } from 'lucide-react'
+import {
+  IconBrandGithub,
+  IconBrandInstagram,
+  IconBrandLinkedin,
+  IconBrandX,
+} from '@tabler/icons-react'
+import { GraduationCap } from 'lucide-react'
 
 export const Icons = {
   logo: GraduationCap,
-  github: Github,
-  linkedin: Linkedin,
-  instagram: Instagram,
-  twitter: Twitter,
+  github: IconBrandGithub,
+  linkedin: IconBrandLinkedin,
+  instagram: IconBrandInstagram,
+  twitter: IconBrandX,
 }

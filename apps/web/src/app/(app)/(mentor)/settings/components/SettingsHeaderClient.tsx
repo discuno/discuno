@@ -1,118 +1,65 @@
 'use client'
 
-import { PanelLeft } from 'lucide-react'
+import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   Breadcrumb,
   BreadcrumbItem,
+  BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '~/components/ui/breadcrumb'
-import { Button } from '~/components/ui/button'
 import { Separator } from '~/components/ui/separator'
-import { useSidebar } from '~/components/ui/sidebar'
-import { StripeDashboardButton } from './StripeDashboardButton'
+import { SidebarTrigger } from '~/components/ui/sidebar'
 
-// Map of paths to their display names
-const pathMap: Record<string, string> = {
-  settings: 'Settings',
-  availability: 'Availability',
-  'event-types': 'Event Types',
-  bookings: 'Bookings',
-  profile: 'Profile',
-  edit: 'Edit Profile',
-  view: 'View Profile',
-  billing: 'Billing',
+const routeLabels: Record<string, string> = {
+  '/settings': 'Today',
+  '/settings/calendar': 'Calendar',
+  '/settings/availability': 'Availability',
+  '/settings/event-types': 'Session types',
+  '/settings/bookings': 'Sessions',
+  '/settings/profile': 'Public profile',
+  '/settings/profile/edit': 'Public profile',
 }
 
-interface SettingsHeaderClientProps {
-  hasStripeAccount: boolean
-  stripeAccountId?: string
-  chargesEnabled: boolean
-}
-
-export function SettingsHeaderClient({
-  hasStripeAccount,
-  stripeAccountId,
-  chargesEnabled,
-}: SettingsHeaderClientProps) {
-  const { toggleSidebar } = useSidebar()
+export function SettingsHeaderClient() {
   const pathname = usePathname()
-
-  // Generate breadcrumbs from the current path
-  const generateBreadcrumbs = () => {
-    const segments = pathname.split('/').filter(Boolean)
-    const breadcrumbs: Array<{ label: string; href?: string; isLast: boolean }> = []
-
-    // Always start with Settings (no link since the route doesn't exist)
-    breadcrumbs.push({
-      label: 'Settings',
-      href: undefined,
-      isLast: false,
-    })
-
-    // Process the remaining segments after /settings
-    const settingsIndex = segments.indexOf('settings')
-    if (settingsIndex !== -1) {
-      const remainingSegments = segments.slice(settingsIndex + 1)
-
-      remainingSegments.forEach((segment, index) => {
-        const isLast = index === remainingSegments.length - 1
-        const label = pathMap[segment] ?? segment.charAt(0).toUpperCase() + segment.slice(1)
-
-        breadcrumbs.push({
-          label,
-          href: undefined, // No intermediate links needed for simple 2-level structure
-          isLast,
-        })
-      })
-    }
-
-    // If we only have "Settings", mark it as last
-    if (breadcrumbs.length === 1 && breadcrumbs[0]) {
-      breadcrumbs[0].isLast = true
-    }
-
-    return breadcrumbs
-  }
-
-  const breadcrumbs = generateBreadcrumbs()
+  const isWorkspaceRoot = pathname === '/settings'
+  const fallbackSegment = pathname.split('/').filter(Boolean).at(-1) ?? 'settings'
+  const currentLabel =
+    routeLabels[pathname] ??
+    fallbackSegment
+      .split('-')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ')
 
   return (
-    <header className="bg-background sticky top-0 z-50 flex w-full items-center border-b">
-      <div className="flex h-14 w-full items-center gap-2 px-4">
-        {/* Show toggle button only on medium screens and below */}
-        <Button
-          className="h-8 w-8 md:hidden"
-          variant="ghost"
-          size="icon"
-          onClick={toggleSidebar}
-          aria-label="Toggle sidebar"
-        >
-          <PanelLeft className="h-4 w-4" />
-        </Button>
-        {/* Show separator only when toggle button is visible */}
-        <Separator orientation="vertical" className="mr-2 h-4 md:hidden" />
-        {/* Breadcrumbs: always show full breadcrumbs */}
-        <Breadcrumb className="flex-1">
-          <BreadcrumbList>
-            {breadcrumbs.map((breadcrumb, index) => (
-              <div key={index} className="flex items-center">
-                {index > 0 && <BreadcrumbSeparator />}
-                <BreadcrumbItem>
-                  <BreadcrumbPage>{breadcrumb.label}</BreadcrumbPage>
+    <header className="bg-background sticky top-0 z-40 flex w-full items-center border-b">
+      <div className="flex h-16 w-full items-center gap-2 px-4 sm:px-6">
+        <SidebarTrigger className="-ml-1" aria-label="Toggle mentor navigation" />
+        <Separator orientation="vertical" className="mr-2 h-4" />
+        <Breadcrumb className="min-w-0 flex-1">
+          <BreadcrumbList className="flex-nowrap">
+            <BreadcrumbItem className="min-w-0">
+              {isWorkspaceRoot ? (
+                <BreadcrumbPage className="truncate font-medium">Today</BreadcrumbPage>
+              ) : (
+                <BreadcrumbLink render={<Link href="/settings" />} className="truncate">
+                  Mentor workspace
+                </BreadcrumbLink>
+              )}
+            </BreadcrumbItem>
+            {!isWorkspaceRoot && (
+              <>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem className="min-w-0">
+                  <BreadcrumbPage className="truncate font-medium">{currentLabel}</BreadcrumbPage>
                 </BreadcrumbItem>
-              </div>
-            ))}
+              </>
+            )}
           </BreadcrumbList>
         </Breadcrumb>
-        {/* Stripe Dashboard Button */}
-        <StripeDashboardButton
-          hasStripeAccount={hasStripeAccount}
-          stripeAccountId={stripeAccountId}
-          chargesEnabled={chargesEnabled}
-        />
       </div>
     </header>
   )

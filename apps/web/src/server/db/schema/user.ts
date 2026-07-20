@@ -9,6 +9,7 @@ import {
   real,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
   varchar,
 } from 'drizzle-orm/pg-core'
@@ -20,15 +21,20 @@ export const user = pgTable(
   'discuno_user',
   {
     id: uuid().defaultRandom().primaryKey(),
-    name: varchar({ length: 255 }),
-    email: varchar({ length: 255 }).unique(),
+    name: varchar({ length: 255 }).notNull(),
+    email: varchar({ length: 255 }).notNull().unique(),
+    // Stripe Customers are bound to Discuno user IDs, never looked up by email.
+    stripeCustomerId: varchar('stripe_customer_id', { length: 255 }).unique(),
     // Username plugin fields
     username: varchar({ length: 30 }).unique(),
     displayUsername: varchar('display_username', { length: 30 }),
-    emailVerified: boolean().default(false),
+    emailVerified: boolean().default(false).notNull(),
     image: varchar({ length: 255 }),
     // Anonymous plugin fields
     isAnonymous: boolean(),
+    // null means no account-level choice and remains disabled; true/false are
+    // explicit, durable preferences.
+    analyticsEnabled: boolean('analytics_enabled'),
     // Admin plugin fields
     role: text(),
     banned: boolean().default(false),
@@ -37,10 +43,28 @@ export const user = pgTable(
     ...timestamps,
     ...softDeleteTimestamps,
   },
-  user => [
-    index('user_email_idx').on(user.email),
-    index('user_username_idx').on(user.username),
-  ]
+  user => [index('user_email_idx').on(user.email), index('user_username_idx').on(user.username)]
+)
+
+/**
+ * Durable redirect from a Better Auth guest identity to the permanent account
+ * it was linked into.
+ *
+ * `anonymousUserId` intentionally has no foreign key: Better Auth deletes the
+ * guest user after `onLinkAccount`, while paid-booking fulfillment can arrive
+ * later with that historical ID in Stripe metadata. The linked side cascades
+ * on account deletion so a resolver can return null for a truly deleted user.
+ */
+export const anonymousUserLink = pgTable(
+  'discuno_anonymous_user_link',
+  {
+    anonymousUserId: uuid('anonymous_user_id').primaryKey(),
+    linkedUserId: uuid('linked_user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    ...timestamps,
+  },
+  table => [index('anonymous_user_links_linked_user_id_idx').on(table.linkedUserId)]
 )
 
 export const session = pgTable(
@@ -82,7 +106,10 @@ export const account = pgTable(
     password: text(),
     ...timestamps,
   },
-  account => [index('account_user_id_idx').on(account.userId)]
+  account => [
+    index('account_user_id_idx').on(account.userId),
+    uniqueIndex('account_provider_account_idx').on(account.providerId, account.accountId),
+  ]
 )
 
 export const verification = pgTable(

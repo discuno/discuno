@@ -1,113 +1,177 @@
+import { ArrowRight } from 'lucide-react'
 import type { Metadata } from 'next'
-import Image from 'next/image'
 import Link from 'next/link'
-import { IconCalendar, IconClock, IconTag } from '@tabler/icons-react'
-import { getAllPosts, formatDate } from '~/lib/blog'
-import { createMetadata } from '~/lib/metadata'
+import { buttonVariants } from '~/components/ui/button'
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '~/components/ui/empty'
+import { formatDate, getAllPosts, type BlogPostMetadata } from '~/lib/blog'
+import { absoluteUrl, createMetadata } from '~/lib/metadata'
 
 export const metadata: Metadata = createMetadata({
-  title: 'Blog - Discuno',
+  title: 'Guides for College Decisions',
   description:
-    'Insights on college success, mentorship, career planning, and student life. Learn from verified student mentors and the Discuno community.',
+    'Questions and practical prompts for choosing a major, navigating campus, preparing for recruiting, and making your next college decision.',
+  alternates: {
+    canonical: '/blog',
+  },
   openGraph: {
-    title: 'Blog - Discuno',
-    description:
-      'Insights on college success, mentorship, career planning, and student life. Learn from verified student mentors and the Discuno community.',
+    title: 'Questions for clearer college decisions | Discuno',
+    description: 'Practical guides for the college choices no one fully explains.',
     url: '/blog',
   },
 })
 
-const BlogPage = () => {
-  const posts = getAllPosts()
-
+function PostMeta({ post }: { post: BlogPostMetadata }) {
   return (
-    <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
-      {/* Header */}
-      <div className="mb-12 space-y-4">
-        <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">Blog</h1>
-        <p className="text-muted-foreground text-lg">
-          Insights on college success, mentorship, career planning, and student life from the
-          Discuno community.
-        </p>
+    <dl className="text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 text-sm">
+      <div>
+        <dt className="sr-only">Published</dt>
+        <dd>
+          <time dateTime={post.date}>{formatDate(post.date)}</time>
+        </dd>
       </div>
-
-      {/* Blog Posts Grid */}
-      {posts.length === 0 ? (
-        <div className="rounded-lg border border-dashed p-12 text-center">
-          <p className="text-muted-foreground">No blog posts published yet. Check back soon!</p>
-        </div>
-      ) : (
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-          {posts.map(post => (
-            <article
-              key={post.slug}
-              className="bg-card group flex flex-col overflow-hidden rounded-lg border transition-all hover:shadow-lg"
-            >
-              <Link href={`/blog/${post.slug}`} className="flex flex-col">
-                {/* Featured Image */}
-                {post.image && (
-                  <div className="bg-muted relative aspect-video w-full overflow-hidden">
-                    <Image
-                      src={post.image}
-                      alt={post.title}
-                      fill
-                      className="object-cover transition-transform duration-300 group-hover:scale-105"
-                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    />
-                  </div>
-                )}
-
-                {/* Content */}
-                <div className="flex flex-1 flex-col p-6">
-                  {/* Tags */}
-                  {post.tags.length > 0 && (
-                    <div className="mb-3 flex flex-wrap gap-2">
-                      {post.tags.slice(0, 2).map(tag => (
-                        <span
-                          key={tag}
-                          className="bg-primary/10 text-primary inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium"
-                        >
-                          <IconTag size={12} />
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Title */}
-                  <h2 className="group-hover:text-primary mb-2 text-xl font-semibold tracking-tight">
-                    {post.title}
-                  </h2>
-
-                  {/* Description */}
-                  <p className="text-muted-foreground mb-4 line-clamp-3 flex-1 text-sm">
-                    {post.description}
-                  </p>
-
-                  {/* Meta */}
-                  <div className="text-muted-foreground flex flex-wrap items-center gap-4 text-xs">
-                    <div className="flex items-center gap-1">
-                      <IconCalendar size={14} />
-                      <time dateTime={post.date}>{formatDate(post.date)}</time>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <IconClock size={14} />
-                      <span>{post.readingTime}</span>
-                    </div>
-                  </div>
-
-                  {/* Author */}
-                  <div className="mt-4 border-t pt-4">
-                    <p className="text-xs font-medium">By {post.author}</p>
-                  </div>
-                </div>
-              </Link>
-            </article>
-          ))}
-        </div>
-      )}
-    </div>
+      <div>
+        <dt className="sr-only">Reading time</dt>
+        <dd>{post.readingTime}</dd>
+      </div>
+      <div>
+        <dt className="sr-only">Author</dt>
+        <dd>By {post.author}</dd>
+      </div>
+    </dl>
   )
 }
 
-export default BlogPage
+export default function BlogPage() {
+  const posts = getAllPosts()
+  const [featuredPost, ...remainingPosts] = posts
+  const blogJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Blog',
+    '@id': absoluteUrl('/blog#blog'),
+    url: absoluteUrl('/blog'),
+    name: 'Discuno College Guides',
+    description:
+      'Practical questions and guides for college, campus, internships, and early-career decisions.',
+    inLanguage: 'en-US',
+    publisher: {
+      '@type': 'Organization',
+      '@id': absoluteUrl('/#organization'),
+      name: 'Discuno',
+      url: absoluteUrl('/'),
+    },
+    blogPost: posts.map(post => ({
+      '@type': 'BlogPosting',
+      '@id': absoluteUrl(`/blog/${post.slug}#article`),
+      url: absoluteUrl(`/blog/${post.slug}`),
+      headline: post.title,
+      description: post.description,
+      datePublished: post.date,
+      dateModified: post.lastModified.toISOString(),
+      author: {
+        '@type': post.author === 'Discuno Team' ? 'Organization' : 'Person',
+        name: post.author,
+      },
+    })),
+  }
+
+  return (
+    <div className="page-shell py-12 sm:py-18 lg:py-20">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(blogJsonLd) }}
+      />
+
+      <header className="grid gap-7 pb-12 sm:pb-16 lg:grid-cols-12 lg:items-end">
+        <h1 className="display-hero max-w-4xl lg:col-span-8">
+          Ask better questions <span className="marker-highlight">before you choose.</span>
+        </h1>
+        <p className="text-muted-foreground max-w-sm leading-7 lg:col-span-4 lg:pb-1">
+          Practical guides for majors, internships, campus life, and the decision in front of you.
+        </p>
+      </header>
+
+      <section className="section-rule" aria-labelledby="college-guides-heading">
+        <h2 id="college-guides-heading" className="sr-only">
+          College guides
+        </h2>
+
+        {!featuredPost ? (
+          <Empty>
+            <EmptyHeader>
+              <EmptyTitle>
+                <h3>No guides yet</h3>
+              </EmptyTitle>
+              <EmptyDescription>New college decision guides will appear here.</EmptyDescription>
+            </EmptyHeader>
+          </Empty>
+        ) : (
+          <>
+            <article className="border-foreground/18 grid gap-6 border-b py-9 sm:py-12 md:grid-cols-12 md:gap-10">
+              <div className="md:col-span-3">
+                <p className="text-primary text-sm font-semibold">Latest guide</p>
+                <div className="mt-3">
+                  <PostMeta post={featuredPost} />
+                </div>
+              </div>
+              <div className="md:col-span-9">
+                <h3 className="font-display max-w-4xl text-4xl leading-[1.02] font-semibold tracking-[-0.04em] text-balance sm:text-5xl">
+                  <Link
+                    href={`/blog/${featuredPost.slug}`}
+                    className="hover:text-primary transition-colors motion-reduce:transition-none"
+                  >
+                    {featuredPost.title}
+                  </Link>
+                </h3>
+                <p className="text-muted-foreground mt-5 max-w-2xl text-lg leading-8">
+                  {featuredPost.description}
+                </p>
+                <Link
+                  href={`/blog/${featuredPost.slug}`}
+                  className={buttonVariants({ variant: 'link', className: 'mt-5 -ml-3' })}
+                >
+                  Read guide
+                  <ArrowRight data-icon="inline-end" />
+                </Link>
+              </div>
+            </article>
+
+            {remainingPosts.map(post => (
+              <article
+                key={post.slug}
+                className="border-foreground/18 grid gap-5 border-b py-8 md:grid-cols-12 md:gap-10 lg:py-10"
+              >
+                <div className="md:col-span-3">
+                  <PostMeta post={post} />
+                </div>
+                <div className="md:col-span-9">
+                  <h3 className="font-display max-w-3xl text-3xl leading-tight font-semibold tracking-[-0.03em] text-balance sm:text-4xl">
+                    <Link
+                      href={`/blog/${post.slug}`}
+                      className="hover:text-primary transition-colors motion-reduce:transition-none"
+                    >
+                      {post.title}
+                    </Link>
+                  </h3>
+                  <p className="text-muted-foreground mt-4 max-w-2xl leading-7">
+                    {post.description}
+                  </p>
+                  <Link
+                    href={`/blog/${post.slug}`}
+                    className={buttonVariants({
+                      variant: 'link',
+                      size: 'sm',
+                      className: 'mt-4 -ml-3',
+                    })}
+                  >
+                    Read guide
+                    <ArrowRight data-icon="inline-end" />
+                  </Link>
+                </div>
+              </article>
+            ))}
+          </>
+        )}
+      </section>
+    </div>
+  )
+}

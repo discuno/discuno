@@ -1,34 +1,43 @@
 import { CalendarIcon } from 'lucide-react'
-import { type Booking } from '~/app/(app)/(mentor)/settings/bookings/components/BookingsPage'
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '~/components/ui/empty'
+import { ItemGroup } from '~/components/ui/item'
+import type { Booking } from './booking-types'
 import { BookingListItem } from './BookingListItem'
 
 type BookingListProps = {
   bookings: Booking[]
+  timeZone: string
+  emptyTitle: string
+  emptyDescription: string
 }
 
-export const BookingList = ({ bookings }: BookingListProps) => {
+export const BookingList = ({
+  bookings,
+  timeZone,
+  emptyTitle,
+  emptyDescription,
+}: BookingListProps) => {
   if (bookings.length === 0) {
     return (
-      <Empty>
+      <Empty className="border-border min-h-64 border-y">
         <EmptyHeader>
           <EmptyMedia variant="icon">
-            <CalendarIcon />
+            <CalendarIcon aria-hidden="true" />
           </EmptyMedia>
-          <EmptyTitle>No bookings yet</EmptyTitle>
-          <EmptyDescription>
-            When someone books a session with you, it will appear here.
-          </EmptyDescription>
+          <EmptyTitle role="heading" aria-level={2}>
+            {emptyTitle}
+          </EmptyTitle>
+          <EmptyDescription>{emptyDescription}</EmptyDescription>
         </EmptyHeader>
       </Empty>
     )
   }
 
   return (
-    <div>
+    <ItemGroup className="border-border divide-border gap-0 divide-y border-y">
       {bookings.map(booking => (
-        <BookingListItem key={booking.id} booking={booking} />
+        <BookingListItem key={booking.id} booking={booking} timeZone={timeZone} />
       ))}
-    </div>
+    </ItemGroup>
   )
 }

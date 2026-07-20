@@ -1,7 +1,9 @@
 import 'server-only'
 
 import { and, desc, eq, exists, gt, isNotNull, isNull, lt, or, sql } from 'drizzle-orm'
+import { env } from '~/env'
 import { db } from '~/server/db'
+import { readyCalcomOAuthConditions } from '~/server/dal/calcom'
 import {
   calcomToken,
   major,
@@ -39,6 +41,8 @@ export const buildPostsQuery = () => {
         name: user.name,
         username: user.username,
         image: user.image,
+        email: user.email,
+        emailVerified: user.emailVerified,
         calcomUsername: calcomToken.calcomUsername,
       },
       profile: {
@@ -65,6 +69,7 @@ export const buildPostsQuery = () => {
               and(
                 eq(mentorEventType.mentorUserId, user.id),
                 eq(mentorEventType.isEnabled, true),
+                eq(mentorEventType.bookingCompatible, true),
                 or(eq(mentorEventType.customPrice, 0), isNull(mentorEventType.customPrice)),
                 isNull(mentorEventType.deletedAt)
               )
@@ -112,9 +117,34 @@ export const buildPostsQuery = () => {
  * Common WHERE conditions for active, visible posts
  */
 export const getActivePostConditions = () => {
+  const bookablePriceCondition = env.PAYMENTS_ENABLED
+    ? or(
+        eq(mentorEventType.customPrice, 0),
+        isNull(mentorEventType.customPrice),
+        and(
+          gt(mentorEventType.customPrice, 0),
+          eq(mentorStripeAccount.stripeAccountStatus, 'active'),
+          or(
+            eq(mentorStripeAccount.transfersEnabled, true),
+            and(
+              isNull(mentorStripeAccount.transfersEnabled),
+              eq(mentorStripeAccount.payoutsEnabled, true)
+            )
+          ),
+          eq(mentorStripeAccount.payoutsEnabled, true)
+        )
+      )
+    : or(eq(mentorEventType.customPrice, 0), isNull(mentorEventType.customPrice))
+
   return [
-    isNotNull(userProfile.id), // Ensure the user has a profile
-    isNull(post.deletedAt), // Exclude deleted posts
+    eq(user.role, 'mentor'),
+    eq(user.emailVerified, true),
+    or(isNull(user.banned), eq(user.banned, false)),
+    isNull(user.deletedAt),
+    isNotNull(userProfile.id),
+    isNull(userProfile.deletedAt),
+    isNull(post.deletedAt),
+    ...readyCalcomOAuthConditions,
     // Ensure the mentor has at least one bookable event type (matching active status)
     exists(
       db
@@ -125,13 +155,9 @@ export const getActivePostConditions = () => {
           and(
             eq(mentorEventType.mentorUserId, user.id),
             eq(mentorEventType.isEnabled, true),
-            or(
-              // Free event types (price is 0 or null)
-              eq(mentorEventType.customPrice, 0),
-              isNull(mentorEventType.customPrice),
-              // Paid event types with Stripe charges enabled
-              and(gt(mentorEventType.customPrice, 0), eq(mentorStripeAccount.chargesEnabled, true))
-            )
+            eq(mentorEventType.bookingCompatible, true),
+            isNull(mentorEventType.deletedAt),
+            bookablePriceCondition
           )
         )
     ),
@@ -187,14 +213,33 @@ export const getPostsWithFilters = async ({
   schoolId,
   majorId,
   graduationYear,
+  rankingScore,
+  randomSortKey,
+  postId,
   limit,
 }: {
   schoolId?: number | null
   majorId?: number | null
   graduationYear?: number | null
+  rankingScore?: number
+  randomSortKey?: number
+  postId?: number
   limit: number
 }) => {
   const conditions = [...getActivePostConditions()]
+
+  if (rankingScore !== undefined && randomSortKey !== undefined && postId !== undefined) {
+    const cursorCondition = or(
+      lt(userProfile.rankingScore, rankingScore),
+      and(eq(userProfile.rankingScore, rankingScore), lt(post.random_sort_key, randomSortKey)),
+      and(
+        eq(userProfile.rankingScore, rankingScore),
+        eq(post.random_sort_key, randomSortKey),
+        lt(post.id, postId)
+      )
+    )
+    if (cursorCondition) conditions.push(cursorCondition)
+  }
 
   if (schoolId !== null && schoolId !== undefined && schoolId !== -1) {
     conditions.push(eq(school.id, schoolId))

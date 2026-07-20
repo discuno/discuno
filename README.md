@@ -4,12 +4,12 @@
 
 ### 🚀 Modern Scheduling & Mentorship Platform
 
-A professional monorepo built with Next.js, pnpm workspaces, and Cal.com integration
+A professional monorepo built with Next.js, Cal.com scheduling, and Stripe Connect
 
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
 [![CI](https://github.com/discuno/discuno/actions/workflows/ci.yml/badge.svg)](https://github.com/discuno/discuno/actions/workflows/ci.yml)
 [![TypeScript](https://img.shields.io/badge/%3C%2F%3E-TypeScript-%230074c1.svg)](http://www.typescriptlang.org/)
-[![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)](https://nextjs.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19-blue?logo=react)](https://reactjs.org/)
 [![pnpm](https://img.shields.io/badge/pnpm-workspace-orange?logo=pnpm)](https://pnpm.io/)
 [![Turborepo](https://img.shields.io/badge/Turborepo-enabled-red?logo=turborepo)](https://turbo.build/)
@@ -22,14 +22,16 @@ A professional monorepo built with Next.js, pnpm workspaces, and Cal.com integra
 
 ## ✨ Features
 
-- 📅 **Seamless Scheduling** - Cal.com integration for professional booking management
+- 📅 **Reliable Scheduling** - Standard Cal.com OAuth, fail-closed booking contracts, and durable lifecycle processing
 - 👥 **Mentorship Platform** - Connect mentors and mentees with advanced matching
-- 🔐 **Secure Authentication** - better-auth with email OTP + Google & Microsoft OAuth
-- 📱 **Mobile-First Design** - Responsive UI built with Tailwind CSS & Radix UI
-- 🧪 **Full Test Coverage** - Comprehensive testing with Vitest & Testing Library
-- 🚀 **Performance Optimized** - Turbo builds, server components, and edge functions
-- 🎨 **Modern UI** - Beautiful and responsive interface with Tailwind CSS & Radix UI
+- 🔐 **Secure Authentication** - Better Auth with email OTP, Google/Microsoft OAuth, and durable guest-account linking
+- 📱 **Mobile-First Design** - Responsive UI built with Tailwind CSS & shadcn Base UI
+- 💳 **Mentor Payments** - Server-authoritative Stripe Checkout with delayed Connect payouts
+- 🧪 **Guarded Testing** - Fast unit tests plus isolated Railway database integration tests
+- 🚀 **Performance Optimized** - Turbopack builds, Server Components, and Cache Components
+- 🎨 **Modern UI** - Beautiful and responsive interface with Tailwind CSS & shadcn Base UI
 - 📊 **Database Integration** - Type-safe queries with Drizzle ORM
+- 🧭 **Privacy Controls** - Persistent analytics consent with session replay disabled
 
 ## 🏗️ Monorepo Structure
 
@@ -57,8 +59,8 @@ discuno/
 
 ### Prerequisites
 
-- **Node.js** 20+ (LTS recommended)
-- **pnpm** 8+ (package manager)
+- **Node.js** 24
+- **pnpm** 11+
 - **Git** for version control
 
 ### Installation
@@ -84,13 +86,16 @@ pnpm build
 # Run quality checks
 pnpm lint         # ESLint check
 pnpm typecheck    # TypeScript validation
-pnpm test         # Run test suites
+pnpm typecheck:tests # Test-suite TypeScript validation
+pnpm test:coverage  # Run coverage-gated unit tests
+pnpm test:e2e       # Run read-only Chromium smoke tests
 pnpm format       # Format code with Prettier
+pnpm integrations:check:local # Read-only service connectivity check
 
 # Database operations
-pnpm db:generate  # Generate Drizzle schema for the default environment
-pnpm db:push      # Push schema changes to the active database
+pnpm db:push:local # Review and push schema changes to the local database
 pnpm db:studio    # Open Drizzle Studio (use db:studio:<env> for scoped access)
+pnpm db:guard:local # One-time reset-guard provisioning; prints its required confirmation
 ```
 
 ## 📦 Application
@@ -102,9 +107,24 @@ pnpm db:studio    # Open Drizzle Studio (use db:studio:<env> for scoped access)
 - 🔐 better-auth session management (email OTP + Google/Microsoft OAuth)
 - 📊 Drizzle ORM + PostgreSQL/Railway
 - 📅 Cal.com scheduling integration
-- 🎨 Tailwind CSS + Radix UI
+- 💳 Stripe Checkout and Connect marketplace payments
+- ⚙️ Inngest durable booking fulfillment and payout recovery
+- 🎨 Tailwind CSS + shadcn/ui on Base UI
 - 📱 Responsive design system
 - 🔍 Advanced search & filtering
+
+### Marketplace payment model
+
+- The mentee pays the mentor's listed session price plus applicable tax; Discuno adds no buyer service fee.
+- Discuno retains a 15% mentor-side commission and the mentor share is 85%.
+- Checkout creates a platform charge. The mentor transfer is separate and becomes eligible after the scheduled session end plus 72 hours.
+- Mentor cancellations, mentor no-shows, and mentee cancellations at least 24 hours before the session start receive a full refund. Refundable cancellations set mentor payout eligibility false.
+- A mentee cancellation less than 24 hours before the start is non-refundable and remains eligible for the mentor's 85% share after the scheduled session end plus 72 hours. An authenticated Cal.com read confirms the cancellation and actor; the immutable first conservative observation determines the boundary.
+- Paid Checkout temporarily reserves the selected Cal.com slot for 45 minutes around a 35-minute card Checkout and durably links both provider objects. This reduces concurrent Discuno checkout races; final Cal.com creation/reconciliation and the refund fallback remain authoritative.
+- Paid booking fulfillment is retried through Inngest, and Cal.com retries reconcile the Discuno payment ID before creating another booking.
+- Recovery uses an exact authenticated Cal.com GET once a UID is known; bounded metadata pagination is used only while it is unknown. Provider identity, schedule, payer, payment metadata, and reschedule lineage must all match Checkout.
+- Immediately before a provider booking, fulfillment reconciles the authoritative Stripe PaymentIntent, charge, refunds, and disputes and rechecks the Cal.com event duration/compatibility. Holds or drift fail closed.
+- Stripe transfers, refunds, and disputes are recorded in durable ledgers and reconciled before retrying a financial mutation. A `requires_action` refund hard-holds payout, reverses transferred mentor funds, and requires manual review.
 
 ## 🛠️ Tech Stack
 
@@ -112,9 +132,9 @@ pnpm db:studio    # Open Drizzle Studio (use db:studio:<env> for scoped access)
 <summary><strong>Core Technologies</strong></summary>
 
 - **Monorepo**: pnpm workspaces + Turborepo
-- **Frontend**: Next.js 15 (App Router), React 19
+- **Frontend**: Next.js 16 (App Router + Turbopack), React 19
 - **Language**: TypeScript (strict mode)
-- **Styling**: Tailwind CSS 4, Radix UI primitives
+- **Styling**: Tailwind CSS 4, shadcn/ui Base UI primitives
 - **Database**: Drizzle ORM, PostgreSQL (Railway)
 - **Authentication**: better-auth (Drizzle adapter, email OTP, OAuth)
 - **Build System**: Turbo
@@ -124,11 +144,11 @@ pnpm db:studio    # Open Drizzle Studio (use db:studio:<env> for scoped access)
 <details>
 <summary><strong>Development Tools</strong></summary>
 
-- **Testing**: Vitest, Testing Library, Playwright (E2E)
+- **Testing**: Vitest, Testing Library, Playwright Chromium smoke tests, guarded PostgreSQL integration tests
 - **Linting**: ESLint, TypeScript ESLint
 - **Formatting**: Prettier, Tailwind Prettier plugin
 - **Git Hooks**: Husky, lint-staged, Commitlint
-- **CI/CD**: GitHub Actions, Dependabot
+- **CI/CD**: GitHub Actions
 - **Package Management**: pnpm (fast, efficient)
 
 </details>
@@ -137,10 +157,12 @@ pnpm db:studio    # Open Drizzle Studio (use db:studio:<env> for scoped access)
 <summary><strong>Infrastructure & Deployment</strong></summary>
 
 - **Platform**: Vercel (optimized for Next.js)
-- **Database**: Railway (PostgreSQL), Redis (caching)
+- **Database**: Railway (PostgreSQL), Upstash Redis (rate limiting)
+- **Payments**: Stripe Checkout + Connect (separate charges and transfers)
+- **Scheduling**: Cal.com standard OAuth with per-mentor account connections
+- **Durable Workflows**: Inngest
 - **CDN**: Vercel Edge Network
-- **Monitoring**: Sentry error tracking
-- **Analytics**: Vercel Analytics
+- **Analytics**: PostHog
 - **Email**: Resend transactional delivery
 
 </details>
@@ -162,7 +184,7 @@ We welcome contributions from the community! Please see our [Contributing Guide]
 - [ ] Create a feature branch (`git checkout -b feature/amazing-feature`)
 - [ ] Make your changes
 - [ ] Add tests for new functionality
-- [ ] Ensure all checks pass (`pnpm lint && pnpm typecheck && pnpm test`)
+- [ ] Ensure all checks pass (`pnpm lint && pnpm typecheck && pnpm typecheck:tests && pnpm test:coverage`)
 - [ ] Commit with conventional format (`feat: add amazing feature`)
 - [ ] Push and create a Pull Request
 
@@ -187,6 +209,9 @@ We welcome contributions from the community! Please see our [Contributing Guide]
 - [📜 Code of Conduct](CODE_OF_CONDUCT.md)
 - [🔒 Security Policy](SECURITY.md)
 - [📋 Changelog](CHANGELOG.md)
+- [📅 Cal.com OAuth and Scheduling Operations](docs/calcom-oauth.md)
+- [🚦 Modernization Rollout Runbook](docs/modernization-rollout.md)
+- [🗣️ Positioning and Public Voice](docs/positioning.md)
 - [⚖️ License](LICENSE)
 
 ## 📊 Project Stats

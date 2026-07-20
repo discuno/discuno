@@ -9,6 +9,11 @@ Welcome to the Discuno documentation!
 - **[Code of Conduct](../CODE_OF_CONDUCT.md)** - Community guidelines
 - **[Security Policy](../SECURITY.md)** - Security reporting and guidelines
 - **[Web App README](../apps/web/README.md)** - Web application documentation
+- **[Positioning and Public Voice](positioning.md)** - Public messaging, proof boundaries, and CTA standards
+- **[Authentication Operations](authentication.md)** - Better Auth security defaults and deployment checklist
+- **[Analytics Consent](analytics-consent.md)** - Persistent PostHog consent across browser, account, and server tracking
+- **[Cal.com OAuth Operations](calcom-oauth.md)** - OAuth client setup, migration, rotation, and validation
+- **[Modernization Rollout](modernization-rollout.md)** - Schema-first preview validation and production launch gates
 
 ## 🚀 Getting Started
 

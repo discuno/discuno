@@ -2,12 +2,14 @@ interface BookingFailureEmailProps {
   attendeeName: string
   mentorName: string
   reason: string
+  refundSucceeded: boolean
 }
 
 export const BookingFailureEmail = ({
   attendeeName,
   mentorName,
   reason,
+  refundSucceeded,
 }: Readonly<BookingFailureEmailProps>) => (
   <div style={{ fontFamily: 'sans-serif', color: '#333' }}>
     <div
@@ -25,10 +27,14 @@ export const BookingFailureEmail = ({
       <p>
         <strong>Reason:</strong> {reason}
       </p>
-      <p>
-        Your payment has been automatically refunded and should appear in your account within 5-10
-        business days.
-      </p>
+      {refundSucceeded ? (
+        <p>Your refund has been initiated. Most banks post refunds within 5-10 business days.</p>
+      ) : (
+        <p>
+          Your refund needs manual review. Our support team has been alerted; please contact
+          support@discuno.com if you need an immediate update.
+        </p>
+      )}
       <p>
         We apologize for the inconvenience. Please try booking again or contact support if the issue
         persists.

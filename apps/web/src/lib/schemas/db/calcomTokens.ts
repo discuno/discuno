@@ -15,13 +15,26 @@ const updateExcludedFields = {
 export const selectCalcomTokenSchema = createSelectSchema(calcomToken)
 export const insertCalcomTokenSchema = createInsertSchema(calcomToken, {
   ...insertExcludedFields,
+  authMode: z.enum(['legacy_platform', 'oauth']),
   accessTokenExpiresAt: z.preprocess(
     arg => (typeof arg === 'number' ? new Date(arg) : arg),
-    z.date()
+    z.date().nullable()
   ),
   refreshTokenExpiresAt: z.preprocess(
     arg => (typeof arg === 'number' ? new Date(arg) : arg),
-    z.date()
+    z.date().nullable()
+  ),
+  connectedAt: z.preprocess(
+    arg => (typeof arg === 'number' ? new Date(arg) : arg),
+    z.date().nullable()
+  ),
+  disconnectedAt: z.preprocess(
+    arg => (typeof arg === 'number' ? new Date(arg) : arg),
+    z.date().nullable()
+  ),
+  lastRefreshAt: z.preprocess(
+    arg => (typeof arg === 'number' ? new Date(arg) : arg),
+    z.date().nullable()
   ),
 })
 export const updateCalcomTokenSchema = createUpdateSchema(calcomToken, updateExcludedFields)

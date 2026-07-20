@@ -1,7 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { ThemeAwareIconLogo } from '~/components/shared/ThemeAwareIconLogo'
+import { IconLogo } from '~/components/icons/IconLogo'
+import { TextLogo } from '~/components/icons/TextLogo'
 import { SidebarMenuButton, useSidebar } from '~/components/ui/sidebar'
 
 export const AppSidebarHeader = () => {
@@ -14,16 +15,12 @@ export const AppSidebarHeader = () => {
   }
 
   return (
-    <SidebarMenuButton size="lg" asChild>
-      <Link href="/" onClick={handleClick}>
-        <div className="bg-background text-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-          <ThemeAwareIconLogo />
-        </div>
-        <div className="grid flex-1 text-left text-sm leading-tight">
-          <span className="truncate font-semibold">Discuno</span>
-          <span className="truncate text-xs">Mentor Dashboard</span>
-        </div>
-      </Link>
+    <SidebarMenuButton size="lg" render={<Link href="/settings" onClick={handleClick} />}>
+      <IconLogo className="text-primary size-7 shrink-0" aria-hidden="true" />
+      <div className="grid min-w-0 flex-1 text-left text-sm leading-tight">
+        <TextLogo className="text-foreground h-4 w-auto" aria-hidden="true" />
+        <span className="truncate text-xs">Mentor workspace</span>
+      </div>
     </SidebarMenuButton>
   )
 }

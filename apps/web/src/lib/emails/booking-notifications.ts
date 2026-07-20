@@ -1,12 +1,13 @@
 // Email notification functions for booking and payment events
 import { env } from '~/env'
-import { resend } from '~/lib/emails'
+import { sendEmail } from '~/lib/emails'
 import { AdminAlertEmail } from '~/lib/emails/templates/AdminAlert'
 import { AdminManualRefundAlertEmail } from '~/lib/emails/templates/AdminManualRefundAlert'
 import { BookingConfirmationEmail } from '~/lib/emails/templates/BookingConfirmation'
 import { BookingFailureEmail } from '~/lib/emails/templates/BookingFailure'
 import { PayoutNotificationEmail } from '~/lib/emails/templates/PayoutNotification'
 import { RefundNotificationEmail } from '~/lib/emails/templates/RefundNotification'
+import { getSafeErrorName } from '~/lib/operational-logging'
 
 // Type definitions for booking data
 interface BookingData {
@@ -16,6 +17,36 @@ interface BookingData {
   duration?: number
   attendeeName?: string
   organizerName: string
+}
+
+/** Notify operations when an automated recovery path deliberately stops retrying. */
+export const sendOperationalAlert = async ({
+  type,
+  reference,
+  summary,
+}: {
+  type: string
+  reference: string
+  summary: string
+}): Promise<boolean> => {
+  try {
+    await sendEmail(
+      {
+        from: env.AUTH_EMAIL_FROM,
+        to: env.ADMIN_ALERT_EMAIL,
+        subject: `Discuno operational alert: ${type}`,
+        text: [`Alert: ${type}`, `Reference: ${reference}`, summary].join('\n'),
+      },
+      `operational-alert/${type}/${reference}`
+    )
+    return true
+  } catch (error) {
+    console.error('Failed to deliver operational alert', {
+      type,
+      errorName: getSafeErrorName(error),
+    })
+    return false
+  }
 }
 
 /**
@@ -31,50 +62,52 @@ export const sendBookingConfirmationEmail = async ({
   booking: BookingData
 }) => {
   try {
-    console.log('Sending booking confirmation email:', {
-      attendeeEmail,
-      mentorEmail,
-      booking: {
-        id: booking.id,
-        title: booking.title,
-        startTime: booking.startTime,
-      },
-    })
+    console.info('Booking confirmation delivery started', { bookingId: booking.id })
 
     const startTime = new Date(booking.startTime).toLocaleString()
 
     // Send to attendee
-    await resend.emails.send({
-      from: env.AUTH_EMAIL_FROM,
-      to: attendeeEmail,
-      subject: 'Booking Confirmed - Your Session is Scheduled',
-      react: BookingConfirmationEmail({
-        attendeeName: booking.attendeeName,
-        organizerName: booking.organizerName,
-        title: booking.title,
-        startTime,
-        duration: booking.duration,
-        isMentor: false,
-      }),
-    })
+    await sendEmail(
+      {
+        from: env.AUTH_EMAIL_FROM,
+        to: attendeeEmail,
+        subject: 'Booking Confirmed - Your Session is Scheduled',
+        react: BookingConfirmationEmail({
+          attendeeName: booking.attendeeName,
+          organizerName: booking.organizerName,
+          title: booking.title,
+          startTime,
+          duration: booking.duration,
+          isMentor: false,
+        }),
+      },
+      `booking-confirmation-attendee/${booking.id}`
+    )
 
     // Send to mentor
-    await resend.emails.send({
-      from: env.AUTH_EMAIL_FROM,
-      to: mentorEmail,
-      subject: 'New Booking - You have a scheduled session',
-      react: BookingConfirmationEmail({
-        attendeeName: booking.attendeeName,
-        organizerName: booking.organizerName,
-        title: booking.title,
-        startTime,
-        duration: booking.duration,
-        isMentor: true,
-      }),
-    })
+    await sendEmail(
+      {
+        from: env.AUTH_EMAIL_FROM,
+        to: mentorEmail,
+        subject: 'New Booking - You have a scheduled session',
+        react: BookingConfirmationEmail({
+          attendeeName: booking.attendeeName,
+          organizerName: booking.organizerName,
+          title: booking.title,
+          startTime,
+          duration: booking.duration,
+          isMentor: true,
+        }),
+      },
+      `booking-confirmation-mentor/${booking.id}`
+    )
+    return true
   } catch (error) {
-    console.error('Failed to send booking confirmation email:', error)
+    console.error('Failed to send booking confirmation email', {
+      errorName: getSafeErrorName(error),
+    })
     // Don't throw - email failure shouldn't break booking flow
+    return false
   }
 }
 
@@ -85,29 +118,35 @@ export const sendRefundNotificationEmail = async ({
   customerEmail,
   amount,
   reason,
+  paymentId,
 }: {
   customerEmail: string
   amount: number
   reason: string
+  paymentId: number
 }) => {
   try {
-    console.log('Sending refund notification email:', {
-      customerEmail,
-      amount: (amount / 100).toFixed(2),
-      reason,
-    })
+    console.info('Refund notification delivery started', { paymentId })
 
-    await resend.emails.send({
-      from: env.AUTH_EMAIL_FROM,
-      to: customerEmail,
-      subject: 'Refund Processed - Your Payment Has Been Refunded',
-      react: RefundNotificationEmail({
-        amount,
-        reason,
-      }),
-    })
+    await sendEmail(
+      {
+        from: env.AUTH_EMAIL_FROM,
+        to: customerEmail,
+        subject: 'Refund Processed - Your Payment Has Been Refunded',
+        react: RefundNotificationEmail({
+          amount,
+          reason,
+        }),
+      },
+      `refund-notification/${paymentId}`
+    )
+    return true
   } catch (error) {
-    console.error('Failed to send refund notification email:', error)
+    console.error('Failed to send refund notification email', {
+      paymentId,
+      errorName: getSafeErrorName(error),
+    })
+    return false
   }
 }
 
@@ -121,23 +160,27 @@ export const alertAdminForManualRefund = async (
 ) => {
   try {
     console.error('URGENT: Manual refund required', {
-      sessionId,
-      bookingError: bookingError.message,
-      refundError: refundError.message,
+      bookingErrorName: getSafeErrorName(bookingError),
+      refundErrorName: getSafeErrorName(refundError),
     })
 
-    await resend.emails.send({
-      from: env.AUTH_EMAIL_FROM,
-      to: env.AUTH_EMAIL_FROM, // Send to same email as from for now
-      subject: 'URGENT: Manual Refund Required',
-      react: AdminManualRefundAlertEmail({
-        sessionId,
-        bookingError: bookingError.message,
-        refundError: refundError.message,
-      }),
-    })
+    await sendEmail(
+      {
+        from: env.AUTH_EMAIL_FROM,
+        to: env.ADMIN_ALERT_EMAIL,
+        subject: 'URGENT: Manual Refund Required',
+        react: AdminManualRefundAlertEmail({
+          sessionId,
+          bookingError: bookingError.message,
+          refundError: refundError.message,
+        }),
+      },
+      `manual-refund-alert/${sessionId}`
+    )
   } catch (error) {
-    console.error('Failed to send admin alert email:', error)
+    console.error('Failed to send admin alert email', {
+      errorName: getSafeErrorName(error),
+    })
   }
 }
 
@@ -156,25 +199,25 @@ export const sendPayoutNotificationEmail = async ({
   transferId: string
 }) => {
   try {
-    console.log('Sending payout notification email:', {
-      mentorEmail,
-      amount: (amount / 100).toFixed(2),
-      currency,
-      transferId,
-    })
+    console.info('Payout notification delivery started')
 
-    await resend.emails.send({
-      from: env.AUTH_EMAIL_FROM,
-      to: mentorEmail,
-      subject: 'Payment Transferred - Your Earnings Are On The Way',
-      react: PayoutNotificationEmail({
-        amount,
-        currency,
-        transferId,
-      }),
-    })
+    await sendEmail(
+      {
+        from: env.AUTH_EMAIL_FROM,
+        to: mentorEmail,
+        subject: 'Payment Transferred - Your Earnings Are On The Way',
+        react: PayoutNotificationEmail({
+          amount,
+          currency,
+          transferId,
+        }),
+      },
+      `payout-notification/${transferId}`
+    )
   } catch (error) {
-    console.error('Failed to send payout notification email:', error)
+    console.error('Failed to send payout notification email', {
+      errorName: getSafeErrorName(error),
+    })
   }
 }
 
@@ -196,23 +239,29 @@ export const sendAdminAlert = async ({
     console.error('ADMIN ALERT:', {
       type,
       paymentId,
-      error,
       retryCount,
     })
 
-    await resend.emails.send({
-      from: env.AUTH_EMAIL_FROM,
-      to: env.AUTH_EMAIL_FROM, // Send to same email as from for now TODO
-      subject: `ALERT: ${type} - Payment ${paymentId}`,
-      react: AdminAlertEmail({
-        type,
-        paymentId,
-        error,
-        retryCount,
-      }),
-    })
+    await sendEmail(
+      {
+        from: env.AUTH_EMAIL_FROM,
+        to: env.ADMIN_ALERT_EMAIL,
+        subject: `ALERT: ${type} - Payment ${paymentId}`,
+        react: AdminAlertEmail({
+          type,
+          paymentId,
+          error,
+          retryCount,
+        }),
+      },
+      `admin-alert/${type}/${paymentId}/${retryCount ?? 0}`
+    )
   } catch (error) {
-    console.error('Failed to send admin alert email:', error)
+    console.error('Failed to send admin alert email', {
+      type,
+      paymentId,
+      errorName: getSafeErrorName(error),
+    })
   }
 }
 
@@ -224,35 +273,40 @@ export const sendBookingFailureEmail = async ({
   attendeeName,
   mentorName,
   reason,
+  refundSucceeded,
+  paymentId,
 }: {
   attendeeEmail: string
   attendeeName: string
   mentorName: string
   reason: string
+  refundSucceeded: boolean
+  paymentId: number
 }) => {
   try {
-    console.log('Sending booking failure email:', {
-      attendeeEmail,
-      attendeeName,
-      mentorName,
-      reason,
-    })
+    console.info('Booking failure notification delivery started', { paymentId })
 
-    const { data, error } = await resend.emails.send({
-      from: env.AUTH_EMAIL_FROM,
-      to: attendeeEmail,
-      subject: 'Booking Failed - Action Required',
-      react: BookingFailureEmail({
-        attendeeName,
-        mentorName,
-        reason,
-      }),
-    })
-    if (error) {
-      console.error('Failed to send booking failure email:', error)
-    }
-    console.log('Successfully sent booking failure email:', data)
+    await sendEmail(
+      {
+        from: env.AUTH_EMAIL_FROM,
+        to: attendeeEmail,
+        subject: 'Booking Failed - Action Required',
+        react: BookingFailureEmail({
+          attendeeName,
+          mentorName,
+          reason,
+          refundSucceeded,
+        }),
+      },
+      `booking-failure/${paymentId}`
+    )
+    console.info('Booking failure notification delivered', { paymentId })
+    return true
   } catch (error) {
-    console.error('Caught exception sending booking failure email:', error)
+    console.error('Failed to send booking failure email', {
+      paymentId,
+      errorName: getSafeErrorName(error),
+    })
+    return false
   }
 }
