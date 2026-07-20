@@ -1,7 +1,7 @@
 'use client'
 
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { CircleAlert, CreditCard, RefreshCw } from 'lucide-react'
+import { CircleAlert, RefreshCw } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
 import { Fragment, type ReactNode, useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
@@ -11,9 +11,9 @@ import {
   refreshMentorEventTypes,
   updateMentorEventTypePreferences,
 } from '~/app/(app)/(mentor)/settings/actions'
+import { StripeDashboardButton } from '~/app/(app)/(mentor)/settings/components/StripeDashboardButton'
 import { EventTypeSettingsContent } from '~/app/(app)/(mentor)/settings/event-types/components/EventTypeSettingsContent'
 import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert'
-import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { Item, ItemContent, ItemFooter, ItemGroup, ItemSeparator } from '~/components/ui/item'
 import { Skeleton } from '~/components/ui/skeleton'
@@ -36,12 +36,8 @@ const SessionTypesHeader = ({ actions }: { actions?: ReactNode }) => {
   return (
     <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div className="flex max-w-2xl flex-col gap-1.5">
-        <h1 className="font-display text-3xl leading-tight font-semibold tracking-tight">
-          Session types
-        </h1>
-        <p className="text-muted-foreground text-sm leading-6">
-          Choose which sessions students can book and set each price.
-        </p>
+        <h1 className="text-2xl leading-tight font-semibold tracking-tight">Session types</h1>
+        <p className="text-muted-foreground text-sm leading-6">Choose what students can book.</p>
       </div>
       {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
     </header>
@@ -70,7 +66,7 @@ export const EventTypeToggleSection = ({ paymentsEnabled }: { paymentsEnabled: b
     staleTime: 5 * 60 * 1000,
   })
 
-  // Fetch mentor's Stripe status
+  // Keep payout status scoped to this task instead of loading it in every workspace header.
   const {
     data: stripeStatusData,
     isLoading: stripeStatusLoading,
@@ -81,7 +77,7 @@ export const EventTypeToggleSection = ({ paymentsEnabled }: { paymentsEnabled: b
     queryKey: ['mentor-stripe-status'],
     queryFn: getMentorStripeStatus,
     staleTime: 5 * 60 * 1000,
-    enabled: paymentsEnabled || hasStripeReturn,
+    enabled: true,
   })
 
   // A Stripe return URL only proves that the mentor came back. Reconcile the
@@ -302,11 +298,8 @@ export const EventTypeToggleSection = ({ paymentsEnabled }: { paymentsEnabled: b
                 {refreshEventTypesMutation.isPending ? 'Refreshing…' : 'Refresh'}
               </Button>
             )}
-            {paymentsEnabled && payoutsReady && (
-              <Badge variant="success">
-                <CreditCard data-icon="inline-start" aria-hidden="true" />
-                Payouts ready
-              </Badge>
+            {stripeStatus?.hasAccount && (!paymentsEnabled || payoutsReady) && (
+              <StripeDashboardButton hasStripeAccount payoutsReady={payoutsReady} />
             )}
           </>
         }

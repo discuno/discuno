@@ -26,10 +26,10 @@ const canvas = Buffer.from(`
       <tspan x="68" dy="74">question.</tspan>
     </text>
     <text x="68" y="474" fill="#4e5569" font-family="Arial, sans-serif" font-size="24">
-      Talk it through with someone who has been there.
+      Talk it through with a student who's been there.
     </text>
-    <rect x="68" y="537" width="86" height="8" rx="4" fill="#2840e2"/>
-    <rect x="690" width="10" height="630" fill="#2840e2"/>
+    <rect x="68" y="537" width="86" height="8" rx="4" fill="#1837c3"/>
+    <rect x="690" width="10" height="630" fill="#1837c3"/>
   </svg>
 `)
 

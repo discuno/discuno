@@ -1,7 +1,7 @@
 import { ArrowRight, BookOpen, CalendarDays, CreditCard, Link2, User } from 'lucide-react'
 import Link from 'next/link'
 import { Badge } from '~/components/ui/badge'
-import { Button } from '~/components/ui/button'
+import { buttonVariants } from '~/components/ui/button'
 import {
   Item,
   ItemActions,
@@ -37,36 +37,36 @@ interface OnboardingDashboardProps {
   initialStatus: OnboardingStatus
 }
 
-const setupOrder = ['calendar', 'profile', 'availability', 'event-types', 'stripe']
+const setupOrder = ['profile', 'calendar', 'availability', 'event-types', 'stripe']
 
 const setupPresentation = {
   calendar: {
     title: 'Calendar',
-    description: 'Connect the calendar Discuno uses for accurate booking times.',
+    description: 'Connect the calendar used to show open times.',
     actionLabel: 'Connect calendar',
     icon: Link2,
   },
   profile: {
     title: 'Public profile',
-    description: 'Add the details students need before choosing a conversation.',
+    description: 'Add the details students need before choosing a session.',
     actionLabel: 'Edit profile',
     icon: User,
   },
   availability: {
     title: 'Availability',
-    description: 'Open at least one recurring time window for students.',
+    description: 'Set at least one recurring time.',
     actionLabel: 'Set availability',
     icon: CalendarDays,
   },
   'event-types': {
     title: 'Session types',
-    description: 'Choose at least one session students can book.',
+    description: 'Choose at least one bookable session.',
     actionLabel: 'Review session types',
     icon: BookOpen,
   },
   stripe: {
     title: 'Payouts',
-    description: 'Finish payout setup before offering a paid session.',
+    description: 'Complete payout setup for paid sessions.',
     actionLabel: 'Set up payouts',
     icon: CreditCard,
   },
@@ -75,20 +75,20 @@ const setupPresentation = {
 const workspaceTasks = [
   {
     title: 'Availability',
-    description: 'Update your recurring hours and specific dates.',
+    description: 'Change recurring hours and date exceptions.',
     href: '/settings/availability',
     icon: CalendarDays,
   },
   {
     title: 'Session types',
-    description: 'Control what students can book and what each session costs.',
+    description: 'Choose what students can book and set prices.',
     href: '/settings/event-types',
     icon: BookOpen,
   },
   {
     title: 'Public profile',
-    description: 'Keep your firsthand context and academic details current.',
-    href: '/settings/profile/edit',
+    description: 'Update your experience and academic details.',
+    href: '/settings/profile',
     icon: User,
   },
 ] as const
@@ -120,16 +120,17 @@ function SetupList({ steps }: { steps: OnboardingStep[] }) {
                 </ItemDescription>
               </ItemContent>
               <ItemActions className="basis-full sm:basis-auto sm:self-center">
-                <Button
-                  render={<Link href={step.actionUrl} />}
-                  nativeButton={false}
-                  variant={index === 0 ? 'default' : 'outline'}
-                  size="sm"
-                  className="w-full sm:w-auto"
+                <Link
+                  href={step.actionUrl}
+                  className={buttonVariants({
+                    variant: index === 0 ? 'default' : 'outline',
+                    size: 'sm',
+                    className: 'w-full sm:w-auto',
+                  })}
                 >
                   {presentation.actionLabel}
                   <ArrowRight data-icon="inline-end" aria-hidden="true" />
-                </Button>
+                </Link>
               </ItemActions>
             </Item>
           </div>
@@ -143,17 +144,15 @@ function ReadyWorkspace() {
   return (
     <div className="flex w-full max-w-4xl flex-col gap-8">
       <header className="flex max-w-2xl flex-col gap-1.5">
-        <h1 className="font-display text-3xl leading-tight font-semibold tracking-tight">Today</h1>
-        <p className="text-muted-foreground text-sm leading-6">
-          Your booking setup is ready. Choose the task you need to handle next.
-        </p>
+        <h1 className="text-2xl leading-tight font-semibold tracking-tight">Today</h1>
+        <p className="text-muted-foreground text-sm leading-6">Manage your next sessions.</p>
       </header>
 
       <TodaySessions />
 
       <section aria-labelledby="workspace-tasks-heading">
         <h2 id="workspace-tasks-heading" className="text-lg font-semibold">
-          Keep your page current
+          Manage your mentor page
         </h2>
         <ItemGroup className="border-border mt-4 gap-0 border-y">
           {workspaceTasks.map((task, index) => {
@@ -200,11 +199,9 @@ export const OnboardingDashboard = ({ initialStatus }: OnboardingDashboardProps)
       <header className="flex max-w-2xl flex-col items-start gap-3">
         <Badge variant="warning">Setup incomplete</Badge>
         <div className="flex flex-col gap-1.5">
-          <h1 className="font-display text-3xl leading-tight font-semibold tracking-tight">
-            Today
-          </h1>
+          <h1 className="text-2xl leading-tight font-semibold tracking-tight">Today</h1>
           <p className="text-muted-foreground text-sm leading-6">
-            Review the remaining setup before sharing your mentor page with students.
+            Finish setup before sharing your page.
           </p>
         </div>
       </header>

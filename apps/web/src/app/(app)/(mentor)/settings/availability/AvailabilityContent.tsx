@@ -14,11 +14,9 @@ interface AvailabilityContentProps {
 function AvailabilityPageHeader() {
   return (
     <header className="flex max-w-2xl flex-col gap-1.5">
-      <h1 className="font-display text-3xl leading-tight font-semibold tracking-tight">
-        Availability
-      </h1>
+      <h1 className="text-2xl leading-tight font-semibold tracking-tight">Availability</h1>
       <p className="text-muted-foreground text-sm leading-6">
-        Set recurring hours and date exceptions for student bookings.
+        Set recurring hours and date exceptions.
       </p>
     </header>
   )
@@ -48,7 +46,7 @@ export function AvailabilityContent({ initialScheduleResult }: AvailabilityConte
           <CalendarX2 aria-hidden="true" />
           <AlertTitle>Connect a default schedule first</AlertTitle>
           <AlertDescription>
-            <p>Your connected calendar needs a default schedule before you can edit hours here.</p>
+            <p>Create a default schedule before editing hours here.</p>
             <Link
               href="/settings/calendar"
               className={buttonVariants({ variant: 'outline', size: 'sm' })}

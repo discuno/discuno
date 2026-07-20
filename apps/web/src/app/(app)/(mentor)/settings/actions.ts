@@ -1053,17 +1053,6 @@ export const getMentorOnboardingStatus = async (): Promise<{
 
   const steps = [
     {
-      id: 'calendar',
-      title: 'Connect your calendar',
-      description: hasCalendarConnection
-        ? 'Your Cal.com account is connected'
-        : 'Connect Cal.com so Discuno can show accurate times and prevent double bookings',
-      completed: hasCalendarConnection,
-      actionUrl: '/settings/calendar',
-      actionLabel: 'Connect Calendar',
-      iconName: 'Link2',
-    },
-    {
       id: 'profile',
       title: 'Complete your profile',
       description:
@@ -1071,10 +1060,21 @@ export const getMentorOnboardingStatus = async (): Promise<{
           ? `Missing: ${missingProfileFields.join(', ')}`
           : 'Add a bio and profile photo to help students get to know you',
       completed: hasProfile,
-      actionUrl: '/settings/profile/edit',
-      actionLabel: 'Complete Profile',
+      actionUrl: '/settings/profile',
+      actionLabel: 'Complete profile',
       iconName: 'User',
       missingFields: missingProfileFields,
+    },
+    {
+      id: 'calendar',
+      title: 'Connect your calendar',
+      description: hasCalendarConnection
+        ? 'Your Cal.com account is connected'
+        : 'Connect Cal.com so Discuno can show accurate times and prevent double bookings',
+      completed: hasCalendarConnection,
+      actionUrl: '/settings/calendar',
+      actionLabel: 'Connect calendar',
+      iconName: 'Link2',
     },
     {
       id: 'availability',
@@ -1084,7 +1084,7 @@ export const getMentorOnboardingStatus = async (): Promise<{
         : "Configure when you're available for mentorship sessions",
       completed: hasAvailability,
       actionUrl: '/settings/availability',
-      actionLabel: 'Set Availability',
+      actionLabel: 'Set availability',
       iconName: 'CalendarDays',
     },
     {
@@ -1095,7 +1095,7 @@ export const getMentorOnboardingStatus = async (): Promise<{
         : 'Choose which session types students can book with you',
       completed: hasEnabledEventTypes,
       actionUrl: '/settings/event-types',
-      actionLabel: 'Enable Event Types',
+      actionLabel: 'Enable session types',
       iconName: 'BookOpen',
     },
     {
@@ -1106,7 +1106,7 @@ export const getMentorOnboardingStatus = async (): Promise<{
         : 'Required only if you want to charge for sessions. Skip if offering only free sessions.',
       completed: hasStripe,
       actionUrl: '/settings/event-types',
-      actionLabel: 'Connect Stripe',
+      actionLabel: 'Set up payouts',
       iconName: 'CreditCard',
       requiredForPaid: stripeRequired,
     },
@@ -1118,14 +1118,14 @@ export const getMentorOnboardingStatus = async (): Promise<{
         : 'Configure pricing for your sessions (free or paid)',
       completed: hasPricing,
       actionUrl: '/settings/event-types',
-      actionLabel: 'Set Pricing',
+      actionLabel: 'Set pricing',
       iconName: 'DollarSign',
       requiredForPaid: false,
     },
   ]
 
   // Calculate completion based on required steps
-  // Count steps without requiredForPaid flag (always required: profile, availability, event-types)
+  // Count steps without requiredForPaid (profile, calendar, availability, and event types)
   // Plus steps with requiredForPaid === true (Stripe when only paid sessions)
   const requiredSteps = steps.filter(
     s => s.requiredForPaid === undefined || s.requiredForPaid === true

@@ -66,12 +66,8 @@ export const BookingsPage = () => {
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="flex max-w-2xl flex-col gap-1.5">
-          <h1 className="font-display text-3xl leading-tight font-semibold tracking-tight">
-            Sessions
-          </h1>
-          <p className="text-muted-foreground text-sm leading-6">
-            Prepare for upcoming conversations and review past sessions.
-          </p>
+          <h1 className="text-2xl leading-tight font-semibold tracking-tight">Sessions</h1>
+          <p className="text-muted-foreground text-sm leading-6">Manage your bookings.</p>
         </div>
         <p className="text-muted-foreground text-xs sm:pb-1">
           Times shown in <TimeZoneLabel timeZone={timeZone} />
@@ -122,7 +118,7 @@ export const BookingsPage = () => {
               bookings={groups.upcoming}
               timeZone={timeZone}
               emptyTitle="No upcoming sessions"
-              emptyDescription="A session will appear here when a student schedules one."
+              emptyDescription="New bookings will appear here."
             />
           </TabsContent>
           <TabsContent value="completed">
@@ -130,7 +126,7 @@ export const BookingsPage = () => {
               bookings={groups.completed}
               timeZone={timeZone}
               emptyTitle="No completed sessions yet"
-              emptyDescription="Finished sessions and no-show records will appear here."
+              emptyDescription="Finished sessions will appear here."
             />
           </TabsContent>
           <TabsContent value="cancelled">
@@ -138,7 +134,7 @@ export const BookingsPage = () => {
               bookings={groups.cancelled}
               timeZone={timeZone}
               emptyTitle="No cancelled sessions"
-              emptyDescription="Cancelled or rejected sessions will remain here for your records."
+              emptyDescription="Cancelled sessions will appear here."
             />
           </TabsContent>
         </Tabs>

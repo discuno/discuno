@@ -145,7 +145,9 @@ export default function SupportPage() {
     <div className="min-h-screen">
       <section className="border-b">
         <div className="page-shell py-14 sm:py-20 lg:py-24">
-          <h1 className="display-heading max-w-3xl">What do you need help with?</h1>
+          <h1 className="max-w-3xl text-4xl font-semibold tracking-tight sm:text-5xl">
+            What do you need help with?
+          </h1>
           <p className="text-muted-foreground mt-5 max-w-xl text-lg leading-8">
             Choose the task below, or email us with the booking details that matter.
           </p>

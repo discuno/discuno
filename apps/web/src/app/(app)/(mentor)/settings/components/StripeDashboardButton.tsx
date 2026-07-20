@@ -1,6 +1,6 @@
 'use client'
 
-import { CreditCard, ExternalLink, Loader2 } from 'lucide-react'
+import { CreditCard, ExternalLink } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { toast } from 'sonner'
@@ -10,6 +10,7 @@ import {
   createStripeLoginLink,
 } from '~/app/(app)/(mentor)/settings/actions'
 import { Button } from '~/components/ui/button'
+import { Spinner } from '~/components/ui/spinner'
 
 interface StripeDashboardButtonProps {
   hasStripeAccount: boolean
@@ -106,11 +107,11 @@ export const StripeDashboardButton = ({
         aria-label={isLoading ? 'Opening payout setup' : label}
       >
         {isLoading ? (
-          <Loader2 aria-hidden="true" className="animate-spin" />
+          <Spinner data-icon="inline-start" />
         ) : (
-          <CreditCard aria-hidden="true" />
+          <CreditCard data-icon="inline-start" aria-hidden="true" />
         )}
-        <span className="hidden sm:inline">{isLoading ? 'Opening…' : label}</span>
+        <span>{isLoading ? 'Opening…' : label}</span>
       </Button>
     )
   }
@@ -124,11 +125,11 @@ export const StripeDashboardButton = ({
       aria-label={isLoading ? 'Opening payout dashboard' : 'Open payout dashboard'}
     >
       {isLoading ? (
-        <Loader2 aria-hidden="true" className="animate-spin" />
+        <Spinner data-icon="inline-start" />
       ) : (
-        <ExternalLink aria-hidden="true" />
+        <ExternalLink data-icon="inline-start" aria-hidden="true" />
       )}
-      <span className="hidden sm:inline">{isLoading ? 'Opening…' : 'Payout dashboard'}</span>
+      <span>{isLoading ? 'Opening…' : 'Payout dashboard'}</span>
     </Button>
   )
 }

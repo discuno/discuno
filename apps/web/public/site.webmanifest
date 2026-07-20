@@ -2,14 +2,14 @@
   "name": "Discuno",
   "short_name": "Discuno",
   "lang": "en",
-  "description": "Find student mentors for practical one-to-one guidance on college, courses, internships, and early career decisions.",
+  "description": "Talk through one college decision with a student who has firsthand experience of the school, field, or choice.",
   "start_url": "/",
   "scope": "/",
   "id": "/",
   "display": "standalone",
   "display_override": ["standalone", "fullscreen"],
   "background_color": "#f9f7f1",
-  "theme_color": "#2840e2",
+  "theme_color": "#1837c3",
   "orientation": "portrait-primary",
   "icons": [
     {
@@ -37,7 +37,7 @@
       "name": "Find a mentor",
       "short_name": "Mentors",
       "description": "Browse and connect with student mentors",
-      "url": "/",
+      "url": "/find",
       "icons": []
     },
     {

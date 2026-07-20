@@ -52,13 +52,13 @@
   :root {
     color-scheme: light;
 
-    --background: 44 48% 97%;
-    --foreground: 225 47% 13%;
+    --background: 43 45% 97%;
+    --foreground: 225 46% 12%;
     --card: 45 60% 99%;
     --card-foreground: 225 47% 13%;
     --popover: 42 50% 99%;
     --popover-foreground: 225 47% 13%;
-    --primary: 233 82% 51%;
+    --primary: 229 78% 43%;
     --primary-foreground: 0 0% 100%;
     --secondary: 44 32% 92%;
     --secondary-foreground: 225 40% 21%;
@@ -74,7 +74,7 @@
     --warning-foreground: 28 75% 15%;
     --border: 226 22% 74%;
     --input: 225 20% 58%;
-    --ring: 233 82% 51%;
+    --ring: 229 78% 43%;
     --highlight: 70 93% 65%;
     --highlight-foreground: 225 47% 13%;
     --radius: 0.625rem;
@@ -87,12 +87,12 @@
 
     --sidebar: 43 42% 96%;
     --sidebar-foreground: 225 47% 13%;
-    --sidebar-primary: 233 82% 51%;
+    --sidebar-primary: 229 78% 43%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 70 83% 84%;
     --sidebar-accent-foreground: 225 47% 13%;
     --sidebar-border: 226 19% 75%;
-    --sidebar-ring: 233 82% 51%;
+    --sidebar-ring: 229 78% 43%;
   }
 
   .dark {
@@ -193,7 +193,7 @@
 @layer components {
   .page-container,
   .page-shell {
-    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+    @apply mx-auto w-full max-w-[76rem] px-4 sm:px-6 lg:px-8;
   }
 
   .reading-measure {
@@ -201,13 +201,13 @@
   }
 
   .display-hero {
-    @apply font-display text-[clamp(3rem,6.5vw,5.25rem)] leading-[0.96] font-medium tracking-[-0.05em] text-balance;
+    @apply font-display text-[clamp(2.75rem,6vw,4.5rem)] leading-[0.98] font-medium tracking-[-0.045em] text-balance;
     font-optical-sizing: auto;
     font-variation-settings: 'opsz' 72;
   }
 
   .display-heading {
-    @apply font-display text-[clamp(2.25rem,4.5vw,4rem)] leading-[0.98] font-medium tracking-[-0.04em] text-balance;
+    @apply font-display text-[clamp(2rem,4vw,3rem)] leading-[1.02] font-medium tracking-[-0.035em] text-balance;
     font-optical-sizing: auto;
     font-variation-settings: 'opsz' 64;
   }
@@ -233,11 +233,11 @@
   }
 
   .public-enter {
-    animation: public-enter 620ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation: none;
   }
 
   .public-enter-delayed {
-    animation: public-enter 720ms 90ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation: none;
   }
 
   .decision-context-enter {
@@ -280,17 +280,6 @@
   padding: 1.25rem 0 2.5rem;
   font-size: 0.975rem;
   line-height: 1.75rem;
-}
-
-@keyframes public-enter {
-  from {
-    opacity: 0;
-    transform: translateY(18px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 @keyframes decision-context-enter {

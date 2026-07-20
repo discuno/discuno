@@ -2,7 +2,7 @@ import { type Metadata } from 'next'
 
 export const siteConfig = {
   name: 'Discuno',
-  tagline: "Talk it through with someone who's been there.",
+  tagline: "Talk it through with a student who's been there.",
   description:
     'Talk one-to-one with a student who has firsthand context on the course, major, internship, campus, or college decision in front of you.',
   url: 'https://discuno.com',

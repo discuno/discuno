@@ -19,13 +19,13 @@ import { authClient } from '~/lib/auth-client'
 interface AvatarIconProps {
   profilePic: string | null
   isAuthenticated?: boolean
-  onboardingStatus?: { isComplete: boolean } | null
+  isMentor?: boolean
 }
 
 export const AvatarIcon = ({
   profilePic,
   isAuthenticated = false,
-  onboardingStatus,
+  isMentor = false,
 }: AvatarIconProps) => {
   const router = useRouter()
   const { resolvedTheme, setTheme } = useTheme()
@@ -50,24 +50,15 @@ export const AvatarIcon = ({
             <User className="h-4 w-4" />
           </AvatarFallback>
         </Avatar>
-        {onboardingStatus && !onboardingStatus.isComplete && (
-          <span
-            className="bg-warning ring-background absolute top-0.5 right-0.5 h-2.5 w-2.5 rounded-full ring-2"
-            aria-label="Mentor setup incomplete"
-          />
-        )}
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-60 rounded-xl p-2" align="end" sideOffset={8}>
         <DropdownMenuLabel className="text-muted-foreground px-2 py-1.5 text-xs font-medium">
           Your account
         </DropdownMenuLabel>
-        {onboardingStatus && (
+        {isMentor && (
           <DropdownMenuItem render={<Link href="/settings" className="gap-3 py-2.5" />}>
             <LayoutDashboard />
-            <span className="flex-1">Mentor dashboard</span>
-            {!onboardingStatus.isComplete && (
-              <span className="text-warning text-xs font-semibold">Finish setup</span>
-            )}
+            <span className="flex-1">Open workspace</span>
           </DropdownMenuItem>
         )}
         <DropdownMenuItem render={<Link href="/support" className="gap-3 py-2.5" />}>

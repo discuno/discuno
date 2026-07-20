@@ -6,11 +6,10 @@ import { createMetadata } from '~/lib/metadata'
 export const metadata: Metadata = createMetadata({
   title: 'Talk Through Your Next College Decision',
   description:
-    'Bring one real college decision to a student with relevant firsthand context, then leave with a clearer next move.',
+    'Bring one college decision to a student who has faced something similar, then choose your next move.',
   openGraph: {
     title: "Before you choose, talk to someone who's been there | Discuno",
-    description:
-      'Name the question, find relevant firsthand context, and choose a clearer next move.',
+    description: 'Name the question, find a student who has been there, and choose your next move.',
   },
   alternates: { canonical: '/' },
 })

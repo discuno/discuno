@@ -112,11 +112,9 @@ export function AvailabilityManager({ initialAvailability }: AvailabilityManager
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-8">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex max-w-2xl flex-col gap-1.5">
-          <h1 className="font-display text-3xl leading-tight font-semibold tracking-tight">
-            Availability
-          </h1>
+          <h1 className="text-2xl leading-tight font-semibold tracking-tight">Availability</h1>
           <p className="text-muted-foreground text-sm leading-6">
-            Set recurring hours and date exceptions. Changes appear after you save.
+            Set recurring hours and date exceptions.
           </p>
         </div>
         {isDirty ? <Badge variant="warning">Unsaved changes</Badge> : null}

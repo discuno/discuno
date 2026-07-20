@@ -8,7 +8,7 @@ import { FindResultsSkeleton } from './components/FindResultsSkeleton'
 export const metadata: Metadata = createMetadata({
   title: 'Find a Student Mentor for Your College Decision',
   description:
-    'Compare student mentors by school, field, graduation year, firsthand context, and the session options they publish.',
+    'Browse student mentors by school, field, and graduation year, then compare their profiles and session options.',
   alternates: { canonical: '/find' },
 })
 
@@ -25,27 +25,23 @@ async function RequestedFindResults({ searchParams }: FindPageProps) {
 export default function FindPage({ searchParams }: FindPageProps) {
   return (
     <div className="bg-background text-foreground min-h-screen">
-      <section className="bg-accent/35 border-b">
-        <div className="mx-auto w-full max-w-[76rem] px-4 py-9 sm:px-6 sm:py-12 lg:px-8">
+      <section className="border-b">
+        <div className="mx-auto w-full max-w-[76rem] px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
           <div className="max-w-[42rem]">
-            <h1 className="font-display text-4xl leading-[1.02] font-semibold tracking-[-0.04em] sm:text-5xl">
-              Find a student with relevant context.
+            <h1 className="text-4xl leading-[1.02] font-semibold tracking-[-0.04em] sm:text-5xl">
+              Find someone who&apos;s been there.
             </h1>
             <p className="text-muted-foreground mt-3 text-base leading-7 sm:text-lg">
-              Narrow by school, field, or graduation year, then read each mentor&apos;s own profile.
+              Filter by school, field, or graduation year. Your question does not rank the results.
             </p>
           </div>
 
-          <div className="mt-8 border-t pt-6">
+          <div className="border-foreground/20 mt-8 border-t pt-6">
             <DecisionContext
               compact
               emptyTitle="Your decision"
-              emptyDescription="Add the question you want to carry into a conversation."
+              emptyDescription="Add a question to keep it visible while you compare profiles."
             />
-            <p className="text-muted-foreground mt-4 max-w-2xl text-xs leading-5">
-              Your question stays in this browser session. It is not analyzed or used to rank these
-              profiles.
-            </p>
           </div>
         </div>
       </section>

@@ -217,7 +217,7 @@ export function EmailSignInForm({ returnTo = '/settings' }: { returnTo?: string 
             )}
           </InputGroup>
           <FieldDescription>
-            We will send a one-time code. Mentor tools require a supported .edu address.
+            We’ll send a one-time code. Mentor access requires a supported .edu address.
           </FieldDescription>
           <FieldError>{emailError || requestError}</FieldError>
         </Field>

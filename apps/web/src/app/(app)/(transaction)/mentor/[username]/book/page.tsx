@@ -1,14 +1,14 @@
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { BookingInterface } from '~/app/(app)/(public)/mentor/[username]/book/components/BookingInterface'
 import { DecisionContext } from '~/components/shared/DecisionContext'
 import { buttonVariants } from '~/components/ui/button'
 import { sanitizeDiscoveryReturnHref } from '~/lib/discovery-return'
 import { createMetadata, siteConfig } from '~/lib/metadata'
+import { cn } from '~/lib/utils'
 import { getMentorEnabledEventTypesWithStripeStatus } from '~/server/queries/event-types'
 import { getPublicProfileByUsername } from '~/server/queries/profiles'
-import { cn } from '~/lib/utils'
-import { BookingInterface } from './components/BookingInterface'
 
 interface BookingPageProps {
   params: Promise<{
@@ -61,7 +61,7 @@ const BookingPage = async ({ params, searchParams }: BookingPageProps) => {
           href={profileHref}
           className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), '-ml-3')}
         >
-          <ArrowLeft />
+          <ArrowLeft data-icon="inline-start" />
           Back to profile
         </Link>
         <div className="mt-6">
@@ -75,7 +75,7 @@ const BookingPage = async ({ params, searchParams }: BookingPageProps) => {
       </div>
 
       <header className="mt-8 mb-7 max-w-2xl sm:mt-10 sm:mb-9">
-        <h1 className="font-display text-4xl leading-tight font-medium tracking-[-0.035em] sm:text-5xl">
+        <h1 className="text-4xl leading-tight font-semibold tracking-[-0.03em] sm:text-5xl">
           Choose a time with {profile.name ?? 'this mentor'}
         </h1>
         <p className="text-muted-foreground mt-3 text-base leading-7">

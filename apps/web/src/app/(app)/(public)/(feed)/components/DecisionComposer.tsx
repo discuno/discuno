@@ -43,10 +43,10 @@ export function DecisionComposer() {
       id="decision-composer"
       role="form"
       aria-labelledby="home-decision-label"
-      className="border-foreground/20 mt-8 scroll-mt-24 border-y py-5"
+      className="mt-8 scroll-mt-24"
     >
-      <Field data-invalid={showError || storageUnavailable}>
-        <FieldLabel id="home-decision-label" htmlFor="home-decision-question" className="text-base">
+      <Field data-invalid={showError || storageUnavailable} className="gap-3">
+        <FieldLabel id="home-decision-label" htmlFor="home-decision-question" className="sr-only">
           What are you trying to decide?
         </FieldLabel>
         <Textarea
@@ -60,6 +60,7 @@ export function DecisionComposer() {
           maxLength={DECISION_QUESTION_MAX_LENGTH}
           rows={3}
           placeholder="Should I switch majors before recruiting starts?"
+          className="bg-background min-h-32 resize-y py-4 text-base leading-7 shadow-none md:text-base"
           aria-invalid={showError || storageUnavailable}
           aria-describedby={
             showError || storageUnavailable ? 'home-decision-error' : 'home-decision-help'
@@ -75,7 +76,7 @@ export function DecisionComposer() {
           </FieldError>
         ) : (
           <FieldDescription id="home-decision-help">
-            Saved for this browser session only. Your question never goes in the URL.
+            Kept in this browser session and out of the URL.
           </FieldDescription>
         )}
       </Field>

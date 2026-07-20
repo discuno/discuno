@@ -47,11 +47,9 @@ export default async function CalendarSettingsPage({ searchParams }: CalendarSet
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
       <header className="flex max-w-2xl flex-col gap-1.5">
-        <h1 className="font-display text-3xl leading-tight font-semibold tracking-tight">
-          Calendar
-        </h1>
+        <h1 className="text-2xl leading-tight font-semibold tracking-tight">Calendar</h1>
         <p className="text-muted-foreground text-sm leading-6">
-          Connect the calendar Discuno uses for availability and sessions.
+          Connect the calendar used for booking.
         </p>
       </header>
 

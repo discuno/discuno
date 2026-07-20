@@ -19,10 +19,7 @@ const RootLoading = () => {
           aria-busy="true"
         >
           <Spinner className="text-primary size-5" />
-          <h1
-            id="loading-title"
-            className="font-display mt-4 text-2xl font-semibold tracking-tight"
-          >
+          <h1 id="loading-title" className="mt-4 text-2xl font-semibold tracking-tight">
             Loading Discuno
           </h1>
 

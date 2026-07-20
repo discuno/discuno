@@ -19,26 +19,10 @@ import {
 import { Skeleton } from '~/components/ui/skeleton'
 import { cn } from '~/lib/utils'
 
-interface OnboardingStatus {
-  isComplete: boolean
-  completedSteps: number
-  totalSteps: number
-  steps: Array<{
-    id: string
-    title: string
-    description: string
-    completed: boolean
-    actionUrl: string
-    actionLabel: string
-    iconName: string
-  }>
-}
-
 interface NavBarBaseProps {
   profilePic: string | null
   isAuthenticated: boolean
   isMentor: boolean
-  onboardingStatus: OnboardingStatus | null
 }
 
 type Audience = 'student' | 'mentor'
@@ -56,12 +40,7 @@ function isActiveLink(pathname: string, href: string) {
   return pathname === href || (href !== '/' && pathname.startsWith(`${href}/`))
 }
 
-export function NavBarBase({
-  profilePic,
-  isAuthenticated,
-  isMentor,
-  onboardingStatus,
-}: NavBarBaseProps) {
+export function NavBarBase({ profilePic, isAuthenticated, isMentor }: NavBarBaseProps) {
   const pathname = usePathname()
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false)
   const [loginMode, setLoginMode] = useState<'signin' | 'signup'>('signin')
@@ -146,7 +125,7 @@ export function NavBarBase({
                 <AvatarIcon
                   profilePic={profilePic}
                   isAuthenticated={isAuthenticated}
-                  onboardingStatus={onboardingStatus}
+                  isMentor={isMentor}
                 />
               </>
             )}

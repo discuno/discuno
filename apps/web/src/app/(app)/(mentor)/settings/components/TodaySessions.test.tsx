@@ -79,6 +79,6 @@ describe('Today sessions', () => {
     renderWithQueryClient(<TodaySessions />)
 
     expect(await screen.findByText('No upcoming sessions')).toBeVisible()
-    expect(screen.getByText(/student's question and session time will appear here/i)).toBeVisible()
+    expect(screen.getByText('New bookings will appear here.')).toBeVisible()
   })
 })

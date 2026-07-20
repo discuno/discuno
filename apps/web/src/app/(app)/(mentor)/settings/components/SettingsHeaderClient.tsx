@@ -12,7 +12,6 @@ import {
 } from '~/components/ui/breadcrumb'
 import { Separator } from '~/components/ui/separator'
 import { SidebarTrigger } from '~/components/ui/sidebar'
-import { StripeDashboardButton } from './StripeDashboardButton'
 
 const routeLabels: Record<string, string> = {
   '/settings': 'Today',
@@ -24,17 +23,7 @@ const routeLabels: Record<string, string> = {
   '/settings/profile/edit': 'Public profile',
 }
 
-interface SettingsHeaderClientProps {
-  showPayoutAction: boolean
-  hasStripeAccount: boolean
-  payoutsReady: boolean
-}
-
-export function SettingsHeaderClient({
-  showPayoutAction,
-  hasStripeAccount,
-  payoutsReady,
-}: SettingsHeaderClientProps) {
+export function SettingsHeaderClient() {
   const pathname = usePathname()
   const isWorkspaceRoot = pathname === '/settings'
   const fallbackSegment = pathname.split('/').filter(Boolean).at(-1) ?? 'settings'
@@ -71,9 +60,6 @@ export function SettingsHeaderClient({
             )}
           </BreadcrumbList>
         </Breadcrumb>
-        {showPayoutAction && (
-          <StripeDashboardButton hasStripeAccount={hasStripeAccount} payoutsReady={payoutsReady} />
-        )}
       </div>
     </header>
   )

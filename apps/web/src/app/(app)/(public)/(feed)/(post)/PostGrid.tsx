@@ -80,8 +80,8 @@ export const PostGrid = ({
           <EmptyMedia variant="icon">
             <RefreshCw />
           </EmptyMedia>
-          <EmptyTitle>We could not load mentors</EmptyTitle>
-          <EmptyDescription>Check your connection and try once more.</EmptyDescription>
+          <EmptyTitle>Mentors did not load</EmptyTitle>
+          <EmptyDescription>Check your connection and try again.</EmptyDescription>
         </EmptyHeader>
         <EmptyContent>
           <Button variant="outline" onClick={() => void refetch()}>
@@ -100,12 +100,12 @@ export const PostGrid = ({
             <SearchX />
           </EmptyMedia>
           <EmptyTitle>
-            {hasFilters ? 'No exact matches yet' : 'Mentor profiles are being prepared'}
+            {hasFilters ? 'No students match these filters' : 'No mentor profiles yet'}
           </EmptyTitle>
           <EmptyDescription>
             {hasFilters
-              ? 'Remove one filter. Someone from a related school or field may still have useful firsthand context.'
-              : 'Use the guides to sharpen your question while students finish publishing their profiles.'}
+              ? 'Remove a filter to widen the list.'
+              : 'Read a college guide while students finish publishing their profiles.'}
           </EmptyDescription>
         </EmptyHeader>
         <EmptyContent>
@@ -146,7 +146,7 @@ export const PostGrid = ({
             disabled={isFetchingNextPage}
           >
             {isFetchingNextPage && <Spinner data-icon="inline-start" />}
-            {isFetchingNextPage ? 'Loading mentors' : 'Show more mentors'}
+            {isFetchingNextPage ? 'Loading mentors' : 'Show more'}
           </Button>
         </div>
       )}

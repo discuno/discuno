@@ -79,7 +79,7 @@ export async function FindResults({ searchParams }: FindResultsProps) {
         aria-labelledby="mentor-results-title"
       >
         <div className="mx-auto w-full max-w-[76rem] px-4 sm:px-6 lg:px-8">
-          <div className="grid gap-8 lg:grid-cols-[16rem_minmax(0,1fr)] lg:gap-10">
+          <div className="grid gap-8 lg:grid-cols-[15rem_minmax(0,1fr)] lg:gap-12">
             <FindFilters
               schools={schools}
               majors={majors}
@@ -92,14 +92,14 @@ export async function FindResults({ searchParams }: FindResultsProps) {
               <div className="mb-7 max-w-[42rem]">
                 <h2
                   id="mentor-results-title"
-                  className="font-display text-3xl leading-tight font-semibold tracking-[-0.03em] sm:text-4xl"
+                  className="text-3xl leading-tight font-semibold tracking-[-0.03em] sm:text-4xl"
                 >
-                  {hasFilters ? 'Mentors within your filters' : 'Student mentors'}
+                  {hasFilters ? 'Students within these filters' : 'All student mentors'}
                 </h2>
                 <p className="text-muted-foreground mt-2 leading-7">
                   {hasFilters
-                    ? 'Compare the firsthand context each student has chosen to share.'
-                    : 'Compare schools, fields, personal context, and the sessions each student offers.'}
+                    ? 'Filtered only by the profile details you selected.'
+                    : 'Choose whose experience best fits the question you brought.'}
                 </p>
               </div>
 

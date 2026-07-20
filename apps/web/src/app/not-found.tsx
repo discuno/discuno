@@ -37,7 +37,7 @@ const NotFound = () => {
               id="not-found-title"
               role="heading"
               aria-level={1}
-              className="font-display text-4xl leading-tight font-semibold tracking-tight sm:text-5xl"
+              className="text-3xl leading-tight font-semibold tracking-tight sm:text-4xl"
             >
               This page isn&apos;t here
             </EmptyTitle>

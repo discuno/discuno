@@ -30,8 +30,8 @@ describe('fresh-session sign-in', () => {
       />
     )
 
-    expect(screen.getByRole('heading', { name: 'Sign in again to continue' })).toBeTruthy()
-    expect(screen.getByText(/extra check protects changes/i)).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Confirm it’s you' })).toBeTruthy()
+    expect(screen.getByText(/sign in again for security/i)).toBeTruthy()
 
     await user.click(screen.getByRole('button', { name: 'Continue with Google' }))
 
@@ -53,8 +53,8 @@ describe('fresh-session sign-in', () => {
       />
     )
 
-    expect(screen.getByRole('heading', { name: 'Share what you have learned' })).toBeTruthy()
-    expect(screen.queryByRole('heading', { name: 'Sign in again to continue' })).toBeNull()
+    expect(screen.getByRole('heading', { name: 'Mentor sign in' })).toBeTruthy()
+    expect(screen.queryByRole('heading', { name: 'Confirm it’s you' })).toBeNull()
 
     await user.click(screen.getByRole('button', { name: 'Continue with Google' }))
 
@@ -84,9 +84,9 @@ describe('fresh-session sign-in', () => {
 
     render(<LoginPage initialUserType="mentor" />)
 
-    await user.click(screen.getByRole('tab', { name: 'Find guidance' }))
+    await user.click(screen.getByRole('tab', { name: 'Student' }))
 
-    expect(screen.getByText(/no account is needed to browse or book/i)).toBeTruthy()
+    expect(screen.getByText(/continue browsing without an account/i)).toBeTruthy()
     expect(screen.queryByRole('textbox', { name: 'School email' })).toBeNull()
   })
 })

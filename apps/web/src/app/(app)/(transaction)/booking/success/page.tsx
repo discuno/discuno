@@ -16,10 +16,10 @@ import {
 } from '~/components/ui/empty'
 import { requireAuth } from '~/lib/auth/auth-utils'
 import { stripe } from '~/lib/stripe'
+import { cn } from '~/lib/utils'
 import { db } from '~/server/db'
 import { checkoutSlotReservation } from '~/server/db/schema'
 import { resolveCanonicalUserId } from '~/server/dal/user-identities'
-import { cn } from '~/lib/utils'
 
 interface BookingSuccessPageProps {
   searchParams: Promise<{ attempt?: string }>
@@ -130,7 +130,7 @@ const BookingSuccessPage = async ({ searchParams }: BookingSuccessPageProps) => 
               id="booking-status-title"
               role="heading"
               aria-level={1}
-              className="font-display text-3xl leading-tight font-semibold tracking-tight sm:text-4xl"
+              className="text-3xl leading-tight font-semibold tracking-tight sm:text-4xl"
             >
               {content.title}
             </EmptyTitle>

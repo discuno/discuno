@@ -100,8 +100,8 @@ export function TodaySessions() {
         ) : (
           <div className="border-border border-y py-6">
             <p className="font-medium">No upcoming sessions</p>
-            <p className="text-muted-foreground mt-1 max-w-xl text-sm leading-6">
-              A student&apos;s question and session time will appear here after they book.
+            <p className="text-muted-foreground mt-1 text-sm leading-6">
+              New bookings will appear here.
             </p>
           </div>
         )}

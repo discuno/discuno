@@ -18,6 +18,11 @@ warm, direct, and editorial, with familiar product behavior and little visual no
 The identity comes from this combination, not from simulated stationery. Do not add fake tape,
 rotated notes, stamps, doodles, handwriting, paper stacks, or decorative notebook textures.
 
+The logo's three connected points also define Discuno's functional sequence: **question, person,
+time**. When the journey needs explanation, show those three labels once along a single measured
+line. This is an interpretation of the mark, not a decorative icon pattern or a replacement for
+ordinary progress UI.
+
 ## Experience principles
 
 1. **The decision comes first.** Acquisition starts with the question a student is trying to answer.
@@ -47,7 +52,9 @@ rotated notes, stamps, doodles, handwriting, paper stacks, or decorative noteboo
 
 ## Typography and copy
 
-- Use Newsreader only for display headings. Body copy, controls, labels, and data use Geist.
+- Use Newsreader for one acquisition headline and for the student's question when it is treated as
+  content. Discovery, profiles, auth, booking, and the mentor workspace use Geist for page headings,
+  body copy, controls, labels, and data.
 - A hero headline should fit in two lines. Hero supporting copy should stay at 20 words or fewer.
 - Use sentence case and natural language.
 - Do not put an eyebrow above every heading. One small contextual label per three sections is the

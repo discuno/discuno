@@ -106,7 +106,7 @@ export function FindFilters({
           >
             <span className="flex items-center gap-2">
               <SlidersHorizontal data-icon="inline-start" aria-hidden="true" />
-              Refine results
+              Filters
             </span>
             {activeFilterCount > 0 && (
               <Badge variant="secondary">
@@ -117,8 +117,8 @@ export function FindFilters({
 
           <SheetContent side="bottom" className="max-h-[85dvh] overflow-hidden rounded-t-xl">
             <SheetHeader>
-              <SheetTitle>Refine mentor results</SheetTitle>
-              <SheetDescription>Narrow by school, field, or graduation year.</SheetDescription>
+              <SheetTitle>Filter mentors</SheetTitle>
+              <SheetDescription>School, field, or graduation year.</SheetDescription>
             </SheetHeader>
 
             <div className="min-h-0 overflow-y-auto px-6 pb-6">
@@ -134,7 +134,7 @@ export function FindFilters({
             </div>
 
             <SheetFooter>
-              <SheetClose render={<Button className="w-full" />}>View mentors</SheetClose>
+              <SheetClose render={<Button className="w-full" />}>Show results</SheetClose>
             </SheetFooter>
           </SheetContent>
         </Sheet>
@@ -143,13 +143,10 @@ export function FindFilters({
       <aside className="hidden border-r pr-8 lg:block" aria-labelledby="find-filters-title">
         <div className="sticky top-24">
           <h2 id="find-filters-title" className="text-lg font-semibold">
-            Refine results
+            Filters
           </h2>
-          <p className="text-muted-foreground mt-1 text-sm leading-6">
-            Use the profile details that matter to your decision.
-          </p>
 
-          <div className="mt-6">
+          <div className="mt-5">
             <FilterFields {...filterFields} />
           </div>
 
@@ -163,7 +160,7 @@ export function FindFilters({
           )}
 
           <p className="text-muted-foreground mt-8 border-t pt-5 text-xs leading-5">
-            Filters use information mentors have chosen to publish. No account is needed to browse.
+            Published profile details only. No account needed to browse.
           </p>
         </div>
       </aside>

@@ -38,7 +38,7 @@ const workspaceNavItems: NavMainProps['items'] = [
   },
   {
     title: 'Public profile',
-    url: '/settings/profile/edit',
+    url: '/settings/profile',
     icon: 'User',
   },
   {

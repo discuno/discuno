@@ -18,7 +18,7 @@ export default function TermsPage() {
     <div className="min-h-screen">
       <header className="border-border border-b">
         <div className="page-shell max-w-5xl py-14 sm:py-20">
-          <h1 className="font-display text-5xl leading-none font-medium tracking-[-0.045em] sm:text-6xl">
+          <h1 className="text-4xl leading-tight font-semibold tracking-tight sm:text-5xl">
             Terms of Service
           </h1>
           <p className="text-muted-foreground mt-4 text-sm">Effective July 14, 2026</p>

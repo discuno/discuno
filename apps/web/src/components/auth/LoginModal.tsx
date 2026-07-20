@@ -66,14 +66,14 @@ function LoginModalContent({
 
   const title =
     mode === 'signin'
-      ? 'Welcome back'
+      ? 'Sign in'
       : userType === 'mentor'
-        ? 'Share what you have learned'
-        : 'Keep your details handy'
+        ? 'Create a mentor account'
+        : 'Create an account'
   const description =
     userType === 'mentor'
-      ? 'New and returning mentors use the same sign-in; mentor tools require a supported school account.'
-      : 'No account is needed to browse or book; sign in only to prefill your details.'
+      ? 'Use a school account to open your mentor workspace.'
+      : 'Save your details for later, or continue browsing without an account.'
 
   return (
     <DialogContent className="max-h-[calc(100vh-2rem)] overflow-y-auto sm:max-w-[440px]">
@@ -88,8 +88,8 @@ function LoginModalContent({
         className="w-full"
       >
         <TabsList variant="line" className="grid w-full grid-cols-2">
-          <TabsTrigger value="student">Find guidance</TabsTrigger>
-          <TabsTrigger value="mentor">Start mentoring</TabsTrigger>
+          <TabsTrigger value="student">Student</TabsTrigger>
+          <TabsTrigger value="mentor">Mentor</TabsTrigger>
         </TabsList>
 
         <TabsContent value="student" className="mt-6">

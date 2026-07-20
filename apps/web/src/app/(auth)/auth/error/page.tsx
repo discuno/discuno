@@ -103,7 +103,7 @@ const AuthErrorPage = async ({
               id="auth-error-title"
               role="heading"
               aria-level={1}
-              className="font-display text-3xl leading-tight font-semibold tracking-tight sm:text-4xl"
+              className="text-3xl leading-tight font-semibold tracking-tight"
             >
               {details.title}
             </EmptyTitle>

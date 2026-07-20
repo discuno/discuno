@@ -31,13 +31,29 @@ increases.
 
 Design dials:
 
-- `DESIGN_VARIANCE: 8`
-- `MOTION_INTENSITY: 5`
-- `VISUAL_DENSITY: 4`
+- Public acquisition: `DESIGN_VARIANCE: 7`, `MOTION_INTENSITY: 4`, `VISUAL_DENSITY: 3`
+- Discovery and profiles: `DESIGN_VARIANCE: 5`, `MOTION_INTENSITY: 3`, `VISUAL_DENSITY: 4`
+- Auth, booking, and mentor work: `DESIGN_VARIANCE: 4`, `MOTION_INTENSITY: 2`,
+  `VISUAL_DENSITY: 5`
 
 The visual foundation remains Discuno's warm editorial clarity: warm paper, deep ink, cobalt action,
 one chartreuse context highlight, Newsreader display type, Geist UI type, and documentary student
 photography. Base UI supplies accessible behavior. It is not the visual design source.
+
+The brand mark's three connected points become a single functional journey cue: `question -> person
+-> time`. Use it once where the journey needs explanation. Do not repeat it as decorative chrome.
+
+## Shell model
+
+- Marketing pages (`/`, `/about`, `/for-mentors`, and `/blog`) may use the full public navigation
+  and compact public footer.
+- Discovery and mentor profiles keep the public navigation but frontload filters, people, session
+  evidence, and the student's question instead of marketing explanation.
+- Booking and booking status use a quiet transaction shell with only the Discuno brand and a safe
+  exit. They do not inherit acquisition navigation or the public footer.
+- Auth has its own focused utility shell.
+- Mentor settings use the stable workspace rail. Public navigation never fetches full mentor setup
+  or payout readiness.
 
 ## Product boundaries
 
@@ -90,7 +106,6 @@ The homepage has one job: help the student begin with the decision.
    a directory.
 4. One documentary conversation image explains what firsthand context changes.
 5. A compact trust statement defines school-email confirmation and the role of peer perspective.
-6. One final action returns to the question composer.
 
 No FAQ, feature grid, testimonial placeholder, pricing page, or marketing card stack belongs here.
 

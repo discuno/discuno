@@ -12,6 +12,7 @@ import {
   Timer,
 } from 'lucide-react'
 import { type updateMentorEventTypePreferences } from '~/app/(app)/(mentor)/settings/actions'
+import { StripeDashboardButton } from '~/app/(app)/(mentor)/settings/components/StripeDashboardButton'
 import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert'
 import { Badge } from '~/components/ui/badge'
 import { Button, buttonVariants } from '~/components/ui/button'
@@ -191,17 +192,15 @@ export const EventTypeSettingsContent = ({
               {hasStripeAccount ? 'Finish payout setup' : 'Connect payouts to offer paid sessions'}
             </AlertTitle>
             <AlertDescription>
-              {hasStripeAccount ? (
-                <p>
-                  Your payout account needs more information or verification. Use the payout action
-                  in the header to finish any remaining steps.
-                </p>
-              ) : (
-                <p>
-                  Connect a payout account before making a paid session visible to students. Free
-                  sessions do not require payout setup.
-                </p>
-              )}
+              <p>
+                {hasStripeAccount
+                  ? 'Complete the remaining payout steps before publishing a paid session.'
+                  : 'Set up payouts before publishing a paid session. Free sessions do not require it.'}
+              </p>
+              <StripeDashboardButton
+                hasStripeAccount={hasStripeAccount}
+                payoutsReady={isStripeActive}
+              />
             </AlertDescription>
           </Alert>
         )}

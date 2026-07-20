@@ -24,7 +24,7 @@ export function SignInMethods({
 
       {audience === 'mentor' && (
         <>
-          <FieldSeparator>Or get a one-time code</FieldSeparator>
+          <FieldSeparator>Or use your school email</FieldSeparator>
           <EmailSignInForm returnTo={returnTo} />
         </>
       )}

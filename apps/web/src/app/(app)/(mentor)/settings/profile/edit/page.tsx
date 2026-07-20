@@ -18,7 +18,7 @@ const EditProfilePage = async () => {
   return (
     <ProfileShell
       title="Public profile"
-      description="Show students the experience and perspective you can responsibly share."
+      description="Show students where your experience can help."
     >
       <EditProfileContent profile={profile} majors={majors} />
     </ProfileShell>

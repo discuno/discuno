@@ -42,15 +42,15 @@ export function LoginPage({
   }
 
   const title = reauthenticationRequired
-    ? 'Sign in again to continue'
+    ? 'Confirm it’s you'
     : userType === 'mentor'
-      ? 'Share what you have learned'
-      : 'Keep your details handy'
+      ? 'Mentor sign in'
+      : 'Sign in to Discuno'
   const description = reauthenticationRequired
-    ? 'This extra check protects changes to your calendar and payout details, then returns you to where you left off.'
+    ? 'Sign in again for security. You’ll return to where you left off.'
     : userType === 'mentor'
-      ? 'New and returning mentors use the same sign-in; mentor tools require a supported school account.'
-      : 'No account is needed to browse or book; sign in only to prefill your details.'
+      ? 'Use a school account to open your mentor workspace.'
+      : 'Save your details for later, or continue browsing without an account.'
 
   return (
     <div className="bg-background flex min-h-screen flex-col">
@@ -75,10 +75,7 @@ export function LoginPage({
           aria-labelledby="auth-title"
         >
           <div className="flex flex-col gap-3">
-            <h1
-              id="auth-title"
-              className="font-display text-4xl leading-tight font-semibold tracking-[-0.035em]"
-            >
+            <h1 id="auth-title" className="text-3xl leading-tight font-semibold tracking-tight">
               {title}
             </h1>
             <p className="text-muted-foreground text-base leading-7">{description}</p>
@@ -90,8 +87,8 @@ export function LoginPage({
             className="mt-7 w-full"
           >
             <TabsList variant="line" className="grid w-full grid-cols-2">
-              <TabsTrigger value="student">Find guidance</TabsTrigger>
-              <TabsTrigger value="mentor">Start mentoring</TabsTrigger>
+              <TabsTrigger value="student">Student</TabsTrigger>
+              <TabsTrigger value="mentor">Mentor</TabsTrigger>
             </TabsList>
 
             <TabsContent value="student" className="mt-7">

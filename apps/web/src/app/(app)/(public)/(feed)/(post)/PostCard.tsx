@@ -47,15 +47,18 @@ export const PostCard = ({
   const initial = name.trim().charAt(0).toUpperCase() || 'M'
   const hasAcademicContext = [card.school, card.major].some(Boolean)
   const hasAcademicStage = [card.schoolYear, card.graduationYear].some(Boolean)
+  const hasProfileSignals = [card.verifiedSchoolEmail, card.hasFreeSessions, hasAcademicStage].some(
+    Boolean
+  )
 
   return (
     <article
       role="listitem"
-      className="grid grid-cols-[5rem_minmax(0,1fr)] gap-x-4 gap-y-5 py-6 sm:grid-cols-[7rem_minmax(0,1fr)] sm:gap-x-6 lg:grid-cols-[8.5rem_minmax(0,1fr)_auto] lg:items-center"
+      className="grid grid-cols-[5.5rem_minmax(0,1fr)] gap-x-4 gap-y-5 py-7 sm:grid-cols-[7.5rem_minmax(0,1fr)] sm:gap-x-7 lg:grid-cols-[8.5rem_minmax(0,1fr)_auto] lg:items-center lg:gap-x-8"
     >
-      <div className="bg-muted relative aspect-square w-full overflow-hidden rounded-xl">
+      <div className="bg-muted relative aspect-[4/5] w-full overflow-hidden rounded-lg">
         <span
-          className="text-primary font-display flex size-full items-center justify-center text-3xl font-semibold"
+          className="text-primary flex size-full items-center justify-center text-3xl font-semibold"
           aria-hidden="true"
         >
           {initial}
@@ -66,24 +69,14 @@ export const PostCard = ({
             alt={`${name} profile photo`}
             fill
             className="object-cover object-top"
-            sizes="(max-width: 639px) 80px, (max-width: 1023px) 112px, 136px"
+            sizes="(max-width: 639px) 88px, (max-width: 1023px) 120px, 136px"
             onError={() => setImageFailed(true)}
           />
         )}
       </div>
 
       <div className="min-w-0">
-        <div className="flex flex-wrap items-center gap-2">
-          {card.verifiedSchoolEmail && (
-            <Badge variant="outline">
-              <BadgeCheck aria-hidden="true" />
-              School email confirmed
-            </Badge>
-          )}
-          {card.hasFreeSessions && <Badge variant="secondary">Free session available</Badge>}
-        </div>
-
-        <h3 className="font-display mt-3 text-2xl leading-tight font-semibold tracking-[-0.025em] sm:text-3xl">
+        <h3 className="text-2xl leading-tight font-semibold tracking-[-0.025em] sm:text-3xl">
           {name}
         </h3>
 
@@ -118,12 +111,23 @@ export const PostCard = ({
           </p>
         )}
 
-        {hasAcademicStage && (
-          <p className="text-muted-foreground mt-3 text-xs">
-            {[card.schoolYear, card.graduationYear ? `Class of ${card.graduationYear}` : null]
-              .filter(Boolean)
-              .join(' · ')}
-          </p>
+        {hasProfileSignals && (
+          <div className="text-muted-foreground mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs">
+            {card.verifiedSchoolEmail && (
+              <span className="text-foreground inline-flex items-center gap-1.5 font-medium">
+                <BadgeCheck aria-hidden="true" className="size-4" />
+                School email confirmed
+              </span>
+            )}
+            {card.hasFreeSessions && <Badge variant="secondary">Free session available</Badge>}
+            {hasAcademicStage && (
+              <span>
+                {[card.schoolYear, card.graduationYear ? `Class of ${card.graduationYear}` : null]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </span>
+            )}
+          </div>
         )}
       </div>
 

@@ -528,6 +528,13 @@ Use `docs/design-system.md` as the source of truth for visual work.
 - Discuno's owned direction is “warm editorial clarity”: warm paper, deep ink, cobalt actions, one
   chartreuse highlighter, Newsreader display type, Geist UI text, real student imagery, open margins,
   and measured rules.
+- The logo's three connected points define the one functional journey cue: question, person, time.
+  Use it once when explaining the path, never as repeated decorative chrome.
+- Marketing, discovery/profile, transaction/auth, and mentor workspace surfaces use distinct shells.
+  Booking and booking status never inherit acquisition navigation or the public footer, and public
+  navigation must not fetch mentor setup or payout readiness.
+- Reserve Newsreader for one acquisition headline and the student's question as content. Use Geist
+  for discovery, profile, auth, booking, and workspace headings and UI.
 - Keep familiar interaction semantics. The shadcn/Base primitives supply behavior; Discuno tokens
   and content-led editorial composition supply the identity.
 - Acquisition may be more expressive. Auth, booking, payments, and the mentor workspace must remain

@@ -36,7 +36,7 @@ test('question-first path reaches clean discovery without exposing the question'
   await expect(
     page.getByRole('heading', {
       level: 1,
-      name: /what are you deciding/i,
+      name: /what are you trying to decide/i,
     })
   ).toBeVisible()
 
@@ -52,17 +52,14 @@ test('question-first path reaches clean discovery without exposing the question'
   await expect(page.getByRole('paragraph').filter({ hasText: question })).toBeVisible()
 })
 
-test('final homepage prompt returns to the question composer', async ({ page }) => {
+test('homepage keeps one clear question action', async ({ page }) => {
   const response = await page.goto('/')
 
   expect(response?.ok()).toBe(true)
 
-  const prompt = page.getByRole('link', { name: 'Start with your question' })
-  await prompt.scrollIntoViewIfNeeded()
-  await prompt.click()
-
-  await expect(page).toHaveURL(/#decision-composer$/)
-  await expect(page.locator('#decision-composer')).toBeInViewport()
+  const composer = page.locator('#decision-composer')
+  await expect(composer).toBeVisible()
+  await expect(composer.getByRole('button', { name: 'Find a mentor' })).toHaveCount(1)
 })
 
 test('public about page renders without mutating application state', async ({ page }) => {
@@ -72,7 +69,7 @@ test('public about page renders without mutating application state', async ({ pa
   await expect(
     page.getByRole('heading', {
       level: 1,
-      name: /college decisions need context/i,
+      name: /the facts are only part of the choice/i,
     })
   ).toBeVisible()
 })
@@ -81,13 +78,9 @@ test('sign-in page exposes mentor and student paths without submitting', async (
   const response = await page.goto('/auth')
 
   expect(response?.ok()).toBe(true)
-  await expect(
-    page.getByRole('heading', { level: 1, name: /share what you have learned/i })
-  ).toBeVisible()
-  await page.getByRole('tab', { name: 'Find guidance' }).click()
-  await expect(
-    page.getByRole('heading', { level: 1, name: /keep your details handy/i })
-  ).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'Mentor sign in' })).toBeVisible()
+  await page.getByRole('tab', { name: 'Student' }).click()
+  await expect(page.getByRole('heading', { level: 1, name: 'Sign in to Discuno' })).toBeVisible()
   await expect(page.getByRole('link', { name: 'Privacy Policy' })).toHaveAttribute(
     'href',
     '/privacy'

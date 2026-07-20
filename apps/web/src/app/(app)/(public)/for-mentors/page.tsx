@@ -45,7 +45,6 @@ const studentQuestions = [
   'How did you know this major was right for you?',
   'What actually helped you land that internship?',
   'What would you do differently in your first year?',
-  'Is this course worth the workload?',
 ]
 
 const onboardingSteps = [
@@ -64,9 +63,9 @@ const onboardingSteps = [
 ]
 
 const responsibilities = [
-  'Talk about choices, tradeoffs, surprises, and mistakes you experienced firsthand.',
-  'Stay clear about what you know, what you do not, and when official guidance belongs in the conversation.',
-  'Keep your profile, session options, calendar, and pricing accurate.',
+  'Speak from choices and tradeoffs you experienced firsthand.',
+  'Be clear about the limits of your perspective.',
+  'Keep your profile, sessions, calendar, and pricing accurate.',
 ]
 
 const faqItems = [
@@ -92,11 +91,6 @@ const faqItems = [
     question: 'What does the school email check mean?',
     answer:
       'It shows that the mentor demonstrated access to an institutional email address at sign-up and supports the school affiliation shown on the profile. It does not verify identity, background, expertise, or outcomes.',
-  },
-  {
-    question: 'Can I change my schedule or session options later?',
-    answer:
-      'Yes. You can update your availability, pause or reopen session types, and adjust pricing from mentor settings.',
   },
 ]
 
@@ -158,7 +152,7 @@ export default async function ForMentorsPage({
       />
 
       <section className="border-b">
-        <div className="page-shell py-10 sm:py-14">
+        <div className="page-shell py-10 sm:py-16">
           {showSchoolEmailNotice && (
             <div
               role="alert"
@@ -178,13 +172,13 @@ export default async function ForMentorsPage({
             </div>
           )}
 
-          <div className="grid min-h-[68svh] gap-10 lg:grid-cols-12 lg:items-center lg:gap-14">
+          <div className="grid gap-10 lg:grid-cols-12 lg:items-center lg:gap-14">
             <div className="public-enter lg:col-span-7">
               <h1 className="display-hero max-w-4xl">
-                Share what you <span className="marker-highlight">wish you knew.</span>
+                Help with the choice <span className="marker-highlight">you already made.</span>
               </h1>
               <p className="text-muted-foreground mt-6 max-w-xl text-lg leading-8">
-                Share firsthand context with another student, on a schedule you control.
+                Offer one-to-one conversations on your schedule, free or at a price you set.
               </p>
               <Link
                 href="/auth?intent=mentor"
@@ -195,82 +189,68 @@ export default async function ForMentorsPage({
               </Link>
             </div>
 
-            <div className="public-enter-delayed bg-muted relative aspect-[4/3] overflow-hidden rounded-xl lg:col-span-5 lg:aspect-[4/5]">
+            <div className="bg-muted relative aspect-[4/3] overflow-hidden rounded-xl lg:col-span-5">
               <Image
                 src="/images/conversation-after-class.jpg"
                 alt="Two students talk through a college decision after class"
                 fill
-                priority
+                preload
                 className="object-cover object-center"
                 sizes="(max-width: 1023px) calc(100vw - 2rem), 40vw"
               />
+            </div>
+          </div>
+
+          <div className="border-foreground/20 mt-14 border-t pt-5">
+            <p className="text-muted-foreground text-sm font-medium">Questions students bring</p>
+            <div className="mt-2 grid lg:grid-cols-3 lg:divide-x">
+              {studentQuestions.map(question => (
+                <p
+                  key={question}
+                  className="border-foreground/20 border-b py-5 text-lg leading-7 font-medium last:border-b-0 lg:border-b-0 lg:px-6 lg:first:pl-0 lg:last:pr-0"
+                >
+                  “{question}”
+                </p>
+              ))}
             </div>
           </div>
         </div>
       </section>
 
       <section className="page-shell py-16 sm:py-24">
-        <div className="max-w-4xl">
-          <h2 className="display-heading">Students bring the question.</h2>
-          <p className="text-muted-foreground mt-5 max-w-xl leading-7">
-            You bring the parts no catalog, job post, or course description can show.
-          </p>
-          <div className="border-foreground/20 mt-10 grid border-t sm:grid-cols-2 sm:gap-x-12">
-            {studentQuestions.map(question => (
-              <p
-                key={question}
-                className="border-foreground/20 font-display border-b py-5 text-xl leading-7 font-medium sm:text-2xl"
-              >
-                “{question}”
-              </p>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="border-y">
-        <div className="page-shell py-16 sm:py-24">
-          <div className="max-w-3xl">
-            <h2 className="display-heading">Make your experience useful.</h2>
-            <p className="text-muted-foreground mt-5 leading-7">
-              You do not need every answer. You need relevant experience and clear boundaries.
-            </p>
-          </div>
-          <ol className="border-foreground/20 mt-10 grid border-y md:grid-cols-3 md:divide-x">
-            {onboardingSteps.map(step => (
-              <li
-                key={step.title}
-                className="border-foreground/20 border-b py-6 last:border-b-0 md:border-b-0 md:px-7 md:first:pl-0 md:last:pr-0"
-              >
-                <h3 className="font-semibold">{step.title}</h3>
-                <p className="text-muted-foreground mt-3 text-sm leading-6">{step.description}</p>
-              </li>
-            ))}
-          </ol>
-        </div>
-      </section>
-
-      <section className="page-shell py-16 sm:py-24">
-        <div className="max-w-4xl">
-          <h2 className="display-heading">Free, paid, or both.</h2>
-          <p className="text-muted-foreground mt-5 max-w-xl leading-7">
-            Set each session&apos;s price and open only the times that fit your schedule.
-          </p>
-        </div>
-
-        <div className="mt-10 grid gap-10 lg:grid-cols-12 lg:gap-14">
+        <div className="grid gap-14 lg:grid-cols-12 lg:gap-20">
           <div className="lg:col-span-7">
-            <div className="border-foreground/20 grid border-y sm:grid-cols-2 sm:divide-x">
+            <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">How you start</h2>
+            <ol className="border-foreground/20 mt-7 border-t">
+              {onboardingSteps.map((step, index) => (
+                <li
+                  key={step.title}
+                  className="border-foreground/20 grid gap-3 border-b py-5 sm:grid-cols-[2rem_10rem_1fr] sm:items-baseline"
+                >
+                  <span className="text-primary text-sm font-semibold">0{index + 1}</span>
+                  <h3 className="font-semibold">{step.title}</h3>
+                  <p className="text-muted-foreground text-sm leading-6">{step.description}</p>
+                </li>
+              ))}
+            </ol>
+          </div>
+
+          <div className="border-foreground/20 lg:col-span-5 lg:border-l lg:pl-10">
+            <h2 className="text-2xl font-semibold tracking-tight">Free, paid, or both</h2>
+            <p className="text-muted-foreground mt-3 text-sm leading-6">
+              Set each session&apos;s price and open only the times that fit.
+            </p>
+            <div className="border-foreground/20 mt-7 grid border-y sm:grid-cols-2 sm:divide-x lg:grid-cols-1 lg:divide-x-0 lg:divide-y">
               <div className="py-7 sm:pr-8">
                 <h3 className="font-semibold">Free sessions</h3>
-                <p className="font-display mt-3 text-5xl leading-none font-semibold">$0</p>
+                <p className="mt-2 text-4xl leading-none font-semibold tracking-tight">$0</p>
                 <p className="text-muted-foreground mt-4 max-w-sm text-sm leading-6">
                   Offer a conversation without setting up payouts.
                 </p>
               </div>
-              <div className="border-foreground/20 border-t py-7 sm:border-t-0 sm:pl-8">
+              <div className="border-foreground/20 border-t py-7 sm:border-t-0 sm:pl-8 lg:border-t lg:pl-0">
                 <h3 className="font-semibold">Paid sessions</h3>
-                <p className="font-display mt-3 text-5xl leading-none font-semibold">
+                <p className="mt-2 text-4xl leading-none font-semibold tracking-tight">
                   {mentorSharePercent}%
                 </p>
                 <p className="text-muted-foreground mt-4 max-w-sm text-sm leading-6">
@@ -282,26 +262,25 @@ export default async function ForMentorsPage({
               Current fees are subject to the Terms of Service. Tax and payout eligibility may vary.
             </p>
           </div>
+        </div>
+      </section>
 
-          <div className="border-foreground/20 lg:col-span-5 lg:border-l lg:pl-10">
-            <h3 className="text-lg font-semibold">What students should expect from you</h3>
-            <ul className="border-foreground/20 mt-4 border-t">
+      <section id="faq" className="scroll-mt-24 border-t">
+        <div className="page-shell grid gap-12 py-16 sm:py-24 lg:grid-cols-[0.8fr_1.2fr] lg:gap-24">
+          <div className="max-w-md">
+            <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">Before you begin</h2>
+            <p className="text-muted-foreground mt-4 leading-7">
+              Students should know what your perspective can and cannot do.
+            </p>
+            <ul className="border-foreground/20 mt-6 border-t">
               {responsibilities.map(item => (
                 <li key={item} className="border-foreground/20 border-b py-4 text-sm leading-6">
                   {item}
                 </li>
               ))}
             </ul>
-          </div>
-        </div>
-      </section>
-
-      <section id="faq" className="scroll-mt-24 border-t">
-        <div className="page-shell grid gap-10 py-16 sm:py-24 lg:grid-cols-[0.7fr_1.3fr] lg:gap-24">
-          <div className="max-w-md">
-            <h2 className="display-heading">Before you begin.</h2>
-            <p className="text-muted-foreground mt-5 leading-7">
-              For account or booking help, visit{' '}
+            <p className="text-muted-foreground mt-5 text-sm leading-6">
+              Need account or booking help? Visit{' '}
               <Link href="/support" className="text-foreground underline underline-offset-4">
                 Support
               </Link>

@@ -110,7 +110,7 @@ describe('public mentor discovery grid', () => {
   it('sets honest expectations when no profiles are public', () => {
     renderGrid([])
 
-    expect(screen.getByText('Mentor profiles are being prepared')).toBeInTheDocument()
+    expect(screen.getByText('No mentor profiles yet')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /read college guides/i })).toHaveAttribute(
       'href',
       '/blog'
@@ -120,7 +120,7 @@ describe('public mentor discovery grid', () => {
   it('offers a useful recovery path when no mentor exactly matches a filter', () => {
     renderGrid([], { schoolId: 11 })
 
-    expect(screen.getByText('No exact matches yet')).toBeInTheDocument()
+    expect(screen.getByText('No students match these filters')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /clear all filters/i })).toHaveAttribute(
       'href',
       '/find#mentors'
